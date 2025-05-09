@@ -1,0 +1,15 @@
+Title: NBA Play-by-Play Data Scraper
+
+Description: A script to download NBA play-by-play data for a specified 
+    season using the 'hoopR' package. It fetches game logs, extracts 
+    game IDs, retrieves play-by-play information, and saves the data to a CSV file. 
+    Includes progress indication via 'progressr' and timing via 'tictoc'. To install the imports below,
+     simply uncomment the lines at the top of pbp_scrape2.R
+
+Imports:
+    hoopR,
+    progressr,
+    tictoc,
+    futile.logger (only for pbp_scrape3.R, in testing)
+Depends:
+    R (>= 4.0.0)
