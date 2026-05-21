@@ -1,0 +1,388 @@
+# NBA RAPM Pipeline
+
+## Agent Ops Workflow
+
+- Treat `nba_pipeline/docs/` as this repo's FreshDocs surface. Start with `nba_pipeline/docs/README.md`.
+- Use `nba_pipeline/docs/Codex_Scratchpad.md` as the repo-versioned short-term memory file.
+- At session start: read `/Users/russellthomas/Docs/pbp_rapm/AGENTS.md`, `/Users/russellthomas/Docs/pbp_rapm/CLAUDE.md`, this file, and the scratchpad, then run `git status --short`.
+- When methodology, pipeline behavior, outputs, env vars, or operator workflow changes, update the matching docs in `nba_pipeline/docs/` in the same pass.
+- At session end: append one short scratchpad entry, promote durable lessons into the root instruction files, and keep only the latest 5 scratchpad entries.
+- Git backup policy: commit source, docs, tests, and small curated reference files; leave generated CSV/parquet/log/model artifacts out of git unless explicitly force-added with a documented reason. See `docs/GIT_BACKUP_STRATEGY.md`.
+
+## Overview
+This pipeline processes NBA play-by-play data to calculate Regularized Adjusted Plus-Minus (RAPM) and related metrics.
+
+## Directory Structure
+```
+nba_pipeline/
+├── raw_data/          # NBA PBP parquet files (NBA23.parquet, NBA23_PS.parquet, etc.)
+├── processed/         # Processed metric parquet files (RAPM26.parquet, TS26.parquet, etc.)
+├── results/           # RAPM regression results (CSV)
+├── master_results/    # Consolidated weighted_factors CSVs
+├── scripts/
+│   ├── 01_fetch_pbp_data.py      # Fetches raw PBP data from NBA API
+│   ├── 01b_enrich_pbp_shotquality.py  # Enriches raw PBP with ShotQuality data
+│   ├── 02_process_rapm.py        # Processes raw PBP into metric parquets
+│   ├── 03_run_rapm_analysis.py   # Runs all metrics + regression (creates weighted_factors)
+│   ├── rapm.py                   # Ridge regression for individual metrics
+│   └── factor_analysis.py        # Analyzes weighted_factors relationships
+├── logs/              # Daily update logs
+└── docs/              # Documentation
+```
+
+## Data Flow
+1. **Fetch**: `01_fetch_pbp_data.py` downloads PBP data → `raw_data/NBAXX.parquet`
+2. **Enrich**: `01b_enrich_pbp_shotquality.py` adds ShotQuality columns → `raw_data/NBAXX.parquet`
+3. **Process**: `02_process_rapm.py` creates metric files → `processed/*.parquet`
+4. **Analyze**: `rapm.py` runs ridge regression → `results/*_results.csv`
+5. **Combine**: `03_run_rapm_analysis.py` runs all metrics + regression → `weighted_factors*.csv`
+
+## File Naming Conventions
+- **Raw data**: `NBA{YY}.parquet` (regular season), `NBA{YY}_PS.parquet` (playoffs)
+- **Processed**: `{METRIC}{YY}.parquet` or `{METRIC}{YY}_PS.parquet`
+- **Results**: `{metric}_{start}_{end}_{type}_results.csv` (e.g., `rapm_23_26_all_results.csv`)
+- **Weighted factors**: `weighted_factors_{start}_{end}_{type}.csv`
+
+For season-summary harnesses, treat the processed filename as the canonical season key. Legacy processed parquets do not all store the same embedded `Season` convention.
+- When syncing published artifacts into the downstream `rapms` repo, check both `nba_pipeline/master_results` and `nba_pipeline/results`; some metric result CSVs, such as `rim_assist_*`, can live only in `results` until the publish step copies them into `master_results`.
+- `rapm.py --age-dummies` uses `dpm_history.csv` only as a player-season age lookup (`nba_id`, `season`, `age`); the age fixed effects are still estimated inside the possession regression. `03_run_rapm_analysis.py --age-dummies` applies age fixed effects to the full daily weighted-factor metric suite and writes `_agefe` outputs.
+- Supabase-backed player-stat processors prefer `SUPABASE_SERVICE_ROLE_KEY` over `SUPABASE_KEY`; keep the service role key available for local backend processing so FT% / 3P% lookups do not silently fall back to defaults.
+- Preferred long historical core runs use `run_historical_core_weighted_factors.py --fixed-season-effects --age-poly-coefficients ...`: fixed RS raw season baselines and fixed polynomial age offsets are subtracted from the row target before centering and solving, instead of adding estimated nuisance columns.
+
+## Metrics
+| Metric | Column | Description | Years |
+|--------|--------|-------------|-------|
+| RAPM | Net_Diff, Off_Diff, Def_Diff | Point differential per possession | All |
+| LA_RAPM | LA_OffNet, LA_DefNet | Luck-adjusted (FT/3PT regression) | All |
+| TS | Net_Diff | True shooting efficiency | All |
+| TOV | Is_Turnover | Turnover rate | All |
+| REB | Offensive_Rebound | Offensive rebound rate | All |
+| SHOOTER_OREB | Offensive_Rebound, Self_Offensive_Rebound | Missed-FGA team/self OREB with shooter separated from four non-shooters | All |
+| RIM_FREQ | Is_Rim_Attempt | Rim attempt frequency (layups/dunks/tips) | All |
+| RIM_FG_PCT | Is_Rim_Make | Rim FG% | All |
+| ASSIST_POINTS | Assist_Points | Assisted FG points per possession | All |
+| RIM_ASSIST | Is_Rim_Assist | Assisted rim makes per possession | All |
+| THREE_FREQ | Is_Three_Attempt | 3PA frequency (3PA / FGA) | All |
+| THREE_FG_PCT | Is_Three_Make | 3PT FG% (3PM / 3PA) | All |
+| MIDRANGE_FREQ | Is_Midrange_Attempt | Midrange frequency (not 3PT, not rim) | All |
+| MIDRANGE_FG_PCT | Is_Midrange_Make | Midrange FG% (midrange FGM / midrange FGA) | All |
+| PLAYTYPE_TS_MIX | Playtype_Exp_PTS | Descriptor-based expected scoring mix per FGA | 24-26 |
+| PLAYTYPE_PROXY_PTS | Playtype_Proxy_PTS | Synergy-proxy category value per FGA using season-relative actual points | 24-26 |
+| TRANSITION_FREQ | Is_Transition | Transition shot frequency | 24-26 |
+| TRANSITION_RIM | Is_Transition_Rim | Transition rim attempt frequency | 24-26 |
+| INITIAL_EV | Initial_EV | Shot quality expected value | 24-26 |
+| BADPASS_TOV | Is_BadPass_TOV | Bad pass turnover rate (from TOV parquet) | All |
+| SCORING_TOV | Is_Turnover - Is_BadPass_TOV | Scoring/ball-handling turnover rate (derived) | All |
+| SECOND_CHANCE | Off_Diff, Def_Diff | Second-chance points per possession | All |
+| SPECIAL_RAPM | Net_Diff, Off_Diff, Def_Diff | Possession RAPM (rim=actual, non-rim=initial_ev, FT=expected) | 24-26 |
+| FIRST_CHANCE | Net_Diff, Is_Turnover | Clean first-chance scoring before first offensive miss | All |
+| SECOND_CHANCE_CLEAN | Net_Diff, Off_Diff, Def_Diff | RAPM-aligned second-chance scoring after first offensive miss | All |
+
+## Common Commands
+
+### Daily Update (Current Season)
+```bash
+cd nba_pipeline/scripts
+python 01_fetch_pbp_data.py 26
+python 01_fetch_pbp_data.py 26 PS
+python 01b_enrich_pbp_shotquality.py 26
+python 02_process_rapm.py ../raw_data/NBA26.parquet
+python 02_process_rapm.py ../raw_data/NBA26_PS.parquet
+```
+
+### Run Individual Metric Analysis
+```bash
+python rapm.py RAPM 26 26 RS             # Single year regular season
+python rapm.py RAPM 23 26 ALL            # Multi-year all games
+python rapm.py RAPM 23 26 ALL --pure     # Pure RAPM (no luck adjustment)
+python rapm.py RAPM 26 26 RS --pure --cv-alpha  # Cross-validate offense/defense alphas
+python rapm.py SPECIAL_RAPM 24 26 ALL --cv-alpha --publish-to-rapms  # Tune and publish result CSV
+python rapm.py MIDRANGE_FREQ 23 26 ALL   # Midrange frequency
+python rapm.py MIDRANGE_FG_PCT 23 26 ALL # Midrange FG%
+python build_master_frequency_rapm.py 23 26 ALL  # Combined rim/mid/three frequency + FG% RAPM export
+python rapm.py TRANSITION_FREQ 24 26 ALL # Transition frequency (years 24-26 only)
+python rapm.py INITIAL_EV 24 26 ALL      # Shot quality EV (years 24-26 only)
+python rapm.py SPECIAL_RAPM 24 26 ALL    # Special RAPM (years 24-26 only)
+python rapm.py BADPASS_TOV 21 26 ALL     # Bad pass turnover rate
+python rapm.py SCORING_TOV 21 26 ALL     # Scoring turnover rate
+python rapm.py SECOND_CHANCE 21 26 ALL   # Second-chance points
+python rapm.py FIRST_CHANCE 21 26 ALL    # Clean first-chance scoring
+python rapm.py ALT_TS 21 26 ALL          # ALT_TS alias off FIRST_CHANCE
+python rapm.py ALT_TOV 21 26 ALL         # ALT_TOV alias off FIRST_CHANCE
+python rapm.py SECOND_CHANCE_CLEAN 21 26 ALL  # RAPM-aligned second-chance scoring
+```
+
+### Reprocess Metric Parquets
+```bash
+python reprocess_metric.py TOV 14 25              # Reprocess TOV for all historical seasons
+python reprocess_metric.py SECOND_CHANCE 14 25     # Reprocess any metric
+python reprocess_metric.py FIRST_CHANCE 14 25      # Clean first-chance parquets
+python reprocess_metric.py SECOND_CHANCE_CLEAN 14 25  # Clean second-chance parquets
+python reprocess_metric.py ASSIST_POINTS 14 26     # Historical assisted points parquets
+python reprocess_metric.py THREE_FREQ 14 26        # Historical 3PA frequency parquets
+python reprocess_metric.py MIDRANGE_FG_PCT 14 26   # Historical midrange FG% parquets
+python reprocess_metric.py PLAYTYPE_TS_MIX 24 26   # Descriptor playtype-mix parquets
+python reprocess_metric.py PLAYTYPE_PROXY_PTS 24 26  # Synergy-proxy playtype-value parquets
+python reprocess_metric.py FIRST_CHANCE 1997 2013 --season-types rs --workers 6  # Gabriel historical RS range
+python reprocess_metric.py FIRST_CHANCE 1997 2013 --season-types ps --workers 6  # Gabriel historical PS range
+python reprocess_metric.py LA_RAPM 1997 2013 --season-types rs --workers 6       # Historical LA_RAPM backfill
+```
+
+### Build Gabriel Historical Parquets
+```bash
+python nba_pipeline/scripts/build_gabriel_old_pbp.py \
+  --years 1997-2013 \
+  --season-types all \
+  --metrics RAPM,TOV,REB,TS \
+  --report nba_pipeline/validation/gabriel_old_pbp/build_1997_2013_report.json
+```
+This converts Gabriel `merged_playbyplay/old_data` team files into repo raw
+season files plus RS/PS processed parquets. The converted raw rows intentionally
+use partial-lineup mode: unknown player slots are `0`, processors keep rows with
+at least four known offensive and defensive players, and `rapm.py` excludes
+player id `0` from coefficients.
+
+The builder also supports non-ShotQuality factor metrics such as `LA_RAPM`,
+`ASSIST_POINTS`, `RIM_ASSIST`, `RIM_FREQ`, `RIM_FG_PCT`, `MIDRANGE_FREQ`,
+`MIDRANGE_FG_PCT`, `THREE_FREQ`, `THREE_FG_PCT`, `FT_PREMIUM`, `FIRST_CHANCE`,
+`FIRST_CHANCE_CLEAN`, `SECOND_CHANCE`, and `SECOND_CHANCE_CLEAN`. For targeted historical RS
+backfills, prefer `reprocess_metric.py METRIC 1997 2013 --season-types rs|ps`
+because it parallelizes across seasons. `reprocess_metric.py` also accepts
+`--raw-dir` and `--processed-dir` for validation-first historical rebuilds. If
+the Gabriel source checkout lacks PS files, repair existing PS raw files with
+`repair_existing_historical_lineup_sides.py` before reprocessing. Plain `RAPM`
+uses the no-luck surface; `LA_RAPM` is the luck-adjusted surface.
+
+The alt3 metrics `ALT_TS`, `ALT_EFG`, `ALT_FT`, `ALT_TOV`,
+`ALT_BADPASS_TOV`, and `ALT_SCORING_TOV` are solver aliases off
+`FIRST_CHANCE`, not separate physical `ALT_*` parquets. The regular-season
+processed parquet averages builder derives those audit columns from
+`FIRST_CHANCE`.
+
+For Gabriel historical starter repairs, the supplemental NBA stats archive at
+`/Users/russellthomas/Docs/2026_NBA_PIPELINE/archive (1)` can validate games,
+teams, players, and substitutions. Use `PlayByPlay.parquet` substitution
+descriptions plus `PlayerStatistics.csv` active/DNP rows, `Players.csv`, and
+`TeamHistories.csv`; do not treat old `PlayerStatistics*.csv startingPosition`
+values as starter flags without auditing counts, because 2009 rows can have more
+than five nonblank values per team.
+
+Historical RAPM uses the shared standard possession flow. Keep EOP/offense
+assignment in `process_rapm_blocks/common.py`: infer neutral-description team
+turnovers from game-local side labels plus NBA abbreviation/nickname aliases,
+run FT correction, fill `poss_offense` before O/D mapping, and let blank
+terminal period/neutral rows inherit the opposite side of the previous completed
+possession in the same game/period.
+
+Gabriel historical raw rebuilds should apply game-local lineup-side guardrails
+before processing: infer player side from non-overlap lineup evidence, strip
+impossible same-player home/away collisions, dedupe repeated positive player ids
+within one side, and drop only rows that remain below the partial-lineup minimum
+after dedupe.
+
+See `docs/HISTORICAL_1997_2013_PARQUETS.md` for the current 1997-2013 file
+locations, rebuild commands, FT fallback notes, validation, and caveats.
+
+### Run Full Analysis (All Metrics + Regression)
+```bash
+python 03_run_rapm_analysis.py 23 26 ALL
+python 03_run_rapm_analysis.py 1 4 ALL --rapm-workers 8 --cores-per-rapm 4  # concurrency/load-core benchmark
+python 03_run_rapm_analysis.py 97 0 ALL --rubberband --season-effects --publish-to-rapms  # cross-century 1997-2000 window
+python 03_run_rapm_analysis.py 21 26 ALL --publish-to-rapms  # copy standard + alt3 weighted factors to rapms and push if changed
+```
+This creates `weighted_factors` for the standard six-factor build and `weighted_factors_alt3_*` for the alternate clean 3-factor build. The alternate build uses `FIRST_CHANCE`, `ALT_TS`, `ALT_TOV`, and `SECOND_CHANCE_CLEAN`, then publishes `oSC` / `dSC` as balancing buckets so the alt3 offense and defense columns add up to `off` / `def`.
+Two-digit season windows may cross 1999-2000; `97 0` expands to 1997-2000 and filenames use `97_00`.
+
+## Key Implementation Details
+
+### ShotQuality Enrichment
+`01b_enrich_pbp_shotquality.py` merges data from ShotQuality CSVs into raw PBP parquets.
+
+**Source:** `~/Docs/2026_shotquality/nba_games/{year}/*.csv`
+
+**Columns added to raw_data/NBA*.parquet:**
+| Column | Description |
+|--------|-------------|
+| `is_transition` | Shot taken in transition (bool) |
+| `is_transition_dunk_or_layup` | Transition dunk or layup (bool) |
+| `initial_ev` | Shot expected value at release |
+| `dynamic_ev` | Shot expected value with game context |
+| `sq_shooter_id` | Shooter NBA player ID (from SQ) |
+| `sq_defender_id` | Closest defender NBA player ID (from SQ) |
+
+**Join key:** `game_id` + `event_num` (matches `GAME_EVENT_ID` in SQ CSVs)
+
+**Coverage:** ~35-40% of PBP rows have SQ data (only shot attempts have SQ data)
+
+### Processed Parquet Columns
+All processed files must include these columns for `rapm.py` to work:
+- `game_id`, `O1-O5`, `D1-D5` (offensive/defensive players)
+- `period`, `away_score`, `home_score`, `score_margin`
+- `game_date`, `Season`
+- Metric-specific column (e.g., `Is_Midrange_Attempt`)
+
+### rapm.py Detection Logic
+The script auto-detects file type by checking for specific columns:
+- `Off_Diff` + `Def_Diff` → RAPM file (also SPECIAL_RAPM)
+- `Is_Turnover` → TOV file (also contains `Is_BadPass_TOV`)
+- prefix=`BADPASS_TOV` → loads TOV file, uses `Is_BadPass_TOV`
+- prefix=`SCORING_TOV` → loads TOV file, derives `Is_Turnover - Is_BadPass_TOV`
+- prefix=`ALT_TS` → loads FIRST_CHANCE file, computes same-sample non-turnover first-chance baseline, and imputes turnover rows to that baseline
+- prefix=`ALT_TOV` → loads FIRST_CHANCE file, uses the same baseline on non-turnover rows and `0` on turnover rows
+- `Offensive_Rebound` → REB file
+- `Is_Rim_Attempt` → RIM_FREQ file
+- `Is_Rim_Make` → RIM_FG_PCT file
+- `Assist_Points` → ASSIST_POINTS file
+- `Is_Rim_Assist` → RIM_ASSIST file
+- `Is_Three_Attempt` → THREE_FREQ file
+- `Is_Three_Make` → THREE_FG_PCT file
+- `Is_Midrange_Attempt` → MIDRANGE_FREQ file
+- `Is_Midrange_Make` → MIDRANGE_FG_PCT file
+- `Playtype_Exp_PTS` → PLAYTYPE_TS_MIX file
+- `Playtype_Proxy_PTS` → PLAYTYPE_PROXY_PTS file
+- `Is_Transition` → TRANSITION_FREQ file
+- `Is_Transition_Rim` → TRANSITION_RIM file
+- `Initial_EV` → INITIAL_EV file
+- `Net_Diff` only → TS file
+
+### Rim Attempt Detection
+Uses `RIM_ACTION_TYPES` set (action codes 5,6,7,9,41,43,50,52,75,87,97,98,99,100,107,108) plus description patterns (`layup`, `dunk`, ` tip `).
+
+### Midrange Detection
+`Is_Midrange_Attempt = NOT is_3pt AND NOT is_rim`
+- 3PT detected via "3pt" in description
+- Rim detected via action types + description patterns
+
+## Weighted Factors Output
+The `weighted_factors*.csv` files contain regression-weighted factor contributions:
+```
+player_id, player_name, Latest_Year,
+oTS, oTOV, oTOV_bp, oTOV_sc, oREB,       # offensive factors
+dTS, dTOV, dTOV_bp, dTOV_sc, dREB,       # defensive factors
+off, def, net_rapm, RESID,                # overall RAPM
+o_sc, o_fc, d_sc, d_fc,                  # second-chance / first-chance split
+o_pval, d_pval,                           # possession value (oTOV+oREB, dTOV+dREB)
+possessions, off_poss, def_poss
+```
+
+See `docs/tov-decomposition.md` for full details on the TOV decomposition, second-chance integration, and column definitions.
+
+## Rubberband Effect (Added Feb 2025)
+
+The Engelmann rubberband effect: teams ahead coast (score less), teams behind push harder (score more). `rapm.py` now supports this as an optional adjustment via `--rubberband` / `-rb`.
+
+### How It Works
+- Uses **pre-possession score margin** (previous row's `score_margin` to avoid endogeneity — the current row's margin includes the current possession's scoring)
+- Margin is converted to **offensive-team-relative** `score_diff` during `transform_to_home_away_format()`
+- 6 score-margin bins × 4 periods = **24 binary indicator features** appended to the design matrix
+- Solved as a **3rd alternating block** in ridge regression: offense → defense → rubberband on residual
+- Close game (-5 to +5) is the reference category (omitted)
+
+### Score Margin Bins
+| Bin | Range | Label |
+|-----|-------|-------|
+| Far behind | sd <= -15 | `rb_neg3` |
+| Behind | -15 < sd <= -10 | `rb_neg2` |
+| Slightly behind | -10 < sd <= -5 | `rb_neg1` |
+| **Close game (ref)** | **-5 < sd <= 5** | **dropped** |
+| Slightly ahead | 5 < sd <= 10 | `rb_pos1` |
+| Ahead | 10 < sd <= 15 | `rb_pos2` |
+| Far ahead | sd > 15 | `rb_pos3` |
+
+### Usage
+```bash
+python rapm.py RAPM 26 26 ALL --rubberband --pure        # Single year
+python rapm.py RAPM 23 26 ALL -rb --pure                 # Multi-year (recommended)
+python rapm.py TOV 23 26 ALL -rb                         # Works with all metrics
+python rapm.py RAPM 23 26 ALL -rb --alpha-rb 50          # Override regularization
+```
+
+### Outputs (alongside standard results)
+- `*_rb_results.csv` — player ratings with rubberband adjustment
+- `*_rb_rubberband_coefficients.csv` — 24 bin × period coefficients
+- `*_rb_rubberband_effects.csv` — predicted effect at representative margins per quarter
+- `Rubberband_Results/rubberband_report.html` — visual report explaining the effect
+
+### Key Parameters
+- `--rubberband` / `-rb`: Enable the adjustment
+- `--alpha-rb`: Rubberband regularization (default: 10). Low because only 24 well-identified features vs ~1000 player features at alpha=3000
+
+### Key Findings (23-26 ALL, 920K possessions, Pure RAPM)
+- **Team ahead by 20 in Q4**: -5.8 pts/100 (scores less due to +3.1 more turnovers per 100 — sloppiness/garbage time)
+- **Team behind by 20 in Q4**: +5.7 pts/100 (scores more due to +5.0 better true shooting — facing relaxed defense)
+- Effects near zero in Q1, build through Q2-Q3, maximal in Q4
+- Mean player shift: 0.24 pts/100 (conservative). Stars barely move due to ridge L2 penalty mechanics; role players on dominant teams benefit most
+- Works across all metrics: RAPM, TS, TOV, REB, etc.
+
+### Sign Convention Warning
+The TOV rubberband coefficients are in `Off_Diff = -Is_Turnover` units. So a negative coefficient in the effects CSV means MORE turnovers, not fewer. All metrics use the convention: positive Off_Diff = good for offense.
+
+### Critical Implementation Detail
+`score_margin` in processed parquets is **post-possession** (includes current scoring). The rubberband uses the **previous row's margin** within each game to get the pre-possession game state. This avoids endogeneity (mechanical correlation between scoring and margin). See `transform_to_home_away_format()` in `rapm.py`.
+
+## Daily Automation (launchd)
+
+**Plist:** `~/Library/LaunchAgents/com.russellthomas.nba-rapm-update.plist`
+**Script:** `nba_pipeline/daily_rapm_update.sh` (canonical; `scripts/daily_rapm_update.sh` is a symlink)
+**Schedule:** Daily at 6:00 AM
+**Logs:** `nba_pipeline/logs/launchd_stdout.log`, `launchd_stderr.log`, `daily_update_YYYYMMDD.log`
+
+### Pipeline Steps
+1. Fetch latest 2026 PBP data
+2. Process RAPM parquets
+3. Run RAPM analysis for 1-6 year windows (26-26 through 21-26)
+4. Time-decay 700 runs (21-26 plain, 21-26 td700+rubberband) + upload to Supabase
+5. 13-year rubberband run (14-26)
+6. Standalone metrics with td700 (RIM_FREQ, RIM_FG_PCT, MIDRANGE_FREQ, MIDRANGE_FG_PCT, TRANSITION_FREQ, TRANSITION_RIM, INITIAL_EV)
+7. Copy standalone TD results to `master_results/`, mapping canonical `transition_freq_24_26_all_td700_results.csv`, `transition_rim_24_26_all_td700_results.csv`, and `initial_ev_24_26_all_td700_results.csv` onto the published downstream filenames `transitionfreq_24_26_all_td700_results.csv`, `transitionrim_24_26_all_td700_results.csv`, and `initialev_24_26_all_td700_results.csv`, plus curated non-TD `special_rapm_24_26_all_results.csv`
+8. TS decomposition components (TS, SQ_POSS, FT_PREMIUM, CONTEST) + WLS regression + Supabase upload
+9. Downstream CSV exports (runs from `pbp_rapm/` root):
+   - `update_2026_josh_rapm.py` → `josh_rapm/` + `../csvs/josh_rapm/`
+   - `update_2026_purerapm.py` → `../csvs/PureRAPM.csv`
+   - `update_2026_scaledoutput.py` → `../csvs/SCALEDOUTPUT_SMALLER.csv`
+   - `update_2026_scposs.py` → `../csvs/scposs/{nba_id}.csv`
+10. Sync curated standard and alt3 files from `master_results/` → `/Users/russellthomas/Docs/rapms/master_results/`, git commit & push
+
+### rapms Repo
+**Location:** `/Users/russellthomas/Docs/rapms/` (GitHub: RussDT/rapms)
+**Contents:** `master_results/` with the published standard and alt3 CSVs:
+- `weighted_factors_{26,25_26,24_26,23_26,22_26,21_26}_all.csv`
+- `weighted_factors_21_26_all_td700.csv`
+- `weighted_factors_14_26_all_rb.csv`
+- `weighted_factors_alt3_{26,25_26,24_26,23_26,22_26,21_26}_all.csv`
+- `weighted_factors_alt3_21_26_all_td700.csv`
+- `weighted_factors_alt3_21_26_all_rb_td700.csv`
+- `weighted_factors_alt3_14_26_all_rb.csv`
+- `{rimfreq,rimfgpct,midrangefreq}_21_26_all_td700_results.csv`
+- `{transitionfreq,transitionrim,initialev}_24_26_all_td700_results.csv`
+- `special_rapm_24_26_all_results.csv`
+
+## External Dependencies
+- `autocomplete_map.csv` in project root: Maps player IDs to names
+- Supabase: Player stats for luck adjustment calculations
+- Game dates CSV: Downloaded from GitHub for game date merging
+
+If `autocomplete_map.csv` lags active fringe players, `scripts/rapm.py` should backfill names from raw PBP event columns and the sibling `2026_NBA_PIPELINE` identity outputs instead of publishing `ID_<player_id>` placeholders.
+
+## Friend PBP Ingest Validation
+
+- BKN 2020 friend-PBP fixture: `raw_data/BKN_2020_rs.parquet`
+- Validation harness: `scripts/validate_friend_pbp_ingest.py`
+- Isolated artifacts: `validation/friend_ingest/`
+- Current best status: shot-zone metrics are exact, TOV flags are exact on matched rows, RAPM has 14,541/14,542 official rows matched with one official-only goaltend-and-one event, remaining friend-only rows are mostly zero-value team rebounds around blocked-shot jump-ball/admin sequences, and the bigger solve-level gap is lineup parity (`740` of `14,541` matched RAPM rows differ in O/D player sets).
+
+
+<claude-mem-context>
+# Recent Activity
+
+<!-- This section is auto-generated by claude-mem. Edit content outside the tags. -->
+
+### Feb 20, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #5870 | 2:04 AM | 🔴 | Fixed Working Directory for Update Scripts | ~244 |
+| #5857 | 1:14 AM | 🟣 | Added Combined Time Decay and Rubberband Analysis to Daily Pipeline | ~264 |
+| #5856 | 1:11 AM | 🟣 | Daily Pipeline Now Updates Downstream CSVs and Auto-Publishes to RAPMS Repo | ~425 |
+| #5855 | 1:09 AM | 🔵 | Complete Daily RAPM Pipeline Automation Workflow | ~519 |
+</claude-mem-context>

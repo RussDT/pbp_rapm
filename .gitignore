@@ -1,1 +1,60 @@
-/*.csv
+# Local machine state, credentials, and editor metadata
+.DS_Store
+.env
+.env.*
+!.env.example
+.cursor/
+.claude/settings.local.json
+.gstack/
+codex_generated_skills/
+.RData
+.Rhistory
+
+# Runtime caches and build outputs
+__pycache__/
+*.py[cod]
+.pytest_cache/
+node_modules/
+dist/
+build/
+.vite/
+
+# Generated data, model artifacts, and logs
+*.csv
+*.csv.gz
+*.gz
+*.log
+*.parquet
+*.pkl
+*.npz
+*.pt
+
+# Small curated source/reference artifacts that are intentionally versioned
+!nba_pipeline/external/bref_ft_pct_1997_2000.csv
+!nba_pipeline/autoresearch_drl_shapley/results.tsv
+
+# Legacy/generated output directories
+archive/
+Rubberband_Results/
+Processed/
+Results/
+josh_rapm/
+csv-viewer/public/data/
+
+# NBA pipeline generated artifacts
+nba_pipeline/cache/
+nba_pipeline/external/merged_playbyplay/
+nba_pipeline/external/site_Data/
+nba_pipeline/logs/
+nba_pipeline/master_results/
+nba_pipeline/processed/
+nba_pipeline/raw_data/
+nba_pipeline/results/
+nba_pipeline/validation/
+nba_pipeline/autoresearch_drl_shapley/cache/
+nba_pipeline/autoresearch_drl_shapley/latest_summary.json
+nba_pipeline/autoresearch_drl_shapley/outputs/
+
+# WNBA generated artifacts
+wnba_test/Processed/
+wnba_test/Results/

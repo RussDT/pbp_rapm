@@ -1,0 +1,15 @@
+timestamp	commit	research_score	audit_score	rmse	brier	logloss	status	description
+2026-03-09T00:41:19	573828e	0.967639	1.177976	8.686188	0.195463	0.577481	discard	20s smoke harness baseline
+2026-03-09T00:47:53	573828e	0.961218	1.157971	8.690740	0.192645	0.570958	keep	60s baseline unchanged train.py
+2026-03-09T00:49:01	573828e	0.942086	1.110396	8.678274	0.185272	0.551188	keep	60s experiment no dropout
+2026-03-09T00:51:21	573828e	0.000000	0.000000	0.000000	0.000000	0.000000	crash	60s experiment no dropout plus more epochs pre-hardening crash
+2026-03-09T00:54:52	573828e	0.932893	1.079965	8.701543	0.181060	0.540249	keep	60s no dropout plus more epochs hardened
+2026-03-09T00:57:33	573828e	0.961976	1.160986	8.702498	0.192733	0.570984	discard	60s temperature scaling on research split
+2026-03-09T00:59:13	573828e	0.934949	1.063481	8.681015	0.182054	0.544575	keep	60s lower lr 7e-4 after no-dropout 24-epoch frontier
+2026-03-09T02:58:14	573828e	0.932961	1.049780	8.678361	0.180960	0.543938	keep	stability fallback for y_proba overflow; clipped+renormalized eval path removes evaluation_error and improves audit frontier
+2026-03-09T04:56:47	573828e	0.930009	1.043975	8.690580	0.179806	0.539037	keep	60s higher weight decay 5e-4; improved research and audit with stable evaluation
+2026-03-09T05:57:14	573828e	0.931688	1.047659	8.682404	0.180602	0.541468	discard	60s lower lr 6e-4 for calibration was worse on research and audit; evaluation stable
+2026-03-09T06:57:03	573828e	0.930339	1.035200	8.680808	0.179853	0.541030	keep	60s weight_decay 6e-4 improved audit frontier (1.0352) with stable eval_error empty; research stayed near-best
+2026-03-09T07:57:45	573828e	0.930830	1.034000	8.672895	0.180703	0.540165	keep	60s weight_decay 7e-4 improved audit frontier to 1.0340 with stable evaluation_error empty; research stayed near frontier
+2026-03-09T08:57:19	573828e	0.930515	1.041144	8.679971	0.180153	0.540469	discard	60s lr 6.5e-4 with wd 7e-4 regressed audit (1.0411 vs 1.0340 frontier) despite stable evaluation_error empty
+2026-03-09T09:39:20	573828e	0.933622	1.049568	8.684950	0.181002	0.544591	discard	60s shared probability sanitization in base path improved robustness but did not beat 0.930830/1.034000 frontier

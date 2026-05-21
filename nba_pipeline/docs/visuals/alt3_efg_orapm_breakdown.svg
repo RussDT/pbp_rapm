@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1800" viewBox="0 0 1800 1800">
+  <defs>
+    <style>
+      .bg { fill: #f7f4ee; }
+      .ink { fill: #171717; }
+      .muted { fill: #6f6a61; }
+      .soft { fill: #ebe5d9; }
+      .panel { fill: #fffdf8; stroke: #151515; stroke-width: 2; }
+      .panel2 { fill: #f9f6ee; stroke: #151515; stroke-width: 1.6; }
+      .efg { fill: #d75f39; }
+      .efgSoft { fill: #fae3d8; stroke: #d75f39; stroke-width: 1.7; }
+      .tov { fill: #286f74; }
+      .tovSoft { fill: #d7eceb; stroke: #286f74; stroke-width: 1.7; }
+      .ft { fill: #b7902f; }
+      .ftSoft { fill: #f1e4bf; stroke: #b7902f; stroke-width: 1.7; }
+      .sc { fill: #3c3a36; }
+      .scSoft { fill: #e8e2d7; stroke: #3c3a36; stroke-width: 1.7; }
+      .line { stroke: #171717; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .thin { stroke: #171717; stroke-width: 1.3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .dash { stroke: #8a8378; stroke-width: 1.4; fill: none; stroke-dasharray: 7 8; }
+      .label { font-family: "SF Pro Display", "Helvetica Neue", Arial, sans-serif; font-size: 24px; font-weight: 650; letter-spacing: 0; fill: #171717; }
+      .labelSmall { font-family: "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 16px; font-weight: 650; letter-spacing: 0; fill: #171717; }
+      .body { font-family: "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 17px; font-weight: 420; letter-spacing: 0; fill: #3f3b35; }
+      .bodySmall { font-family: "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 14px; font-weight: 420; letter-spacing: 0; fill: #5c564e; }
+      .mono { font-family: "SF Mono", "Menlo", monospace; font-size: 15px; font-weight: 500; letter-spacing: 0; fill: #3f3b35; }
+      .monoSmall { font-family: "SF Mono", "Menlo", monospace; font-size: 12px; font-weight: 500; letter-spacing: 0; fill: #605a51; }
+      .title { font-family: "SF Pro Display", "Helvetica Neue", Arial, sans-serif; font-size: 58px; font-weight: 760; letter-spacing: 0; fill: #171717; }
+      .subtitle { font-family: "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 20px; font-weight: 450; letter-spacing: 0; fill: #5c564e; }
+      .cap { font-family: "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 12px; font-weight: 760; letter-spacing: 1.7px; fill: #6f6a61; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10" fill="none" stroke="#171717" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrowMuted" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M2,2 L8,5 L2,8" fill="none" stroke="#8a8378" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1800" height="1800"/>
+  <rect x="42" y="42" width="1716" height="1716" fill="none" stroke="#171717" stroke-width="2"/>
+  <rect x="60" y="60" width="1680" height="1680" fill="none" stroke="#cfc7ba" stroke-width="1"/>
+
+  <text class="cap" x="104" y="112">ALT3 EFG VALUE BREAKDOWN</text>
+  <text class="title" x="100" y="178">oRAPM as clean possession value</text>
+  <text class="subtitle" x="104" y="220">Offensive impact is explained on matched possession rows:</text>
+  <text class="subtitle" x="104" y="250">first chance before the first offensive miss, plus second chance after it.</text>
+
+  <g transform="translate(106,308)">
+    <rect class="panel" x="0" y="0" width="1588" height="110" rx="0"/>
+    <text class="label" x="36" y="45">oRAPM</text>
+    <text class="mono" x="36" y="75">centered offense rating</text>
+    <text class="monoSmall" x="36" y="95">off-possession weighted</text>
+    <text class="label" x="552" y="63">=</text>
+    <rect class="efgSoft" x="618" y="24" width="340" height="62" rx="0"/>
+    <text class="labelSmall" x="646" y="51">First Chance Value</text>
+    <text class="bodySmall" x="646" y="73">before the first offensive miss</text>
+    <text class="label" x="1002" y="63">+</text>
+    <rect class="scSoft" x="1068" y="24" width="376" height="62" rx="0"/>
+    <text class="labelSmall" x="1096" y="51">Second Chance Clean</text>
+    <text class="bodySmall" x="1096" y="73">after the first offensive miss</text>
+  </g>
+
+  <path class="line" marker-end="url(#arrow)" d="M900 420 L900 484"/>
+  <path class="line" marker-end="url(#arrow)" d="M1340 420 L1340 484"/>
+
+  <g transform="translate(106,488)">
+    <rect class="panel" x="0" y="0" width="1118" height="636" rx="0"/>
+    <text class="cap" x="32" y="42">FIRST CHANCE</text>
+    <text class="label" x="32" y="78">Shared-denominator scoring before a miss</text>
+    <text class="body" x="32" y="108">Every component is solved on the same possession surface.</text>
+    <text class="body" x="32" y="132">That is why the public buckets can be audited as an additive row stack.</text>
+
+    <g transform="translate(32,152)">
+      <rect class="efgSoft" x="0" y="0" width="330" height="174" rx="0"/>
+      <rect class="efg" x="0" y="0" width="330" height="10"/>
+      <text class="label" x="22" y="45">EFG Value</text>
+      <text class="mono" x="22" y="76">oALT_EFG_VALUE</text>
+      <text class="bodySmall" x="22" y="108">Shot-location value after removing</text>
+      <text class="bodySmall" x="22" y="128">the fixed replacement-shot baseline.</text>
+      <text class="bodySmall" x="22" y="150">Parent for the six atomic shot pieces.</text>
+    </g>
+
+    <g transform="translate(394,152)">
+      <rect class="tovSoft" x="0" y="0" width="330" height="174" rx="0"/>
+      <rect class="tov" x="0" y="0" width="330" height="10"/>
+      <text class="label" x="22" y="45">TOV Value</text>
+      <text class="mono" x="22" y="76">oALT_TOV_VALUE</text>
+      <text class="bodySmall" x="22" y="108">Point-valued first-chance turnover loss.</text>
+      <text class="bodySmall" x="22" y="128">A true TOV has no prior FGA or FT</text>
+      <text class="bodySmall" x="22" y="148">completion in that possession.</text>
+    </g>
+
+    <g transform="translate(756,152)">
+      <rect class="ftSoft" x="0" y="0" width="330" height="174" rx="0"/>
+      <rect class="ft" x="0" y="0" width="330" height="10"/>
+      <text class="label" x="22" y="45">FT Value</text>
+      <text class="mono" x="22" y="76">oALT_FT</text>
+      <text class="bodySmall" x="22" y="108">First-chance free-throw value on the</text>
+      <text class="bodySmall" x="22" y="128">same possession denominator as EFG</text>
+      <text class="bodySmall" x="22" y="148">and TOV.</text>
+    </g>
+
+    <text class="label" x="358" y="251">+</text>
+    <text class="label" x="724" y="251">+</text>
+
+    <path class="thin" marker-end="url(#arrow)" d="M196 332 L196 372"/>
+    <path class="thin" marker-end="url(#arrow)" d="M558 332 L558 372"/>
+    <path class="thin" marker-end="url(#arrow)" d="M920 332 L920 372"/>
+
+    <g transform="translate(32,382)">
+      <rect class="panel2" x="0" y="0" width="330" height="210" rx="0"/>
+      <text class="cap" x="20" y="32">EFG ATOMS</text>
+      <g transform="translate(18,55)">
+        <rect fill="#fffdf8" stroke="#d75f39" stroke-width="1.2" x="0" y="0" width="88" height="118"/>
+        <text class="labelSmall" x="16" y="30">Rim</text>
+        <text class="monoSmall" x="13" y="62">freq</text>
+        <text class="monoSmall" x="24" y="88">fg</text>
+      </g>
+      <g transform="translate(120,55)">
+        <rect fill="#fffdf8" stroke="#d75f39" stroke-width="1.2" x="0" y="0" width="88" height="118"/>
+        <text class="labelSmall" x="18" y="30">Mid</text>
+        <text class="monoSmall" x="13" y="62">freq</text>
+        <text class="monoSmall" x="24" y="88">fg</text>
+      </g>
+      <g transform="translate(222,55)">
+        <rect fill="#fffdf8" stroke="#d75f39" stroke-width="1.2" x="0" y="0" width="88" height="118"/>
+        <text class="labelSmall" x="12" y="30">3PT</text>
+        <text class="monoSmall" x="13" y="62">freq</text>
+        <text class="monoSmall" x="24" y="88">fg</text>
+      </g>
+      <text class="bodySmall" x="20" y="188">Frequency = shot mix vs average</text>
+      <text class="bodySmall" x="20" y="205">first-chance EFG value.</text>
+    </g>
+
+    <g transform="translate(394,382)">
+      <rect class="panel2" x="0" y="0" width="330" height="210" rx="0"/>
+      <text class="cap" x="20" y="32">TOV DRILLDOWN</text>
+      <rect class="tovSoft" x="20" y="56" width="132" height="58" rx="0"/>
+      <text class="labelSmall" x="38" y="82">Bad pass</text>
+      <text class="monoSmall" x="38" y="103">ALT_BADPASS</text>
+      <rect class="tovSoft" x="178" y="56" width="132" height="58" rx="0"/>
+      <text class="labelSmall" x="198" y="82">Scoring</text>
+      <text class="monoSmall" x="198" y="103">ALT_SCORING</text>
+      <rect x="35" y="132" width="112" height="26" fill="#fffdf8" stroke="#8a8378" stroke-width="1"/>
+      <rect x="183" y="132" width="112" height="26" fill="#fffdf8" stroke="#8a8378" stroke-width="1"/>
+      <text class="monoSmall" x="65" y="150">live</text>
+      <text class="monoSmall" x="210" y="150">dead</text>
+      <text class="bodySmall" x="34" y="174">Live/dead is a diagnostic lens.</text>
+      <text class="monoSmall" x="34" y="193">bad pass + scoring = TOV value</text>
+    </g>
+
+    <g transform="translate(756,382)">
+      <rect class="panel2" x="0" y="0" width="330" height="210" rx="0"/>
+      <text class="cap" x="20" y="32">FT SPLIT</text>
+      <rect class="ftSoft" x="20" y="56" width="132" height="70" rx="0"/>
+      <text class="labelSmall" x="39" y="84">Frequency</text>
+      <text class="monoSmall" x="41" y="106">ALT_FT_FREQ</text>
+      <rect class="ftSoft" x="178" y="56" width="132" height="70" rx="0"/>
+      <text class="labelSmall" x="204" y="84">Severity</text>
+      <text class="monoSmall" x="198" y="106">ALT_FT_SEV</text>
+      <text class="bodySmall" x="24" y="154">Frequency prices each trip at average</text>
+      <text class="bodySmall" x="24" y="174">trip value; severity is the remainder,</text>
+      <text class="bodySmall" x="24" y="194">including trip type mix and FT shooting.</text>
+    </g>
+  </g>
+
+  <g transform="translate(1264,488)">
+    <rect class="panel" x="0" y="0" width="430" height="636" rx="0"/>
+    <text class="cap" x="32" y="42">SECOND CHANCE</text>
+    <text class="label" x="32" y="78">Clean after-miss value</text>
+    <text class="body" x="32" y="112">Second-chance scoring starts after</text>
+    <text class="body" x="32" y="136">the first offensive miss and stays on</text>
+    <text class="body" x="32" y="160">the same possession rows.</text>
+    <rect class="scSoft" x="32" y="190" width="366" height="124" rx="0"/>
+    <text class="labelSmall" x="58" y="228">oSECOND_CHANCE_CLEAN</text>
+    <text class="bodySmall" x="58" y="258">Putbacks, kickouts, fouls, and later</text>
+    <text class="bodySmall" x="58" y="278">scoring after the first offensive miss.</text>
+    <path class="thin" d="M74 344 H356"/>
+    <circle cx="74" cy="344" r="6" class="sc"/>
+    <circle cx="356" cy="344" r="6" class="sc"/>
+    <text class="mono" x="66" y="384">miss</text>
+    <text class="mono" x="294" y="384">value</text>
+    <text class="bodySmall" x="72" y="421">The split is temporal, not stylistic:</text>
+    <text class="bodySmall" x="72" y="443">before first miss is first chance;</text>
+    <text class="bodySmall" x="72" y="465">after first miss is second chance.</text>
+    <rect x="32" y="512" width="366" height="82" fill="#fffdf8" stroke="#cfc7ba" stroke-width="1.2"/>
+    <text class="monoSmall" x="58" y="543">oRAPM = oFC + oSC</text>
+    <text class="monoSmall" x="58" y="566">oFC = oEFG value + oTOV value + oFT</text>
+  </g>
+
+  <g transform="translate(106,1190)">
+    <rect class="panel" x="0" y="0" width="1588" height="420" rx="0"/>
+    <text class="cap" x="32" y="44">HOW TO READ THE OUTPUT ROW</text>
+    <text class="label" x="32" y="82">The visual hierarchy matches the weighted-factors hierarchy</text>
+
+    <g transform="translate(32,132)">
+      <rect class="panel2" x="0" y="0" width="470" height="220" rx="0"/>
+      <text class="cap" x="24" y="34">ROW SURFACE</text>
+      <text class="bodySmall" x="24" y="68">`FIRST_CHANCE` stores the row-level fields:</text>
+      <text class="monoSmall" x="24" y="98">FC_EFG_VALUE_Diff</text>
+      <text class="monoSmall" x="24" y="122">FC_FT_Diff, FC_FT_FREQ_Diff</text>
+      <text class="monoSmall" x="24" y="146">FC_FT_SEVERITY_Diff</text>
+      <text class="monoSmall" x="24" y="170">Is_Turnover, Is_BadPass_TOV</text>
+      <text class="bodySmall" x="24" y="198">`rapm.py` aliases load those same rows.</text>
+    </g>
+
+    <g transform="translate(558,132)">
+      <rect class="panel2" x="0" y="0" width="470" height="220" rx="0"/>
+      <text class="cap" x="24" y="34">PUBLIC OFFENSE STACK</text>
+      <text class="monoSmall" x="24" y="72">oRAPM = oFC + oSC</text>
+      <text class="monoSmall" x="24" y="104">oFC = oEFG_VALUE + oTOV_VALUE + oFT</text>
+      <text class="monoSmall" x="24" y="136">oEFG_VALUE = rim + mid + three atoms</text>
+      <text class="monoSmall" x="24" y="168">oTOV_VALUE = bad pass + scoring</text>
+      <text class="monoSmall" x="24" y="200">oFT = frequency + severity</text>
+    </g>
+
+    <g transform="translate(1084,132)">
+      <rect class="panel2" x="0" y="0" width="470" height="220" rx="0"/>
+      <text class="cap" x="24" y="34">INTERPRETATION GUARDS</text>
+      <text class="bodySmall" x="24" y="68">Frequency pieces are shot or trip generation.</text>
+      <text class="bodySmall" x="24" y="96">FG pieces are conversion inside that zone.</text>
+      <text class="bodySmall" x="24" y="124">FT severity includes trip type mix and FT shooting.</text>
+      <text class="bodySmall" x="24" y="152">Live/dead TOV is a diagnostic overlay.</text>
+      <text class="bodySmall" x="24" y="180">Defense mirrors the same tree with public sign flips.</text>
+    </g>
+  </g>
+</svg>
