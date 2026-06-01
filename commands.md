@@ -5,25 +5,28 @@ This guide documents the essential commands for updating data and running RAPM a
 ## WNBA Workflow
 
 ### 1. Fetch Data
-Use `fetch_wnba_data.py` to download raw play-by-play data for a specific season.
+Use the CDN fetcher for current WNBA play-by-play. The old stats API fetcher can
+disconnect for WNBA games; the CDN path scans static liveData ids and writes the
+same raw CSV shape.
 
 **Command Structure:**
 ```bash
-python wnba_test/fetch_wnba_data.py --season <YEAR> --season-type "<TYPE>"
+python wnba_test/fetch_wnba_cdn.py --season <YEAR> --season-type "<TYPE>" --update-player-map
 ```
 
 **Examples:**
-- **2025 Regular Season:**
+- **2026 Regular Season:**
   ```bash
-  python wnba_test/fetch_wnba_data.py --season 2025 --season-type "Regular Season"
+  python wnba_test/fetch_wnba_cdn.py --season 2026 --season-type "Regular Season" --update-player-map
   ```
-- **2025 Playoffs:**
+- **Explicit game smoke test:**
   ```bash
-  python wnba_test/fetch_wnba_data.py --season 2025 --season-type "Playoffs"
+  python wnba_test/fetch_wnba_cdn.py 1022600001 --output /tmp/WNBA26_smoke.csv
   ```
 
 **Output:**
 - Files are saved to `wnba_test/` (e.g., `wnba_test/WNBA25.csv`, `wnba_test/WNBA25_PS.csv`).
+- `--update-player-map` appends new WNBA boxscore names to `wnba_test/player_index_map.csv` so RAPM outputs do not show `ID_<player_id>` for new players.
 
 ---
 
@@ -39,6 +42,10 @@ python wnba_test/process_rapm_wnba.py <INPUT_FILE_PATH>
 - **Process 2025 Regular Season:**
   ```bash
   python wnba_test/process_rapm_wnba.py wnba_test/WNBA25.csv
+  ```
+- **Process 2026 Regular Season:**
+  ```bash
+  python wnba_test/process_rapm_wnba.py wnba_test/WNBA26.csv
   ```
 - **Process 2025 Playoffs:**
   ```bash
@@ -113,6 +120,5 @@ python pbp_v3/run_v3_pipeline.py
   - **`Results/`**: Final analysis output from `master_wnba_rapm.py`.
 - **`pbp_v3/`**: Contains NBA V3 fetching scripts.
 - **`Processed/`**: Default output folder for NBA processing.
-
 
 

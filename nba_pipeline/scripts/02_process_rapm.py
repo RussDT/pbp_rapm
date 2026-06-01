@@ -24,6 +24,7 @@ from process_rapm_blocks import (
     process_tov_py,
     process_reb_py,
     process_shooter_oreb_py,
+    process_block_recovery_py,
     process_rim_freq_py,
     process_rim_fg_pct_py,
     process_midrange_freq_py,
@@ -43,10 +44,13 @@ from process_rapm_blocks import (
     process_second_chance_clean_py,
     process_assist_points_py,
     process_rim_assist_py,
+    process_dunk_py,
+    process_dunk_assist_py,
     process_three_freq_py,
     process_three_fg_pct_py,
     process_playtype_ts_mix_py,
     process_playtype_proxy_pts_py,
+    process_russell_shotquality_py,
 )
 
 
@@ -140,6 +144,7 @@ Examples:
     ts_df = process_ts_py(file_to_process, processing_year, processing_season)
     reb_df = process_reb_py(file_to_process, processing_year, processing_season)
     shooter_oreb_df = process_shooter_oreb_py(file_to_process, processing_year, processing_season)
+    block_recovery_df = process_block_recovery_py(file_to_process, processing_year, processing_season)
     tov_df = process_tov_py(file_to_process, processing_year, processing_season)
     rim_freq_df = process_rim_freq_py(file_to_process, processing_year, processing_season)
     rim_fg_pct_df = process_rim_fg_pct_py(file_to_process, processing_year, processing_season)
@@ -163,10 +168,13 @@ Examples:
     second_chance_clean_df = process_second_chance_clean_py(file_to_process, processing_year, processing_season)
     assist_points_df = process_assist_points_py(file_to_process, processing_year, processing_season)
     rim_assist_df = process_rim_assist_py(file_to_process, processing_year, processing_season)
+    dunk_df = process_dunk_py(file_to_process, processing_year, processing_season)
+    dunk_assist_df = process_dunk_assist_py(file_to_process, processing_year, processing_season)
     three_freq_df = process_three_freq_py(file_to_process, processing_year, processing_season)
     three_fg_pct_df = process_three_fg_pct_py(file_to_process, processing_year, processing_season)
     playtype_ts_mix_df = process_playtype_ts_mix_py(file_to_process, processing_year, processing_season)
     playtype_proxy_pts_df = process_playtype_proxy_pts_py(file_to_process, processing_year, processing_season)
+    russell_shotquality_df = process_russell_shotquality_py(file_to_process, processing_year, processing_season)
 
     # --- Save Results ---
     # Ensure Processed directory exists
@@ -206,6 +214,7 @@ Examples:
         "TS": ts_df,
         "REB": reb_df,
         "SHOOTER_OREB": shooter_oreb_df,
+        "BLOCK_RECOVERY": block_recovery_df,
         "TOV": tov_df,
         "RIM_FREQ": rim_freq_df,
         "RIM_FG_PCT": rim_fg_pct_df,
@@ -226,10 +235,13 @@ Examples:
         "SECOND_CHANCE_CLEAN": second_chance_clean_df,
         "ASSIST_POINTS": assist_points_df,
         "RIM_ASSIST": rim_assist_df,
+        "DUNK": dunk_df,
+        "DUNK_ASSIST": dunk_assist_df,
         "THREE_FREQ": three_freq_df,
         "THREE_FG_PCT": three_fg_pct_df,
         "PLAYTYPE_TS_MIX": playtype_ts_mix_df,
         "PLAYTYPE_PROXY_PTS": playtype_proxy_pts_df,
+        "RUSSELL_SHOTQUALITY": russell_shotquality_df,
     }
 
     for name, df in other_outputs.items():

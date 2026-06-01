@@ -206,7 +206,9 @@ Both `rapm.py` and `03_run_rapm_analysis.py` accept two-digit windows that cross
 Use `--publish-to-rapms` when a completed weighted-factors run should copy its standard and alt3 CSVs into `/Users/russellthomas/Docs/rapms/master_results/`, commit only those files, and push the downstream `rapms` repo if they changed.
 The master weighted-factors runner also solves and exports seven auxiliary shot-profile RAPMs in both standard and alt3 CSVs: `RIM_FREQ`, `RIM_FG_PCT`, `THREE_FREQ`, `THREE_FG_PCT`, `MIDRANGE_FREQ`, `MIDRANGE_FG_PCT`, and `ASSIST_POINTS`. These columns are pass-through diagnostics (`o*` raw offense, `d*` sign-flipped so positive means good defense); they are not part of the six-factor or alt3 additive reconstruction.
 
-`weighted_factors_alt3_*` publishes centered public factor columns. The script recenters offensive alt3 components by `off_poss` and defensive alt3 components by `def_poss`, then rebuilds `oFC` / `dFC` and `oSC` / `dSC` from the centered components. `off`, `def`, and `net_rapm` stay as the raw RAPM totals.
+`weighted_factors_alt3_efg_value_*` is the active public Alt3 output family. It displays direct `SECOND_CHANCE_CLEAN` as `oSC` / `dSC` and closes the public EFG-value decomposition to total RAPM through `ALT_EFG_BASELINE`. The older `weighted_factors_alt3_*` family is legacy/audit; it recenters first-chance components and rebuilds residual `oSC` / `dSC` buckets, so do not use it as the current public Alt3 interpretation path.
+
+`scripts/build_alt3_efg_value_weighted_factors.py` now writes a parquet sibling next to each player-facing CSV by default. The daily job rebuilds the 2026-intersecting active EFG-value rolling files (`26`, `25_26`, `24_26`, `23_26`, `22_26` with `all_rb_se_a2000_4000`) and syncs both `.csv` and `.parquet` artifacts to the downstream `rapms/master_results` folder. It also refreshes the team-level `team_weighted_factors_alt3_efg_value_24_26_all_a25.{csv,parquet}` bundle.
 
 To repair already-published 4-year rolling alt3 files in the downstream `rapms` repo without rerunning RAPM solves:
 
@@ -291,6 +293,10 @@ python rapm.py MIDRANGE_FREQ 26 26 ALL
 python rapm.py MIDRANGE_FG_PCT 26 26 ALL
 python rapm.py PLAYTYPE_TS_MIX 26 26 ALL
 python rapm.py PLAYTYPE_PROXY_PTS 26 26 ALL
+
+# 5. Rebuild active Alt3 EFG-value weighted-factor CSV/parquet artifacts
+python run_alt3_efg_value_rolling.py --intersect-years 2026 --force-base --force-components ALL
+python build_team_alt3_efg_value_weighted_factors.py 24 26 ALL --alpha 25
 ```
 
 Raw fetch guardrails:
@@ -366,6 +372,31 @@ Implementation notes:
 - `ORTG = 100 * Points / OffPoss`
 - `DRTG = 100 * OppPoints / DefPoss`
 - `FGORB% = ORB / FG misses`
+
+## Career Teammates (1997-2026)
+
+Build each player's top teammates by shared career minutes, with regular season
+and playoffs included by default:
+
+```bash
+python nba_pipeline/scripts/build_career_teammate_summary.py \
+  --start-year 1997 \
+  --end-year 2026 \
+  --season-types all \
+  --top-n 15
+```
+
+Default outputs:
+- `nba_pipeline/results/career_teammates/career_teammate_pairs_97_26_all.csv`
+- `nba_pipeline/results/career_teammates/career_teammate_top15_97_26_all.csv`
+
+The builder gets minutes from raw PBP event-clock deltas, then joins RAPM
+processed possessions for ORTG, DRTG, and net rating while the pair is together.
+Top-N ranking uses shared possessions, and the output includes both possession
+share and minute share. It also subtracts the shared pair possessions from each
+player's total on-court possessions to expose each player's net rating without
+that teammate. See [Career Teammate Summary](./CAREER_TEAMMATE_SUMMARY.md) for
+column definitions.
 
 ---
 

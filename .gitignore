@@ -18,6 +18,7 @@ node_modules/
 dist/
 build/
 .vite/
+downloads/
 
 # Generated data, model artifacts, and logs
 *.csv
@@ -54,7 +55,12 @@ nba_pipeline/validation/
 nba_pipeline/autoresearch_drl_shapley/cache/
 nba_pipeline/autoresearch_drl_shapley/latest_summary.json
 nba_pipeline/autoresearch_drl_shapley/outputs/
+nba_pipeline/docs/videos/decomp-rapm/.thumbnails/
 
 # WNBA generated artifacts
 wnba_test/Processed/
 wnba_test/Results/
+
+# Local research generated outputs
+randle_strong_weak/outputs*/
+randle_strong_weak/*browser.html

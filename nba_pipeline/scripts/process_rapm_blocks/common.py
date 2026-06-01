@@ -158,6 +158,16 @@ RIM_ACTION_TYPES = {
     97,   # Tip Layup Shot
 }
 
+DUNK_ACTION_TYPES = {
+    7,    # Dunk
+    9,    # Driving Dunk
+    50,   # Running Dunk
+    52,   # Alley Oop Dunk
+    87,   # Putback Dunk
+    107,  # Tip Dunk Shot
+    108,  # Cutting Dunk Shot
+}
+
 
 def is_rim_attempt_check(event_action_type, home_desc, visitor_desc):
     """
@@ -189,6 +199,12 @@ def build_shot_flags_df(nba_df):
     else:
         is_rim = pd.Series(False, index=nba_df.index)
 
+    if 'event_action_type' in nba_df.columns:
+        is_dunk = event_action_type_num.isin(DUNK_ACTION_TYPES)
+    else:
+        is_dunk = pd.Series(False, index=nba_df.index)
+
+    is_dunk = is_dunk | shot_text.str.contains(r'\bdunk\b', case=False, regex=True, na=False)
     is_rim = is_rim | shot_text.str.contains(RIM_DESC_PATTERN, case=False, regex=True, na=False)
     is_assisted_make = (
         (nba_df['event_type'] == 'MAKE') &
@@ -205,6 +221,7 @@ def build_shot_flags_df(nba_df):
         'is_fga': is_fga,
         'is_3pt': is_3pt,
         'is_rim': is_rim,
+        'is_dunk': is_dunk,
         'is_assisted_make': is_assisted_make,
         'shot_points': shot_points,
     }, index=nba_df.index)

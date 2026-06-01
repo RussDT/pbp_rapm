@@ -7,7 +7,15 @@ import requests
 import io
 import argparse
 import os
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from nba_api.stats.endpoints import leaguedashplayerstats
+from wnba_test.wnba_stats_source import load_wnba_player_shooting_stats
 
 
 
@@ -34,6 +42,7 @@ def case_when(*args):
     # Ensure conditions are boolean arrays/Series
     conditions = [pd.Series(c) if not isinstance(c, pd.Series) else c for c in conditions]
     return np.select(conditions, results, default=default)
+
 
 # --- Player Propagation and FT Check Functions (Implemented based on R code) ---
 
@@ -835,41 +844,51 @@ def process_rapm_py(file_path, year, season_str):
 
     # --- Calculate Luck-Adjusted Points (RAPM Specific) --- ### CORRECTED case_when calls ###
     # ... (placeholder join for player stats remains the same) ...
-# --- Join Player Season Stats (FTPerc, ThreePerc) ---
-    print(f"      Fetching player stats for season {season_str} using nba_api...")
+    # --- Join Player Season Stats (FTPerc, ThreePerc) ---
     player_stats_df = None
-    try:
-        # Import necessary nba_api components (ensure nba_api is installed)
-        # You might want to move this import to the top of the file
-
-
-        # Call the endpoint
-        league_id = "10" if "WNBA" in file_path.upper() else "00"
-        player_stats_endpoint = leaguedashplayerstats.LeagueDashPlayerStats(season=season_str, league_id_nullable=league_id)
-        # Add a small delay to avoid hitting rate limits if called frequently
-        time.sleep(0.6) # Add a small delay (e.g., 600ms)
-        player_stats_list = player_stats_endpoint.get_data_frames()
-
-        if player_stats_list:
-            player_stats_df = player_stats_list[0]
-            # Select and rename columns to match R code's intent (or use directly)
-            # R used indices: PlayerID=1, FTPerc=20, ThreePerc=17
-            # nba_api typically uses: PLAYER_ID, FT_PCT, FG3_PCT
-            player_stats_df = player_stats_df[['PLAYER_ID', 'FT_PCT', 'FG3_PCT']].copy()
-            # Rename for clarity or consistency if desired (optional)
-            player_stats_df = player_stats_df.rename(columns={
-                'PLAYER_ID': 'PlayerID',
-                'FT_PCT': 'FTPerc',
-                'FG3_PCT': 'ThreePerc'
-            })
-            print(f"      Successfully fetched {len(player_stats_df)} player stat entries.")
+    if "WNBA" in file_path.upper():
+        is_playoffs = "_PS" in os.path.basename(file_path).upper()
+        player_stats_df = load_wnba_player_shooting_stats(year, is_playoffs)
+        if player_stats_df is not None and not player_stats_df.empty:
+            ft_players = player_stats_df['FTPerc'].notna().sum()
+            three_players = player_stats_df['ThreePerc'].notna().sum()
+            print(
+                "      Loaded WNBA shooting stats from the shared WNBA stats source "
+                f"({len(player_stats_df)} rows, {ft_players} FT%, {three_players} 3P%)."
+            )
         else:
-            print("      Warning: nba_api returned no data for player stats.")
+            player_stats_df = None
+    else:
+        print(f"      Fetching player stats for season {season_str} using nba_api...")
+        try:
+            player_stats_endpoint = leaguedashplayerstats.LeagueDashPlayerStats(
+                season=season_str,
+                league_id_nullable="00",
+            )
+            # Add a small delay to avoid hitting rate limits if called frequently
+            time.sleep(0.6) # Add a small delay (e.g., 600ms)
+            player_stats_list = player_stats_endpoint.get_data_frames()
 
-    except ImportError:
-        print("      Error: 'nba_api' library not found. Cannot fetch player stats. Please install it (`pip install nba_api`).")
-    except Exception as e:
-        print(f"      Error fetching or processing player stats via nba_api: {e}")
+            if player_stats_list:
+                player_stats_df = player_stats_list[0]
+                # Select and rename columns to match R code's intent (or use directly)
+                # R used indices: PlayerID=1, FTPerc=20, ThreePerc=17
+                # nba_api typically uses: PLAYER_ID, FT_PCT, FG3_PCT
+                player_stats_df = player_stats_df[['PLAYER_ID', 'FT_PCT', 'FG3_PCT']].copy()
+                # Rename for clarity or consistency if desired (optional)
+                player_stats_df = player_stats_df.rename(columns={
+                    'PLAYER_ID': 'PlayerID',
+                    'FT_PCT': 'FTPerc',
+                    'FG3_PCT': 'ThreePerc'
+                })
+                print(f"      Successfully fetched {len(player_stats_df)} player stat entries.")
+            else:
+                print("      Warning: nba_api returned no data for player stats.")
+
+        except ImportError:
+            print("      Error: 'nba_api' library not found. Cannot fetch player stats. Please install it (`pip install nba_api`).")
+        except Exception as e:
+            print(f"      Error fetching or processing player stats via nba_api: {e}")
 
     # --- Merge Player Stats ---
     shooter_id_col = 'player1_id'
@@ -927,19 +946,6 @@ def process_rapm_py(file_path, year, season_str):
     print(f"      Assigned ExpFT (default: {default_ft_perc}) and Exp3PT (default: {default_3p_perc}).")
 
     # --- Calculate Luck-Adjusted Points (RAPM Specific) --- # (This line was already present, calculation follows)
-
-    shooter_id_col = 'player1_id'
-    if shooter_id_col not in nba_df_checked.columns:
-         print(f"      Warning: Shooter ID column '{shooter_id_col}' not found for player stats join. Using defaults.")
-         nba_df_checked['FTPerc'] = 0.75
-         nba_df_checked['ThreePerc'] = 0.35
-    else:
-         print(f"      Found shooter ID column '{shooter_id_col}'. Using defaults for FTPerc/ThreePerc for now.")
-         nba_df_checked['FTPerc'] = 0.75
-         nba_df_checked['ThreePerc'] = 0.35
-
-    nba_df_checked['ExpFT'] = nba_df_checked['FTPerc'].fillna(0.75).astype(float)
-    nba_df_checked['Exp3PT'] = nba_df_checked['ThreePerc'].fillna(0.35).astype(float)
 
     is_ft_event = series_contains(nba_df_checked['home_description'], "Free Throw", case=False) | \
                   series_contains(nba_df_checked['visitor_description'], "Free Throw", case=False) | \

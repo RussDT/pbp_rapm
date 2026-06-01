@@ -21,7 +21,13 @@ def process_first_chance_py(file_path, year, season_str):
     nba_filt = nba_filt.copy()
     nba_filt['Net_Diff'] = nba_filt['First_Chance_Diff']
 
-    numerator_cols = ['Net_Diff', 'Is_Turnover', 'Is_BadPass_TOV']
+    numerator_cols = [
+        'Net_Diff',
+        'Is_Turnover',
+        'Is_BadPass_TOV',
+        'Is_FC_Transition_Possession',
+        'Has_FC_FGA',
+    ]
     for col in [
         'FC_SQ_Diff',
         'FC_MAKE_Diff',

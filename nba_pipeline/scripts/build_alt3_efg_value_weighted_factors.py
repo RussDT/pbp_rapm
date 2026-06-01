@@ -129,7 +129,8 @@ def build_weighted_factors(
     output_name: str,
     decimals: int,
     copy_to_master: bool,
-) -> tuple[Path, Path | None, pd.DataFrame]:
+    write_parquet: bool = True,
+) -> tuple[Path, Path | None, Path | None, Path | None, pd.DataFrame]:
     bundle = pd.read_csv(bundle_path)
     base = pd.read_csv(base_path)
 
@@ -300,15 +301,24 @@ def build_weighted_factors(
     out = out[column_order].sort_values("net_rapm", ascending=False)
 
     output_path = RESULTS_DIR / output_name
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(output_path, index=False)
+    parquet_path = None
+    if write_parquet:
+        parquet_path = output_path.with_suffix(".parquet")
+        out.to_parquet(parquet_path, index=False)
 
     master_path = None
+    master_parquet_path = None
     if copy_to_master:
         MASTER_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
         master_path = MASTER_RESULTS_DIR / output_name
         shutil.copy2(output_path, master_path)
+        if parquet_path is not None:
+            master_parquet_path = MASTER_RESULTS_DIR / parquet_path.name
+            shutil.copy2(parquet_path, master_parquet_path)
 
-    return output_path, master_path, out
+    return output_path, master_path, parquet_path, master_parquet_path, out
 
 
 def parse_args() -> argparse.Namespace:
@@ -318,22 +328,28 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-name", default=DEFAULT_OUTPUT_NAME)
     parser.add_argument("--decimals", type=int, default=3)
     parser.add_argument("--no-master-copy", action="store_true")
+    parser.add_argument("--no-parquet", action="store_true")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    output_path, master_path, out = build_weighted_factors(
+    output_path, master_path, parquet_path, master_parquet_path, out = build_weighted_factors(
         bundle_path=args.bundle,
         base_path=args.base,
         output_name=args.output_name,
         decimals=args.decimals,
         copy_to_master=not args.no_master_copy,
+        write_parquet=not args.no_parquet,
     )
 
     print(f"Wrote {output_path}")
+    if parquet_path is not None:
+        print(f"Wrote {parquet_path}")
     if master_path is not None:
         print(f"Copied {master_path}")
+    if master_parquet_path is not None:
+        print(f"Copied {master_parquet_path}")
     print(f"Rows: {len(out):,}; columns: {len(out.columns):,}")
     for col in ["oRESID", "dRESID", "RESID"]:
         print(

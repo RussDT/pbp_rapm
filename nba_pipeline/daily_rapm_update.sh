@@ -122,6 +122,20 @@ log "[$(date +%H:%M:%S)] Running RAPM analysis (13 years, rubberband)..."
 run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 14 26 ALL --rubberband
 
 log ""
+log "[$(date +%H:%M:%S)] Rebuilding active Alt3 EFG-value player bundles for 2026 rolling windows..."
+run $PYTHON_PATH "$SCRIPTS_DIR/run_alt3_efg_value_rolling.py" \
+    --intersect-years 2026 \
+    --force-base \
+    --force-components ALL \
+    --workers 4 \
+    --rapm-workers 4 \
+    --cores-per-rapm 2
+
+log ""
+log "[$(date +%H:%M:%S)] Rebuilding active Alt3 EFG-value team bundle..."
+run $PYTHON_PATH "$SCRIPTS_DIR/build_team_alt3_efg_value_weighted_factors.py" 24 26 ALL --alpha 25
+
+log ""
 log "[$(date +%H:%M:%S)] Uploading six-factor RAPM to Supabase..."
 run $PYTHON_PATH "$SCRIPTS_DIR/upload_six_factor.py"
 
@@ -246,6 +260,27 @@ for f in \
     "initialev_24_26_all_td700_results.csv" \
     "special_rapm_24_26_all_results.csv" \
     "ts_decomp_factors_24_26_all_td700.csv"; do
+    if [ -f "$MASTER_DIR/$f" ]; then
+        cp "$MASTER_DIR/$f" "$RAPMS_MASTER/$f"
+        log "  Synced $f"
+    else
+        log "  WARNING: $f not found in master_results"
+    fi
+done
+
+for f in \
+    "weighted_factors_alt3_efg_value_26_all_rb_se_a2000_4000.csv" \
+    "weighted_factors_alt3_efg_value_26_all_rb_se_a2000_4000.parquet" \
+    "weighted_factors_alt3_efg_value_25_26_all_rb_se_a2000_4000.csv" \
+    "weighted_factors_alt3_efg_value_25_26_all_rb_se_a2000_4000.parquet" \
+    "weighted_factors_alt3_efg_value_24_26_all_rb_se_a2000_4000.csv" \
+    "weighted_factors_alt3_efg_value_24_26_all_rb_se_a2000_4000.parquet" \
+    "weighted_factors_alt3_efg_value_23_26_all_rb_se_a2000_4000.csv" \
+    "weighted_factors_alt3_efg_value_23_26_all_rb_se_a2000_4000.parquet" \
+    "weighted_factors_alt3_efg_value_22_26_all_rb_se_a2000_4000.csv" \
+    "weighted_factors_alt3_efg_value_22_26_all_rb_se_a2000_4000.parquet" \
+    "team_weighted_factors_alt3_efg_value_24_26_all_a25.csv" \
+    "team_weighted_factors_alt3_efg_value_24_26_all_a25.parquet"; do
     if [ -f "$MASTER_DIR/$f" ]; then
         cp "$MASTER_DIR/$f" "$RAPMS_MASTER/$f"
         log "  Synced $f"

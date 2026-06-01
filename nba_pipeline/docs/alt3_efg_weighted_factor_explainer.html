@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alt3 EFG-Value Weighted-Factor Decomposition</title>
+  <style>
+    :root {
+      --ink: #17201b;
+      --muted: #5f6963;
+      --line: #d9ded8;
+      --paper: #fbfbf8;
+      --panel: #ffffff;
+      --green: #2e7d5b;
+      --teal: #217b85;
+      --blue: #315f9f;
+      --red: #a44747;
+      --gold: #9a6a1d;
+      --slate: #34404a;
+      --soft-green: #e8f2ed;
+      --soft-teal: #e4f1f2;
+      --soft-blue: #e9eef7;
+      --soft-red: #f6e9e9;
+      --soft-gold: #f4edde;
+      --shadow: 0 18px 55px rgba(25, 35, 30, 0.10);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(23, 32, 27, 0.04) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(23, 32, 27, 0.04) 1px, transparent 1px),
+        var(--paper);
+      background-size: 44px 44px;
+      font: 16px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 34px));
+      margin: 0 auto;
+    }
+
+    header {
+      min-height: 82vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+      gap: 42px;
+      align-items: center;
+      padding: 64px 0 32px;
+    }
+
+    h1, h2, h3, p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 870px;
+      margin-bottom: 22px;
+      font-size: clamp(42px, 7vw, 92px);
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+      font-size: clamp(26px, 3.2vw, 42px);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 18px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .eyebrow::before {
+      width: 18px;
+      height: 3px;
+      content: "";
+      background: var(--green);
+    }
+
+    .lead {
+      max-width: 760px;
+      color: #39443d;
+      font-size: clamp(18px, 2vw, 24px);
+      line-height: 1.42;
+    }
+
+    .hero-note {
+      margin-top: 30px;
+      padding-left: 18px;
+      border-left: 4px solid var(--gold);
+      color: #3d3b32;
+      font-size: 18px;
+      max-width: 720px;
+    }
+
+    .hero-visual {
+      position: relative;
+      min-height: 600px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: var(--shadow);
+    }
+
+    .court {
+      position: absolute;
+      inset: 24px;
+      border: 2px solid #243126;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 22%, transparent 0 74px, rgba(36, 49, 38, 0.24) 75px 77px, transparent 78px),
+        linear-gradient(180deg, rgba(232, 242, 237, 0.9), rgba(244, 237, 222, 0.68));
+    }
+
+    .court::before {
+      position: absolute;
+      left: 18%;
+      top: -92px;
+      width: 64%;
+      height: 220px;
+      content: "";
+      border: 2px solid rgba(36, 49, 38, 0.55);
+      border-radius: 0 0 140px 140px;
+    }
+
+    .court::after {
+      position: absolute;
+      left: 36%;
+      top: 0;
+      width: 28%;
+      height: 188px;
+      content: "";
+      border: 2px solid rgba(36, 49, 38, 0.55);
+      border-top: 0;
+    }
+
+    .player-dot {
+      position: absolute;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      color: white;
+      font-weight: 900;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .offense {
+      background: var(--green);
+    }
+
+    .defense {
+      background: var(--blue);
+    }
+
+    .dot1 { left: 46%; top: 9%; }
+    .dot2 { left: 20%; top: 28%; }
+    .dot3 { left: 70%; top: 30%; }
+    .dot4 { left: 32%; top: 57%; }
+    .dot5 { left: 61%; top: 58%; }
+    .dot6 { left: 47%; top: 20%; }
+    .dot7 { left: 24%; top: 38%; }
+    .dot8 { left: 67%; top: 40%; }
+    .dot9 { left: 35%; top: 66%; }
+    .dot10 { left: 58%; top: 68%; }
+
+    .visual-caption {
+      position: absolute;
+      right: 42px;
+      bottom: 42px;
+      z-index: 4;
+      width: min(330px, calc(100% - 84px));
+      padding: 18px;
+      border: 1px solid rgba(23, 32, 27, 0.16);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 14px 32px rgba(21, 30, 25, 0.12);
+    }
+
+    .visual-caption strong {
+      display: block;
+      margin-bottom: 7px;
+    }
+
+    section {
+      padding: 58px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.72fr) minmax(0, 1.28fr);
+      gap: 36px;
+      align-items: start;
+    }
+
+    .section-grid > * {
+      min-width: 0;
+    }
+
+    .section-intro {
+      position: sticky;
+      top: 18px;
+    }
+
+    .section-intro p {
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .card {
+      min-width: 0;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(25, 35, 30, 0.06);
+    }
+
+    .card + .card {
+      margin-top: 18px;
+    }
+
+    .equation {
+      padding: 18px 20px;
+      border-left: 5px solid var(--green);
+      background: var(--soft-green);
+      color: #173327;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: clamp(15px, 1.7vw, 18px);
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+
+    .tree {
+      display: grid;
+      gap: 12px;
+    }
+
+    .tree-row {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .tree-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 58px;
+      padding: 12px;
+      border-radius: 6px;
+      background: var(--slate);
+      color: white;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .tree-children {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .pill {
+      min-height: 58px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .pill small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .pill.green { border-color: #b8d5c7; background: var(--soft-green); }
+    .pill.teal { border-color: #b8d7da; background: var(--soft-teal); }
+    .pill.blue { border-color: #becbe2; background: var(--soft-blue); }
+    .pill.red { border-color: #e1bdbd; background: var(--soft-red); }
+    .pill.gold { border-color: #decda6; background: var(--soft-gold); }
+
+    .matrix {
+      display: grid;
+      grid-template-columns: 90px repeat(10, minmax(34px, 1fr)) 130px;
+      gap: 4px;
+      align-items: center;
+      max-width: 100%;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .cell {
+      min-width: 52px;
+      min-height: 42px;
+      display: grid;
+      place-items: center;
+      padding: 6px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+    }
+
+    .cell.header {
+      background: #edf0ec;
+      font-weight: 900;
+    }
+
+    .cell.on-o {
+      background: var(--soft-green);
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .cell.on-d {
+      background: var(--soft-blue);
+      color: var(--blue);
+      font-weight: 900;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .callout {
+      border-left: 5px solid var(--gold);
+      background: var(--soft-gold);
+    }
+
+    .warning {
+      border-left: 5px solid var(--red);
+      background: var(--soft-red);
+    }
+
+    .success {
+      border-left: 5px solid var(--green);
+      background: var(--soft-green);
+    }
+
+    .checklist {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .checklist li {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    .checklist strong {
+      color: var(--slate);
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: #edf0ec;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.93em;
+    }
+
+    .footer {
+      padding-bottom: 70px;
+    }
+
+    @media (max-width: 920px) {
+      header,
+      .section-grid,
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        min-height: auto;
+      }
+
+      .hero-visual {
+        min-height: 480px;
+      }
+
+      .section-intro {
+        position: static;
+      }
+
+      .tree-row {
+        grid-template-columns: 1fr;
+      }
+
+      .tree-children {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      main {
+        width: min(100% - 24px, 1180px);
+      }
+
+      .tree-children {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-visual {
+        min-height: 420px;
+        padding: 14px;
+      }
+
+      .court {
+        inset: 14px;
+      }
+
+      .visual-caption {
+        right: 24px;
+        bottom: 24px;
+        width: calc(100% - 48px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">Alt3 EFG-value weighted factors</div>
+        <h1>Start with the possession. Then decompose the scoreboard.</h1>
+        <p class="lead">
+          This is the clean explanation for a brilliant intern: RAPM is not a box-score
+          allocation system. It is a lineup-adjusted model of team outcomes. The Alt3
+          EFG-value bundle keeps that RAPM core, then replaces one opaque scoring target
+          with a set of first-chance, free-throw, turnover, shot-location, and second-chance
+          targets that can be audited back to row-level identities.
+        </p>
+        <p class="hero-note">
+          A Russell-ish rule for this project: do not let a column name do more work than
+          its definition. Define the atoms first. Then build the proposition.
+        </p>
+      </div>
+
+      <div class="hero-visual" aria-label="Basketball court with offensive and defensive player indicators">
+        <div class="court"></div>
+        <div class="player-dot offense dot1">O</div>
+        <div class="player-dot offense dot2">O</div>
+        <div class="player-dot offense dot3">O</div>
+        <div class="player-dot offense dot4">O</div>
+        <div class="player-dot offense dot5">O</div>
+        <div class="player-dot defense dot6">D</div>
+        <div class="player-dot defense dot7">D</div>
+        <div class="player-dot defense dot8">D</div>
+        <div class="player-dot defense dot9">D</div>
+        <div class="player-dot defense dot10">D</div>
+        <div class="visual-caption">
+          <strong>One row, ten players, one target.</strong>
+          Change the target and rerun the same lineup logic. That is how a black-box
+          scoring RAPM becomes a component map.
+        </div>
+      </div>
+    </header>
+
+    <section>
+      <div class="section-grid">
+        <div class="section-intro">
+          <h2>The context</h2>
+          <p>
+            Standard six-factor RAPM organizes player impact through shooting, turnovers,
+            and rebounding on both offense and defense. Alt3 EFG-value is a parallel clean
+            offensive scoring decomposition built because the ordinary TS/TOV split mixes
+            shot-scoped and possession-scoped ideas.
+          </p>
+        </div>
+        <div>
+          <div class="card">
+            <h3>The problem</h3>
+            <p>
+              A player can help scoring by creating rim attempts, making threes, avoiding
+              first-chance turnovers, drawing useful free throws, sustaining second chances,
+              or simply bending the geometry of the possession. A single <code>off</code>
+              number knows the outcome but hides the mechanism.
+            </p>
+          </div>
+          <div class="card">
+            <h3>The answer</h3>
+            <p>
+              Keep the RAPM machinery. Build cleaner scoring targets. Prove the row algebra
+              before interpreting player coefficients. Then publish a weighted-factor file
+              where the pieces tell a basketball story and still add back to total impact.
+            </p>
+          </div>
+          <div class="card callout">
+            <h3>The active family</h3>
+            <p>
+              Use <code>weighted_factors_alt3_efg_value_*</code>. The older
+              <code>weighted_factors_alt3_*</code> family is legacy/audit context and should
+              not be used as the current public interpretation path.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-grid">
+        <div class="section-intro">
+          <h2>The additive map</h2>
+          <p>
+            The public bundle is easiest to teach as nested identities. The top level is
+            first chance plus direct clean second chance. First chance then splits into
+            shot value, free throws, and point-valued turnovers.
+          </p>
+        </div>
+        <div class="tree">
+          <div class="tree-row">
+            <div class="tree-label">Total scoring RAPM</div>
+            <div class="tree-children">
+              <div class="pill green">FIRST_CHANCE<small>Pre-miss scoring layer</small></div>
+              <div class="pill blue">SECOND_CHANCE_CLEAN<small>Direct post-miss layer</small></div>
+              <div class="pill gold">Residual check<small>Should be tiny after assembly</small></div>
+              <div class="pill">Public signs<small>Defense flipped so positive is good</small></div>
+            </div>
+          </div>
+          <div class="tree-row">
+            <div class="tree-label">First chance</div>
+            <div class="tree-children">
+              <div class="pill green">ALT_EFG_VALUE<small>Shot value parent</small></div>
+              <div class="pill teal">ALT_FT<small>First-chance FT value</small></div>
+              <div class="pill red">ALT_TOV_VALUE<small>Point-valued TOV loss</small></div>
+              <div class="pill gold">FC total<small>oFC / dFC in public output</small></div>
+            </div>
+          </div>
+          <div class="tree-row">
+            <div class="tree-label">Shot value</div>
+            <div class="tree-children">
+              <div class="pill gold">ALT_EFG_BASELINE<small>Closure / replacement-shot bucket</small></div>
+              <div class="pill green">Rim freq + rim FG<small>Where shots move, how they finish</small></div>
+              <div class="pill teal">Mid freq + mid FG<small>Avoidance or making value</small></div>
+              <div class="pill blue">Three freq + three FG<small>Mix and within-zone making</small></div>
+            </div>
+          </div>
+          <div class="tree-row">
+            <div class="tree-label">Drilldowns</div>
+            <div class="tree-children">
+              <div class="pill teal">FT_FREQ + FT_SEVERITY<small>equals ALT_FT</small></div>
+              <div class="pill red">BADPASS + SCORING TOV<small>equals ALT_TOV_VALUE</small></div>
+              <div class="pill">ASSIST_POINTS<small>supporting RAPM, not additive child</small></div>
+              <div class="pill">RIM_ASSIST<small>supporting RAPM, not additive child</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-grid">
+        <div class="section-intro">
+          <h2>The identities</h2>
+          <p>
+            These are the propositions the intern should be able to recite and audit.
+            If the row-level math fails, the player-level interpretation is premature.
+          </p>
+        </div>
+        <div>
+          <div class="equation">
+            RAPM scoring layer = FIRST_CHANCE + SECOND_CHANCE_CLEAN<br>
+            FC = ALT_EFG_VALUE + ALT_FT + ALT_TOV_VALUE<br>
+            ALT_EFG_VALUE = ALT_EFG_BASELINE + ALT_EFG_ATOMS_VALUE
+          </div>
+          <div class="card">
+            <h3>Atomic shot value</h3>
+            <div class="equation">
+              ALT_EFG_ATOMS_VALUE =<br>
+              &nbsp;&nbsp;ALT_EFG_RIM_FREQ + ALT_EFG_RIM_FG<br>
+              + ALT_EFG_MID_FREQ + ALT_EFG_MID_FG<br>
+              + ALT_EFG_THREE_FREQ + ALT_EFG_THREE_FG
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="card">
+              <h3>Free throws</h3>
+              <div class="equation">ALT_FT = ALT_FT_FREQ + ALT_FT_SEVERITY</div>
+              <p>
+                Frequency prices each first-chance FT trip at the loaded-sample average
+                trip value. Severity is what remains: trip type mix plus FT shooting.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Turnovers</h3>
+              <div class="equation">ALT_TOV_VALUE = ALT_BADPASS_TOV_VALUE + ALT_SCORING_TOV_VALUE</div>
+              <p>
+                This is point-valued, not the old rate-style <code>ALT_TOV</code>. True
+                first-chance turnover rows get the average non-turnover first-chance
+                scoring value as a loss.
+              </p>
+            </div>
+          </div>
+          <div class="card warning">
+            <h3>The first-chance turnover guard</h3>
+            <p>
+              A row is a true first-chance turnover only if there was no prior first-chance
+              FGA or FT completion in the same possession. If the possession already created
+              first-chance scoring, the later terminal turnover does not also become the
+              first-chance TOV bucket.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-grid">
+        <div class="section-intro">
+          <h2>The ridge matrix</h2>
+          <p>
+            Every component is solved as a RAPM problem. That is the important engineering
+            choice: we are not assigning a player his box-score events. We are estimating
+            how lineups with him change the target.
+          </p>
+        </div>
+        <div>
+          <div class="card">
+            <h3>A toy possession row</h3>
+            <div class="matrix" aria-label="Toy design matrix row">
+              <div class="cell header">row</div>
+              <div class="cell header">A_off</div>
+              <div class="cell header">B_off</div>
+              <div class="cell header">C_off</div>
+              <div class="cell header">D_off</div>
+              <div class="cell header">E_off</div>
+              <div class="cell header">F_def</div>
+              <div class="cell header">G_def</div>
+              <div class="cell header">H_def</div>
+              <div class="cell header">I_def</div>
+              <div class="cell header">J_def</div>
+              <div class="cell header">target y</div>
+
+              <div class="cell">p123</div>
+              <div class="cell on-o">1</div>
+              <div class="cell on-o">1</div>
+              <div class="cell on-o">1</div>
+              <div class="cell on-o">1</div>
+              <div class="cell on-o">1</div>
+              <div class="cell on-d">1</div>
+              <div class="cell on-d">1</div>
+              <div class="cell on-d">1</div>
+              <div class="cell on-d">1</div>
+              <div class="cell on-d">1</div>
+              <div class="cell">ALT_FT</div>
+            </div>
+            <p>
+              The same lineup row can be solved once with <code>ALT_FT</code>, once with
+              <code>ALT_TOV_VALUE</code>, once with <code>ALT_EFG_RIM_FREQ</code>, and so on.
+              The matrix is the common measuring device. The target changes.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>The objective</h3>
+            <div class="equation">
+              min || W^(1/2) (y - X_off beta_off - X_def beta_def) ||^2<br>
+              &nbsp;&nbsp;+ alpha_off || beta_off - prior_off ||^2<br>
+              &nbsp;&nbsp;+ alpha_def || beta_def - prior_def ||^2
+            </div>
+            <p>
+              Pure solves shrink toward zero. True-prior solves shrink toward priors.
+              Offense and defense can have different alphas because their signal and noise
+              are not the same. The public file sign-flips defense so positive defensive
+              columns mean good defense.
+            </p>
+          </div>
+
+          <div class="two-col">
+            <div class="card success">
+              <h3>Why reuse the matrix?</h3>
+              <p>
+                If the only thing changing is <code>y</code>, component differences are
+                interpretable as different answers to the same lineup question.
+              </p>
+            </div>
+            <div class="card warning">
+              <h3>Why coefficient sums can drift</h3>
+              <p>
+                Separate ridge solves, centering, time weights, and rounded exports can
+                leave tiny coefficient gaps even when the processed-row algebra is exact.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-grid">
+        <div class="section-intro">
+          <h2>The design decisions</h2>
+          <p>
+            The bundle is opinionated. These choices are what make it readable and less
+            likely to collapse into a noisy pile of columns.
+          </p>
+        </div>
+        <ul class="checklist">
+          <li><strong>Use a shared first-chance denominator.</strong> Shot value, FT value,
+            and turnover loss live on the same first-chance possession universe.</li>
+          <li><strong>Use point-valued turnovers for the public additive layer.</strong>
+            <code>ALT_TOV_VALUE</code> is a scoring complement; old rate-style
+            <code>ALT_TOV</code> is useful but not the displayed parent.</li>
+          <li><strong>Use six atomic shot pieces.</strong> Rim, mid, and three each split
+            into frequency value and within-zone make value.</li>
+          <li><strong>Keep broad zone solves as audit-only.</strong> Public rim/mid/three
+            totals are derived from the frequency and FG atoms.</li>
+          <li><strong>Display direct second chance.</strong> <code>oSC</code> and
+            <code>dSC</code> come from <code>SECOND_CHANCE_CLEAN</code>, not from a residual.</li>
+          <li><strong>Let <code>ALT_EFG_BASELINE</code> close the display.</strong> It is a
+            replacement-shot / balancing bucket, not an observed shot-location skill.</li>
+          <li><strong>Do not add assist drilldowns to the display sum.</strong>
+            <code>ASSIST_POINTS</code> and <code>RIM_ASSIST</code> are supporting RAPM
+            diagnostics, not additive children.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="footer">
+      <div class="section-grid">
+        <div class="section-intro">
+          <h2>The goal and the hope</h2>
+          <p>
+            The goal is not to prove that we have isolated the soul of a player. The goal is
+            to make a lineup impact number speak in basketball mechanisms.
+          </p>
+        </div>
+        <div>
+          <div class="card">
+            <h3>The sentence we want</h3>
+            <p>
+              Instead of saying "this player is +4," we want to say: his lineups are +4
+              because they create rim value, avoid first-chance turnover loss, generate
+              useful free throws, survive the second-chance layer, and leave only a small
+              residual after assembly.
+            </p>
+          </div>
+          <div class="card">
+            <h3>The intern's test</h3>
+            <p>
+              For any new component, ask four questions: What is the row target? What parent
+              identity does it obey? What ridge matrix and alpha did we use? What sign
+              convention will the user see?
+            </p>
+          </div>
+          <div class="card callout">
+            <h3>The final rule</h3>
+            <p>
+              A good decomposition makes the scoreboard less mysterious without pretending
+              basketball is less complex than it is.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -83,6 +83,14 @@ ALT_BASELINE_PREFIXES = {
 }
 ALT_FIRST_CHANCE_TOV_PREFIXES = {'ALT_TOV', 'ALT_BADPASS_TOV', 'ALT_SCORING_TOV'}
 ALT_PREFIXES = ALT_BASELINE_PREFIXES | ALT_FIRST_CHANCE_TOV_PREFIXES
+FIRST_CHANCE_MODE_PREFIXES = {
+    'FC_TRANSITION_SCORING',
+    'FC_HALFCOURT_SCORING',
+    'FC_MODE_MIX',
+    'FC_TRANSITION_VALUE',
+    'FC_HALFCOURT_VALUE',
+}
+FIRST_CHANCE_ALIAS_PREFIXES = ALT_PREFIXES | FIRST_CHANCE_MODE_PREFIXES
 ALT_COMPONENT_COLUMNS = {
     'ALT_TS': 'Net_Diff',
     'ALT_EFG': 'FC_EFG_Diff',
@@ -323,6 +331,71 @@ def compute_alt_first_chance_baselines(
             prefixes_to_compute,
         )
 
+    return baselines
+
+
+def compute_first_chance_mode_baselines(
+    df: pd.DataFrame,
+    timedecay: bool = False,
+    half_life=None,
+) -> dict[str, float]:
+    """Compute same-sample first-chance transition/half-court PPP baselines."""
+    required = {'Net_Diff', 'Is_FC_Transition_Possession'}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(
+            "First-chance mode aliases require FIRST_CHANCE rows with "
+            f"{sorted(missing)}."
+        )
+
+    y = pd.to_numeric(df['Net_Diff'], errors='coerce')
+    if y.isna().any():
+        raise ValueError("First-chance mode aliases found missing Net_Diff values.")
+
+    is_transition = (
+        pd.to_numeric(df['Is_FC_Transition_Possession'], errors='coerce')
+        .fillna(0)
+        .astype(int)
+        .eq(1)
+    )
+    if not is_transition.any():
+        raise ValueError("Could not compute first-chance transition baseline: no transition rows found.")
+    if is_transition.all():
+        raise ValueError("Could not compute first-chance half-court baseline: no non-transition rows found.")
+
+    if timedecay:
+        decay_half_life = half_life if half_life else 700
+        decay_base = half_life_to_decay_base(decay_half_life)
+        date_col = 'game_date' if 'game_date' in df.columns else 'date'
+        weights = compute_time_decay_weights_from_dates(df[date_col], decay_base=decay_base)
+    else:
+        decay_half_life = None
+        weights = None
+
+    values = y.values
+    transition_mask = is_transition.values
+    if weights is None:
+        transition_ppp = float(values[transition_mask].mean())
+        halfcourt_ppp = float(values[~transition_mask].mean())
+    else:
+        transition_ppp = float(np.average(values[transition_mask], weights=weights[transition_mask]))
+        halfcourt_ppp = float(np.average(values[~transition_mask], weights=weights[~transition_mask]))
+
+    baselines = {
+        'transition_ppp': transition_ppp,
+        'halfcourt_ppp': halfcourt_ppp,
+    }
+    if timedecay:
+        logging.info(
+            "Computed first-chance mode baselines %s with time decay (half-life=%s)",
+            {key: round(value, 6) for key, value in baselines.items()},
+            decay_half_life,
+        )
+    else:
+        logging.info(
+            "Computed first-chance mode baselines %s on the exact loaded sample",
+            {key: round(value, 6) for key, value in baselines.items()},
+        )
     return baselines
 
 
@@ -1204,6 +1277,16 @@ def append_strength_split_entries(
                 row_indices.append(row_idx)
                 col_indices.append(player_to_col[feat_name])
 
+    for player_idx in range(5):
+        player_ids = defense_players[:, player_idx]
+        for row_idx, pid in enumerate(player_ids):
+            if pid <= 0:
+                continue
+            feat_name = f"{int(pid)}_facing_{def_buckets[row_idx]}_def"
+            if feat_name in player_to_col:
+                row_indices.append(row_idx)
+                col_indices.append(player_to_col[feat_name])
+
 
 def prepare_strength_sensitivity_payload(df_transformed: pd.DataFrame, darko_history_path) -> dict:
     """
@@ -1394,7 +1477,8 @@ def append_strength_sensitivity_entries(
 ###############################################################################
 # 1) DETECT FILE TYPE AND PREPARE COLUMNS
 ###############################################################################
-def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None):
+def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None,
+                                 fc_mode_baselines=None):
     """
     Detect the type of CSV file and prepare Off_Diff and Def_Diff columns.
 
@@ -1402,14 +1486,19 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
     - RAPM: has Net_Diff, Off_Diff, Def_Diff already
     - SPECIAL_RAPM: has Net_Diff, Off_Diff, Def_Diff (same as RAPM)
     - TOV: has Is_Turnover -> create Off_Diff, Def_Diff
+    - BLOCK_RECOVERY: has Block_Recovered_By_Defense -> create Off_Diff, Def_Diff
     - BADPASS_TOV: uses Is_BadPass_TOV from TOV file
     - SCORING_TOV: derives Is_Turnover - Is_BadPass_TOV from TOV file
     - ALT_TS: uses FIRST_CHANCE Net_Diff plus same-sample non-turnover baseline on turnover rows
     - ALT_EFG / ALT_SQ / ALT_MAKE / ALT_FT: use FIRST_CHANCE scoring diffs plus same-sample turnover-row baselines
     - ALT_TOV / ALT_BADPASS_TOV / ALT_SCORING_TOV: use true first-chance turnover flags
+    - FC_TRANSITION_SCORING / FC_HALFCOURT_SCORING: same-denominator conditional targets using same-sample mode PPP placeholders
+    - FC_MODE_MIX / FC_TRANSITION_VALUE / FC_HALFCOURT_VALUE: additive first-chance mode decomposition targets
     - REB: has Offensive_Rebound -> create Off_Diff, Def_Diff
     - ASSIST_POINTS: has Assist_Points -> create Off_Diff, Def_Diff
     - RIM_ASSIST: has Is_Rim_Assist -> create Off_Diff, Def_Diff
+    - DUNK: has Is_Dunk -> create Off_Diff, Def_Diff
+    - DUNK_ASSIST: has Is_Dunk_Assist -> create Off_Diff, Def_Diff
     - RIM_FREQ: has Is_Rim_Attempt -> create Off_Diff, Def_Diff
     - RIM_FG_PCT: has Is_Rim_Make -> create Off_Diff, Def_Diff
     - THREE_FREQ: has Is_Three_Attempt -> create Off_Diff, Def_Diff
@@ -1420,6 +1509,7 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
     - TRANSITION_FREQ: has Is_Transition -> create Off_Diff, Def_Diff
     - TRANSITION_RIM: has Is_Transition_Rim -> create Off_Diff, Def_Diff
     - INITIAL_EV: has Initial_EV -> create Off_Diff, Def_Diff
+    - RUSSELL_SHOTQUALITY / CONTEXT_SHOTQUALITY: has Off_Diff, Def_Diff from processed possession parquet
     - TS: has Net_Diff -> create Off_Diff, Def_Diff
 
     Args:
@@ -1531,6 +1621,38 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
         df['Off_Diff'] = net_diff
         df['Def_Diff'] = -net_diff
         return df
+    elif prefix in FIRST_CHANCE_MODE_PREFIXES and 'Net_Diff' in df.columns:
+        if fc_mode_baselines is None:
+            raise ValueError(f"{prefix} requires same-sample first-chance mode baselines.")
+        if 'Is_FC_Transition_Possession' not in df.columns:
+            raise ValueError(f"{prefix} requires FIRST_CHANCE rows with Is_FC_Transition_Possession.")
+        logging.info("Detected %s (same-denominator first-chance mode target)", prefix)
+        first_chance = pd.to_numeric(df['Net_Diff'], errors='coerce')
+        if first_chance.isna().any():
+            raise ValueError(f"{prefix} found missing Net_Diff values in the loaded sample.")
+        is_transition = (
+            pd.to_numeric(df['Is_FC_Transition_Possession'], errors='coerce')
+            .fillna(0)
+            .astype(int)
+            .eq(1)
+        )
+        transition_ppp = fc_mode_baselines['transition_ppp']
+        halfcourt_ppp = fc_mode_baselines['halfcourt_ppp']
+        if prefix == 'FC_TRANSITION_SCORING':
+            target = np.where(is_transition, first_chance, transition_ppp)
+        elif prefix == 'FC_HALFCOURT_SCORING':
+            target = np.where(is_transition, halfcourt_ppp, first_chance)
+        elif prefix == 'FC_MODE_MIX':
+            target = np.where(is_transition, transition_ppp, halfcourt_ppp)
+        elif prefix == 'FC_TRANSITION_VALUE':
+            target = np.where(is_transition, first_chance - transition_ppp, 0.0)
+        elif prefix == 'FC_HALFCOURT_VALUE':
+            target = np.where(is_transition, 0.0, first_chance - halfcourt_ppp)
+        else:
+            raise ValueError(f"Unsupported first-chance mode prefix: {prefix}")
+        df['Off_Diff'] = target
+        df['Def_Diff'] = -df['Off_Diff']
+        return df
 
     if 'Off_Diff' in df.columns and 'Def_Diff' in df.columns:
         if pure and 'Net_Diff' in df.columns:
@@ -1552,6 +1674,10 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
         # For offensive rebounds: offense gets rebound (good), defense allows rebound (bad)
         df['Off_Diff'] = df['Offensive_Rebound']   # Positive for offense (good)
         df['Def_Diff'] = -df['Offensive_Rebound']  # Negative for defense (bad)
+    elif 'Block_Recovered_By_Defense' in df.columns:
+        logging.info("Detected BLOCK_RECOVERY file (has Block_Recovered_By_Defense)")
+        df['Off_Diff'] = -df['Block_Recovered_By_Defense']
+        df['Def_Diff'] = df['Block_Recovered_By_Defense']
     elif 'Assist_Points' in df.columns:
         logging.info("Detected ASSIST_POINTS file (has Assist_Points)")
         df['Off_Diff'] = df['Assist_Points']
@@ -1560,6 +1686,14 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
         logging.info("Detected RIM_ASSIST file (has Is_Rim_Assist)")
         df['Off_Diff'] = df['Is_Rim_Assist']
         df['Def_Diff'] = -df['Is_Rim_Assist']
+    elif 'Is_Dunk_Assist' in df.columns:
+        logging.info("Detected DUNK_ASSIST file (has Is_Dunk_Assist)")
+        df['Off_Diff'] = df['Is_Dunk_Assist']
+        df['Def_Diff'] = -df['Is_Dunk_Assist']
+    elif 'Is_Dunk' in df.columns:
+        logging.info("Detected DUNK file (has Is_Dunk)")
+        df['Off_Diff'] = df['Is_Dunk']
+        df['Def_Diff'] = -df['Is_Dunk']
     elif 'Is_Rim_Attempt' in df.columns:
         logging.info("Detected RIM_FREQ file (has Is_Rim_Attempt)")
         # For rim frequency: offense attempts rim (good), defense allows rim attempt (bad)
@@ -2598,7 +2732,7 @@ def _load_single_file(input_file, pure, prefix=None):
         season_end_year = parse_processed_season_end_year(input_file)
         if season_end_year is not None:
             df['source_season_end_year'] = season_end_year
-        if prefix not in ALT_PREFIXES:
+        if prefix not in FIRST_CHANCE_ALIAS_PREFIXES:
             df = detect_file_type_and_prepare(df, pure=pure, prefix=prefix)
         return (input_file, df, len(df))
     except Exception as e:
@@ -2641,7 +2775,7 @@ def _load_files_sequential(input_files, pure, prefix=None):
             if season_end_year is not None:
                 df['source_season_end_year'] = season_end_year
             logging.info(f"  Loaded {len(df)} possessions from {input_file}")
-            if prefix not in ALT_PREFIXES:
+            if prefix not in FIRST_CHANCE_ALIAS_PREFIXES:
                 df = detect_file_type_and_prepare(df, pure=pure, prefix=prefix)
             all_dfs.append(df)
         except Exception as e:
@@ -3115,6 +3249,18 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
         df = detect_file_type_and_prepare(df, pure=pure, prefix=prefix, alt_baselines=alt_baselines)
     elif prefix in ALT_FIRST_CHANCE_TOV_PREFIXES:
         df = detect_file_type_and_prepare(df, pure=pure, prefix=prefix)
+    elif prefix in FIRST_CHANCE_MODE_PREFIXES:
+        fc_mode_baselines = compute_first_chance_mode_baselines(
+            df,
+            timedecay=timedecay,
+            half_life=half_life,
+        )
+        df = detect_file_type_and_prepare(
+            df,
+            pure=pure,
+            prefix=prefix,
+            fc_mode_baselines=fc_mode_baselines,
+        )
     
     def load_prior(prior_file, label):
         if not prior_file:
@@ -3783,9 +3929,12 @@ Examples:
     parser.add_argument('prefix',
                        choices=['RAPM', 'TOV', 'REB', 'TS', 'RIM_FREQ', 'RIM_FG_PCT', 'LA_RAPM', 'MIDRANGE_FREQ',
                                 'MIDRANGE_FG_PCT',
-                                'ASSIST_POINTS', 'RIM_ASSIST', 'THREE_FREQ', 'THREE_FG_PCT', 'PLAYTYPE_TS_MIX',
+                                'ASSIST_POINTS', 'RIM_ASSIST', 'DUNK', 'DUNK_ASSIST',
+                                'BLOCK_RECOVERY',
+                                'THREE_FREQ', 'THREE_FG_PCT', 'PLAYTYPE_TS_MIX',
                                 'PLAYTYPE_PROXY_PTS',
                                 'TRANSITION_FREQ', 'TRANSITION_RIM', 'INITIAL_EV', 'INITIAL_EV_BETA', 'SPECIAL_RAPM', 'EV_RAPM',
+                                'RUSSELL_SHOTQUALITY', 'CONTEXT_SHOTQUALITY',
                                'SQ_POSS', 'FT_PREMIUM', 'CONTEST', 'SECOND_CHANCE', 'FIRST_CHANCE',
                                'FIRST_CHANCE_CLEAN', 'SECOND_CHANCE_CLEAN', 'BADPASS_TOV', 'SCORING_TOV',
                               'ALT_TS', 'ALT_EFG', 'ALT_SQ', 'ALT_MAKE', 'ALT_FT',
@@ -3797,6 +3946,8 @@ Examples:
                               'ALT_EFG_THREE_FREQ', 'ALT_EFG_THREE_FG',
                               'ALT_TOV_VALUE', 'ALT_BADPASS_TOV_VALUE', 'ALT_SCORING_TOV_VALUE',
                               'ALT_FC_COMPLETION',
+                              'FC_TRANSITION_SCORING', 'FC_HALFCOURT_SCORING',
+                              'FC_MODE_MIX', 'FC_TRANSITION_VALUE', 'FC_HALFCOURT_VALUE',
                               'ALT_TOV', 'ALT_BADPASS_TOV', 'ALT_SCORING_TOV'],
                        help='Data type to analyze')
     parser.add_argument('start_year', 
@@ -4008,6 +4159,11 @@ Examples:
         'ALT_BADPASS_TOV_VALUE': 'FIRST_CHANCE',
         'ALT_SCORING_TOV_VALUE': 'FIRST_CHANCE',
         'ALT_FC_COMPLETION': 'FIRST_CHANCE',
+        'FC_TRANSITION_SCORING': 'FIRST_CHANCE',
+        'FC_HALFCOURT_SCORING': 'FIRST_CHANCE',
+        'FC_MODE_MIX': 'FIRST_CHANCE',
+        'FC_TRANSITION_VALUE': 'FIRST_CHANCE',
+        'FC_HALFCOURT_VALUE': 'FIRST_CHANCE',
         'ALT_TOV': 'FIRST_CHANCE',
         'ALT_BADPASS_TOV': 'FIRST_CHANCE',
         'ALT_SCORING_TOV': 'FIRST_CHANCE',

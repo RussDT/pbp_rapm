@@ -199,9 +199,30 @@ Important caveat:
 
 The standard `weighted_factors_*.csv` output is unchanged.
 
-The alternate build writes a parallel artifact:
+The active public Alt3 build writes:
+
+- `weighted_factors_alt3_efg_value_*`
+
+This is the current interpretation path. It uses direct `SECOND_CHANCE_CLEAN`
+for `oSC` / `dSC` and uses `ALT_EFG_BASELINE` as the balancing bucket that
+closes the public display to total RAPM.
+
+The player-facing builder writes both CSV and parquet artifacts by default:
+
+- `master_results/weighted_factors_alt3_efg_value_*.csv`
+- `master_results/weighted_factors_alt3_efg_value_*.parquet`
+
+The daily pipeline refreshes the active 2026-intersecting rolling set and syncs
+both formats to the downstream `rapms` repo.
+
+The older alternate build writes a legacy/audit artifact:
 
 - `weighted_factors_alt3_*`
+
+That older file family rebuilds residual `oSC` / `dSC` buckets from
+`off - oFC` and `def - dFC`. Keep it for comparison, player-universe
+compatibility, and historical audits, but do not use it as the current public
+Alt3 display model.
 
 The team-level companion is built with:
 
@@ -226,7 +247,7 @@ Columns:
 - `off`, `def`, `net_rapm`, `RESID`
 - `possessions`, `off_poss`, `def_poss`
 
-Definitions:
+Legacy `weighted_factors_alt3_*` definitions:
 
 - ShotQuality windows:
   - `oALT_EFG = oALT_SQ + oALT_MAKE`
@@ -243,7 +264,7 @@ Definitions:
 - `oSC = off - oFC`
 - `dSC = def - dFC`
 
-Before publishing, the alt3 factor columns are recentered in place by player possession weights: offensive components use `off_poss`, defensive components use `def_poss`. `off`, `def`, and `net_rapm` remain the raw RAPM totals; `oFC` / `dFC` and `oSC` / `dSC` are rebuilt after centering so the public decomposition still adds up at the player level. This keeps weighted-mean factor cards centered while preserving `oSC = off - oFC` and `dSC = def - dFC`.
+Before publishing the legacy file family, the alt3 factor columns are recentered in place by player possession weights: offensive components use `off_poss`, defensive components use `def_poss`. `off`, `def`, and `net_rapm` remain the raw RAPM totals; `oFC` / `dFC` and residual `oSC` / `dSC` are rebuilt after centering so the legacy decomposition still adds up at the player level. This keeps weighted-mean factor cards centered while preserving `oSC = off - oFC` and `dSC = def - dFC`.
 
 The published rolling `weighted_factors_alt3_*_all_rb_se_a2000_4000.csv` files now use point-valued first-chance turnover-loss drilldowns for the public `ALT_TOV` split. `ALT_BADPASS_TOV_VALUE` and `ALT_SCORING_TOV_VALUE` value their turnover rows against the same first-chance average-points baseline used by the clean alt3 accounting, then the bundle centers the child columns by player possession weights and rebuilds the parent:
 
@@ -286,7 +307,8 @@ What is exact:
 What matters operationally:
 
 - the alternate clean 3-factor net/off/def regression still reconstructs RAPM extremely tightly on the player surface
-- the public `weighted_factors_alt3_*` artifact uses `oSC` / `dSC` as balancing buckets so the alt surface still sums exactly to `off` / `def`
+- the active public `weighted_factors_alt3_efg_value_*` artifact displays direct `SECOND_CHANCE_CLEAN` as `oSC` / `dSC`; `ALT_EFG_BASELINE` is the balancing bucket that closes the EFG-value display to `off` / `def`
+- the legacy `weighted_factors_alt3_*` artifact uses `oSC` / `dSC` as balancing buckets so that older alt surface still sums exactly to `off` / `def`
 - the alt turnover sub-split is chained the same way as the standard TOV sub-split:
   - `ALT_BADPASS_TOV / ALT_SCORING_TOV -> ALT_TOV -> net RAPM`
 - on a `26 RS` validation run, the alternate net regression lands at `R² ≈ 0.9992`

@@ -219,6 +219,29 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
     is_three_fga = is_fga & shot_flags['is_3pt'].astype(bool)
     is_mid_fga = is_fga & ~is_rim_fga & ~is_three_fga
     first_chance_fga = is_fga & ~nba_df_checked['after_miss']
+    if 'is_transition' in nba_df_checked.columns:
+        is_transition_fga = (
+            nba_df_checked['is_transition']
+            .fillna(False)
+            .astype(bool)
+            & first_chance_fga
+        )
+    else:
+        is_transition_fga = pd.Series(False, index=nba_df_checked.index)
+    nba_df_checked['Is_FC_Transition_Possession'] = (
+        is_transition_fga
+        .astype(int)
+        .groupby(poss_groupers, sort=False)
+        .transform('max')
+        .astype(int)
+    )
+    nba_df_checked['Has_FC_FGA'] = (
+        first_chance_fga
+        .astype(int)
+        .groupby(poss_groupers, sort=False)
+        .transform('max')
+        .astype(int)
+    )
     if first_chance_fga.any():
         fc_efg_avg_pts = float(nba_df_checked.loc[first_chance_fga, 'ActualNet'].mean())
     elif is_fga.any():

@@ -54,6 +54,14 @@ AUXILIARY_FACTOR_METRICS = [
     ('ASSIST_POINTS', 'assist_points', 'ASSIST_POINTS'),
 ]
 
+FIRST_CHANCE_MODE_METRICS = [
+    ('FC_TRANSITION_SCORING', 'fc_transition_scoring'),
+    ('FC_HALFCOURT_SCORING', 'fc_halfcourt_scoring'),
+    ('FC_MODE_MIX', 'fc_mode_mix'),
+    ('FC_TRANSITION_VALUE', 'fc_transition_value'),
+    ('FC_HALFCOURT_VALUE', 'fc_halfcourt_value'),
+]
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -1136,6 +1144,10 @@ def organize_results(year_range, season_suffix, start_year, end_year, season_typ
             f"{file_stem}_{year_range}_{other_suffix}_results.csv"
             for _, file_stem, _ in AUXILIARY_FACTOR_METRICS
         ],
+        *[
+            f"{file_stem}_{year_range}_{other_suffix}_results.csv"
+            for _, file_stem in FIRST_CHANCE_MODE_METRICS
+        ],
         f"alt_ts_{year_range}_{other_suffix}_results.csv",
         f"alt_efg_{year_range}_{other_suffix}_results.csv",
         f"alt_sq_{year_range}_{other_suffix}_results.csv",
@@ -1408,6 +1420,7 @@ Examples:
     ]
     if normalize_season_end_year(args.start_year) >= 2024:
         rapm_types.extend(['ALT_SQ', 'ALT_MAKE'])
+        rapm_types.extend([metric_type for metric_type, _ in FIRST_CHANCE_MODE_METRICS])
 
     logging.info("\nStep 1: Running RAPM analyses in parallel...")
     start_time = time.time()
@@ -1501,6 +1514,9 @@ Examples:
     logging.info(f"  - ft_premium_{year_range}_{other_suffix}_results.csv")
     for _, file_stem, _ in AUXILIARY_FACTOR_METRICS:
         logging.info(f"  - {file_stem}_{year_range}_{other_suffix}_results.csv")
+    if normalize_season_end_year(args.start_year) >= 2024:
+        for _, file_stem in FIRST_CHANCE_MODE_METRICS:
+            logging.info(f"  - {file_stem}_{year_range}_{other_suffix}_results.csv")
     logging.info(f"  - first_chance_{year_range}_{other_suffix}_results.csv")
     logging.info(f"  - alt_ts_{year_range}_{other_suffix}_results.csv")
     logging.info(f"  - alt_tov_{year_range}_{other_suffix}_results.csv")

@@ -35,6 +35,27 @@ This is documented in [Alternate Clean 3-Factor](./ALTERNATE_CLEAN_3_FACTOR.md).
 - On ShotQuality seasons, `FIRST_CHANCE` also carries `FC_SQ_Diff` and `FC_MAKE_Diff`, and the solver can expose `ALT_SQ` and `ALT_MAKE` as the richer subcomponents of `ALT_EFG`.
 - `ALT_TOV` is a true first-chance turnover-rate metric built from turnovers before the first offensive miss, and `ALT_BADPASS_TOV` / `ALT_SCORING_TOV` are its matching children.
 
+### ShotQuality-Era First-Chance Mode Split
+
+For 2023-24 through 2025-26, `FIRST_CHANCE` also labels whether a standard first-chance possession had at least one first-chance FGA with ShotQuality `is_transition=True`.
+
+- `Is_FC_Transition_Possession = 1` when any field-goal attempt before the first offensive miss is tagged transition.
+- `Has_FC_FGA = 1` when the possession has a field-goal attempt before the first offensive miss.
+- FT-only, turnover-only, and no-FGA possessions are in the non-transition bucket unless a separate transition-possession detector is added later.
+
+`rapm.py` exposes two same-denominator conditional targets:
+
+- `FC_TRANSITION_SCORING`: actual `FIRST_CHANCE.Net_Diff` on transition possessions, same-sample transition PPP placeholder on non-transition possessions.
+- `FC_HALFCOURT_SCORING`: actual `FIRST_CHANCE.Net_Diff` on non-transition possessions, same-sample non-transition PPP placeholder on transition possessions.
+
+It also exposes the additive version of the same split:
+
+- `FC_MODE_MIX = transition * transition_ppp + nontransition * halfcourt_ppp`
+- `FC_TRANSITION_VALUE = transition * (FIRST_CHANCE.Net_Diff - transition_ppp)`
+- `FC_HALFCOURT_VALUE = nontransition * (FIRST_CHANCE.Net_Diff - halfcourt_ppp)`
+
+At the processed-row level, `FC_MODE_MIX + FC_TRANSITION_VALUE + FC_HALFCOURT_VALUE = FIRST_CHANCE.Net_Diff`. The same-sample PPP baselines are computed inside `rapm.py` on the loaded run window and respect `--timedecay` / `--half-life` when present.
+
 ### Optional Season Fixed Effects
 
 `rapm.py` also supports an optional `--season-effects` mode for multi-season runs.
@@ -467,6 +488,44 @@ The solver exports `non_shooter_oreb`, `shooter_miss_recoverability`, and `def_o
 
 ---
 
+## 4c. BLOCK_RECOVERY (Defensive Block Recovery Rate)
+
+**Function**: `process_block_recovery_py()`
+
+**What it measures**: Whether the defending team recovers possession after a blocked field-goal attempt.
+
+### Observation Definition
+
+Each observation is a blocked field-goal attempt. The denominator is blocked FGAs, not all missed shots or all possessions.
+
+The processor builds the row on the blocked shot event, maps `O1-O5` to the shooting team and `D1-D5` to the defending team, then scans the next few same-period play-by-play rows for the first non-admin resolution event.
+
+### Numerator
+
+```python
+Block_Recovered_By_Defense = 1 if the defending side gets the recovery resolution, else 0
+```
+
+The resolution is usually the next rebound row. Jump-ball tips and immediate post-block turnovers/shots are also used when they are the first non-admin event after the block.
+
+**Output column**: `Block_Recovered_By_Defense`
+
+**Internal target convention in rapm.py**:
+```python
+Off_Diff = -Block_Recovered_By_Defense  # Offensive lineups avoid losing blocked shots
+Def_Diff = +Block_Recovered_By_Defense  # Defensive lineups recover their blocks
+```
+
+The exported result CSV keeps the repo's standard display convention, where `net_rapm = off - def`; for defensive-side block recovery impact, lower `def` values are better.
+
+Run the standard solver with:
+
+```bash
+python nba_pipeline/scripts/rapm.py BLOCK_RECOVERY 21 26 ALL
+```
+
+---
+
 ## 5. RIM_FREQ (Rim Frequency RAPM)
 
 **Function**: `process_rim_freq_py()`
@@ -634,6 +693,63 @@ The possession output is built as a cumulative game total and then differenced a
 **Output column**: `Is_Rim_Assist`
 
 Most possessions are `0` or `1`. Rare `2` rows can occur when a continued possession contains two assisted rim makes before the possession ends.
+
+---
+
+## 8a. DUNK
+
+**Function**: `process_dunk_py()`
+
+**What it measures**: Made dunks per possession
+
+### Possession Definition:
+
+Uses the same standard `End_of_Possession` logic as RAPM.
+
+### Event Numerator:
+
+```python
+is_dunk = (event_action_type in DUNK_ACTION_TYPES) OR description contains "dunk"
+
+Dunk_Event = 1 if (event_type == "MAKE" AND is_dunk) else 0
+```
+
+The possession output is built as a cumulative game total and then differenced at each standard RAPM possession end.
+
+### Numerator:
+
+**Output column**: `Is_Dunk`
+
+Most possessions are `0` or `1`. Rare `2` rows can occur when a continued possession contains two made dunks before the possession ends.
+
+---
+
+## 8b. DUNK_ASSIST
+
+**Function**: `process_dunk_assist_py()`
+
+**What it measures**: Assisted made dunks per possession
+
+### Possession Definition:
+
+Uses the same standard `End_of_Possession` logic as RAPM.
+
+### Event Numerator:
+
+```python
+is_assisted_make = (event_type == "MAKE") AND shot_text contains "(... N AST)"
+is_dunk = (event_action_type in DUNK_ACTION_TYPES) OR description contains "dunk"
+
+Dunk_Assist_Event = 1 if (is_assisted_make AND is_dunk) else 0
+```
+
+The possession output is built as a cumulative game total and then differenced at each standard RAPM possession end.
+
+### Numerator:
+
+**Output column**: `Is_Dunk_Assist`
+
+Most possessions are `0` or `1`. Rare `2` rows can occur when a continued possession contains two assisted made dunks before the possession ends.
 
 ---
 
@@ -862,10 +978,13 @@ allowed values mean suppressing those buckets.
 | **TOV** | Standard EOP | `Is_Turnover` | 0 or 1 | Fewer TOVs* | More forced TOVs* |
 | **REB** | Rebound opportunities only | `Offensive_Rebound` | 0 or 1 | More OREBs | Fewer OREBs allowed |
 | **SHOOTER_OREB** | Missed FGA with next-event rebound | `Offensive_Rebound`, `Self_Offensive_Rebound` | 0 or 1 | More teammate/self recovery after misses | Fewer OREBs allowed |
+| **BLOCK_RECOVERY** | Blocked FGA | `Block_Recovered_By_Defense` | 0 or 1 | Avoids losing blocked shots | More recovered blocks |
 | **RIM_FREQ** | Every FGA | `Is_Rim_Attempt` | 0 or 1 | More rim attacks | Fewer rim attempts allowed |
 | **RIM_FG_PCT** | Rim attempts only | `Is_Rim_Make` | 0 or 1 | Better rim finishing | Better rim protection |
 | **ASSIST_POINTS** | Standard EOP | `Assist_Points` | Usually 0, 2, 3 | More assisted scoring | Allows less assisted scoring |
 | **RIM_ASSIST** | Standard EOP | `Is_Rim_Assist` | Usually 0 or 1 | More assisted rim makes | Allows fewer assisted rim makes |
+| **DUNK** | Standard EOP | `Is_Dunk` | Usually 0 or 1 | More made dunks | Allows fewer made dunks |
+| **DUNK_ASSIST** | Standard EOP | `Is_Dunk_Assist` | Usually 0 or 1 | More assisted made dunks | Allows fewer assisted made dunks |
 | **THREE_FREQ** | Every FGA | `Is_Three_Attempt` | 0 or 1 | More 3PA | Allows fewer 3PA |
 | **THREE_FG_PCT** | 3PA only | `Is_Three_Make` | 0 or 1 | Better 3PT shooting | Allows lower 3PT% |
 | **MIDRANGE_FREQ** | Every FGA | `Is_Midrange_Attempt` | 0 or 1 | More midrange FGA | Allows more midrange FGA |

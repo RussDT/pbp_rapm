@@ -470,6 +470,126 @@ def append_first_chance_rows(rows: list[dict], df: pd.DataFrame, *, season_end_y
             source_file=source_file,
             source_column="Is_Turnover",
         )
+
+    if "Is_FC_Transition_Possession" in df.columns:
+        y = pd.to_numeric(df["Net_Diff"], errors="coerce")
+        is_transition = (
+            pd.to_numeric(df["Is_FC_Transition_Possession"], errors="coerce")
+            .fillna(0)
+            .astype(int)
+            .eq(1)
+        )
+        transition_values = y[is_transition]
+        halfcourt_values = y[~is_transition]
+        transition_baseline, transition_count = coerce_mean(transition_values)
+        halfcourt_baseline, halfcourt_count = coerce_mean(halfcourt_values)
+        transition_share = float(is_transition.mean()) if len(is_transition) else None
+
+        mode_metrics = [
+            "FC_TRANSITION_SCORING",
+            "FC_HALFCOURT_SCORING",
+            "FC_MODE_MIX",
+            "FC_TRANSITION_VALUE",
+            "FC_HALFCOURT_VALUE",
+        ]
+        for metric_key in mode_metrics:
+            emitted_metrics.append(metric_key)
+            add_solver_stat(
+                rows,
+                metric_key=metric_key,
+                stat_name="transition_ppp_baseline",
+                mean_value=transition_baseline,
+                sample_count=transition_count,
+                row_count=row_count,
+                season_end_year=season_end_year,
+                season_type=season_type,
+                source_prefix=source_prefix,
+                source_file=source_file,
+                source_column="Net_Diff|Is_FC_Transition_Possession=1",
+            )
+            add_solver_stat(
+                rows,
+                metric_key=metric_key,
+                stat_name="halfcourt_ppp_baseline",
+                mean_value=halfcourt_baseline,
+                sample_count=halfcourt_count,
+                row_count=row_count,
+                season_end_year=season_end_year,
+                season_type=season_type,
+                source_prefix=source_prefix,
+                source_file=source_file,
+                source_column="Net_Diff|Is_FC_Transition_Possession=0",
+            )
+            add_solver_stat(
+                rows,
+                metric_key=metric_key,
+                stat_name="transition_share",
+                mean_value=transition_share,
+                sample_count=row_count,
+                row_count=row_count,
+                season_end_year=season_end_year,
+                season_type=season_type,
+                source_prefix=source_prefix,
+                source_file=source_file,
+                source_column="Is_FC_Transition_Possession",
+            )
+
+        if transition_baseline is not None and halfcourt_baseline is not None:
+            append_signed_metric_rows(
+                rows,
+                metric_key="FC_TRANSITION_SCORING",
+                series=y.where(is_transition, transition_baseline),
+                season_end_year=season_end_year,
+                season_type=season_type,
+                row_count=row_count,
+                source_prefix=source_prefix,
+                source_file=source_file,
+                source_column="Net_Diff|transition rows; transition_ppp placeholder otherwise",
+            )
+            append_signed_metric_rows(
+                rows,
+                metric_key="FC_HALFCOURT_SCORING",
+                series=y.where(~is_transition, halfcourt_baseline),
+                season_end_year=season_end_year,
+                season_type=season_type,
+                row_count=row_count,
+                source_prefix=source_prefix,
+                source_file=source_file,
+                source_column="Net_Diff|halfcourt rows; halfcourt_ppp placeholder otherwise",
+            )
+            append_signed_metric_rows(
+                rows,
+                metric_key="FC_MODE_MIX",
+                series=pd.Series(halfcourt_baseline, index=df.index).where(~is_transition, transition_baseline),
+                season_end_year=season_end_year,
+                season_type=season_type,
+                row_count=row_count,
+                source_prefix=source_prefix,
+                source_file=source_file,
+                source_column="mode_ppp_baseline",
+            )
+            append_signed_metric_rows(
+                rows,
+                metric_key="FC_TRANSITION_VALUE",
+                series=(y - transition_baseline).where(is_transition, 0.0),
+                season_end_year=season_end_year,
+                season_type=season_type,
+                row_count=row_count,
+                source_prefix=source_prefix,
+                source_file=source_file,
+                source_column="Net_Diff-transition_ppp|transition rows",
+            )
+            append_signed_metric_rows(
+                rows,
+                metric_key="FC_HALFCOURT_VALUE",
+                series=(y - halfcourt_baseline).where(~is_transition, 0.0),
+                season_end_year=season_end_year,
+                season_type=season_type,
+                row_count=row_count,
+                source_prefix=source_prefix,
+                source_file=source_file,
+                source_column="Net_Diff-halfcourt_ppp|halfcourt rows",
+            )
     return emitted_metrics
 
 
@@ -614,6 +734,36 @@ def append_solver_rows(solver_rows: list[dict], df: pd.DataFrame, *, source_pref
                 source_column="Is_Turnover-Is_BadPass_TOV",
             )
             emitted_metrics.append("SCORING_TOV")
+        return emitted_metrics
+
+    if source_prefix == "BLOCK_RECOVERY" and "Block_Recovered_By_Defense" in columns:
+        target = pd.to_numeric(df["Block_Recovered_By_Defense"], errors="coerce")
+        recovery_rate, recovery_count = coerce_mean(target)
+        add_solver_stat(
+            solver_rows,
+            metric_key="BLOCK_RECOVERY",
+            stat_name="defensive_recovery_rate",
+            mean_value=recovery_rate,
+            sample_count=recovery_count,
+            row_count=row_count,
+            season_end_year=season_end_year,
+            season_type=season_type,
+            source_prefix=source_prefix,
+            source_file=source_file,
+            source_column="Block_Recovered_By_Defense",
+        )
+        append_signed_metric_rows(
+            solver_rows,
+            metric_key="BLOCK_RECOVERY",
+            series=-target,
+            season_end_year=season_end_year,
+            season_type=season_type,
+            row_count=row_count,
+            source_prefix=source_prefix,
+            source_file=source_file,
+            source_column="Block_Recovered_By_Defense",
+        )
+        emitted_metrics.append("BLOCK_RECOVERY")
         return emitted_metrics
 
     for column in MIRROR_COLUMNS:

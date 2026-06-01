@@ -240,7 +240,7 @@ def stage_results(window: Window, output_suffix: str) -> Path:
     return stage
 
 
-def build_window(window: Window, age_dummies: bool) -> Path:
+def build_window(window: Window, age_dummies: bool) -> list[Path]:
     output_suffix = suffix(age_dummies)
     stage = stage_results(window, output_suffix)
     bundle_path = RESULTS_DIR / bundle_filename(window.year_range, output_suffix)
@@ -255,17 +255,22 @@ def build_window(window: Window, age_dummies: bool) -> Path:
         output=bundle_path,
         decimals=3,
     )
-    output_path, master_path, out = build_weighted_factors(
+    output_path, master_path, parquet_path, master_parquet_path, out = build_weighted_factors(
         bundle_path=bundle_path,
         base_path=base_path,
         output_name=weighted_filename(window.year_range, output_suffix),
         decimals=3,
         copy_to_master=True,
+        write_parquet=True,
     )
     assert master_path is not None
+    assert master_parquet_path is not None
     max_resid = float(out[["oRESID", "dRESID", "RESID"]].abs().max().max())
-    print(f"Built {master_path.name}: rows={len(out):,} max_resid={max_resid:.6f}", flush=True)
-    return master_path
+    print(
+        f"Built {master_path.name} (+ parquet): rows={len(out):,} max_resid={max_resid:.6f}",
+        flush=True,
+    )
+    return [master_path, master_parquet_path]
 
 
 def publish_to_rapms(paths: list[Path], commit_message: str) -> bool:
@@ -401,7 +406,7 @@ def main() -> int:
     if args.only_missing_components:
         return 0
 
-    built = [build_window(window, args.age_dummies) for window in windows]
+    built = [path for window in windows for path in build_window(window, args.age_dummies)]
     print(f"Built weighted-factor bundles: {len(built)}", flush=True)
 
     if args.publish_to_rapms:

@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "Fraunces";
+        src: url("assets/fonts/fraunces-400.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      @font-face {
+        font-family: "Fraunces";
+        src: url("assets/fonts/fraunces-800.ttf") format("truetype");
+        font-weight: 800;
+        font-style: normal;
+      }
+
+      @font-face {
+        font-family: "Fraunces";
+        src: url("assets/fonts/fraunces-900.ttf") format("truetype");
+        font-weight: 900;
+        font-style: normal;
+      }
+
+      @font-face {
+        font-family: "IBM Plex Mono";
+        src: url("assets/fonts/ibm-plex-mono-400.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      @font-face {
+        font-family: "IBM Plex Mono";
+        src: url("assets/fonts/ibm-plex-mono-600.ttf") format("truetype");
+        font-weight: 600;
+        font-style: normal;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #10110f;
+        color: #f3ead7;
+        font-family: "IBM Plex Mono", monospace;
+      }
+
+      #root {
+        width: 1920px;
+        height: 1080px;
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 18% 20%, rgba(216, 137, 72, 0.2), rgba(216, 137, 72, 0) 26%),
+          radial-gradient(circle at 82% 72%, rgba(95, 169, 164, 0.18), rgba(95, 169, 164, 0) 30%),
+          linear-gradient(135deg, #10110f 0%, #14150f 48%, #0e1210 100%);
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        padding: 86px 116px;
+        background-color: #10110f;
+        overflow: hidden;
+      }
+
+      .scene-content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 34px;
+        z-index: 2;
+      }
+
+      .grid {
+        position: absolute;
+        inset: -2px;
+        background-image:
+          linear-gradient(rgba(243, 234, 215, 0.045) 1px, rgba(243, 234, 215, 0) 1px),
+          linear-gradient(90deg, rgba(243, 234, 215, 0.045) 1px, rgba(243, 234, 215, 0) 1px);
+        background-size: 80px 80px;
+        opacity: 0.7;
+        z-index: 0;
+      }
+
+      .grain {
+        position: absolute;
+        inset: 0;
+        opacity: 0.18;
+        background-image:
+          repeating-linear-gradient(
+            0deg,
+            rgba(243, 234, 215, 0.04) 0px,
+            rgba(243, 234, 215, 0.04) 1px,
+            rgba(16, 17, 15, 0) 1px,
+            rgba(16, 17, 15, 0) 4px
+          );
+        mix-blend-mode: screen;
+        z-index: 1;
+      }
+
+      .orb {
+        position: absolute;
+        width: 640px;
+        height: 640px;
+        border-radius: 50%;
+        filter: blur(24px);
+        opacity: 0.42;
+        z-index: 0;
+      }
+
+      .orb.offense {
+        left: -180px;
+        top: 108px;
+        background: radial-gradient(circle, rgba(216, 137, 72, 0.32), rgba(216, 137, 72, 0) 64%);
+      }
+
+      .orb.defense {
+        right: -170px;
+        bottom: 70px;
+        background: radial-gradient(circle, rgba(95, 169, 164, 0.28), rgba(95, 169, 164, 0) 64%);
+      }
+
+      .ghost {
+        position: absolute;
+        font-family: "Fraunces", serif;
+        font-size: 210px;
+        font-weight: 900;
+        line-height: 0.84;
+        letter-spacing: 0.01em;
+        color: rgba(243, 234, 215, 0.055);
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .kicker {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        color: #b9ad98;
+        font-size: 22px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .kicker::before {
+        content: "";
+        display: block;
+        width: 112px;
+        height: 3px;
+        background: #d8be6f;
+      }
+
+      .title {
+        font-family: "Fraunces", serif;
+        font-size: 128px;
+        font-weight: 850;
+        line-height: 0.94;
+        letter-spacing: 0.01em;
+        color: #f3ead7;
+      }
+
+      .scene-title {
+        font-family: "Fraunces", serif;
+        font-size: 92px;
+        font-weight: 820;
+        line-height: 1;
+        color: #f3ead7;
+        letter-spacing: 0.01em;
+      }
+
+      .equation {
+        font-family: "Fraunces", serif;
+        font-size: 112px;
+        font-weight: 800;
+        line-height: 1.08;
+        letter-spacing: 0.01em;
+        color: #f3ead7;
+      }
+
+      .equation .net {
+        color: #d8be6f;
+      }
+
+      .equation .off {
+        color: #d88948;
+      }
+
+      .equation .def {
+        color: #5fa9a4;
+      }
+
+      .subcopy {
+        max-width: 860px;
+        color: #b9ad98;
+        font-size: 34px;
+        line-height: 1.28;
+        font-weight: 400;
+      }
+
+      .layout-row {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 78px;
+        align-items: center;
+        min-height: 620px;
+      }
+
+      .panel {
+        border: 2px solid #3d3b32;
+        background:
+          linear-gradient(180deg, rgba(243, 234, 215, 0.045), rgba(243, 234, 215, 0.012)),
+          #181a17;
+        box-shadow: 0 34px 90px rgba(0, 0, 0, 0.24);
+      }
+
+      .identity-panel {
+        padding: 58px;
+        min-height: 360px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 30px;
+      }
+
+      .rail {
+        display: flex;
+        gap: 24px;
+        align-items: stretch;
+      }
+
+      .rail-card {
+        flex: 1;
+        min-height: 198px;
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        border: 2px solid #3d3b32;
+        background: rgba(24, 26, 23, 0.88);
+      }
+
+      .rail-card strong {
+        font-family: "Fraunces", serif;
+        font-size: 58px;
+        line-height: 0.95;
+        font-weight: 820;
+      }
+
+      .rail-card span {
+        color: #b9ad98;
+        font-size: 22px;
+        line-height: 1.22;
+      }
+
+      .tag {
+        width: fit-content;
+        padding: 10px 14px;
+        border: 2px solid #3d3b32;
+        color: #b9ad98;
+        font-size: 20px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: rgba(16, 17, 15, 0.7);
+      }
+
+      .tree {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 22px;
+      }
+
+      .tree-card {
+        min-height: 262px;
+        padding: 30px;
+        border: 2px solid #3d3b32;
+        background: rgba(24, 26, 23, 0.91);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .tree-card h3 {
+        font-family: "Fraunces", serif;
+        font-size: 64px;
+        line-height: 0.95;
+        font-weight: 820;
+      }
+
+      .tree-card p {
+        color: #b9ad98;
+        font-size: 23px;
+        line-height: 1.22;
+      }
+
+      .tree-card.offense h3,
+      .accent-off {
+        color: #d88948;
+      }
+
+      .tree-card.defense h3,
+      .accent-def {
+        color: #5fa9a4;
+      }
+
+      .tree-card.risk h3,
+      .accent-risk {
+        color: #a94f55;
+      }
+
+      .formula-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      .formula-line {
+        padding: 30px 36px;
+        border: 2px solid #3d3b32;
+        background: rgba(24, 26, 23, 0.9);
+        font-family: "Fraunces", serif;
+        font-size: 66px;
+        font-weight: 790;
+        line-height: 1.05;
+        color: #f3ead7;
+      }
+
+      .note-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+      }
+
+      .note {
+        min-height: 128px;
+        padding: 22px;
+        border: 2px solid #3d3b32;
+        background: rgba(24, 26, 23, 0.84);
+        color: #b9ad98;
+        font-size: 21px;
+        line-height: 1.18;
+      }
+
+      .note strong {
+        display: block;
+        color: #f3ead7;
+        font-size: 22px;
+        margin-bottom: 8px;
+      }
+
+      .matrix {
+        display: grid;
+        grid-template-columns: 0.86fr 1fr 1fr;
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      .matrix-cell {
+        min-height: 116px;
+        padding: 22px;
+        border: 2px solid #3d3b32;
+        background: rgba(24, 26, 23, 0.88);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .matrix-cell.header {
+        background: rgba(34, 42, 38, 0.95);
+        color: #f3ead7;
+        font-size: 22px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .matrix-cell .big {
+        font-family: "Fraunces", serif;
+        font-size: 52px;
+        line-height: 0.98;
+        font-weight: 820;
+      }
+
+      .matrix-cell .small {
+        color: #b9ad98;
+        font-size: 19px;
+        line-height: 1.18;
+      }
+
+      .map {
+        display: grid;
+        grid-template-columns: 0.72fr 1fr 1fr;
+        gap: 20px;
+        align-items: stretch;
+      }
+
+      .map-node {
+        min-height: 150px;
+        padding: 24px;
+        border: 2px solid #3d3b32;
+        background: rgba(24, 26, 23, 0.92);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .map-node.primary {
+        min-height: 322px;
+        border-color: #d8be6f;
+      }
+
+      .map-node h3 {
+        font-family: "Fraunces", serif;
+        font-size: 54px;
+        font-weight: 820;
+        line-height: 0.96;
+      }
+
+      .map-node p {
+        color: #b9ad98;
+        font-size: 20px;
+        line-height: 1.22;
+      }
+
+      .footnote {
+        border-top: 2px solid #3d3b32;
+        padding-top: 24px;
+        display: flex;
+        justify-content: space-between;
+        gap: 44px;
+        color: #b9ad98;
+        font-size: 24px;
+        line-height: 1.28;
+      }
+
+      .footnote strong {
+        color: #f3ead7;
+      }
+
+      .transition-wipe {
+        position: absolute;
+        inset: 0;
+        z-index: 30;
+        pointer-events: none;
+        background:
+          linear-gradient(90deg, rgba(16, 17, 15, 0) 0%, #d88948 38%, #f3ead7 52%, #5fa9a4 68%, rgba(16, 17, 15, 0) 100%);
+        transform-origin: left center;
+      }
+
+      .transition-blur {
+        position: absolute;
+        inset: 0;
+        z-index: 31;
+        pointer-events: none;
+        background: rgba(243, 234, 215, 0.12);
+        backdrop-filter: blur(16px);
+      }
+
+      .transition-band {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 32;
+        pointer-events: none;
+      }
+
+      .transition-band span {
+        display: block;
+        width: 100%;
+        height: 20%;
+        background: #181a17;
+        border-top: 1px solid rgba(216, 190, 111, 0.32);
+        border-bottom: 1px solid rgba(216, 190, 111, 0.18);
+      }
+
+      .final-dip {
+        position: absolute;
+        inset: 0;
+        z-index: 40;
+        background: #10110f;
+        pointer-events: none;
+        opacity: 0;
+      }
+
+      .s1 .ghost {
+        right: -36px;
+        bottom: 38px;
+      }
+
+      .s2 .ghost {
+        left: 100px;
+        bottom: 26px;
+      }
+
+      .s3 .ghost {
+        right: 80px;
+        top: 84px;
+      }
+
+      .s4 .ghost {
+        left: 82px;
+        bottom: 44px;
+      }
+
+      .s5 .ghost {
+        right: -10px;
+        bottom: 50px;
+      }
+
+      .s4 .layout-row {
+        min-height: 250px;
+      }
+
+      .s4 .identity-panel {
+        min-height: 250px;
+        padding: 38px;
+      }
+
+      .s4 .scene-title {
+        font-size: 76px;
+      }
+
+      .s4 .subcopy {
+        font-size: 28px;
+      }
+
+      .s4 .matrix {
+        gap: 14px;
+      }
+
+      .s4 .matrix-cell {
+        min-height: 78px;
+        padding: 16px;
+      }
+
+      .s4 .matrix-cell .big {
+        font-size: 42px;
+      }
+
+      .s4 .matrix-cell .small {
+        font-size: 18px;
+      }
+
+      .s5 .scene-title {
+        font-size: 82px;
+      }
+
+      .s5 .map {
+        gap: 16px;
+      }
+
+      .s5 .map-node {
+        min-height: 132px;
+        padding: 20px;
+      }
+
+      .s5 .map-node.primary {
+        grid-row: span 3;
+        min-height: auto;
+      }
+
+      .s5 .map-node h3 {
+        font-size: 44px;
+      }
+
+      .s5 .map-node p {
+        font-size: 18px;
+      }
+
+      .s5 .footnote {
+        font-size: 22px;
+        padding-top: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="40" data-width="1920" data-height="1080">
+      <section id="scene-1" class="clip scene s1" data-start="0" data-duration="7.2" data-track-index="1">
+        <div class="grid" data-layout-ignore></div>
+        <div class="grain" data-layout-ignore></div>
+        <div class="orb offense" data-layout-ignore></div>
+        <div class="orb defense" data-layout-ignore></div>
+        <div class="ghost" data-layout-ignore>RAPM</div>
+        <div class="scene-content">
+          <div class="kicker">lineup-adjusted impact map</div>
+          <div class="layout-row">
+            <div>
+              <h1 class="title">Decomp RAPM</h1>
+              <p class="subcopy">A point-value decomposition of where a player changes team scoring margin while on the floor.</p>
+            </div>
+            <div class="panel identity-panel">
+              <div class="tag">top level</div>
+              <div class="equation"><span class="net">RAPM</span> = <span class="off">ORAPM</span> + <span class="def">DRAPM</span></div>
+            </div>
+          </div>
+          <div class="footnote">
+            <span><strong>Output:</strong> offense, defense, and net impact in the same public sign convention.</span>
+            <span><strong>Read as:</strong> a structure for team outcome shifts, not a box-score stat.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-2" class="clip scene s2" data-start="6.6" data-duration="8.4" data-track-index="2">
+        <div class="grid" data-layout-ignore></div>
+        <div class="grain" data-layout-ignore></div>
+        <div class="orb offense" data-layout-ignore></div>
+        <div class="ghost" data-layout-ignore>OFF</div>
+        <div class="scene-content">
+          <div class="kicker">offensive side</div>
+          <div>
+            <h2 class="scene-title">ORAPM opens into three channels.</h2>
+          </div>
+          <div class="formula-stack">
+            <div class="formula-line"><span class="accent-off">ORAPM</span> = oTS + oTOV + oSC <span style="color: #b9ad98;">+ residual</span></div>
+            <div class="tree">
+              <article class="tree-card offense">
+                <span class="tag">scoring</span>
+                <h3>oTS</h3>
+                <p>First-chance scoring value: shots and free throws before the first offensive miss.</p>
+              </article>
+              <article class="tree-card risk">
+                <span class="tag">control</span>
+                <h3>oTOV</h3>
+                <p>Point value kept or lost when a possession turns over before first-chance scoring completes.</p>
+              </article>
+              <article class="tree-card offense">
+                <span class="tag">extra chance</span>
+                <h3>oSC</h3>
+                <p>Second-chance scoring after the offense creates another life with a miss recovery.</p>
+              </article>
+            </div>
+          </div>
+          <div class="footnote">
+            <span><strong>Shared frame:</strong> the public display is an accounting map around first chance plus second chance.</span>
+            <span><strong>Residual:</strong> expected to be small, mostly rounding and assembly gap.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-3" class="clip scene s3" data-start="14.4" data-duration="8.8" data-track-index="1">
+        <div class="grid" data-layout-ignore></div>
+        <div class="grain" data-layout-ignore></div>
+        <div class="orb offense" data-layout-ignore></div>
+        <div class="ghost" data-layout-ignore>SHOT</div>
+        <div class="scene-content">
+          <div class="kicker">first-chance scoring</div>
+          <h2 class="scene-title">The scoring branch drills down without changing the denominator.</h2>
+          <div class="formula-stack">
+            <div class="formula-line"><span class="accent-off">oTS</span> = oEFG + oFT</div>
+            <div class="formula-line">oEFG = baseline + rim + mid + three</div>
+            <div class="note-row">
+              <div class="note"><strong>rim</strong>frequency value + within-zone make value</div>
+              <div class="note"><strong>mid</strong>frequency value + within-zone make value</div>
+              <div class="note"><strong>three</strong>frequency value + within-zone make value</div>
+              <div class="note"><strong>free throws</strong>trip frequency + trip severity</div>
+            </div>
+          </div>
+          <div class="footnote">
+            <span><strong>Shot value:</strong> mix and make are separated so location and conversion do not blur together.</span>
+            <span><strong>FT value:</strong> trips and trip quality are distinct pieces of first-chance offense.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-4" class="clip scene s4" data-start="22.6" data-duration="8.4" data-track-index="2">
+        <div class="grid" data-layout-ignore></div>
+        <div class="grain" data-layout-ignore></div>
+        <div class="orb defense" data-layout-ignore></div>
+        <div class="ghost" data-layout-ignore>DEF</div>
+        <div class="scene-content">
+          <div class="kicker">defensive mirror</div>
+          <div class="layout-row">
+            <div>
+              <h2 class="scene-title">DRAPM uses the same map from the other side.</h2>
+              <p class="subcopy">Defensive components are sign-flipped for display, so positive means good defense.</p>
+            </div>
+            <div class="panel identity-panel">
+              <div class="tag">defensive total</div>
+              <div class="equation"><span class="def">DRAPM</span> = dTS + dTOV + dSC</div>
+            </div>
+          </div>
+          <div class="matrix">
+            <div class="matrix-cell header">channel</div>
+            <div class="matrix-cell header">what it captures</div>
+            <div class="matrix-cell header">good defense means</div>
+            <div class="matrix-cell"><span class="big accent-def">dTS</span></div>
+            <div class="matrix-cell"><span class="small">Shot and free-throw value allowed on first chance.</span></div>
+            <div class="matrix-cell"><span class="small">Suppressing scoring quality and conversion.</span></div>
+            <div class="matrix-cell"><span class="big accent-def">dTOV</span></div>
+            <div class="matrix-cell"><span class="small">First-chance turnover value forced before scoring completes.</span></div>
+            <div class="matrix-cell"><span class="small">Creating disruption without paying it back elsewhere.</span></div>
+            <div class="matrix-cell"><span class="big accent-def">dSC</span></div>
+            <div class="matrix-cell"><span class="small">Second-chance points after the first offensive miss.</span></div>
+            <div class="matrix-cell"><span class="small">Ending possessions or deflating putback value.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-5" class="clip scene s5" data-start="30.4" data-duration="9.6" data-track-index="1">
+        <div class="grid" data-layout-ignore></div>
+        <div class="grain" data-layout-ignore></div>
+        <div class="orb offense" data-layout-ignore></div>
+        <div class="orb defense" data-layout-ignore></div>
+        <div class="ghost" data-layout-ignore>MAP</div>
+        <div class="scene-content">
+          <div class="kicker">full accounting view</div>
+          <h2 class="scene-title">Decomp RAPM shows where impact comes from.</h2>
+          <div class="map">
+            <article class="map-node primary">
+              <span class="tag">total</span>
+              <h3><span class="accent-off">ORAPM</span><br />+<br /><span class="accent-def">DRAPM</span></h3>
+              <p>Net RAPM is the sum of the two sides of the ball.</p>
+            </article>
+            <article class="map-node">
+              <span class="tag">offense</span>
+              <h3>oTS</h3>
+              <p>first-chance shot and free-throw value</p>
+            </article>
+            <article class="map-node">
+              <span class="tag">defense</span>
+              <h3>dTS</h3>
+              <p>first-chance scoring suppression</p>
+            </article>
+            <article class="map-node">
+              <span class="tag">offense</span>
+              <h3>oTOV</h3>
+              <p>first-chance turnover value</p>
+            </article>
+            <article class="map-node">
+              <span class="tag">defense</span>
+              <h3>dTOV</h3>
+              <p>first-chance turnover creation</p>
+            </article>
+            <article class="map-node">
+              <span class="tag">offense</span>
+              <h3>oSC</h3>
+              <p>second-chance scoring</p>
+            </article>
+            <article class="map-node">
+              <span class="tag">defense</span>
+              <h3>dSC</h3>
+              <p>second-chance prevention</p>
+            </article>
+          </div>
+          <div class="footnote">
+            <span><strong>Accounting:</strong> components add back to total RAPM, up to rounding.</span>
+            <span><strong>Caveat:</strong> this is lineup-adjusted signal, not isolated proof of individual mechanism.</span>
+          </div>
+        </div>
+      </section>
+
+      <div id="wipe-1" class="clip transition-wipe" data-start="6.45" data-duration="0.86" data-track-index="20"></div>
+      <div id="blur-2" class="clip transition-blur" data-start="14.25" data-duration="0.86" data-track-index="21"></div>
+      <div id="band-3" class="clip transition-band" data-start="22.45" data-duration="0.9" data-track-index="22">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div id="blur-4" class="clip transition-blur" data-start="30.25" data-duration="0.82" data-track-index="23"></div>
+      <div id="final-dip" class="final-dip"></div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      function enterScene(scene, start) {
+        tl.fromTo(`${scene} .grid`, { opacity: 0, scale: 1.04 }, { opacity: 0.7, scale: 1, duration: 1.1, ease: "sine.out" }, start + 0.12);
+        tl.fromTo(`${scene} .grain`, { opacity: 0 }, { opacity: 0.18, duration: 0.9, ease: "power1.out" }, start + 0.18);
+        tl.fromTo(`${scene} .orb`, { opacity: 0, scale: 0.82 }, { opacity: 0.42, scale: 1, duration: 1.25, ease: "power3.out", stagger: 0.12 }, start + 0.16);
+        tl.fromTo(`${scene} .ghost`, { opacity: 0, x: 90, scale: 0.98 }, { opacity: 1, x: 0, scale: 1, duration: 1.2, ease: "expo.out" }, start + 0.24);
+        tl.fromTo(`${scene} .kicker`, { opacity: 0, x: -70 }, { opacity: 1, x: 0, duration: 0.58, ease: "power4.out" }, start + 0.28);
+      }
+
+      enterScene("#scene-1", 0);
+      tl.fromTo("#scene-1 .title", { opacity: 0, y: 58 }, { opacity: 1, y: 0, duration: 0.78, ease: "expo.out" }, 0.55);
+      tl.fromTo("#scene-1 .subcopy", { opacity: 0, x: -42 }, { opacity: 1, x: 0, duration: 0.62, ease: "power2.out" }, 0.88);
+      tl.fromTo("#scene-1 .identity-panel", { opacity: 0, x: 80, scale: 0.97 }, { opacity: 1, x: 0, scale: 1, duration: 0.74, ease: "back.out(1.2)" }, 1.02);
+      tl.fromTo("#scene-1 .tag", { opacity: 0, y: -22 }, { opacity: 1, y: 0, duration: 0.44, ease: "power3.out" }, 1.28);
+      tl.fromTo("#scene-1 .equation", { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.72, ease: "circ.out" }, 1.44);
+      tl.fromTo("#scene-1 .footnote", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.62, ease: "power2.out" }, 2.08);
+
+      enterScene("#scene-2", 6.6);
+      tl.fromTo("#scene-2 .scene-title", { opacity: 0, y: 52 }, { opacity: 1, y: 0, duration: 0.76, ease: "expo.out" }, 7.04);
+      tl.fromTo("#scene-2 .formula-line", { opacity: 0, x: -66 }, { opacity: 1, x: 0, duration: 0.72, ease: "power3.out" }, 7.52);
+      tl.fromTo("#scene-2 .tree-card", { opacity: 0, y: 60, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.66, ease: "back.out(1.1)", stagger: 0.14 }, 8.18);
+      tl.fromTo("#scene-2 .tree-card .tag", { opacity: 0, x: -22 }, { opacity: 1, x: 0, duration: 0.34, ease: "power4.out", stagger: 0.1 }, 8.48);
+      tl.fromTo("#scene-2 .footnote", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.58, ease: "sine.out" }, 9.38);
+
+      enterScene("#scene-3", 14.4);
+      tl.fromTo("#scene-3 .scene-title", { opacity: 0, x: -58 }, { opacity: 1, x: 0, duration: 0.76, ease: "expo.out" }, 14.88);
+      tl.fromTo("#scene-3 .formula-line", { opacity: 0, y: 44 }, { opacity: 1, y: 0, duration: 0.62, ease: "power4.out", stagger: 0.18 }, 15.56);
+      tl.fromTo("#scene-3 .note", { opacity: 0, y: 50, scale: 0.98 }, { opacity: 1, y: 0, scale: 1, duration: 0.54, ease: "back.out(1.15)", stagger: 0.11 }, 16.56);
+      tl.fromTo("#scene-3 .footnote", { opacity: 0, x: 34 }, { opacity: 1, x: 0, duration: 0.58, ease: "circ.out" }, 17.46);
+
+      enterScene("#scene-4", 22.6);
+      tl.fromTo("#scene-4 .scene-title", { opacity: 0, y: 56 }, { opacity: 1, y: 0, duration: 0.74, ease: "expo.out" }, 23.02);
+      tl.fromTo("#scene-4 .subcopy", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.56, ease: "power2.out" }, 23.42);
+      tl.fromTo("#scene-4 .identity-panel", { opacity: 0, x: 72, scale: 0.98 }, { opacity: 1, x: 0, scale: 1, duration: 0.72, ease: "back.out(1.12)" }, 23.52);
+      tl.fromTo("#scene-4 .matrix-cell", { opacity: 0, y: 42 }, { opacity: 1, y: 0, duration: 0.46, ease: "power3.out", stagger: 0.035 }, 24.38);
+
+      enterScene("#scene-5", 30.4);
+      tl.fromTo("#scene-5 .scene-title", { opacity: 0, x: -64 }, { opacity: 1, x: 0, duration: 0.82, ease: "expo.out" }, 30.92);
+      tl.fromTo("#scene-5 .map-node.primary", { opacity: 0, scale: 0.94, x: -34 }, { opacity: 1, scale: 1, x: 0, duration: 0.76, ease: "back.out(1.08)" }, 31.48);
+      tl.fromTo("#scene-5 .map-node:not(.primary)", { opacity: 0, y: 48 }, { opacity: 1, y: 0, duration: 0.48, ease: "power4.out", stagger: 0.08 }, 31.86);
+      tl.fromTo("#scene-5 .footnote", { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.68, ease: "circ.out" }, 33.2);
+
+      tl.fromTo("#wipe-1", { opacity: 0, xPercent: -110, scaleX: 0.8 }, { opacity: 1, xPercent: 110, scaleX: 1, duration: 0.86, ease: "power3.inOut" }, 6.45);
+      tl.fromTo("#blur-2", { opacity: 0 }, { opacity: 1, duration: 0.22, ease: "power2.out", yoyo: true, repeat: 1 }, 14.25);
+      tl.fromTo("#band-3 span", { xPercent: -105 }, { xPercent: 105, duration: 0.9, ease: "power3.inOut", stagger: 0.045 }, 22.45);
+      tl.fromTo("#blur-4", { opacity: 0 }, { opacity: 1, duration: 0.24, ease: "sine.out", yoyo: true, repeat: 1 }, 30.25);
+
+      tl.to("#scene-5 .orb", { scale: 1.06, duration: 4.2, ease: "sine.inOut" }, 34.4);
+      tl.to("#final-dip", { opacity: 1, duration: 1.1, ease: "power1.inOut" }, 38.85);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

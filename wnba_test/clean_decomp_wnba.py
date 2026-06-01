@@ -34,13 +34,12 @@ from wnba_test.process_rapm_wnba import (
     case_when,
     prepare_wnba_standard_possession_df,
 )
+from wnba_test.wnba_stats_source import load_wnba_player_shooting_stats
 
 
 WNBA_ROOT = ROOT / "wnba_test"
 PROCESSED_DIR = WNBA_ROOT / "Processed"
 RESULTS_DIR = WNBA_ROOT / "Results"
-WNBA_STATS_PATH = ROOT.parent / "wnba" / "wnba-stats.csv"
-_WNBA_STATS_CACHE: pd.DataFrame | None = None
 
 ALT_VALUE_COLUMNS = {
     "ALT_EFG_RIM_FREQ": "FC_RIM_EFG_FREQ_Diff",
@@ -124,35 +123,6 @@ def _attach_date_proxy(df: pd.DataFrame, source_year: int) -> pd.DataFrame:
     return out
 
 
-def _load_wnba_player_stats() -> pd.DataFrame:
-    """Load local WNBA player-season FT% values keyed by year/playoffs/nba_id."""
-    global _WNBA_STATS_CACHE
-    if _WNBA_STATS_CACHE is not None:
-        return _WNBA_STATS_CACHE
-    if not WNBA_STATS_PATH.exists():
-        logging.warning("WNBA stats file not found at %s; FT% will use fallback values", WNBA_STATS_PATH)
-        _WNBA_STATS_CACHE = pd.DataFrame(columns=["year", "is_playoffs", "nba_id", "FTPerc"])
-        return _WNBA_STATS_CACHE
-
-    cols = ["year", "is_playoffs", "nba_id", "FT_PERC"]
-    stats = pd.read_csv(WNBA_STATS_PATH, usecols=cols)
-    stats["year"] = pd.to_numeric(stats["year"], errors="coerce")
-    stats["nba_id"] = pd.to_numeric(stats["nba_id"], errors="coerce")
-    stats["is_playoffs"] = stats["is_playoffs"].astype(str).str.lower().isin({"true", "1", "yes"})
-    stats["FTPerc"] = pd.to_numeric(stats["FT_PERC"], errors="coerce") / 100.0
-    stats.loc[~stats["FTPerc"].between(0.0, 1.0), "FTPerc"] = np.nan
-    stats = stats.dropna(subset=["year", "nba_id"]).copy()
-    stats["year"] = stats["year"].astype(int)
-    stats["nba_id"] = stats["nba_id"].astype(int).astype(str)
-    stats = stats[["year", "is_playoffs", "nba_id", "FTPerc"]].drop_duplicates(
-        ["year", "is_playoffs", "nba_id"],
-        keep="last",
-    )
-    _WNBA_STATS_CACHE = stats
-    logging.info("Loaded %d WNBA player-season FT%% rows from %s", len(stats), WNBA_STATS_PATH)
-    return _WNBA_STATS_CACHE
-
-
 def _attach_wnba_ft_pct(
     df: pd.DataFrame,
     season_year: int,
@@ -172,11 +142,8 @@ def _attach_wnba_ft_pct(
         logging.warning("%s has no shooter id column; FT%% will use existing/fallback values", label)
         return out
 
-    stats = _load_wnba_player_stats()
-    stats = stats[
-        (stats["year"] == int(season_year)) &
-        (stats["is_playoffs"] == bool(is_playoffs))
-    ][["nba_id", "FTPerc"]].rename(columns={"FTPerc": "_WNBA_FTPerc"})
+    stats = load_wnba_player_shooting_stats(season_year, is_playoffs)
+    stats = stats[["nba_id", "FTPerc"]].rename(columns={"FTPerc": "_WNBA_FTPerc"})
     if stats.empty:
         logging.warning(
             "No WNBA FT%% rows for %s %s; FT%% will use existing/fallback values",

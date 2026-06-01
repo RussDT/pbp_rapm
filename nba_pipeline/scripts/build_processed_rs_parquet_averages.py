@@ -30,6 +30,7 @@ DEFAULT_END_YEAR = 2026
 
 VALUE_COLUMNS = {
     "ASSIST_POINTS": "Assist_Points",
+    "BLOCK_RECOVERY": "Block_Recovered_By_Defense",
     "CONTEST": "Net_Diff",
     "EV_RAPM": "Off_Diff",
     "FIRST_CHANCE": "Net_Diff",
@@ -44,6 +45,8 @@ VALUE_COLUMNS = {
     "RAPM": "Off_Diff",
     "RAPM_state_": "Off_Diff",
     "REB": "Offensive_Rebound",
+    "DUNK": "Is_Dunk",
+    "DUNK_ASSIST": "Is_Dunk_Assist",
     "RIM_ASSIST": "Is_Rim_Assist",
     "RIM_FG_PCT": "Is_Rim_Make",
     "RIM_FREQ": "Is_Rim_Attempt",
