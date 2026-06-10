@@ -26,6 +26,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+# Route nba_api through curl_cffi (Chrome TLS fingerprint) so stats.nba.com's
+# Akamai bot-mitigation doesn't silently stall our requests. No-op if curl_cffi
+# is unavailable. Must precede any nba_api request.
+sys.path.insert(0, str(Path(__file__).parent))
+import _nba_http_curlcffi  # noqa: E402,F401
+
 from nba_api.stats.endpoints import (
     leaguegamelog,
     playbyplayv3,
@@ -98,6 +104,13 @@ def random_delay(min_sec: float = 0.1, max_sec: float = 0.3) -> None:
 MAX_WORKERS = 8
 REQUEST_DELAY = 0.2
 
+# Gentle serial pacing (env-tunable). NBA_INTER_GAME_DELAY adds a fixed sleep at
+# the start of each game so a workers=1 run paces ~1 game / N seconds.
+INTER_GAME_DELAY = float(os.environ.get("NBA_INTER_GAME_DELAY", "0"))
+# Rotation retry attempts (gamerotation rate-limits; lower = fail fast + rely on
+# resumable re-passes; higher = grind each game now).
+ROT_ATTEMPTS = int(os.environ.get("NBA_ROT_ATTEMPTS", "8"))
+
 # Thread-safe counter for progress
 progress_lock = threading.Lock()
 progress_counter = {"completed": 0, "total": 0, "failed": 0}
@@ -159,7 +172,12 @@ def repair_lineup_slots(df: pd.DataFrame, label: str) -> pd.DataFrame:
 # ---------------------------------------------------------------------
 # Retry wrapper for NBA API calls (with sneaky proxy + headers)
 # ---------------------------------------------------------------------
-def retry_api_call(func, max_attempts=6, delay_seconds=2, late_delay_seconds=4, use_proxy=True, worker_id=0, **kwargs):
+def retry_api_call(func, max_attempts=6, delay_seconds=2, late_delay_seconds=4,
+                   use_proxy=True, worker_id=0, backoff_cap=None, **kwargs):
+    """Retry an nba_api endpoint call. A 500/empty body (common when
+    gamerotation is rate-limited) raises during parsing and is retried here.
+    Later attempts use exponential backoff up to ``backoff_cap`` seconds so a
+    throttled endpoint has time to cool down."""
     attempt = 1
     while attempt <= max_attempts:
         try:
@@ -172,7 +190,14 @@ def retry_api_call(func, max_attempts=6, delay_seconds=2, late_delay_seconds=4, 
         except Exception as e:
             if attempt == max_attempts:
                 return None
-            delay = random.uniform(delay_seconds, delay_seconds * 1.5) if attempt < 4 else random.uniform(late_delay_seconds, late_delay_seconds * 1.5)
+            if backoff_cap is not None:
+                # Exponential backoff with jitter, capped (for throttled endpoints).
+                base = min(late_delay_seconds * (2 ** (attempt - 1)), backoff_cap)
+                delay = random.uniform(base * 0.7, base)
+            else:
+                delay = (random.uniform(delay_seconds, delay_seconds * 1.5)
+                         if attempt < 4 else
+                         random.uniform(late_delay_seconds, late_delay_seconds * 1.5))
             time.sleep(delay)
             attempt += 1
     return None
@@ -299,9 +324,10 @@ def fetch_rotation_stints(game_id: str, max_event_sec: float, use_proxy: bool = 
     
     rot = retry_api_call(
         gamerotation.GameRotation,
-        max_attempts=6,
-        delay_seconds=2,
+        max_attempts=ROT_ATTEMPTS,
+        delay_seconds=3,
         late_delay_seconds=4,
+        backoff_cap=20,  # gamerotation rate-limits hard; brief cooldown recovers it
         use_proxy=use_proxy,
         worker_id=worker_id,
         game_id=game_id,
@@ -410,10 +436,12 @@ def map_event_type(action_type: Optional[str], sub_type: Optional[str]) -> int:
 # ---------------------------------------------------------------------
 def fetch_and_process_game(game_id: str, use_proxy: bool = True, worker_id: int = 0) -> Optional[pd.DataFrame]:
     global progress_counter
-    
+
     try:
+        if INTER_GAME_DELAY > 0:
+            time.sleep(INTER_GAME_DELAY)
         random_delay(0.1, 0.3)
-        
+
         pbp_obj = retry_api_call(
             playbyplayv3.PlayByPlayV3,
             max_attempts=6,

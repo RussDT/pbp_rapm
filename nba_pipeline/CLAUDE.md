@@ -8,6 +8,7 @@
 - When methodology, pipeline behavior, outputs, env vars, or operator workflow changes, update the matching docs in `nba_pipeline/docs/` in the same pass.
 - At session end: append one short scratchpad entry, promote durable lessons into the root instruction files, and keep only the latest 5 scratchpad entries.
 - Git backup policy: commit source, docs, tests, and small curated reference files; leave generated CSV/parquet/log/model artifacts out of git unless explicitly force-added with a documented reason. See `docs/GIT_BACKUP_STRATEGY.md`.
+- Repo cleanup/onboarding policy: start with `docs/CONTRIBUTOR_ONBOARDING.md`, `docs/ARTIFACT_MANIFEST.md`, and `docs/REPO_CLEANUP_PLAN.md`; use `scripts/audit_repo_inventory.py` for dry-run inventory before moving, deleting, or reclassifying artifacts/scripts.
 
 ## Overview
 This pipeline processes NBA play-by-play data to calculate Regularized Adjusted Plus-Minus (RAPM) and related metrics.
@@ -51,6 +52,7 @@ For season-summary harnesses, treat the processed filename as the canonical seas
 - `FIRST_CHANCE` carries ShotQuality-era `Is_FC_Transition_Possession` and `Has_FC_FGA` labels for the 2023-24 through 2025-26 transition/half-court split. The `FC_TRANSITION_SCORING` / `FC_HALFCOURT_SCORING` aliases use same-sample PPP placeholders, while `FC_MODE_MIX + FC_TRANSITION_VALUE + FC_HALFCOURT_VALUE = FIRST_CHANCE.Net_Diff` at row level.
 - Supabase-backed player-stat processors prefer `SUPABASE_SERVICE_ROLE_KEY` over `SUPABASE_KEY`; keep the service role key available for local backend processing so FT% / 3P% lookups do not silently fall back to defaults.
 - Preferred long historical core runs use `run_historical_core_weighted_factors.py --fixed-season-effects --age-poly-coefficients ...`: fixed RS raw season baselines and fixed polynomial age offsets are subtracted from the row target before centering and solving, instead of adding estimated nuisance columns.
+- Databallr WOWY / lineup net-rating work should use `scripts/build_clean_lineup_net_rating.py` as the duplicate raw action-score possession path instead of `RAPM*.parquet`; it treats period boundaries as hard splits, emits foreign-side technical/admin FT points as zero-possession scoring rows for the shooting team, and drops empty admin-only period-end rows.
 
 ## Metrics
 | Metric | Column | Description | Years |
@@ -377,10 +379,17 @@ The TOV rubberband coefficients are in `Off_Diff = -Is_Turnover` units. So a neg
 9. TS decomposition components (TS, SQ_POSS, FT_PREMIUM, CONTEST) + WLS regression + Supabase upload
 10. Downstream CSV exports (runs from `pbp_rapm/` root):
    - `update_2026_josh_rapm.py` → `josh_rapm/` + `../csvs/josh_rapm/`
-   - `update_2026_purerapm.py` → `../csvs/PureRAPM.csv`
+   - `update_2026_purerapm.py` → `../csvs/PureRAPM.csv` (legacy)
+   - `update_2026_purerapm_peaks.py` → `../csvs/PureRAPMPeaks.csv`
    - `update_2026_scaledoutput.py` → `../csvs/SCALEDOUTPUT_SMALLER.csv`
-   - `update_2026_scposs.py` → `../csvs/scposs/{nba_id}.csv`
-11. Sync curated standard and alt3 files from `master_results/` → `/Users/russellthomas/Docs/rapms/master_results/`, including the active Alt3 EFG-value `.csv` and `.parquet` artifacts, then git commit & push
+11. Sync curated standard and alt3 files from `master_results/` → `/Users/russellthomas/Docs/rapms/master_results/`, including the active Alt3 EFG-value `.csv` and `.parquet` artifacts
+12. Rebuild the player-facing `csvs/scposs/{nba_id}.csv` files from the active RAPM DECOMP source family using `/Users/russellthomas/Docs/REPLIT_NBA_RAPM/scripts/sync_alt3_decomp_to_scposs.py`. Do not use `update_2026_scposs.py` as the current player-facing scposs writer; it is legacy six-factor output.
+13. Current metrics and peak leaderboards:
+   - run `/Users/russellthomas/Docs/2026_NBA_PIPELINE/nba_rapm/collect_source_2026.py --no-sync` with `NBA_PIPELINE_CSV_DIR=/Users/russellthomas/Docs/csvs`
+   - outputs include `current_comp.csv`, `structuredtest.csv`, `DARKO.csv`, `lebron.csv`, and `players_by_player.csv`
+   - current 1Y/2Y/3Y/4Y/5Y RAPM rows/columns are read from the freshly rebuilt RAPM DECOMP `csvs/scposs` files; `TimedecayRAPM` and `*_timedecay` columns remain on the original timedecay source
+14. Commit & push the touched `csvs` outputs (`PureRAPM.csv`, `PureRAPMPeaks.csv`, `SCALEDOUTPUT_SMALLER.csv`, `current_comp.csv`, `structuredtest.csv`, `DARKO.csv`, `lebron.csv`, `players_by_player.csv`, `autocomplete_map.csv`, `josh_rapm/`, and `scposs/`) to `RussDT/csvs@test-branch`, which is the branch read by the app.
+15. Commit & push the `rapms` repo
 
 ### rapms Repo
 **Location:** `/Users/russellthomas/Docs/rapms/` (GitHub: RussDT/rapms)
@@ -390,6 +399,7 @@ The TOV rubberband coefficients are in `Off_Diff = -Is_Turnover` units. So a neg
 - `weighted_factors_14_26_all_rb.csv`
 - `weighted_factors_alt3_{26,25_26,24_26,23_26,22_26,21_26}_all.csv`
 - `weighted_factors_alt3_efg_value_{26,25_26,24_26,23_26,22_26}_all_rb_se_a2000_4000.{csv,parquet}`
+- `weighted_factors_alt3_efg_value_{00_09,10_19,20_26,97_06,17_26}_all_rb_se_a2000_4000.{csv,parquet}` for explicit RAPM DECOMP era/support windows; current peak metrics use `00_09`, `10_19`, and `20_26` for the `2000s RAPM`, `2010s RAPM`, and `2020s RAPM` rows.
 - `team_weighted_factors_alt3_efg_value_24_26_all_a25.{csv,parquet}`
 - `weighted_factors_alt3_21_26_all_td700.csv`
 - `weighted_factors_alt3_21_26_all_rb_td700.csv`

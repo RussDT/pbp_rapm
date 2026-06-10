@@ -312,6 +312,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-full", action="store_true", help="Also build 1997-2026.")
     parser.add_argument("--full-only", action="store_true", help="Only build 1997-2026.")
     parser.add_argument(
+        "--windows",
+        default="",
+        help=(
+            "Comma-separated explicit year windows to build instead of the default rolling set, "
+            "for example 2000-2009,2010-2019,2020-2026."
+        ),
+    )
+    parser.add_argument(
         "--intersect-years",
         default="",
         help="Only build rolling windows that intersect this year range, e.g. 1997-2013.",
@@ -341,7 +349,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if args.full_only:
+    if args.windows:
+        windows = [
+            Window(start, end)
+            for start, end in (parse_year_range(item.strip()) for item in args.windows.split(",") if item.strip())
+        ]
+    elif args.full_only:
         windows = [Window(1997, 2026)]
     else:
         windows = rolling_windows(include_full=args.include_full)
@@ -352,6 +365,17 @@ def main() -> int:
             for window in windows
             if not (window.end_year < intersect_start or window.start_year > intersect_end)
         ]
+
+    deduped_windows = []
+    seen_windows = set()
+    for window in windows:
+        if window.start_year > window.end_year:
+            raise ValueError(f"Invalid window: {window.start_year}-{window.end_year}")
+        key = (window.start_year, window.end_year)
+        if key not in seen_windows:
+            deduped_windows.append(window)
+            seen_windows.add(key)
+    windows = deduped_windows
     force_components = {
         item.strip().upper()
         for item in args.force_components.split(",")

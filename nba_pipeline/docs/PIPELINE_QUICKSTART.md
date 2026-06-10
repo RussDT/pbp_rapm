@@ -16,6 +16,38 @@ nba_pipeline/
 
 ---
 
+## Step 0: Fetching / Re-fetching Modern Seasons (2014+)
+
+`01_fetch_pbp_data.py` pulls PlayByPlayV3 + GameRotation and writes
+`NBA{YY}.parquet` with reconstructed 5-man lineups. Two operational facts:
+
+- **stats.nba.com requires a browser TLS fingerprint.** `01_fetch_pbp_data.py`
+  imports `_nba_http_curlcffi.py`, which routes nba_api through `curl_cffi`
+  (Chrome impersonation). Without it, plain `requests` is silently stalled by
+  Akamai (looks like an IP ban). No-op fallback if curl_cffi is missing.
+- **`gamerotation` throttles per-IP and cumulatively.** A single IP decays to
+  ~0% success under sustained load, so bulk historical refetch needs the
+  rotating-IP proxy (`--proxy` / fetch default). Failures are mostly server-side
+  cold-cache 500s that recover over time, so multiple passes converge.
+
+For a bulk refill use the resumable driver, which wraps the fetcher in
+update-mode chunks (checkpoints each chunk, skips already-fetched games,
+survives restarts, detects stalls):
+
+```bash
+cd nba_pipeline/scripts
+# Full modern refill, proxy on (rotating IPs), 3 workers:
+python fetch_modern_seasons.py --start 14 --end 25 --season-types RS PS --proxy --workers 3
+```
+
+Env knobs on `01_fetch_pbp_data.py`: `NBA_INTER_GAME_DELAY` (seconds between
+games, for gentle serial pacing), `NBA_ROT_ATTEMPTS` (gamerotation retries; lower
+= fail-fast + rely on resumable re-passes), `NBA_IMPERSONATE` (curl_cffi target,
+default `chrome120`). Single-season update (daily path):
+`python 01_fetch_pbp_data.py 26` and `python 01_fetch_pbp_data.py 26 PS`.
+
+---
+
 ## Step 1: Process Raw Data
 
 ### Historical ESPN Seasons (2003-2014 Primary Path)
@@ -210,6 +242,28 @@ The master weighted-factors runner also solves and exports seven auxiliary shot-
 
 `scripts/build_alt3_efg_value_weighted_factors.py` now writes a parquet sibling next to each player-facing CSV by default. The daily job rebuilds the 2026-intersecting active EFG-value rolling files (`26`, `25_26`, `24_26`, `23_26`, `22_26` with `all_rb_se_a2000_4000`) and syncs both `.csv` and `.parquet` artifacts to the downstream `rapms/master_results` folder. It also refreshes the team-level `team_weighted_factors_alt3_efg_value_24_26_all_a25.{csv,parquet}` bundle.
 
+Databallr WOWY RAPM mode uses `player_alt3_efg_factors` for the 1Y-5Y DECOMP values and `wowy_team_player_presence` for team membership. Rebuild the PBP-derived presence table from raw lineup columns and upload it to Supabase with:
+
+```bash
+python nba_pipeline/scripts/upload_wowy_team_player_presence.py \
+  --start-year 2022 \
+  --end-year 2026 \
+  --season-types ALL \
+  --upload
+```
+
+For non-rolling RAPM DECOMP era windows, use the explicit-window runner:
+
+```bash
+python nba_pipeline/scripts/run_alt3_efg_value_rolling.py \
+  --windows 2000-2009,2010-2019,2020-2026,1997-2006,2017-2026 \
+  --force-base \
+  --force-components ALL \
+  --publish-to-rapms
+```
+
+The current peak-metrics flow reads `2000s RAPM`, `2010s RAPM`, and `2020s RAPM` from the native DECOMP files in `/Users/russellthomas/Docs/rapms/master_results`: `weighted_factors_alt3_efg_value_00_09_all_rb_se_a2000_4000.csv`, `weighted_factors_alt3_efg_value_10_19_all_rb_se_a2000_4000.csv`, and `weighted_factors_alt3_efg_value_20_26_all_rb_se_a2000_4000.csv`.
+
 To repair already-published 4-year rolling alt3 files in the downstream `rapms` repo without rerunning RAPM solves:
 
 ```bash
@@ -330,6 +384,20 @@ python rapm.py PLAYTYPE_TS_MIX 24 26 ALL
 python rapm.py PLAYTYPE_PROXY_PTS 24 26 ALL
 ```
 
+### RAPMnoFT Audit Parquet
+
+Build a standard RAPM possession parquet that keeps the usual possession
+parser and lineup columns, but scores free throws by actual made/missed points
+instead of shooter expected FT%.
+
+```bash
+PYTHONPATH=nba_pipeline/scripts \
+python nba_pipeline/scripts/build_rapm_noft.py --year 26 --season-type PS
+```
+
+Default output:
+- `nba_pipeline/processed/RAPMnoFT26_PS.parquet`
+
 ---
 
 ## WOWY Lineups (2026)
@@ -367,6 +435,7 @@ Implementation notes:
 - the parser uses raw `NBA26.parquet` only; it does not use `RAPM26.parquet` or other processed metric parquets for on/off ratings
 - possessions use a dedicated pbpstats-style end-of-possession parser with lineup propagation through foul/FT substitution edge cases
 - free throws now fall back to the shooting side for offense assignment when the normal possession-side inference is blank
+- foreign-side technical/admin FT scoring is preserved as zero-possession scoring rows so points go to the shooting team without adding possessions
 - `TSA = FGA + 0.44 * FTA`
 - `TS% = Points / (2 * TSA)`
 - `ORTG = 100 * Points / OffPoss`

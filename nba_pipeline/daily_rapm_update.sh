@@ -139,6 +139,14 @@ log ""
 log "[$(date +%H:%M:%S)] Uploading six-factor RAPM to Supabase..."
 run $PYTHON_PATH "$SCRIPTS_DIR/upload_six_factor.py"
 
+log ""
+log "[$(date +%H:%M:%S)] Uploading WOWY team-player presence to Supabase..."
+run $PYTHON_PATH "$SCRIPTS_DIR/upload_wowy_team_player_presence.py" \
+    --start-year 2022 \
+    --end-year 2026 \
+    --season-types ALL \
+    --upload
+
 # 5. Standalone metric runs (time decay 700)
 log ""
 log "[$(date +%H:%M:%S)] Running standalone metrics (6-year TD 700)..."
@@ -217,22 +225,26 @@ else
     log "  WARNING: ts_decomp_factors not found"
 fi
 
-# 9. Update downstream CSV exports (josh_rapm, PureRAPM, scposs, SCALEDOUTPUT)
+# 9. Update downstream CSV exports and current metric boards
 #    These scripts use relative paths — must run from pbp_rapm root
 log ""
 log "[$(date +%H:%M:%S)] Updating downstream CSV exports..."
 PROJECT_DIR="$(dirname "$PIPELINE_DIR")"
+CSVS_DIR="/Users/russellthomas/Docs/csvs"
+CSVS_BRANCH="test-branch"
+CURRENT_METRICS_DIR="/Users/russellthomas/Docs/2026_NBA_PIPELINE/nba_rapm"
 cd "$PROJECT_DIR"
 run $PYTHON_PATH "$PROJECT_DIR/update_2026_josh_rapm.py"
 run $PYTHON_PATH "$PROJECT_DIR/update_2026_purerapm.py"
+run $PYTHON_PATH "$PROJECT_DIR/update_2026_purerapm_peaks.py"
 run $PYTHON_PATH "$PROJECT_DIR/update_2026_scaledoutput.py"
-run $PYTHON_PATH "$PROJECT_DIR/update_2026_scposs.py"
 
 # 10. Sync master_results to rapms repo and push
 log ""
 log "[$(date +%H:%M:%S)] Syncing master_results to rapms repo..."
 RAPMS_DIR="/Users/russellthomas/Docs/rapms"
 RAPMS_MASTER="$RAPMS_DIR/master_results"
+DECOMP_SCPOSS_SCRIPT="/Users/russellthomas/Docs/REPLIT_NBA_RAPM/scripts/sync_alt3_decomp_to_scposs.py"
 
 for f in \
     "weighted_factors_26_all.csv" \
@@ -288,6 +300,25 @@ for f in \
         log "  WARNING: $f not found in master_results"
     fi
 done
+
+log "[$(date +%H:%M:%S)] Syncing RAPM DECOMP player CSVs to csvs/scposs..."
+run $PYTHON_PATH "$DECOMP_SCPOSS_SCRIPT" --source-dir "$RAPMS_MASTER" --dest-dir "$CSVS_DIR/scposs"
+
+log ""
+log "[$(date +%H:%M:%S)] Updating current metrics and peak leaderboards..."
+cd "$CURRENT_METRICS_DIR"
+run env NBA_PIPELINE_CSV_DIR="$CSVS_DIR" $PYTHON_PATH "$CURRENT_METRICS_DIR/collect_source_2026.py" --no-sync
+
+log "[$(date +%H:%M:%S)] Pushing csvs repo..."
+cd "$CSVS_DIR"
+CURRENT_CSVS_BRANCH="$(git branch --show-current)"
+if [ "$CURRENT_CSVS_BRANCH" != "$CSVS_BRANCH" ]; then
+    log "  ERROR: csvs repo is on $CURRENT_CSVS_BRANCH, expected $CSVS_BRANCH"
+    exit 1
+fi
+git add PureRAPM.csv PureRAPMPeaks.csv SCALEDOUTPUT_SMALLER.csv current_comp.csv structuredtest.csv DARKO.csv lebron.csv players_by_player.csv autocomplete_map.csv josh_rapm scposs
+git diff --cached --quiet || git commit -m "Daily RAPM csvs update $(date +%Y-%m-%d)"
+git push origin "$CSVS_BRANCH"
 
 log "[$(date +%H:%M:%S)] Pushing rapms repo..."
 cd "$RAPMS_DIR"

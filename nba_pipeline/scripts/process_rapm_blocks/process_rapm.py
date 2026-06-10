@@ -19,7 +19,15 @@ from .common import (
 )
 
 
-def process_rapm_py(file_path, year, season_str, o_luck=1.0, d_luck=1.0, missing_ft_fallback="default"):
+def process_rapm_py(
+    file_path,
+    year,
+    season_str,
+    o_luck=1.0,
+    d_luck=1.0,
+    missing_ft_fallback="default",
+    ft_value_mode="expected",
+):
     """
     Processes data for standard RAPM calculation.
 
@@ -31,11 +39,19 @@ def process_rapm_py(file_path, year, season_str, o_luck=1.0, d_luck=1.0, missing
         d_luck: Defensive luck adjustment weight (0.0 = no adjustment, 1.0 = full adjustment)
         missing_ft_fallback: "default" uses 0.75 when FT% is missing; "actual"
             uses the observed FT result for only those missing-FT% rows.
+        ft_value_mode: "expected" uses shooter FT% for FT events; "actual"
+            uses the observed made/missed FT result for every FT event.
 
     Returns:
         Tuple of (no_la_df, la_df) - both versions of RAPM output
     """
-    print(f"  Starting RAPM Processing for {season_str} (o_luck={o_luck}, d_luck={d_luck})...")
+    if ft_value_mode not in {"expected", "actual"}:
+        raise ValueError("ft_value_mode must be 'expected' or 'actual'")
+
+    print(
+        f"  Starting RAPM Processing for {season_str} "
+        f"(o_luck={o_luck}, d_luck={d_luck}, ft_value_mode={ft_value_mode})..."
+    )
     nba_df = _base_processing(file_path)
     if nba_df is None:
         return None
@@ -95,10 +111,14 @@ def process_rapm_py(file_path, year, season_str, o_luck=1.0, d_luck=1.0, missing
                    series_contains(nba_df_checked['visitor_description'], "3PT", case=False)
     actual_score = (nba_df_checked['Home_Action_Score'] + nba_df_checked['Away_Action_Score']).astype(float)
 
-    exp_ft_value = nba_df_checked['ExpFT']
-    if missing_ft_fallback == "actual":
-        exp_ft_value = np.where(missing_ft_perc, actual_score, nba_df_checked['ExpFT'])
-        print("      Missing FT% fallback for RAPM: actual FT results")
+    if ft_value_mode == "actual":
+        exp_ft_value = actual_score
+        print("      FT value mode for RAPM: actual FT results")
+    else:
+        exp_ft_value = nba_df_checked['ExpFT']
+        if missing_ft_fallback == "actual":
+            exp_ft_value = np.where(missing_ft_perc, actual_score, nba_df_checked['ExpFT'])
+            print("      Missing FT% fallback for RAPM: actual FT results")
     exp_3pt_value = nba_df_checked['Exp3PT'] * 3.0
 
     # BASE VERSION (FT luck adjusted, no 3PT luck adjustment)
