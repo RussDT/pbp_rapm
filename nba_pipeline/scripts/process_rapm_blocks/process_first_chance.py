@@ -46,6 +46,13 @@ def process_first_chance_py(file_path, year, season_str):
         'FC_MID_EFG_FG_Diff',
         'FC_THREE_EFG_FREQ_Diff',
         'FC_THREE_EFG_FG_Diff',
+        'FC_DECOMP_EFG_Diff',
+        'FC_DECOMP_RIM_FREQ_Diff',
+        'FC_DECOMP_RIM_FG_Diff',
+        'FC_DECOMP_MID_FG_Diff',
+        'FC_DECOMP_THREE_FREQ_Diff',
+        'FC_DECOMP_THREE_FG_Diff',
+        'FC_DECOMP_MID_VALUE_Diff',
     ]:
         if col in nba_filt.columns:
             numerator_cols.append(col)

@@ -26,6 +26,14 @@ Never store secrets, tokens, or credentials here.
 
 ## Session Log
 
+### 2026-07-13 14:40 (local)
+- Task: Recover post-May DECOMP work after a computer loss by reconciling `pbp_rapm`, private `alt3_3factor_research`, and downstream `rapms` history.
+- What went wrong: The public repo stopped at the Alt3 implementation; DECOMP source columns/aliases, same-side recentering, rolling builder, July 10 TOV/SC allocation, and stabilized/VPM target helpers were absent.
+- User correction: User confirmed GitHub repos could be pulled and asked for the best reconstruction possible.
+- Fix applied: Restored the exact five-child FIRST_CHANCE tree, aliases and VPM residual hook, side-specific centering, 97-column public builder/runner, recovered 23-window allocation manifest, daily 1Y-5Y DECOMP publish lane, tests/docs, and the private research compatibility helper.
+- Prevention rule added: Keep production DECOMP code in `pbp_rapm`, research configs/evidence in the private repo, and publish methodology-changing work before relying on local-only state; never invent missing EPM prior tooling.
+- Outcome: Core DECOMP compiles, row/turnover/centering tests pass, the builder matches the published schema and display closure, and private no-prior stabilized scripts import through `PYTHONPATH`. The external Alt3-to-scposs mapper still needs a 97-column schema audit.
+
 ### 2026-06-09 21:30 (local)
 - Task: Re-fetch modern 2014-2025 (NBA14..NBA25 RS+PS) raw PBP + rotations from the API after cleanup removed `raw_data`.
 - What went wrong: stats.nba.com silently stalled `requests`/plain-curl (Akamai TLS-fingerprint block, looked like an IP ban); separately, `gamerotation` 500s from the home IP and rate-limits hard under concurrency.
@@ -57,12 +65,4 @@ Never store secrets, tokens, or credentials here.
 - Fix applied: Added contributor onboarding, artifact manifest, cleanup plan, and a dry-run repo inventory script; linked the docs from the FreshDocs index and durable agent instructions.
 - Prevention rule added: Repo cleanup should start with dry-run inventory and script classification before deleting artifacts or moving legacy code.
 - Outcome: `audit_repo_inventory.py` generated ignored reports under `nba_pipeline/validation/repo_inventory/`; the new script compiles successfully.
-
-### 2026-06-03 14:45 (local)
-- Task: Add PBP-derived Databallr WOWY team-player presence for 1Y-5Y RAPM DECOMP.
-- What went wrong: The existing lineup helper inferred teams from processed `h*/a*` columns, so the new uploader needed raw `home_player*/away_player*` handling instead of importing that helper directly.
-- User correction: User required RAPM DECOMP from `player_alt3_efg_factors` and team membership from PBP, not `timedecay_rapm`.
-- Fix applied: Added `upload_wowy_team_player_presence.py`, created/uploaded `wowy_team_player_presence` for 2022-2026 RS+PS, wired the daily job, and documented the command/table contract.
-- Prevention rule added: Databallr WOWY team RAPM membership should come from raw lineup presence and remain separate from current-strength `timedecay_rapm`.
-- Outcome: Supabase has 4,412 presence rows for 2022-2026; OKC/PHX/BKN live counts match local PBP-derived validation with zero duplicate season/type/player keys.
 

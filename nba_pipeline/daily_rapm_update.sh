@@ -122,17 +122,16 @@ log "[$(date +%H:%M:%S)] Running RAPM analysis (13 years, rubberband)..."
 run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 14 26 ALL --rubberband
 
 log ""
-log "[$(date +%H:%M:%S)] Rebuilding active Alt3 EFG-value player bundles for 2026 rolling windows..."
-run $PYTHON_PATH "$SCRIPTS_DIR/run_alt3_efg_value_rolling.py" \
-    --intersect-years 2026 \
-    --force-base \
+log "[$(date +%H:%M:%S)] Rebuilding active eight-component DECOMP player bundles..."
+run $PYTHON_PATH "$SCRIPTS_DIR/run_decomp_rolling.py" \
+    --windows 2026,2025-2026,2024-2026,2023-2026,2022-2026 \
     --force-components ALL \
     --workers 4 \
     --rapm-workers 4 \
     --cores-per-rapm 2
 
 log ""
-log "[$(date +%H:%M:%S)] Rebuilding active Alt3 EFG-value team bundle..."
+log "[$(date +%H:%M:%S)] Rebuilding legacy Alt3 EFG-value team audit bundle..."
 run $PYTHON_PATH "$SCRIPTS_DIR/build_team_alt3_efg_value_weighted_factors.py" 24 26 ALL --alpha 25
 
 log ""
@@ -244,7 +243,6 @@ log ""
 log "[$(date +%H:%M:%S)] Syncing master_results to rapms repo..."
 RAPMS_DIR="/Users/russellthomas/Docs/rapms"
 RAPMS_MASTER="$RAPMS_DIR/master_results"
-DECOMP_SCPOSS_SCRIPT="/Users/russellthomas/Docs/REPLIT_NBA_RAPM/scripts/sync_alt3_decomp_to_scposs.py"
 
 for f in \
     "weighted_factors_26_all.csv" \
@@ -281,16 +279,16 @@ for f in \
 done
 
 for f in \
-    "weighted_factors_alt3_efg_value_26_all_rb_se_a2000_4000.csv" \
-    "weighted_factors_alt3_efg_value_26_all_rb_se_a2000_4000.parquet" \
-    "weighted_factors_alt3_efg_value_25_26_all_rb_se_a2000_4000.csv" \
-    "weighted_factors_alt3_efg_value_25_26_all_rb_se_a2000_4000.parquet" \
-    "weighted_factors_alt3_efg_value_24_26_all_rb_se_a2000_4000.csv" \
-    "weighted_factors_alt3_efg_value_24_26_all_rb_se_a2000_4000.parquet" \
-    "weighted_factors_alt3_efg_value_23_26_all_rb_se_a2000_4000.csv" \
-    "weighted_factors_alt3_efg_value_23_26_all_rb_se_a2000_4000.parquet" \
-    "weighted_factors_alt3_efg_value_22_26_all_rb_se_a2000_4000.csv" \
-    "weighted_factors_alt3_efg_value_22_26_all_rb_se_a2000_4000.parquet" \
+    "weighted_factors_decomp_26_all_rb_se_a2000_4000.csv" \
+    "weighted_factors_decomp_26_all_rb_se_a2000_4000.parquet" \
+    "weighted_factors_decomp_25_26_all_rb_se_a2000_4000.csv" \
+    "weighted_factors_decomp_25_26_all_rb_se_a2000_4000.parquet" \
+    "weighted_factors_decomp_24_26_all_rb_se_a2000_4000.csv" \
+    "weighted_factors_decomp_24_26_all_rb_se_a2000_4000.parquet" \
+    "weighted_factors_decomp_23_26_all_rb_se_a2000_4000.csv" \
+    "weighted_factors_decomp_23_26_all_rb_se_a2000_4000.parquet" \
+    "weighted_factors_decomp_22_26_all_rb_se_a2000_4000.csv" \
+    "weighted_factors_decomp_22_26_all_rb_se_a2000_4000.parquet" \
     "team_weighted_factors_alt3_efg_value_24_26_all_a25.csv" \
     "team_weighted_factors_alt3_efg_value_24_26_all_a25.parquet"; do
     if [ -f "$MASTER_DIR/$f" ]; then
@@ -301,8 +299,7 @@ for f in \
     fi
 done
 
-log "[$(date +%H:%M:%S)] Syncing RAPM DECOMP player CSVs to csvs/scposs..."
-run $PYTHON_PATH "$DECOMP_SCPOSS_SCRIPT" --source-dir "$RAPMS_MASTER" --dest-dir "$CSVS_DIR/scposs"
+log "[$(date +%H:%M:%S)] Skipping legacy Alt3-to-scposs mapper pending its 97-column DECOMP schema audit."
 
 log ""
 log "[$(date +%H:%M:%S)] Updating current metrics and peak leaderboards..."
