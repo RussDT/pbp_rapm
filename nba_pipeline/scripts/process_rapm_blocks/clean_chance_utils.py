@@ -16,6 +16,50 @@ from .common import (
 )
 
 
+DECOMP_SHOT_ACTION_COLUMNS = [
+    'FC_DECOMP_RIM_FREQ_Action_Score',
+    'FC_DECOMP_RIM_FG_Action_Score',
+    'FC_DECOMP_MID_FG_Action_Score',
+    'FC_DECOMP_THREE_FREQ_Action_Score',
+    'FC_DECOMP_THREE_FG_Action_Score',
+]
+
+
+def build_decomp_shot_action_components(
+    actual_net: pd.Series,
+    is_fga: pd.Series,
+    is_rim_fga: pd.Series,
+    is_mid_fga: pd.Series,
+    is_three_fga: pd.Series,
+    ft_sq_baseline: pd.Series,
+    rim_avg_pts: float,
+    mid_avg_pts: float,
+    three_avg_pts: float,
+) -> pd.DataFrame:
+    """Return the exact five-child public DECOMP shot tree at action level."""
+    components = pd.DataFrame(index=actual_net.index)
+    components['FC_DECOMP_RIM_FREQ_Action_Score'] = np.where(
+        is_rim_fga, rim_avg_pts - mid_avg_pts, 0.0
+    )
+    components['FC_DECOMP_RIM_FG_Action_Score'] = np.where(
+        is_rim_fga, actual_net - rim_avg_pts, 0.0
+    )
+    components['FC_DECOMP_MID_FG_Action_Score'] = np.where(
+        is_fga,
+        np.where(is_mid_fga, actual_net, mid_avg_pts),
+        ft_sq_baseline,
+    )
+    components['FC_DECOMP_THREE_FREQ_Action_Score'] = np.where(
+        is_three_fga, three_avg_pts - mid_avg_pts, 0.0
+    )
+    components['FC_DECOMP_THREE_FG_Action_Score'] = np.where(
+        is_three_fga, actual_net - three_avg_pts, 0.0
+    )
+    components['FC_DECOMP_EFG_Action_Score'] = components[DECOMP_SHOT_ACTION_COLUMNS].sum(axis=1)
+    components['FC_DECOMP_MID_VALUE_Action_Score'] = 0.0
+    return components
+
+
 def _attach_rapm_scoring(nba_df_checked, file_path, year, label):
     """Attach RAPM-style event scoring and, when possible, TS subcomponents."""
     is_playoffs = "_PS" in os.path.basename(file_path).upper()
@@ -440,6 +484,40 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
         f"three={fc_three_avg_pts:.4f}, value gap max={efg_value_action_gap:.6f})"
     )
 
+    # Public DECOMP shot tree. Frequency is valued against the same midrange
+    # counterfactual on every FGA; the counterfactual itself is carried by
+    # DECOMP_MID_FG. This removes the old visible baseline while preserving an
+    # exact five-child identity to first-chance EFG on every source row.
+    ft_sq_baseline_values = pd.to_numeric(
+        nba_df_checked.get('FC_FT_SQ_BASELINE_Action_Score', 0.0),
+        errors='coerce',
+    ).fillna(0.0)
+    decomp_actions = build_decomp_shot_action_components(
+        actual_net=nba_df_checked['ActualNet'],
+        is_fga=is_fga,
+        is_rim_fga=is_rim_fga,
+        is_mid_fga=is_mid_fga,
+        is_three_fga=is_three_fga,
+        ft_sq_baseline=ft_sq_baseline_values,
+        rim_avg_pts=fc_rim_avg_pts,
+        mid_avg_pts=fc_mid_avg_pts,
+        three_avg_pts=fc_three_avg_pts,
+    )
+    for col in decomp_actions.columns:
+        nba_df_checked[col] = decomp_actions[col]
+    decomp_action_gap = float(np.nanmax(np.abs(
+        nba_df_checked['FC_DECOMP_EFG_Action_Score'] - efg_action_target
+    )))
+    if decomp_action_gap > 1e-9:
+        raise ValueError(
+            "First-chance DECOMP shot identity failed at the action level: "
+            f"max gap={decomp_action_gap:.12f}"
+        )
+    print(
+        "      Calculated public five-factor DECOMP shot tree "
+        f"(mid counterfactual={fc_mid_avg_pts:.4f}, action gap max={decomp_action_gap:.6f})"
+    )
+
     nba_df_checked['First_Chance_Net'] = np.where(
         nba_df_checked['after_miss'],
         0.0,
@@ -468,6 +546,13 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
         ('FC_MID_EFG_FG_Action_Score', 'First_Chance_MID_EFG_FG_Net'),
         ('FC_THREE_EFG_FREQ_Action_Score', 'First_Chance_THREE_EFG_FREQ_Net'),
         ('FC_THREE_EFG_FG_Action_Score', 'First_Chance_THREE_EFG_FG_Net'),
+        ('FC_DECOMP_EFG_Action_Score', 'First_Chance_DECOMP_EFG_Net'),
+        ('FC_DECOMP_RIM_FREQ_Action_Score', 'First_Chance_DECOMP_RIM_FREQ_Net'),
+        ('FC_DECOMP_RIM_FG_Action_Score', 'First_Chance_DECOMP_RIM_FG_Net'),
+        ('FC_DECOMP_MID_FG_Action_Score', 'First_Chance_DECOMP_MID_FG_Net'),
+        ('FC_DECOMP_THREE_FREQ_Action_Score', 'First_Chance_DECOMP_THREE_FREQ_Net'),
+        ('FC_DECOMP_THREE_FG_Action_Score', 'First_Chance_DECOMP_THREE_FG_Net'),
+        ('FC_DECOMP_MID_VALUE_Action_Score', 'First_Chance_DECOMP_MID_VALUE_Net'),
     ]
     for source_col, target_col in component_pairs:
         if source_col in nba_df_checked.columns:
@@ -515,6 +600,13 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('First_Chance_MID_EFG_FG_Total', 'First_Chance_MID_EFG_FG_Net'),
             ('First_Chance_THREE_EFG_FREQ_Total', 'First_Chance_THREE_EFG_FREQ_Net'),
             ('First_Chance_THREE_EFG_FG_Total', 'First_Chance_THREE_EFG_FG_Net'),
+            ('First_Chance_DECOMP_EFG_Total', 'First_Chance_DECOMP_EFG_Net'),
+            ('First_Chance_DECOMP_RIM_FREQ_Total', 'First_Chance_DECOMP_RIM_FREQ_Net'),
+            ('First_Chance_DECOMP_RIM_FG_Total', 'First_Chance_DECOMP_RIM_FG_Net'),
+            ('First_Chance_DECOMP_MID_FG_Total', 'First_Chance_DECOMP_MID_FG_Net'),
+            ('First_Chance_DECOMP_THREE_FREQ_Total', 'First_Chance_DECOMP_THREE_FREQ_Net'),
+            ('First_Chance_DECOMP_THREE_FG_Total', 'First_Chance_DECOMP_THREE_FG_Net'),
+            ('First_Chance_DECOMP_MID_VALUE_Total', 'First_Chance_DECOMP_MID_VALUE_Net'),
         ]:
             if net_col in nba_df_checked.columns:
                 nba_df_checked[total_col] = nba_df_checked.groupby(group_cols)[net_col].cumsum()
@@ -539,6 +631,13 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('First_Chance_MID_EFG_FG_Total', 'First_Chance_MID_EFG_FG_Net'),
             ('First_Chance_THREE_EFG_FREQ_Total', 'First_Chance_THREE_EFG_FREQ_Net'),
             ('First_Chance_THREE_EFG_FG_Total', 'First_Chance_THREE_EFG_FG_Net'),
+            ('First_Chance_DECOMP_EFG_Total', 'First_Chance_DECOMP_EFG_Net'),
+            ('First_Chance_DECOMP_RIM_FREQ_Total', 'First_Chance_DECOMP_RIM_FREQ_Net'),
+            ('First_Chance_DECOMP_RIM_FG_Total', 'First_Chance_DECOMP_RIM_FG_Net'),
+            ('First_Chance_DECOMP_MID_FG_Total', 'First_Chance_DECOMP_MID_FG_Net'),
+            ('First_Chance_DECOMP_THREE_FREQ_Total', 'First_Chance_DECOMP_THREE_FREQ_Net'),
+            ('First_Chance_DECOMP_THREE_FG_Total', 'First_Chance_DECOMP_THREE_FG_Net'),
+            ('First_Chance_DECOMP_MID_VALUE_Total', 'First_Chance_DECOMP_MID_VALUE_Net'),
         ]:
             if net_col in nba_df_checked.columns:
                 nba_df_checked[total_col] = nba_df_checked[net_col].cumsum()
@@ -579,6 +678,13 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('FC_MID_EFG_FG_Diff', 'First_Chance_MID_EFG_FG_Total'),
             ('FC_THREE_EFG_FREQ_Diff', 'First_Chance_THREE_EFG_FREQ_Total'),
             ('FC_THREE_EFG_FG_Diff', 'First_Chance_THREE_EFG_FG_Total'),
+            ('FC_DECOMP_EFG_Diff', 'First_Chance_DECOMP_EFG_Total'),
+            ('FC_DECOMP_RIM_FREQ_Diff', 'First_Chance_DECOMP_RIM_FREQ_Total'),
+            ('FC_DECOMP_RIM_FG_Diff', 'First_Chance_DECOMP_RIM_FG_Total'),
+            ('FC_DECOMP_MID_FG_Diff', 'First_Chance_DECOMP_MID_FG_Total'),
+            ('FC_DECOMP_THREE_FREQ_Diff', 'First_Chance_DECOMP_THREE_FREQ_Total'),
+            ('FC_DECOMP_THREE_FG_Diff', 'First_Chance_DECOMP_THREE_FG_Total'),
+            ('FC_DECOMP_MID_VALUE_Diff', 'First_Chance_DECOMP_MID_VALUE_Total'),
         ]:
             if total_col in nba_filt.columns:
                 nba_filt[diff_col] = (
@@ -615,6 +721,13 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('FC_MID_EFG_FG_Diff', 'First_Chance_MID_EFG_FG_Total'),
             ('FC_THREE_EFG_FREQ_Diff', 'First_Chance_THREE_EFG_FREQ_Total'),
             ('FC_THREE_EFG_FG_Diff', 'First_Chance_THREE_EFG_FG_Total'),
+            ('FC_DECOMP_EFG_Diff', 'First_Chance_DECOMP_EFG_Total'),
+            ('FC_DECOMP_RIM_FREQ_Diff', 'First_Chance_DECOMP_RIM_FREQ_Total'),
+            ('FC_DECOMP_RIM_FG_Diff', 'First_Chance_DECOMP_RIM_FG_Total'),
+            ('FC_DECOMP_MID_FG_Diff', 'First_Chance_DECOMP_MID_FG_Total'),
+            ('FC_DECOMP_THREE_FREQ_Diff', 'First_Chance_DECOMP_THREE_FREQ_Total'),
+            ('FC_DECOMP_THREE_FG_Diff', 'First_Chance_DECOMP_THREE_FG_Total'),
+            ('FC_DECOMP_MID_VALUE_Diff', 'First_Chance_DECOMP_MID_VALUE_Total'),
         ]:
             if total_col in nba_filt.columns:
                 nba_filt[diff_col] = (
@@ -732,5 +845,28 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             print(
                 "      First-chance EFG frequency/FG decomposition gap "
                 f"max={fc_efg_freq_fg_gap:.6f}; frequency total={freq_balance_gap:.6f}"
+            )
+        decomp_cols = [
+            'FC_DECOMP_RIM_FREQ_Diff',
+            'FC_DECOMP_RIM_FG_Diff',
+            'FC_DECOMP_MID_FG_Diff',
+            'FC_DECOMP_THREE_FREQ_Diff',
+            'FC_DECOMP_THREE_FG_Diff',
+        ]
+        if {'FC_EFG_Diff', 'FC_DECOMP_EFG_Diff', *decomp_cols}.issubset(nba_filt.columns):
+            decomp_children = sum(
+                pd.to_numeric(nba_filt[col], errors='coerce').fillna(0.0)
+                for col in decomp_cols
+            )
+            parent_gap = float((nba_filt['FC_DECOMP_EFG_Diff'] - decomp_children).abs().max())
+            efg_gap = float((nba_filt['FC_EFG_Diff'] - nba_filt['FC_DECOMP_EFG_Diff']).abs().max())
+            if max(parent_gap, efg_gap) > 1e-9:
+                raise ValueError(
+                    "First-chance DECOMP possession identity failed: "
+                    f"child gap={parent_gap:.12f}, EFG gap={efg_gap:.12f}"
+                )
+            print(
+                "      Public DECOMP possession identity "
+                f"child gap max={parent_gap:.6f}; EFG gap max={efg_gap:.6f}"
             )
     return nba_filt

@@ -80,6 +80,13 @@ ALT_BASELINE_PREFIXES = {
     'ALT_BADPASS_TOV_VALUE',
     'ALT_SCORING_TOV_VALUE',
     'ALT_FC_COMPLETION',
+    'DECOMP_EFG',
+    'DECOMP_RIM_FREQ',
+    'DECOMP_RIM_FG',
+    'DECOMP_MID_FG',
+    'DECOMP_THREE_FREQ',
+    'DECOMP_THREE_FG',
+    'DECOMP_MID_VALUE',
 }
 ALT_FIRST_CHANCE_TOV_PREFIXES = {'ALT_TOV', 'ALT_BADPASS_TOV', 'ALT_SCORING_TOV'}
 ALT_PREFIXES = ALT_BASELINE_PREFIXES | ALT_FIRST_CHANCE_TOV_PREFIXES
@@ -110,6 +117,13 @@ ALT_COMPONENT_COLUMNS = {
     'ALT_EFG_MID_FG': 'FC_MID_EFG_FG_Diff',
     'ALT_EFG_THREE_FREQ': 'FC_THREE_EFG_FREQ_Diff',
     'ALT_EFG_THREE_FG': 'FC_THREE_EFG_FG_Diff',
+    'DECOMP_EFG': 'FC_DECOMP_EFG_Diff',
+    'DECOMP_RIM_FREQ': 'FC_DECOMP_RIM_FREQ_Diff',
+    'DECOMP_RIM_FG': 'FC_DECOMP_RIM_FG_Diff',
+    'DECOMP_MID_FG': 'FC_DECOMP_MID_FG_Diff',
+    'DECOMP_THREE_FREQ': 'FC_DECOMP_THREE_FREQ_Diff',
+    'DECOMP_THREE_FG': 'FC_DECOMP_THREE_FG_Diff',
+    'DECOMP_MID_VALUE': 'FC_DECOMP_MID_VALUE_Diff',
 }
 DEFAULT_ALPHA_GRID = [300, 500, 1000, 2000, 3000, 5000, 7000, 10000]
 AGE_CURVE_TARGETS = {
@@ -244,19 +258,47 @@ def compute_time_decay_weights_from_dates(dates, decay_base: float = 0.999) -> n
     return weights.astype(np.float64)
 
 
+def recenter_player_coefficients_by_side_possessions(
+    beta: np.ndarray,
+    player_to_col: dict[str, int],
+    all_players,
+    player_off_poss,
+    player_def_poss,
+) -> tuple[float, float]:
+    """Center offense by offensive possessions and defense by defensive possessions."""
+    sum_off = sum(
+        beta[player_to_col[f"{player_id}_off"]] * player_off_poss[player_id]
+        for player_id in all_players
+    )
+    sum_def = sum(
+        beta[player_to_col[f"{player_id}_def"]] * player_def_poss[player_id]
+        for player_id in all_players
+    )
+    sum_off_poss = sum(player_off_poss[player_id] for player_id in all_players)
+    sum_def_poss = sum(player_def_poss[player_id] for player_id in all_players)
+    off_offset = sum_off / sum_off_poss if sum_off_poss > 0 else 0.0
+    def_offset = sum_def / sum_def_poss if sum_def_poss > 0 else 0.0
+    for player_id in all_players:
+        if sum_off_poss > 0:
+            beta[player_to_col[f"{player_id}_off"]] -= off_offset
+        if sum_def_poss > 0:
+            beta[player_to_col[f"{player_id}_def"]] -= def_offset
+    return float(off_offset), float(def_offset)
+
+
 def compute_alt_first_chance_baselines(
     df: pd.DataFrame,
     timedecay: bool = False,
     half_life=None,
     requested_prefixes: list[str] | None = None,
 ) -> dict[str, float]:
-    """Compute same-sample first-chance non-turnover baselines for the requested ALT scoring aliases."""
+    """Compute same-sample non-turnover baselines for ALT and DECOMP scoring aliases."""
     if 'Net_Diff' not in df.columns or 'Is_Turnover' not in df.columns:
-        raise ValueError("ALT aliases require FIRST_CHANCE rows with Net_Diff and Is_Turnover.")
+        raise ValueError("ALT/DECOMP aliases require FIRST_CHANCE rows with Net_Diff and Is_Turnover.")
 
     non_tov_mask = pd.to_numeric(df['Is_Turnover'], errors='coerce').fillna(0).astype(int) == 0
     if not non_tov_mask.any():
-        raise ValueError("Could not compute ALT baseline: no non-turnover FIRST_CHANCE rows found.")
+        raise ValueError("Could not compute first-chance alias baseline: no non-turnover rows found.")
 
     if timedecay:
         decay_half_life = half_life if half_life else 700
@@ -281,7 +323,7 @@ def compute_alt_first_chance_baselines(
     baselines: dict[str, float] = {}
     for prefix in component_prefixes_to_compute:
         if prefix not in ALT_COMPONENT_COLUMNS:
-            raise ValueError(f"Unsupported ALT baseline prefix: {prefix}")
+            raise ValueError(f"Unsupported first-chance baseline prefix: {prefix}")
         column = ALT_COMPONENT_COLUMNS[prefix]
         if column not in df.columns:
             if prefix == 'ALT_TS':
@@ -319,14 +361,14 @@ def compute_alt_first_chance_baselines(
 
     if timedecay:
         logging.info(
-            "Computed ALT first-chance baselines %s for %s with time decay (half-life=%s)",
+            "Computed first-chance alias baselines %s for %s with time decay (half-life=%s)",
             {key: round(value, 6) for key, value in baselines.items()},
             prefixes_to_compute,
             decay_half_life,
         )
     else:
         logging.info(
-            "Computed ALT first-chance baselines %s for %s on the exact loaded sample",
+            "Computed first-chance alias baselines %s for %s on the exact loaded sample",
             {key: round(value, 6) for key, value in baselines.items()},
             prefixes_to_compute,
         )
@@ -1491,6 +1533,7 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
     - SCORING_TOV: derives Is_Turnover - Is_BadPass_TOV from TOV file
     - ALT_TS: uses FIRST_CHANCE Net_Diff plus same-sample non-turnover baseline on turnover rows
     - ALT_EFG / ALT_SQ / ALT_MAKE / ALT_FT: use FIRST_CHANCE scoring diffs plus same-sample turnover-row baselines
+    - DECOMP_*: use the public five-child FIRST_CHANCE shot tree and the same turnover-row baseline rule
     - ALT_TOV / ALT_BADPASS_TOV / ALT_SCORING_TOV: use true first-chance turnover flags
     - FC_TRANSITION_SCORING / FC_HALFCOURT_SCORING: same-denominator conditional targets using same-sample mode PPP placeholders
     - FC_MODE_MIX / FC_TRANSITION_VALUE / FC_HALFCOURT_VALUE: additive first-chance mode decomposition targets
@@ -3520,30 +3563,19 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
     # Re-center offense and defense separately so weighted averages = 0.
     # Component additivity is preserved because every alias uses the same
     # linear centering operator on the same fixed possession universe.
-    sum_off = 0.0
-    sum_def = 0.0
-    sum_poss = 0.0
-
-    for p in all_players:
-        off_key = f"{p}_off"
-        def_key = f"{p}_def"
-        off_val = beta[player_to_col[off_key]]
-        def_val = beta[player_to_col[def_key]]
-        poss = player_possessions[p]
-        sum_off += off_val * poss
-        sum_def += def_val * poss
-        sum_poss += poss
-
-    if sum_poss > 0:
-        off_offset = sum_off / sum_poss
-        def_offset = sum_def / sum_poss
-        logging.info(f"Re-centering offense by {off_offset:.4f}, defense by {def_offset:.4f}")
-
-        for p in all_players:
-            off_key = f"{p}_off"
-            def_key = f"{p}_def"
-            beta[player_to_col[off_key]] -= off_offset
-            beta[player_to_col[def_key]] -= def_offset
+    off_offset, def_offset = recenter_player_coefficients_by_side_possessions(
+        beta,
+        player_to_col,
+        all_players,
+        player_off_poss,
+        player_def_poss,
+    )
+    logging.info(
+        "Re-centered offense by %.4f with offensive possessions and "
+        "defense by %.4f with defensive possessions",
+        off_offset,
+        def_offset,
+    )
     
     strength_offsets = {}
     if strength_split_payload and strength_split_payload.get('enabled'):
@@ -3944,6 +3976,9 @@ Examples:
                               'ALT_EFG_RIM_FREQ', 'ALT_EFG_RIM_FG',
                               'ALT_EFG_MID_FREQ', 'ALT_EFG_MID_FG',
                               'ALT_EFG_THREE_FREQ', 'ALT_EFG_THREE_FG',
+                              'DECOMP_EFG', 'DECOMP_RIM_FREQ', 'DECOMP_RIM_FG',
+                              'DECOMP_MID_FG', 'DECOMP_THREE_FREQ', 'DECOMP_THREE_FG',
+                              'DECOMP_MID_VALUE',
                               'ALT_TOV_VALUE', 'ALT_BADPASS_TOV_VALUE', 'ALT_SCORING_TOV_VALUE',
                               'ALT_FC_COMPLETION',
                               'FC_TRANSITION_SCORING', 'FC_HALFCOURT_SCORING',
@@ -4155,6 +4190,13 @@ Examples:
         'ALT_EFG_MID_FG': 'FIRST_CHANCE',
         'ALT_EFG_THREE_FREQ': 'FIRST_CHANCE',
         'ALT_EFG_THREE_FG': 'FIRST_CHANCE',
+        'DECOMP_EFG': 'FIRST_CHANCE',
+        'DECOMP_RIM_FREQ': 'FIRST_CHANCE',
+        'DECOMP_RIM_FG': 'FIRST_CHANCE',
+        'DECOMP_MID_FG': 'FIRST_CHANCE',
+        'DECOMP_THREE_FREQ': 'FIRST_CHANCE',
+        'DECOMP_THREE_FG': 'FIRST_CHANCE',
+        'DECOMP_MID_VALUE': 'FIRST_CHANCE',
         'ALT_TOV_VALUE': 'FIRST_CHANCE',
         'ALT_BADPASS_TOV_VALUE': 'FIRST_CHANCE',
         'ALT_SCORING_TOV_VALUE': 'FIRST_CHANCE',

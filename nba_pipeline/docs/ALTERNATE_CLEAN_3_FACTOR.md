@@ -1,5 +1,9 @@
 # Alternate Clean 3-Factor Decomposition
 
+> **Status:** legacy/audit. The active public model is the eight-component
+> [Public DECOMP](./PUBLIC_DECOMP.md). This document remains the historical
+> definition and migration trail for the Alt3 surfaces.
+
 This document describes the parallel clean 3-factor build added on top of the existing six-factor pipeline.
 
 ## Goal
@@ -199,11 +203,11 @@ Important caveat:
 
 The standard `weighted_factors_*.csv` output is unchanged.
 
-The active public Alt3 build writes:
+The former public Alt3 build writes:
 
 - `weighted_factors_alt3_efg_value_*`
 
-This is the current interpretation path. It uses direct `SECOND_CHANCE_CLEAN`
+This is now a legacy interpretation path. It uses direct `SECOND_CHANCE_CLEAN`
 for `oSC` / `dSC` and uses `ALT_EFG_BASELINE` as the balancing bucket that
 closes the public display to total RAPM.
 
@@ -307,7 +311,7 @@ What is exact:
 What matters operationally:
 
 - the alternate clean 3-factor net/off/def regression still reconstructs RAPM extremely tightly on the player surface
-- the active public `weighted_factors_alt3_efg_value_*` artifact displays direct `SECOND_CHANCE_CLEAN` as `oSC` / `dSC`; `ALT_EFG_BASELINE` is the balancing bucket that closes the EFG-value display to `off` / `def`
+- the legacy `weighted_factors_alt3_efg_value_*` artifact displays direct `SECOND_CHANCE_CLEAN` as `oSC` / `dSC`; `ALT_EFG_BASELINE` is its balancing bucket
 - the legacy `weighted_factors_alt3_*` artifact uses `oSC` / `dSC` as balancing buckets so that older alt surface still sums exactly to `off` / `def`
 - the alt turnover sub-split is chained the same way as the standard TOV sub-split:
   - `ALT_BADPASS_TOV / ALT_SCORING_TOV -> ALT_TOV -> net RAPM`

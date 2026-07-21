@@ -49,6 +49,8 @@ nba_pipeline/
 For season-summary harnesses, treat the processed filename as the canonical season key. Legacy processed parquets do not all store the same embedded `Season` convention.
 - When syncing published artifacts into the downstream `rapms` repo, check both `nba_pipeline/master_results` and `nba_pipeline/results`; some metric result CSVs, such as `rim_assist_*`, can live only in `results` until the publish step copies them into `master_results`.
 - `rapm.py --age-dummies` uses `dpm_history.csv` only as a player-season age lookup (`nba_id`, `season`, `age`); the age fixed effects are still estimated inside the possession regression. `03_run_rapm_analysis.py --age-dummies` applies age fixed effects to the full daily weighted-factor metric suite and writes `_agefe` outputs.
+- The active public factor family is `weighted_factors_decomp_*`: five exact first-chance shot children (`DECOMP_RIM_FREQ`, `DECOMP_RIM_FG`, `DECOMP_MID_FG`, `DECOMP_THREE_FREQ`, `DECOMP_THREE_FG`) plus `ALT_FT`, `ALT_TOV_VALUE`, and `SECOND_CHANCE_CLEAN`. See `docs/PUBLIC_DECOMP.md`; Alt3 files are legacy/audit.
+- `scripts/tune_forward_component_alphas.py` is the production-side compatibility module used by the private `alt3_3factor_research` stabilized-RAPM and VPM scripts. It must keep RS/PS family loading, training-split baselines, and target construction aligned with `rapm.py`.
 - `FIRST_CHANCE` carries ShotQuality-era `Is_FC_Transition_Possession` and `Has_FC_FGA` labels for the 2023-24 through 2025-26 transition/half-court split. The `FC_TRANSITION_SCORING` / `FC_HALFCOURT_SCORING` aliases use same-sample PPP placeholders, while `FC_MODE_MIX + FC_TRANSITION_VALUE + FC_HALFCOURT_VALUE = FIRST_CHANCE.Net_Diff` at row level.
 - Supabase-backed player-stat processors prefer `SUPABASE_SERVICE_ROLE_KEY` over `SUPABASE_KEY`; keep the service role key available for local backend processing so FT% / 3P% lookups do not silently fall back to defaults.
 - Preferred long historical core runs use `run_historical_core_weighted_factors.py --fixed-season-effects --age-poly-coefficients ...`: fixed RS raw season baselines and fixed polynomial age offsets are subtracted from the row target before centering and solving, instead of adding estimated nuisance columns.
@@ -219,7 +221,7 @@ python 03_run_rapm_analysis.py 1 4 ALL --rapm-workers 8 --cores-per-rapm 4  # co
 python 03_run_rapm_analysis.py 97 0 ALL --rubberband --season-effects --publish-to-rapms  # cross-century 1997-2000 window
 python 03_run_rapm_analysis.py 21 26 ALL --publish-to-rapms  # copy standard + alt3 weighted factors to rapms and push if changed
 ```
-This creates `weighted_factors` for the standard six-factor build and the legacy `weighted_factors_alt3_*` alternate clean 3-factor build. For current public Alt3 work, use `weighted_factors_alt3_efg_value_*`: it uses the six atomic first-chance EFG-value shot pieces, `ALT_FT`, point-valued `ALT_TOV_VALUE`, and direct `SECOND_CHANCE_CLEAN`; the display closes to total RAPM through `ALT_EFG_BASELINE`, not by making second chance a residual bucket.
+This creates `weighted_factors` for the standard six-factor build and the legacy Alt3 families. The active public decomposition is built separately with `run_decomp_rolling.py`; see `docs/PUBLIC_DECOMP.md`. `weighted_factors_alt3_efg_value_*` remains the immediate predecessor/audit family: it uses six atomic first-chance EFG-value shot pieces, `ALT_FT`, point-valued `ALT_TOV_VALUE`, and direct `SECOND_CHANCE_CLEAN`, closing through `ALT_EFG_BASELINE`.
 Two-digit season windows may cross 1999-2000; `97 0` expands to 1997-2000 and filenames use `97_00`.
 
 ## Key Implementation Details
@@ -373,7 +375,7 @@ The TOV rubberband coefficients are in `Off_Diff = -Is_Turnover` units. So a neg
 3. Run RAPM analysis for 1-6 year windows (26-26 through 21-26)
 4. Time-decay 700 runs (21-26 plain, 21-26 td700+rubberband) + upload to Supabase
 5. 13-year rubberband run (14-26)
-6. Active Alt3 EFG-value player rolling bundles for windows intersecting 2026, with both CSV and parquet outputs, plus the team-level 24-26 ALL CSV/parquet bundle
+6. Active eight-component DECOMP player rolling bundles for the 1Y-5Y current windows, with both CSV and parquet outputs; the team-level Alt3 bundle remains an audit artifact
 7. Standalone metrics with td700 (RIM_FREQ, RIM_FG_PCT, MIDRANGE_FREQ, MIDRANGE_FG_PCT, TRANSITION_FREQ, TRANSITION_RIM, INITIAL_EV)
 8. Copy standalone TD results to `master_results/`, mapping canonical `transition_freq_24_26_all_td700_results.csv`, `transition_rim_24_26_all_td700_results.csv`, and `initial_ev_24_26_all_td700_results.csv` onto the published downstream filenames `transitionfreq_24_26_all_td700_results.csv`, `transitionrim_24_26_all_td700_results.csv`, and `initialev_24_26_all_td700_results.csv`, plus curated non-TD `special_rapm_24_26_all_results.csv`
 9. TS decomposition components (TS, SQ_POSS, FT_PREMIUM, CONTEST) + WLS regression + Supabase upload
@@ -382,12 +384,12 @@ The TOV rubberband coefficients are in `Off_Diff = -Is_Turnover` units. So a neg
    - `update_2026_purerapm.py` → `../csvs/PureRAPM.csv` (legacy)
    - `update_2026_purerapm_peaks.py` → `../csvs/PureRAPMPeaks.csv`
    - `update_2026_scaledoutput.py` → `../csvs/SCALEDOUTPUT_SMALLER.csv`
-11. Sync curated standard and alt3 files from `master_results/` → `/Users/russellthomas/Docs/rapms/master_results/`, including the active Alt3 EFG-value `.csv` and `.parquet` artifacts
-12. Rebuild the player-facing `csvs/scposs/{nba_id}.csv` files from the active RAPM DECOMP source family using `/Users/russellthomas/Docs/REPLIT_NBA_RAPM/scripts/sync_alt3_decomp_to_scposs.py`. Do not use `update_2026_scposs.py` as the current player-facing scposs writer; it is legacy six-factor output.
+11. Sync curated standard and active `weighted_factors_decomp_*` CSV/parquet files from `master_results/` → the downstream `rapms/master_results/`
+12. The old Alt3-to-scposs mapper is intentionally skipped until its 97-column DECOMP schema mapping is audited; do not silently feed it the new files
 13. Current metrics and peak leaderboards:
    - run `/Users/russellthomas/Docs/2026_NBA_PIPELINE/nba_rapm/collect_source_2026.py --no-sync` with `NBA_PIPELINE_CSV_DIR=/Users/russellthomas/Docs/csvs`
    - outputs include `current_comp.csv`, `structuredtest.csv`, `DARKO.csv`, `lebron.csv`, and `players_by_player.csv`
-   - current 1Y/2Y/3Y/4Y/5Y RAPM rows/columns are read from the freshly rebuilt RAPM DECOMP `csvs/scposs` files; `TimedecayRAPM` and `*_timedecay` columns remain on the original timedecay source
+   - current 1Y/2Y/3Y/4Y/5Y RAPM rows remain on the last audited `csvs/scposs` surface until the DECOMP mapper is restored; `TimedecayRAPM` and `*_timedecay` remain on their original source
 14. Commit & push the touched `csvs` outputs (`PureRAPM.csv`, `PureRAPMPeaks.csv`, `SCALEDOUTPUT_SMALLER.csv`, `current_comp.csv`, `structuredtest.csv`, `DARKO.csv`, `lebron.csv`, `players_by_player.csv`, `autocomplete_map.csv`, `josh_rapm/`, and `scposs/`) to `RussDT/csvs@test-branch`, which is the branch read by the app.
 15. Commit & push the `rapms` repo
 
