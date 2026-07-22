@@ -142,7 +142,7 @@ def run_rapm_analysis(rapm_type, start_year, end_year, season_type, timedecay=Fa
     """
     # Build command - rapm.py is now in the scripts folder
     rapm_script = SCRIPT_DIR / 'rapm.py'
-    cmd = ['python', str(rapm_script), rapm_type, str(start_year), str(end_year), season_type]
+    cmd = [sys.executable, str(rapm_script), rapm_type, str(start_year), str(end_year), season_type]
 
     # Add --pure flag for RAPM
     if rapm_type == 'RAPM':

@@ -26,6 +26,38 @@ Never store secrets, tokens, or credentials here.
 
 ## Session Log
 
+### 2026-07-22 01:42 (local)
+- Task: Promote the 2014-2026 lineup repairs, rebuild all processed metrics, and compare a fresh 2022-26 ALL RB+SE DECOMP with the owned `rapms` publication.
+- What went wrong: The 2024-25 licensed ShotQuality enrichment inputs were absent, the rebuild registry omitted `INITIAL_EV_BETA` / `EV_RAPM`, the master runner invoked a dependency-less global Python, and the local venv lacked `statsmodels`.
+- User correction: User requested a full modern processed rebuild and an empirical five-year publication check.
+- Fix applied: Promoted/re-audited the repaired raws, rebuilt the canonical 6.3M-shot repo-owned model, rebuilt 644 locally supported parquets, made targeted rebuilds fail-fast, added the missing registry entries, fixed interpreter inheritance, assembled a fresh 97-column DECOMP, and wrote validation/comparison reports.
+- Prevention rule added: Fail bulk rebuilds on partial output, use the orchestrator's interpreter for subprocesses, validate `SHOOTER_OREB` with its shooter-plus-four schema, and never synthesize missing licensed SQ enrichment.
+- Outcome: 66,359,329 processed rows have zero invalid saved lineups; FIRST_CHANCE row algebra is exact to `5.69e-14`; fresh vs published 2022-26 net RAPM correlates `0.99875`, with identical top 10. LeBron is `off=2.523`, `def=+0.128` (positive-good display), `net=2.651`.
+
+### 2026-07-21 14:35 (local)
+- Task: Diagnose and repair modern 2014+ raw lineup corruption, including the LeBron-affected 2016-17 game.
+- What went wrong: GameRotation responses/archive rows can be incomplete, overlapping, or reversed, while event-number-first sorting also moves corrected V3 actions backward in time.
+- User correction: User supplied Gabriel's rotation archive as optional reattachment evidence.
+- Fix applied: Added `repair_modern_raw_lineups.py`, constrained period/substitution replay with actor/rotation/raw evidence, safe validation/promotion controls, clock-first ordering in shared consumers, focused tests, and operator docs.
+- Prevention rule added: Treat GameRotation as positive evidence only and require clock-first PBP ordering plus zero lineup/substitution/actor issues before promotion.
+- Outcome: Full 2014-2026 RS+PS validation audited 7,784,893 rows and repaired 10,623 bad rows across 31 games to zero remaining issues; production raw files were not promoted.
+
+### 2026-07-21 13:43 (local)
+- Task: Run 2012-2016 all-games RAPM with rubberband and season effects and report LeBron James.
+- What went wrong: The local `.venv` is Python 3.9 while `rapm.py` contains Python 3.10 union annotations; multiprocessing workers also cannot inherit an in-memory postponed-annotation wrapper.
+- User correction: N/A.
+- Fix applied: Ran the unchanged solver through postponed annotation compilation with sequential parquet loading.
+- Prevention rule added: Use a Python 3.10+ project environment for normal `rapm.py` CLI execution; sequential loading is a safe compatibility fallback.
+- Outcome: Wrote `rapm_12_16_all_rb_se_results.csv`; LeBron is first at `off=7.658`, raw `def=-2.578`, and `net_rapm=10.236` across 66,696 possession appearances.
+
+### 2026-07-21 (local)
+- Task: Download and assemble the shared Drive data handoffs, then rebuild the canonical 2014-2016 processed surface.
+- What went wrong: The modern folder was initially described as processed data, but its README identifies it as raw NBAXX PBP only; the Gabriel link is a data TAR, not repository source.
+- User correction: User supplied the canonical Drive links and asked to download everything and assemble it.
+- Fix applied: Verified all 27 split-ZIP parts and the full ZIP hash, extracted modern 2014-2026 RS/PS raw files, extracted the historical 1997-2013 handoff, created an isolated Python environment, and used `reprocess_metric.py` with six workers to rebuild 18 canonical metrics for 2014-2016 RS+PS using the Supabase service-role environment.
+- Prevention rule added: Read the handoff README and inspect archive manifests before classifying or extracting shared artifacts.
+- Outcome: Local workspace has 60 raw RS/PS parquets for 1997-2026, the historical processed/results handoff, and all 108 expected 2014-2016 processed parquets; the new files are readable, nonempty, and contain 11,154,550 total rows.
+
 ### 2026-07-13 14:40 (local)
 - Task: Recover post-May DECOMP work after a computer loss by reconciling `pbp_rapm`, private `alt3_3factor_research`, and downstream `rapms` history.
 - What went wrong: The public repo stopped at the Alt3 implementation; DECOMP source columns/aliases, same-side recentering, rolling builder, July 10 TOV/SC allocation, and stabilized/VPM target helpers were absent.
@@ -33,36 +65,3 @@ Never store secrets, tokens, or credentials here.
 - Fix applied: Restored the exact five-child FIRST_CHANCE tree, aliases and VPM residual hook, side-specific centering, 97-column public builder/runner, recovered 23-window allocation manifest, daily 1Y-5Y DECOMP publish lane, tests/docs, and the private research compatibility helper.
 - Prevention rule added: Keep production DECOMP code in `pbp_rapm`, research configs/evidence in the private repo, and publish methodology-changing work before relying on local-only state; never invent missing EPM prior tooling.
 - Outcome: Core DECOMP compiles, row/turnover/centering tests pass, the builder matches the published schema and display closure, and private no-prior stabilized scripts import through `PYTHONPATH`. The external Alt3-to-scposs mapper still needs a 97-column schema audit.
-
-### 2026-06-09 21:30 (local)
-- Task: Re-fetch modern 2014-2025 (NBA14..NBA25 RS+PS) raw PBP + rotations from the API after cleanup removed `raw_data`.
-- What went wrong: stats.nba.com silently stalled `requests`/plain-curl (Akamai TLS-fingerprint block, looked like an IP ban); separately, `gamerotation` 500s from the home IP and rate-limits hard under concurrency.
-- User correction: User wanted everything 2014+ with rotations attached; "try without proxy, be careful about rate limits."
-- Fix applied: Added `scripts/_nba_http_curlcffi.py` (monkeypatch nba_api -> curl_cffi chrome120) and imported it in `01_fetch_pbp_data.py`; gave `gamerotation` 10 retries with exponential backoff (cap 45s); added resumable chunked driver `scripts/fetch_modern_seasons.py`. Winning config = curl_cffi + proxy ON + low concurrency.
-- Prevention rule added: stats.nba.com needs a browser TLS fingerprint (curl_cffi); gamerotation needs the proxy and gentle pacing. See AGENTS.md / CLAUDE.md.
-- Outcome: End-to-end verified (single game = 492 events, 100% 10-man lineups). Full chunked refetch driver in place; tuning concurrency for gamerotation throttle.
-
-### 2026-06-09 02:15 (local)
-- Task: Restore Gabe historical raw and processed parquets after cleanup removed generated artifacts.
-- What went wrong: The broad generated-artifact cleanup removed local `raw_data` / `processed` parquets that were still needed.
-- User correction: User needed the Gabe historical parquets first, before any modern 2014-2026 work.
-- Fix applied: Restored Gabe `old_data`, repaired two zero-byte source parquets from the Gabe git object store, rebuilt 1997-2013 RS/PS historical raw and 18-metric processed parquet surfaces, then targeted the missing 2006 pass.
-- Prevention rule added: Before deleting generated parquet surfaces, confirm whether the user needs local rebuildability or current artifacts; keep a restoration command/source note for any removed historical data.
-- Outcome: Historical Gabe audit is clean: 34 raw parquets and 612 processed parquets, with no missing 1997-2013 RS/PS files.
-
-### 2026-06-08 23:18 (local)
-- Task: Clean local generated artifacts after adding cleanup/onboarding docs.
-- What went wrong: A blanket `git clean -fdX` would have removed `.env` and local agent/editor config.
-- User correction: User asked to actually clean the repo.
-- Fix applied: Removed ignored generated data, caches, logs, validation outputs, raw/processed/results/master output dirs, WNBA output CSVs, root scratch CSV/parquet files, and the ignored external `merged_playbyplay` checkout while preserving `.env`, `.claude/`, `.cursor/`, `.gstack/`, and `nba_pipeline/.claude/`.
-- Prevention rule added: For cleanup, preview `git clean -ndX`, then use targeted removal when ignored local config should survive.
-- Outcome: Checkout dropped to `32M`; repeatable inventory now reports `264` files outside skipped dirs and `2` artifact-like files.
-
-### 2026-06-08 23:12 (local)
-- Task: Prepare the repo for a friend/collaborator and start organizing dead-code/artifact cleanup.
-- What went wrong: N/A.
-- User correction: User wanted action, not just a recommendation.
-- Fix applied: Added contributor onboarding, artifact manifest, cleanup plan, and a dry-run repo inventory script; linked the docs from the FreshDocs index and durable agent instructions.
-- Prevention rule added: Repo cleanup should start with dry-run inventory and script classification before deleting artifacts or moving legacy code.
-- Outcome: `audit_repo_inventory.py` generated ignored reports under `nba_pipeline/validation/repo_inventory/`; the new script compiles successfully.
-

@@ -182,11 +182,11 @@ python nba_pipeline/scripts/rapm.py CONTEXT_SHOTQUALITY 22 26 ALL
 
 ## Current Validation
 
-The 1997-2026 RS+PS run produced `6,307,287` unique shot rows across `60` raw
+The 1997-2026 RS+PS run produced `6,327,218` unique shot rows across `60` raw
 files. Core EV/feature columns had zero nulls, and all EV-derived make
 probabilities were inside `[0, 1]`.
 
-`6,283,922` of `6,307,287` shots had all five defenders available. The remaining
+`6,311,325` of `6,327,218` shots had all five defenders available. The remaining
 rows are mostly historical partial-lineup rows; defender EV still fills to `0`
 when no valid defender slots are present.
 
@@ -194,12 +194,12 @@ Full-run means:
 
 | Metric | Value |
 | --- | ---: |
-| actual points per shot | 1.008491 |
-| `shot_context_ev` mean | 1.006545 |
-| `shot_quality_ev` mean | 1.014300 |
-| `shot_quality_season_ev` mean | 1.015342 |
-| `shot_quality_with_defense_ev` mean | 1.011494 |
-| `shot_quality_prior_ev` mean | 1.011941 |
+| actual points per shot | 1.008597 |
+| `shot_context_ev` mean | 1.007093 |
+| `shot_quality_ev` mean | 1.014611 |
+| `shot_quality_season_ev` mean | 1.015617 |
+| `shot_quality_with_defense_ev` mean | 1.011724 |
+| `shot_quality_prior_ev` mean | 1.012706 |
 
 The slight upward shift after adding shooter talent is expected from clipping
 near the low end and from empirical-Bayes residuals being applied player by

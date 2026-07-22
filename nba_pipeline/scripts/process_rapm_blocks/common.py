@@ -110,6 +110,29 @@ def normalize_game_id_series(series):
     )
 
 
+def sort_raw_pbp_chronologically(df):
+    """Sort PBP by period clock, using event number only within one clock.
+
+    Corrected NBA V3 actions can be appended with a late action number at an
+    earlier clock.  Event-number-first ordering therefore is not chronological.
+    """
+    if df.empty or 'game_id' not in df.columns:
+        return df.reset_index(drop=True)
+    out = df.copy()
+    out['_raw_source_order'] = np.arange(len(out), dtype=np.int64)
+    out['_raw_period'] = pd.to_numeric(out.get('period'), errors='coerce').fillna(0)
+    minutes = pd.to_numeric(out.get('minute_remaining_quarter'), errors='coerce').fillna(0)
+    seconds = pd.to_numeric(out.get('seconds_remaining_quarter'), errors='coerce').fillna(0)
+    out['_raw_clock_seconds'] = minutes * 60.0 + seconds
+    out['_raw_event_num'] = pd.to_numeric(out.get('event_num'), errors='coerce').fillna(0)
+    out = out.sort_values(
+        ['game_id', '_raw_period', '_raw_clock_seconds', '_raw_event_num', '_raw_source_order'],
+        ascending=[True, True, False, True, True],
+        kind='stable',
+    ).reset_index(drop=True)
+    return out.drop(columns=['_raw_source_order', '_raw_period', '_raw_clock_seconds', '_raw_event_num'])
+
+
 def normalize_season_end_year(year):
     """Normalize a season end year to a 4-digit integer."""
     year = int(year)
@@ -868,10 +891,9 @@ def _base_processing(file_path):
 
     nba_df = dedupe_exact_raw_pbp_rows(nba_df, file_path)
 
-    sort_cols = [col for col in ['game_id', 'period', 'event_num'] if col in nba_df.columns]
-    if sort_cols:
-        nba_df = nba_df.sort_values(sort_cols, kind='stable').reset_index(drop=True)
-        print(f"      Sorted raw rows by {sort_cols}.")
+    if 'game_id' in nba_df.columns:
+        nba_df = sort_raw_pbp_chronologically(nba_df)
+        print("      Sorted raw rows by game, period clock descending, then event_num.")
 
     # Ensure seconds_remaining_quarter is numeric
     if 'seconds_remaining_quarter' in nba_df.columns:
@@ -893,13 +915,10 @@ def _base_processing(file_path):
     elif 'game_id' in nba_df.columns:
         missing_player_rows = nba_df[player_cols].isna().any(axis=1)
         if missing_player_rows.any():
-            nba_df[player_cols] = nba_df.groupby('game_id')[player_cols].ffill().bfill()
-            recovered_rows = (
-                missing_player_rows
-                & ~nba_df[player_cols].isna().any(axis=1)
-            ).sum()
-            if recovered_rows:
-                print(f"      Recovered {int(recovered_rows)} rows with missing lineup slots via in-game fill.")
+            print(
+                f"      Found {int(missing_player_rows.sum())} sparse raw-lineup rows; "
+                "leaving them unresolved instead of applying unsafe slotwise fills."
+            )
 
     if not allow_partial_lineups:
         nba_df = nba_df.dropna(subset=player_cols)
@@ -1146,7 +1165,7 @@ def _finalize_df(df, numerator_col, year, id_cols=['game_id'], o_cols=[f'O{i}' f
 
     df_final = df[final_cols_present].copy()
 
-    # Final Filtering (D5 != 0 or NaN/blank/Null)
+    # Final lineup filtering
     if allow_partial_lineups:
         initial_rows = len(df_final)
         present_o_cols = [col for col in o_cols if col in df_final.columns]
@@ -1159,13 +1178,26 @@ def _finalize_df(df, numerator_col, year, id_cols=['game_id'], o_cols=[f'O{i}' f
             "      Partial-lineup mode enabled; kept rows with at least 4 known O and D players "
             f"({len(df_final)} rows, removed {initial_rows - len(df_final)})."
         )
-    elif 'D5' in df_final.columns:
-        initial_rows = len(df_final)
-        df_final = df_final[~df_final['D5'].isin([0, '0', '', None, np.nan])]
-        df_final = df_final.dropna(subset=['D5'])
-        print(f"      Rows after final D5 != 0/Null/Empty filter: {len(df_final)} (removed {initial_rows - len(df_final)})")
     else:
-        print("      Warning: D5 column not found for final filtering.")
+        initial_rows = len(df_final)
+        present_o_cols = [col for col in o_cols if col in df_final.columns]
+        present_d_cols = [col for col in d_cols if col in df_final.columns]
+        if present_o_cols and present_d_cols:
+            df_final = dedupe_player_slot_groups(df_final, [present_o_cols, present_d_cols])
+            off = df_final[present_o_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
+            defense = df_final[present_d_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
+            valid = (off > 0).all(axis=1) & (defense > 0).all(axis=1)
+            if len(present_o_cols) == len(present_d_cols):
+                off_values = off.to_numpy()
+                def_values = defense.to_numpy()
+                valid &= ~np.equal(off_values[:, :, None], def_values[:, None, :]).any(axis=(1, 2))
+            df_final = df_final[valid].copy()
+            print(
+                "      Full-lineup mode kept only complete, unique, non-overlapping O/D rows "
+                f"({len(df_final)} rows, removed {initial_rows - len(df_final)})."
+            )
+        else:
+            print("      Warning: offense/defense lineup columns not found for final filtering.")
 
     print("      Finished Finalization.")
     return df_final

@@ -216,7 +216,16 @@ def aggregate_minutes(
         print(f"minutes: {path}")
         df = pd.read_parquet(path, columns=columns)
         collect_names_from_raw(df, name_map)
-        df = df.sort_values(["game_id", "period", "event_num"], kind="mergesort")
+        df["_source_order"] = np.arange(len(df), dtype=np.int64)
+        df["_clock_seconds"] = (
+            pd.to_numeric(df["minute_remaining_quarter"], errors="coerce").fillna(0) * 60.0
+            + pd.to_numeric(df["seconds_remaining_quarter"], errors="coerce").fillna(0)
+        )
+        df = df.sort_values(
+            ["game_id", "period", "_clock_seconds", "event_num", "_source_order"],
+            ascending=[True, True, False, True, True],
+            kind="mergesort",
+        ).drop(columns=["_source_order", "_clock_seconds"])
         seconds = seconds_remaining_total(df)
         next_seconds = np.roll(seconds, -1)
         same_segment = (

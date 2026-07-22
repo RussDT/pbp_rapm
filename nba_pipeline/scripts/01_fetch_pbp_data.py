@@ -129,6 +129,25 @@ def normalize_game_id_series(series: pd.Series) -> pd.Series:
     )
 
 
+def sort_raw_pbp_chronologically(df: pd.DataFrame) -> pd.DataFrame:
+    """Sort corrected V3 actions by clock, then action number at one clock."""
+    if df.empty or "game_id" not in df.columns:
+        return df.reset_index(drop=True)
+    out = df.copy()
+    out["_raw_source_order"] = np.arange(len(out), dtype=np.int64)
+    out["_raw_period"] = pd.to_numeric(out.get("period"), errors="coerce").fillna(0)
+    minutes = pd.to_numeric(out.get("minute_remaining_quarter"), errors="coerce").fillna(0)
+    seconds = pd.to_numeric(out.get("seconds_remaining_quarter"), errors="coerce").fillna(0)
+    out["_raw_clock_seconds"] = minutes * 60.0 + seconds
+    out["_raw_event_num"] = pd.to_numeric(out.get("event_num"), errors="coerce").fillna(0)
+    out = out.sort_values(
+        ["game_id", "_raw_period", "_raw_clock_seconds", "_raw_event_num", "_raw_source_order"],
+        ascending=[True, True, False, True, True],
+        kind="stable",
+    ).reset_index(drop=True)
+    return out.drop(columns=["_raw_source_order", "_raw_period", "_raw_clock_seconds", "_raw_event_num"])
+
+
 def dedupe_raw_pbp_rows(df: pd.DataFrame, label: str) -> pd.DataFrame:
     """Drop exact duplicate raw PBP rows and keep write order stable."""
     if df.empty:
@@ -139,16 +158,15 @@ def dedupe_raw_pbp_rows(df: pd.DataFrame, label: str) -> pd.DataFrame:
     if removed:
         print(f"  Removed {removed} exact duplicate raw PBP rows from {label}.")
 
-    sort_cols = [col for col in ["game_id", "period", "event_num"] if col in deduped.columns]
-    if sort_cols:
-        deduped = deduped.sort_values(sort_cols, kind="stable").reset_index(drop=True)
-    else:
-        deduped = deduped.reset_index(drop=True)
-    return deduped
+    return sort_raw_pbp_chronologically(deduped)
 
 
 def repair_lineup_slots(df: pd.DataFrame, label: str) -> pd.DataFrame:
-    """Fill sparse lineup slots within each game before writing raw parquet."""
+    """Report sparse lineup slots without manufacturing slotwise fills.
+
+    Slotwise ffill/bfill can combine players from different lineup states and
+    create duplicates.  Preserve the evidence for the constrained repair tool.
+    """
     player_cols = [f"{team}_player{i}" for team in ["away", "home"] for i in range(1, 6)]
     missing_cols = [col for col in player_cols if col not in df.columns]
     if missing_cols or df.empty or "game_id" not in df.columns:
@@ -158,15 +176,11 @@ def repair_lineup_slots(df: pd.DataFrame, label: str) -> pd.DataFrame:
     if not missing_rows.any():
         return df
 
-    repaired = df.copy()
-    repaired[player_cols] = repaired.groupby("game_id")[player_cols].ffill().bfill()
-    recovered_rows = (
-        missing_rows
-        & ~repaired[player_cols].isna().any(axis=1)
-    ).sum()
-    if recovered_rows:
-        print(f"  Recovered {int(recovered_rows)} rows with missing lineup slots in {label}.")
-    return repaired
+    print(
+        f"  Preserved {int(missing_rows.sum())} rows with sparse lineup slots in {label}; "
+        "run repair_modern_raw_lineups.py before processing."
+    )
+    return df
 
 
 # ---------------------------------------------------------------------

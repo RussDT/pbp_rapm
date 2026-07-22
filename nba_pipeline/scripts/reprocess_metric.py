@@ -42,7 +42,9 @@ METRIC_REGISTRY = {
     'TRANSITION_FREQ': ('process_transition_freq', 'process_transition_freq_py', 'TRANSITION_FREQ', {}, None),
     'TRANSITION_RIM':  ('process_transition_rim',  'process_transition_rim_py',  'TRANSITION_RIM',  {}, None),
     'INITIAL_EV':      ('process_initial_ev',      'process_initial_ev_py',      'INITIAL_EV',      {}, None),
+    'INITIAL_EV_BETA': ('process_initial_ev_beta', 'process_initial_ev_beta_py', 'INITIAL_EV_BETA', {}, None),
     'SPECIAL_RAPM':    ('process_special_rapm',    'process_special_rapm_py',    'SPECIAL_RAPM',    {}, None),
+    'EV_RAPM':         ('process_ev_rapm',         'process_ev_rapm_py',         'EV_RAPM',         {}, None),
     'RUSSELL_SHOTQUALITY': ('process_russell_shotquality', 'process_russell_shotquality_py', 'RUSSELL_SHOTQUALITY', {}, None),
     'CONTEXT_SHOTQUALITY': ('process_russell_shotquality', 'process_context_shotquality_py', 'CONTEXT_SHOTQUALITY', {}, None),
     'SQ_POSS':         ('process_sq_poss',         'process_sq_poss_py',         'SQ_POSS',         {}, None),
@@ -215,6 +217,8 @@ def main():
     succeeded = sum(1 for r in results if r[2])
     print("-" * 60)
     print(f"{succeeded}/{len(jobs)} files, {total_rows:,} total rows in {elapsed:.1f}s")
+    if succeeded != len(jobs):
+        raise SystemExit(1)
 
 
 if __name__ == '__main__':

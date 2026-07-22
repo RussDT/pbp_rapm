@@ -40,6 +40,11 @@ nba_pipeline/
 5. **Combine**: `03_run_rapm_analysis.py` runs all metrics + regression → `weighted_factors*.csv`
 6. **PBP Shot Quality**: `build_pbp_shot_quality.py` parses raw FGA descriptions → `results/pbp_shot_quality/*.parquet`
 
+Modern raw PBP is canonically ordered by game, period clock descending, then
+event number within one clock. Use `scripts/repair_modern_raw_lineups.py` for
+2014+ lineup integrity audits and evidence-constrained repairs; see
+`docs/MODERN_LINEUP_REPAIR.md`.
+
 ## File Naming Conventions
 - **Raw data**: `NBA{YY}.parquet` (regular season), `NBA{YY}_PS.parquet` (playoffs)
 - **Processed**: `{METRIC}{YY}.parquet` or `{METRIC}{YY}_PS.parquet`
@@ -154,6 +159,8 @@ python reprocess_metric.py THREE_FREQ 14 26        # Historical 3PA frequency pa
 python reprocess_metric.py MIDRANGE_FG_PCT 14 26   # Historical midrange FG% parquets
 python reprocess_metric.py PLAYTYPE_TS_MIX 24 26   # Descriptor playtype-mix parquets
 python reprocess_metric.py PLAYTYPE_PROXY_PTS 24 26  # Synergy-proxy playtype-value parquets
+python reprocess_metric.py INITIAL_EV_BETA 24 26    # Initial-EV beta-adjusted parquets (requires SQ enrichment)
+python reprocess_metric.py EV_RAPM 24 26            # EV-based possession parquets (requires SQ enrichment)
 python reprocess_metric.py FIRST_CHANCE 1997 2013 --season-types rs --workers 6  # Gabriel historical RS range
 python reprocess_metric.py FIRST_CHANCE 1997 2013 --season-types ps --workers 6  # Gabriel historical PS range
 python reprocess_metric.py LA_RAPM 1997 2013 --season-types rs --workers 6       # Historical LA_RAPM backfill

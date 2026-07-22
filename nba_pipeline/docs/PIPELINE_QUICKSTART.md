@@ -82,6 +82,28 @@ Edit `process_historical_rapm.py` to set seasons, then:
 python process_historical_rapm.py
 ```
 
+### Targeted Metric Rebuilds
+
+`reprocess_metric.py` is the fail-fast bulk entry point for rebuilding one
+registered metric across RS/PS files. It exits nonzero if any selected season
+fails, and its registry includes `INITIAL_EV_BETA` and `EV_RAPM` alongside the
+main processor families.
+
+```bash
+# All 2014-2026 RS+PS files for a full-history metric
+.venv/bin/python nba_pipeline/scripts/reprocess_metric.py FIRST_CHANCE \
+  2014 2026 --season-types all --workers 12
+
+# ShotQuality-derived metrics only where enriched raw columns exist
+.venv/bin/python nba_pipeline/scripts/reprocess_metric.py INITIAL_EV \
+  2026 2026 --season-types all --workers 2
+```
+
+Do not interpret `processor returned None` on an older ShotQuality season as a
+lineup failure. Check first for `sq_descriptor_bundle` / `initial_ev` in the
+raw parquet and rerun `01b_enrich_pbp_shotquality.py` only when the licensed
+source CSVs are actually available.
+
 **Output files created in `processed/` (parquet format for space efficiency):**
 - `RAPM26.parquet`, `LA_RAPM26.parquet` - Point differential (with/without luck adjustment)
 - `TS26.parquet` - True shooting
