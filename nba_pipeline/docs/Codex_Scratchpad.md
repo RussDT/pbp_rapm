@@ -26,6 +26,10 @@ Never store secrets, tokens, or credentials here.
 
 ## Session Log
 
+### 2026-07-22 02:00 (local)
+- Task: Report Jokić and Shai from the fresh and published 2022-26 ALL RB+SE DECOMP files.
+- Outcome: Fresh Jokić is `8.907 / 1.505 / 10.412`; fresh Shai is `7.159 / 1.267 / 8.426` for offense / positive-good defense / net, closely matching publication.
+
 ### 2026-07-22 01:42 (local)
 - Task: Promote the 2014-2026 lineup repairs, rebuild all processed metrics, and compare a fresh 2022-26 ALL RB+SE DECOMP with the owned `rapms` publication.
 - What went wrong: The 2024-25 licensed ShotQuality enrichment inputs were absent, the rebuild registry omitted `INITIAL_EV_BETA` / `EV_RAPM`, the master runner invoked a dependency-less global Python, and the local venv lacked `statsmodels`.
@@ -57,11 +61,3 @@ Never store secrets, tokens, or credentials here.
 - Fix applied: Verified all 27 split-ZIP parts and the full ZIP hash, extracted modern 2014-2026 RS/PS raw files, extracted the historical 1997-2013 handoff, created an isolated Python environment, and used `reprocess_metric.py` with six workers to rebuild 18 canonical metrics for 2014-2016 RS+PS using the Supabase service-role environment.
 - Prevention rule added: Read the handoff README and inspect archive manifests before classifying or extracting shared artifacts.
 - Outcome: Local workspace has 60 raw RS/PS parquets for 1997-2026, the historical processed/results handoff, and all 108 expected 2014-2016 processed parquets; the new files are readable, nonempty, and contain 11,154,550 total rows.
-
-### 2026-07-13 14:40 (local)
-- Task: Recover post-May DECOMP work after a computer loss by reconciling `pbp_rapm`, private `alt3_3factor_research`, and downstream `rapms` history.
-- What went wrong: The public repo stopped at the Alt3 implementation; DECOMP source columns/aliases, same-side recentering, rolling builder, July 10 TOV/SC allocation, and stabilized/VPM target helpers were absent.
-- User correction: User confirmed GitHub repos could be pulled and asked for the best reconstruction possible.
-- Fix applied: Restored the exact five-child FIRST_CHANCE tree, aliases and VPM residual hook, side-specific centering, 97-column public builder/runner, recovered 23-window allocation manifest, daily 1Y-5Y DECOMP publish lane, tests/docs, and the private research compatibility helper.
-- Prevention rule added: Keep production DECOMP code in `pbp_rapm`, research configs/evidence in the private repo, and publish methodology-changing work before relying on local-only state; never invent missing EPM prior tooling.
-- Outcome: Core DECOMP compiles, row/turnover/centering tests pass, the builder matches the published schema and display closure, and private no-prior stabilized scripts import through `PYTHONPATH`. The external Alt3-to-scposs mapper still needs a 97-column schema audit.
