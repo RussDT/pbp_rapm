@@ -26,6 +26,10 @@ Never store secrets, tokens, or credentials here.
 
 ## Session Log
 
+### 2026-07-22 02:05 (local)
+- Task: Audit whether the fresh and published 2022-26 DECOMP component columns differ.
+- Outcome: Schema, allocation policy, and multiplier are identical. Atomic component correlations are `0.969-0.997`; offense MAEs are `0.026-0.085` and defense MAEs are `0.017-0.063`, consistent with small lineup-repair/re-fit movement rather than a decomposition change.
+
 ### 2026-07-22 02:00 (local)
 - Task: Report Jokić and Shai from the fresh and published 2022-26 ALL RB+SE DECOMP files.
 - Outcome: Fresh Jokić is `8.907 / 1.505 / 10.412`; fresh Shai is `7.159 / 1.267 / 8.426` for offense / positive-good defense / net, closely matching publication.
@@ -53,11 +57,3 @@ Never store secrets, tokens, or credentials here.
 - Fix applied: Ran the unchanged solver through postponed annotation compilation with sequential parquet loading.
 - Prevention rule added: Use a Python 3.10+ project environment for normal `rapm.py` CLI execution; sequential loading is a safe compatibility fallback.
 - Outcome: Wrote `rapm_12_16_all_rb_se_results.csv`; LeBron is first at `off=7.658`, raw `def=-2.578`, and `net_rapm=10.236` across 66,696 possession appearances.
-
-### 2026-07-21 (local)
-- Task: Download and assemble the shared Drive data handoffs, then rebuild the canonical 2014-2016 processed surface.
-- What went wrong: The modern folder was initially described as processed data, but its README identifies it as raw NBAXX PBP only; the Gabriel link is a data TAR, not repository source.
-- User correction: User supplied the canonical Drive links and asked to download everything and assemble it.
-- Fix applied: Verified all 27 split-ZIP parts and the full ZIP hash, extracted modern 2014-2026 RS/PS raw files, extracted the historical 1997-2013 handoff, created an isolated Python environment, and used `reprocess_metric.py` with six workers to rebuild 18 canonical metrics for 2014-2016 RS+PS using the Supabase service-role environment.
-- Prevention rule added: Read the handoff README and inspect archive manifests before classifying or extracting shared artifacts.
-- Outcome: Local workspace has 60 raw RS/PS parquets for 1997-2026, the historical processed/results handoff, and all 108 expected 2014-2016 processed parquets; the new files are readable, nonempty, and contain 11,154,550 total rows.
