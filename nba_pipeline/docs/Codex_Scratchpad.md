@@ -26,34 +26,37 @@ Never store secrets, tokens, or credentials here.
 
 ## Session Log
 
-### 2026-07-22 02:05 (local)
-- Task: Audit whether the fresh and published 2022-26 DECOMP component columns differ.
-- Outcome: Schema, allocation policy, and multiplier are identical. Atomic component correlations are `0.969-0.997`; offense MAEs are `0.026-0.085` and defense MAEs are `0.017-0.063`, consistent with small lineup-repair/re-fit movement rather than a decomposition change.
+### 2026-07-23 19:33 (local)
+- Task: Publish the already validated Help Index production build to its existing Sites project.
+- What went wrong: The site's actual access metadata resolved as owner-only custom access, despite the request describing it as public, so the open-world deployment path was not applicable.
+- Fix applied: Reused the existing project and source repository, committed and pushed only the nested app repository, packaged the existing `dist/` without rebuilding, saved version 8 from the pushed commit, and deployed through the verified owner-only path without changing access.
+- Prevention rule added: Resolve actual Sites access metadata before choosing the deployment tool; preserve that access rather than inferring it from the site's URL.
+- Outcome: Deployment succeeded at the existing `nba-help-index.russdt.chatgpt.site` URL.
 
-### 2026-07-22 02:00 (local)
-- Task: Report Jokić and Shai from the fresh and published 2022-26 ALL RB+SE DECOMP files.
-- Outcome: Fresh Jokić is `8.907 / 1.505 / 10.412`; fresh Shai is `7.159 / 1.267 / 8.426` for offense / positive-good defense / net, closely matching publication.
+### 2026-07-23 19:30 (local)
+- Task: Rebuild The Help Index as a redesigned editorial data product (new frontend architecture, same data contracts) and redeploy.
+- What went wrong: The single-file dashboard mixed state, data, and layout; the dark hero/sidebar design fought the numbers; and in dev the server transparently decodes `.json.gz`, so blind `DecompressionStream` piping aborted every data fetch.
+- Fix applied: Split the app into a normalized view-state container (`help-index-app.tsx`), `lib/` data+format layers with cached pair-shard loads, and `components/` (search, zero-baseline career arc with pooled combined seasons, Lineup Company card, rankings); rebuilt the CSS as a light navy/gold/blue system with geometry-stable interaction states; made the fetch helper sniff gzip magic bytes before decompressing.
+- Prevention rule added: URL state, view normalization (clamp to seasons a player actually has), and expansion-reset-by-context-key live in the container, not effects; gzip fetch helpers must handle Content-Encoding-decoded responses.
+- Outcome: Lint clean, build passes, five tests pass (including a new all-schedule career pair-closure test on a second shard), desktop/mobile browser validation done, and the redesign was republished to the existing Sites project.
 
-### 2026-07-22 01:42 (local)
-- Task: Promote the 2014-2026 lineup repairs, rebuild all processed metrics, and compare a fresh 2022-26 ALL RB+SE DECOMP with the owned `rapms` publication.
-- What went wrong: The 2024-25 licensed ShotQuality enrichment inputs were absent, the rebuild registry omitted `INITIAL_EV_BETA` / `EV_RAPM`, the master runner invoked a dependency-less global Python, and the local venv lacked `statsmodels`.
-- User correction: User requested a full modern processed rebuild and an empirical five-year publication check.
-- Fix applied: Promoted/re-audited the repaired raws, rebuilt the canonical 6.3M-shot repo-owned model, rebuilt 644 locally supported parquets, made targeted rebuilds fail-fast, added the missing registry entries, fixed interpreter inheritance, assembled a fresh 97-column DECOMP, and wrote validation/comparison reports.
-- Prevention rule added: Fail bulk rebuilds on partial output, use the orchestrator's interpreter for subprocesses, validate `SHOOTER_OREB` with its shooter-plus-four schema, and never synthesize missing licensed SQ enrichment.
-- Outcome: 66,359,329 processed rows have zero invalid saved lineups; FIRST_CHANCE row algebra is exact to `5.69e-14`; fresh vs published 2022-26 net RAPM correlates `0.99875`, with identical top 10. LeBron is `off=2.523`, `def=+0.128` (positive-good display), `net=2.651`.
+### 2026-07-23 18:23 (local)
+- Task: Test whether the Embiid-style shooter/zone OREB continuation improves forward shot-release value prediction.
+- What went wrong: Immediate `initial_ev` and shot-plus-second-chance targets are not directly comparable, and the first full run retained large parquet buffers and used an allocation-heavy lineup loop.
+- Fix applied: Added a strict 2022-24 to 2024-25 first-FGA release benchmark, gave provider and internal SQ models identical contextual continuation lanes, added the shooter-specific nested ablation and role swap, pushed parquet filters/released Arrow buffers, and vectorized lineup parsing.
+- Prevention rule added: Judge shooter-specific second-chance value against the same immediate model plus shooter-hidden continuation; never call the automatic gain from adding continuation to a continuation-bearing target an SQ victory.
+- Outcome: Shooter × zone gives a small clear combined gain for context+EPM and geometry+identity, but the full geometry model remains tied with provider `initial_ev` given the same continuation.
 
-### 2026-07-21 14:35 (local)
-- Task: Diagnose and repair modern 2014+ raw lineup corruption, including the LeBron-affected 2016-17 game.
-- What went wrong: GameRotation responses/archive rows can be incomplete, overlapping, or reversed, while event-number-first sorting also moves corrected V3 actions backward in time.
-- User correction: User supplied Gabriel's rotation archive as optional reattachment evidence.
-- Fix applied: Added `repair_modern_raw_lineups.py`, constrained period/substitution replay with actor/rotation/raw evidence, safe validation/promotion controls, clock-first ordering in shared consumers, focused tests, and operator docs.
-- Prevention rule added: Treat GameRotation as positive evidence only and require clock-first PBP ordering plus zero lineup/substitution/actor issues before promotion.
-- Outcome: Full 2014-2026 RS+PS validation audited 7,784,893 rows and repaired 10,623 bad rows across 31 games to zero remaining issues; production raw files were not promoted.
+### 2026-07-23 18:14 (local)
+- Task: Remove Help Index layout jank and make both teammate and career-help rankings expandable.
+- What went wrong: Yellow top rules felt ornamental, selected leaderboard rows changed padding and shifted their columns, season context was visually buried, six teammate rows and twelve leaderboard rows were hard truncations, and weighted help visually replaced the teammate's own impact.
+- Fix applied: Removed the top rules, made leaderboard states geometry-invariant, promoted the season/career label, made as-of DPM impact the primary teammate value, opened teammate rows at 10 with +10 expansion, and opened the league board at 25 with +25 expansion.
+- Prevention rule added: Interactive states must never change row box metrics; pair contribution stays secondary when the reader is asking for the teammate's own impact.
+- Outcome: The production build and all four app/reconciliation tests pass.
 
-### 2026-07-21 13:43 (local)
-- Task: Run 2012-2016 all-games RAPM with rubberband and season effects and report LeBron James.
-- What went wrong: The local `.venv` is Python 3.9 while `rapm.py` contains Python 3.10 union annotations; multiprocessing workers also cannot inherit an in-memory postponed-annotation wrapper.
-- User correction: N/A.
-- Fix applied: Ran the unchanged solver through postponed annotation compilation with sequential parquet loading.
-- Prevention rule added: Use a Python 3.10+ project environment for normal `rapm.py` CLI execution; sequential loading is a safe compatibility fallback.
-- Outcome: Wrote `rapm_12_16_all_rb_se_results.csv`; LeBron is first at `off=7.658`, raw `def=-2.578`, and `net_rapm=10.236` across 66,696 possession appearances.
+### 2026-07-23 17:58 (local)
+- Task: Convert Lineup Company into a coherent share card and clarify teammate value and coverage.
+- What went wrong: Orange conflicted with navy/yellow, Avg DPM and help looked duplicative, unloaded cards collapsed, and teammate names were not actionable.
+- Fix applied: Unified the navy/yellow palette, embedded focal player and context in a stable-height card, made rows clickable, added context-preserving share links, prioritized rank/percent together/help, and added per-pair rated coverage and definitions.
+- Prevention rule added: Label a teammate's own rating separately from his weighted help contribution; never hide pair-level historical DPM coverage.
+- Outcome: Four app tests and the production build pass; null career-pair DPM affects 18.62% of RS, 10.35% of PS, and 17.89% of combined rows, while Paul Pierce's top RS teammates have 61.6%-95.7% rated coverage.
