@@ -110,6 +110,43 @@ def normalize_game_id_series(series):
     )
 
 
+def sort_raw_pbp_chronologically(df):
+    """Sort PBP by period clock, using event number only within one clock.
+
+    Corrected NBA V3 actions can be appended with a late action number at an
+    earlier clock. Event-number-first ordering therefore is not chronological.
+    """
+    if df.empty or 'game_id' not in df.columns:
+        return df.reset_index(drop=True)
+    out = df.copy()
+    out['_raw_source_order'] = np.arange(len(out), dtype=np.int64)
+    out['_raw_period'] = pd.to_numeric(
+        out.get('period'), errors='coerce'
+    ).fillna(0)
+    minutes = pd.to_numeric(
+        out.get('minute_remaining_quarter'), errors='coerce'
+    ).fillna(0)
+    seconds = pd.to_numeric(
+        out.get('seconds_remaining_quarter'), errors='coerce'
+    ).fillna(0)
+    out['_raw_clock_seconds'] = minutes * 60.0 + seconds
+    out['_raw_event_num'] = pd.to_numeric(
+        out.get('event_num'), errors='coerce'
+    ).fillna(0)
+    helper_columns = [
+        '_raw_source_order',
+        '_raw_period',
+        '_raw_clock_seconds',
+        '_raw_event_num',
+    ]
+    out = out.sort_values(
+        ['game_id', *helper_columns],
+        ascending=[True, True, False, True, True],
+        kind='stable',
+    ).reset_index(drop=True)
+    return out.drop(columns=helper_columns)
+
+
 def normalize_season_end_year(year):
     """Normalize a season end year to a 4-digit integer."""
     year = int(year)
