@@ -205,13 +205,17 @@ P(team wins title | season)
 
 Consequently each season's actual team probabilities sum exactly to `1.0`.
 Overall-DPM and separate offense/defense specifications are compared across six
-regularization strengths by leaving out one full season at a time. The 2026-08
-build selected separate offense and defense at `C=5.0` by champion log loss:
+regularization strengths by leaving out one full season at a time. Selection
+uses the one-standard-error rule on champion log loss: among candidates within
+one standard error of the best score, prefer stronger regularization, then the
+simpler feature set at the same `C`. This prevents a handful of historical title
+winners from producing implausibly sharp probability tails. The 2026-08 build
+selected overall DPM at `C=0.2`:
 
 - `863` team-seasons, `29` seasons, and exactly `29` champion labels;
-- leave-one-season-out champion log loss `1.668791`;
-- season-level multiclass Brier score `0.733128`;
-- top-one accuracy `44.83%`;
+- leave-one-season-out champion log loss `1.814260`;
+- season-level multiclass Brier score `0.752243`;
+- top-one accuracy `37.93%`;
 - maximum annual probability-mass gap `6.66e-16`.
 
 The displayed actual title probability is the held-out model's team
@@ -220,32 +224,62 @@ For traded players, the focal player is assigned to the team for which he
 appeared latest in the regular season. A focal player needs at least `500`
 exposures on that final team and an exact same-season DARKO row.
 
-For player `p` in season `s`, the displayed total is:
+For player `p` in season `s`, regular-season exposure splits the actual team
+strength into three exhaustive contexts:
 
 ```text
-teammate_help_championships[p,s]
-  = P(team title | actual full-roster team strength)
-    - P(team title | focal contribution fixed, every teammate at 0.0 DPM)
+self_strength = focal_DPM * focal_team_exposures / team_total_exposures
+
+on_court_help
+  = sum(teammate_DPM * shared_with_focal_exposures / team_total_exposures)
+
+off_floor_help = team_strength - self_strength - on_court_help
 ```
 
-The focal player's own exposure-weighted team-strength contribution is excluded
-from teammate help and held fixed in the counterfactual. Every other roster
-player is restored from the neutral `0.0`-DPM baseline. Opponent scores stay
-fixed and the focal team's counterfactual probability is renormalized against
-the full season choice set. Zero DPM is league average, not replacement level.
-The career number sums the held-out season probability differences; it is not a
-redistribution of observed rings and not causal credit.
+`off_floor_help` is every teammate contribution during team minutes when the
+focal player sat; it is not a nominal starter/reserve label. The probability
+split holds self fixed and applies the exact two-order Shapley decomposition to
+the on-court and off-floor groups:
 
-Each season's total is allocated over the focal player's teammates using `128`
-deterministic Shapley permutations. The order-averaged marginal probabilities
-close exactly to the actual-versus-neutral season total; the maximum build gap
-is `9.99e-16`. A teammate's attribution uses all of his team exposures, not
-only possessions shared with the focal player. Career teammate rows are then
-summed and ranked, and the app publishes the top 20 for the selected player.
+```text
+self_context = P(self_strength)
+
+on_court_added = 1/2 * [P(self + on) - P(self)
+                         + P(full) - P(self + off_floor)]
+
+off_floor_added = 1/2 * [P(self + off_floor) - P(self)
+                          + P(full) - P(self + on)]
+
+self_context + on_court_added + off_floor_added = P(actual team)
+```
+
+Opponent scores stay fixed and every counterfactual is renormalized against the
+full season choice set. Therefore every qualifying player on the same team gets
+identical actual team title odds, but a different self/on-court/off-floor split.
+Zero DPM is league average, not replacement level. Career values sum the three
+season buckets; they are not a redistribution of observed rings and not causal
+credit.
+
+The combined teammate total is also allocated over individual teammates using
+`128` deterministic Shapley permutations. The order-averaged marginal
+probabilities close exactly to the actual-versus-neutral season total; the
+maximum build gap is `7.22e-16`, and the three-bucket probability identity
+closes within `4.44e-16`. A teammate's individual probability attribution uses
+all of his team exposures, while `shared_exposures` separately reports actual
+minutes alongside the focal player. Career teammate rows are summed and ranked.
+The app publishes the top 20 in career view and switches to that season's
+teammates when a season is selected.
+
+All 29 or 30 regular-season teams remain in the annual probability distribution,
+including teams that miss the playoffs. Playoff PBP is used only to identify the
+single champion. The model never divides credit among playoff qualifiers and
+never uses playoff games, series length, or minutes, because those quantities
+are downstream of winning and would reward teams for surviving longer.
 
 Canonical analysis artifacts live under `results/championship_help/`:
 
-- `team_seasons.csv` and `team_player_contributions.csv`;
+- `team_seasons.csv`, `team_player_contributions.csv`, and
+  `team_player_pair_exposures.csv`;
 - `player_team_seasons.csv` and `player_teammate_team_seasons.csv`;
 - `champions.csv`;
 - `model_cv.csv`, `model_oof_predictions.csv`, and
@@ -261,7 +295,7 @@ Build or refresh the full model and app shards with:
 .venv/bin/python nba_pipeline/scripts/build_championship_help.py
 ```
 
-Use `--reuse-data` to refit and republish from the existing team/roster CSVs
+Use `--reuse-data` to refit and republish from the existing team/roster/pair CSVs
 without rereading every raw and processed season. The app receives a compressed
 career index plus 64 player-ID shards under
 `teammate-help-app/public/data/championship-help/`.

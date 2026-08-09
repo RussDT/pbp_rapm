@@ -11,9 +11,11 @@ from nba_pipeline.scripts.build_championship_help import (
     cross_validated_team_predictions,
     extract_champion_from_games,
     fit_team_title_model,
+    select_team_model_candidate,
     select_final_team_segments,
     shapley_teammate_attribution,
     summarize_retrospective_team_season,
+    summarize_team_pair_exposures,
     summarize_team_lineup_exposures,
 )
 from nba_pipeline.scripts.build_darko_teammate_help import PlayerRatingHistory
@@ -353,6 +355,69 @@ def test_retrospective_team_summary_uses_same_season_ratings_and_all_team_minute
     assert roster.loc[roster["player_id"].isin([6, 7, 8, 9]), "contribution_dpm"].sum() > 0
 
 
+def test_shared_floor_and_off_floor_contributions_close_to_full_team_strength() -> None:
+    exposures = pd.DataFrame(
+        [
+            {
+                "game_date": "2025-01-01",
+                "team_id": 100,
+                "team_abbr": "AAA",
+                "P1": 1,
+                "P2": 2,
+                "P3": 3,
+                "P4": 4,
+                "P5": 5,
+                "exposures": 2.0,
+            },
+            {
+                "game_date": "2025-01-02",
+                "team_id": 100,
+                "team_abbr": "AAA",
+                "P1": 2,
+                "P2": 6,
+                "P3": 7,
+                "P4": 8,
+                "P5": 9,
+                "exposures": 3.0,
+            },
+        ]
+    )
+    ratings = pd.DataFrame(
+        [
+            {
+                "nba_id": player_id,
+                "player_name": f"P{player_id}",
+                "season": 2025,
+                "date": "2025-06-20",
+                "dpm": float(player_id),
+                "o_dpm": player_id * 0.6,
+                "d_dpm": player_id * 0.4,
+            }
+            for player_id in range(1, 10)
+        ]
+    )
+    teams, roster = summarize_retrospective_team_season(exposures, ratings, season=2025)
+
+    pairs = summarize_team_pair_exposures(exposures, ratings, season=2025)
+    players, _ = build_player_title_context(
+        teams.assign(champion_team_id=100, won_championship=1),
+        roster,
+        pairs,
+        min_exposures=1,
+    )
+
+    focal = players.loc[players["player_id"].eq(1)].iloc[0]
+    assert abs(focal["own_team_contribution_dpm"] - 0.4) < 1e-12
+    assert abs(focal["on_court_help_dpm"] - 5.6) < 1e-12
+    assert abs(focal["bench_help_dpm"] - 19.2) < 1e-12
+    assert abs(
+        focal["own_team_contribution_dpm"]
+        + focal["on_court_help_dpm"]
+        + focal["bench_help_dpm"]
+        - focal["team_dpm"]
+    ) < 1e-12
+
+
 def test_player_title_context_excludes_focal_contribution_from_teammate_help() -> None:
     teams = pd.DataFrame(
         [
@@ -426,13 +491,41 @@ def test_player_title_context_excludes_focal_contribution_from_teammate_help() -
         ]
     )
 
-    players, teammates = build_player_title_context(teams, roster, min_exposures=50)
+    pairs = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "team_id": 100,
+                "player_id": 1,
+                "teammate_id": 2,
+                "shared_exposures": 60.0,
+                "on_court_contribution_dpm": 0.6,
+                "on_court_contribution_o_dpm": 0.3,
+                "on_court_contribution_d_dpm": 0.3,
+            },
+            {
+                "season": 2025,
+                "team_id": 100,
+                "player_id": 1,
+                "teammate_id": 3,
+                "shared_exposures": 20.0,
+                "on_court_contribution_dpm": 0.4,
+                "on_court_contribution_o_dpm": 0.2,
+                "on_court_contribution_d_dpm": 0.2,
+            },
+        ]
+    )
+    players, teammates = build_player_title_context(
+        teams, roster, pairs, min_exposures=50
+    )
 
     focal = players.loc[players["player_id"].eq(1)].iloc[0]
     assert abs(focal["help_dpm"] - 1.4) < 1e-12
     focal_teammates = teammates.loc[teammates["player_id"].eq(1)]
     assert set(focal_teammates["teammate_id"]) == {2, 3}
     assert abs(focal_teammates["contribution_dpm"].sum() - focal["help_dpm"]) < 1e-12
+    assert abs(focal["on_court_help_dpm"] - 1.0) < 1e-12
+    assert abs(focal["bench_help_dpm"] - 0.4) < 1e-12
 
 
 def test_team_title_model_probabilities_sum_to_one_within_every_season() -> None:
@@ -486,6 +579,45 @@ def test_leave_one_season_out_team_probabilities_close_for_every_held_out_year()
     assert np.allclose(probability_sums.to_numpy(), 1.0, atol=1e-12)
 
 
+def test_one_standard_error_rule_prefers_the_stronger_regularized_model() -> None:
+    diagnostics = pd.DataFrame(
+        [
+            {
+                "spec": "sides",
+                "c_value": 5.0,
+                "champion_log_loss": 1.668,
+                "champion_log_loss_se": 0.10,
+                "season_brier": 0.73,
+                "top_one_accuracy": 0.25,
+                "max_annual_probability_sum_gap": 0.0,
+            },
+            {
+                "spec": "sides",
+                "c_value": 0.2,
+                "champion_log_loss": 1.74,
+                "champion_log_loss_se": 0.09,
+                "season_brier": 0.75,
+                "top_one_accuracy": 0.25,
+                "max_annual_probability_sum_gap": 0.0,
+            },
+            {
+                "spec": "sides",
+                "c_value": 0.05,
+                "champion_log_loss": 1.90,
+                "champion_log_loss_se": 0.08,
+                "season_brier": 0.80,
+                "top_one_accuracy": 0.25,
+                "max_annual_probability_sum_gap": 0.0,
+            },
+        ]
+    )
+
+    selected = select_team_model_candidate(diagnostics)
+
+    assert selected["c_value"] == 0.2
+    assert selected["champion_log_loss"] == 1.74
+
+
 def test_team_probability_attribution_holds_focal_fixed_and_reconciles_teammates() -> None:
     team_rows = []
     for season in range(2000, 2008):
@@ -534,7 +666,27 @@ def test_team_probability_attribution_holds_focal_fixed_and_reconciles_teammates
             )
         ]
     )
-    players, teammates = build_player_title_context(teams, roster, min_exposures=50)
+    pair_rows = []
+    for focal_id in (1, 2, 3):
+        for teammate_id in (1, 2, 3):
+            if focal_id == teammate_id:
+                continue
+            teammate = roster.loc[roster["player_id"].eq(teammate_id)].iloc[0]
+            pair_rows.append(
+                {
+                    "season": 2007,
+                    "team_id": 0,
+                    "player_id": focal_id,
+                    "teammate_id": teammate_id,
+                    "shared_exposures": 50.0,
+                    "on_court_contribution_dpm": teammate["contribution_dpm"] / 2,
+                    "on_court_contribution_o_dpm": teammate["contribution_o_dpm"] / 2,
+                    "on_court_contribution_d_dpm": teammate["contribution_d_dpm"] / 2,
+                }
+            )
+    players, teammates = build_player_title_context(
+        teams, roster, pd.DataFrame(pair_rows), min_exposures=50
+    )
     _, models = cross_validated_team_predictions(teams, spec="overall", c_value=1.0)
 
     seasons, attributed, report = attribute_team_probabilities(
@@ -542,6 +694,13 @@ def test_team_probability_attribution_holds_focal_fixed_and_reconciles_teammates
     )
 
     assert seasons["title_probability"].nunique() == 1
+    assert np.allclose(
+        seasons["self_context_title_probability"]
+        + seasons["on_court_teammate_title_probability_added"]
+        + seasons["bench_title_probability_added"],
+        seasons["title_probability"],
+        atol=1e-12,
+    )
     for player_id, group in attributed.groupby("player_id"):
         target = seasons.loc[
             seasons["player_id"].eq(player_id), "teammate_help_championships"

@@ -61,13 +61,6 @@ Never store secrets, tokens, or credentials here.
 
 ## Session Log
 
-### 2026-08-08
-- Task: Diagnose and fix playoff handling in multi-year/timedecay RAPM after playoff inclusion was observed to lower participants' ratings.
-- Fix applied: Added `rapm.py --ps-prior` (+ `--ps-prior-stage2 full|ps-only`): stage-1 RS-only solve, stage-2 refit shrunk toward the RS solution via the existing prior-centered ridge; companion `*_psprior_stage.csv` audit. Fixed the silent max-weight bug for unparseable dates in `compute_time_decay_weights`. Built `diagnose_ps_pooling.py` (RS-vs-candidate playoff delta report) and `evaluate_ps_handling.py` (forward gate, paired game-clustered MSE vs rs_only). New doc `docs/PLAYOFF_HANDLING.md`.
-- Prevention rule added: measured mechanisms — playoff lineups are ~+7.3 pts/100 stronger both sides (good-vs-good ridge compression), PS environment is 1.4-3.6 pts/100 lower-scoring, td700 upweights same-season PS rows ~1.11x. Full-sample prior-centered stage 2 expands the rating scale ~1.28x (reduced effective shrinkage) — always run a shrinkage-dose control candidate when gating prior-centered variants.
-- Outcome: Forward gate (22-24->25, 23-25->26): `all_se` tied-best with rs_only (-9.2e-6, n.s.); both psprior modes significantly worse (+244/+357e-6), a1500 control worse (+157e-6). Verdict: `-se` on the daily ALL runs, keep `psprior ps-only` as the descriptive playoff-attribution surface (22-26: non-participants move by one constant; early exits -0.16..-0.28, deep runs +0.32), never as the canonical rating. 2026-27 untouched.
-- Production flip (operator-approved, same day): added `--season-effects` to the daily 1Y-6Y and both td700 runs with `_se` filenames flowing through; updated sync lists, `upload_timedecay_rapm.py` (now `weighted_factors_21_26_all_rb_se_td700.csv`), `upload_six_factor.py`, `update_2026_{josh_rapm,purerapm,scaledoutput}.py`, and the CLAUDE.md publish list. 14-26 rb run and skipped scposs mapper left unchanged. Filename cross-check vs `build_result_suffix` passed for all eight runs; external rapms-repo consumers must switch to `_se` names.
-
 ### 2026-08-08 14:10 (local)
 - Task: Explain Kalman filters visually.
 - Fix applied: Built and verified an interactive predict-measure-update explainer with adjustable sensor noise and responsive desktop/mobile layouts.
@@ -91,3 +84,10 @@ Never store secrets, tokens, or credentials here.
 - Fix applied: Rebuilt one row per team-season from every regular-season lineup and exact same-season DARKO, fit a leave-one-season-out conditional softmax over all teams, held each focal player's own exposure-weighted contribution fixed, included teammates' bench/off-floor minutes, and reallocated the normalized probability delta with deterministic Shapley permutations.
 - Prevention rule added: Any quantity labeled team title odds must have one champion label and exactly unit probability mass inside every season; keep retrospective same-season estimates distinct from as-of forecasts.
 - Outcome: 863 team-seasons across 29 years close annual probability mass within `6.66e-16`; the selected offense/defense model is `C=5`, LOYO champion log loss `1.668791`, and 212,045 focal-player/teammate season rows reconcile within `9.99e-16`.
+
+### 2026-08-08 — Championship self/on-court/off-floor closure
+- Task: Make identical team odds explicit for every teammate while separating focal impact, teammates shared on court, and team minutes while the focal player sat.
+- What went wrong: The prior counterfactual closed only self versus all teammates, used an over-sharp minimum-log-loss model, and the season selector left career headline/table data visible.
+- Fix applied: Added shared-lineup pair exposures, exact self + shared-floor + off-floor two-group Shapley closure, one-standard-error model selection, season-specific teammate shards, and season-responsive UI cards/tables. All regular-season teams remain in the choice set; playoff PBP supplies only the champion label.
+- Prevention rule added: Same-team actual odds must be byte-identical across qualifying players; never allocate credit by playoff qualification or realized playoff exposure; validate annual mass and all probability buckets independently.
+- Outcome: Overall-DPM `C=0.2`; annual mass gap `6.66e-16`, three-bucket gap `4.44e-16`. 2009 CLE is `29.625%` for all 14 qualifying players; LeBron splits to `11.013%` self, `+21.676 pp` shared-floor, `-3.064 pp` off-floor. Parker 2004 falls from `83.8%` to `40.6%` team odds.
