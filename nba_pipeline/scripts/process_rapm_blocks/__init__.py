@@ -7,6 +7,10 @@ This package contains modular processors for different RAPM metrics.
 from .common import PROCESSED_DIR, RAW_DATA_DIR
 from .process_rapm import process_rapm_py
 from .process_ts import process_ts_py
+from .process_ts_shot_roles import (
+    build_ts_shot_roles_from_processed,
+    process_ts_shot_roles_py,
+)
 from .process_tov import process_tov_py
 from .process_reb import process_reb_py
 from .process_shooter_oreb import process_shooter_oreb_py
@@ -29,6 +33,8 @@ from .process_first_chance import process_first_chance_py
 from .process_first_chance_clean import process_first_chance_clean_py
 from .process_second_chance_clean import process_second_chance_clean_py
 from .process_assist_points import process_assist_points_py
+from .process_assist_point_roles import process_assist_point_roles_py
+from .process_scoring_roles import process_scoring_roles_py
 from .process_rim_assist import process_rim_assist_py
 from .process_dunk import process_dunk_py
 from .process_dunk_assist import process_dunk_assist_py
@@ -43,6 +49,8 @@ __all__ = [
     'RAW_DATA_DIR',
     'process_rapm_py',
     'process_ts_py',
+    'build_ts_shot_roles_from_processed',
+    'process_ts_shot_roles_py',
     'process_tov_py',
     'process_reb_py',
     'process_shooter_oreb_py',
@@ -65,6 +73,8 @@ __all__ = [
     'process_first_chance_clean_py',
     'process_second_chance_clean_py',
     'process_assist_points_py',
+    'process_assist_point_roles_py',
+    'process_scoring_roles_py',
     'process_rim_assist_py',
     'process_dunk_py',
     'process_dunk_assist_py',

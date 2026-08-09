@@ -68,6 +68,22 @@ At the processed-row level, `FC_MODE_MIX + FC_TRANSITION_VALUE + FC_HALFCOURT_VA
 
 This mode changes the interpretation of the player coefficients from "relative to the pooled multi-year mean" toward "relative to the season-adjusted baseline inside the run window."
 
+### Optional Playoff Prior (`--ps-prior`)
+
+`rapm.py` supports a two-stage playoff-aware solve for `ALL` runs.
+
+- Stage 1 solves the regular-season rows only (same alphas, weights, and nuisance blocks) and re-centers each side to possession-weighted mean zero over RS possessions
+- Stage 2 re-solves with the ridge penalty centered on the stage-1 coefficients instead of zero, so playoff opponents are anchored at their RS-established levels; `--ps-prior-stage2` selects the stage-2 sample
+- `--ps-prior-stage2 full` (default) refits the entire RS+PS sample; re-fitting RS rows against their own prior reduces effective shrinkage and expands the rating scale `~1.28x` on 22-26
+- `--ps-prior-stage2 ps-only` fits only the playoff rows, so RS data is used once and playoff evidence alone updates players away from their RS priors; players with zero playoff possessions keep their stage-1 values exactly (up to one recentering constant)
+- Motivation: playoff possessions are pure good-vs-good samples (`~+7.3 pts/100` stronger on-floor lineups than RS in 2025-26); zero-centered ridge under-adjusts for that opponent strength and compresses playoff participants toward the mean
+- Players with no RS possessions in the window shrink toward zero
+- Requires season type `ALL`; cannot combine with `--cv-alpha`, `--off-prior`/`--def-prior`, `--age-curve`, or the DARKO strength modes; composes with `--timedecay`, `--rubberband`, `--season-effects`, `--age-dummies`, and `--fixed-season-baselines`
+- Adds a `psprior` (full) or `psprioronly` (ps-only) token to output filenames and writes a companion `*_psprior_stage.csv` with per-player prior/final/delta values and per-phase possession counts
+- Pair with `--season-effects` so the lower playoff scoring environment lands in the `(season, PS)` dummies rather than the player coefficients
+
+Gate status (August 2026): both stage-2 modes failed the `evaluate_ps_handling.py` forward gate on the development folds, so `psprior` outputs are descriptive playoff-attribution surfaces, not canonical ratings; `ALL --season-effects` pooling is the recommended production configuration. See `docs/PLAYOFF_HANDLING.md` for the measured mechanisms, the delta diagnostic, the gate results, and the promotion path.
+
 ### Optional Age Fixed Effects
 
 `rapm.py` also supports an optional `--age-dummies` mode for `RAPM` only.
@@ -292,6 +308,107 @@ LA_Net_Total = cumsum(LA_Action_Score) per game
 Net_Diff = LA_Net_Total[current_EOP] - LA_Net_Total[previous_EOP]
 ```
 
+### 2A. Self-Shot / Teammate-Shot TS Hierarchy
+
+**Processor**: `process_ts_shot_roles_py()`
+
+**Solver**: `run_ts_shot_role_hierarchy.py`
+
+This hierarchy uses the existing turnover-free `TS` attempt rows. It resolves
+the terminal shooter by joining the processed row back to raw PBP on
+`game_id + event_num`, then creates:
+
+- `TS_SELF_SHOT`: one focal-shooter row per resolved attempt.
+- `TS_TEAMMATE_SHOT`: four focal-nonshooter rows per resolved attempt.
+
+Both role samples retain the full `TS_Points = Net_Diff` attempt value and fit
+the focal player alongside four offensive context players and five defenders.
+Let the centered focal coefficients from the two models be `s_raw` and
+`t_raw`, and define their role contrast `d = s_raw - t_raw`.
+
+For player shot share `u`, conditional self-shot and teammate-shot effects are
+anchored to parent offensive TS RAPM `P`:
+
+```text
+a = P + (1-u) * d
+b = P - u * d
+
+u*a + (1-u)*b = P
+```
+
+`b` is the direct conditional diagnostic for how team TS changes when a
+teammate, rather than the focal player, takes the attempt. It is not an optical
+measure of off-ball movement, screening, or gravity.
+
+For an exact additive display, use the neutral five-player shot-share reference
+`u0 = 0.2` and the Shapley allocation:
+
+```text
+self_shot_ts_component = 0.5 * (u + u0) * a
+teammate_shot_ts_component = (1 - 0.5 * (u + u0)) * b
+shot_mix_ts_component = 0.5 * (u - u0) * (a - b)
+```
+
+The three components sum exactly to parent offensive TS RAPM for every player.
+Turnovers are not part of this hierarchy because the parent `TS` surface
+filters turnover-ended possessions before role construction.
+
+This two-solve hierarchy is retained as an audit prototype. Its self and
+teammate focal coefficients are sensitive to how ridge divides credit between
+the focal block and four offensive context players. Prefer the joint model
+below for current role interpretation.
+
+### 2B. Preferred Joint oTS Shooter-Interaction Model
+
+**Solver**: `run_joint_ts_shooter_interaction.py`
+
+The preferred model uses one row per resolved `TS_SELF_SHOT` attempt. It does
+not duplicate each teammate-shot outcome four times and does not subtract two
+separately centered role regressions.
+
+For attempt `e`:
+
+```text
+y_e = season_baseline
+    + sum(i on offense) [
+        parent_ots_i
+        + (is_shooter_ie - player_season_shot_share_is) * role_contrast_i
+      ]
+    + sum(j on defense) defense_allowed_j
+```
+
+The player-season-centered shooter feature sums to zero across each player's
+offensive attempt exposures. Therefore `parent_ots_i` remains the player's
+usage-averaged joint oTS effect, while `role_contrast_i` estimates the
+self-shot-versus-teammate-shot difference.
+
+For aggregate player shot share `u`:
+
+```text
+conditional_self_shot_ots =
+    parent_ots + (1-u) * role_contrast
+
+conditional_teammate_shot_ots =
+    parent_ots - u * role_contrast
+
+self_shot_ots_contribution =
+    u * conditional_self_shot_ots
+
+teammate_shot_ots_contribution =
+    (1-u) * conditional_teammate_shot_ots
+```
+
+The two direct contributions sum exactly to joint parent oTS. No Shapley
+shot-mix term is required in the primary display.
+
+The shooter-role alpha is selected with grouped-by-game cross-validation and
+the one-standard-error rule: among candidates statistically indistinguishable
+from the minimum held-out MSE, choose the strongest shrinkage. For 2022-26 RS,
+the fixed parent/defense alphas are `3000/5000` and the selected shooter-role
+alpha is `300`. The model improves held-out attempt MSE by `0.248%` against the
+same season-centered model with the shooter interaction effectively disabled.
+Its parent coefficients remain close to existing oTS (`r=0.990`, MAE `0.135`).
+
 ---
 
 ## 3. TOV (Turnover RAPM)
@@ -486,6 +603,14 @@ python nba_pipeline/scripts/run_shooter_oreb_rapm.py 26 26 RS --alpha 3000 --min
 
 The solver exports `non_shooter_oreb`, `shooter_miss_recoverability`, and `def_oreb_suppression` in per-100 percentage-point units, plus raw shooter miss/team OREB/self OREB context.
 
+For a game-held-out, shot-context-controlled role-vacancy counterfactual, use
+`scripts/build_second_chance_opportunity_prior.py`. It adds repo-owned SQ
+geometry, replaces each shooter with each of his four teammates in turn, moves
+the shooter into the vacated non-shooter slot, and prices the OREB difference
+in second-chance EV. See
+[Second-Chance Opportunity Prior](./SECOND_CHANCE_OPPORTUNITY_PRIOR.md). This
+research surface does not alter `SECOND_CHANCE_CLEAN` or public DECOMP.
+
 ---
 
 ## 4c. BLOCK_RECOVERY (Defensive Block Recovery Rate)
@@ -664,6 +789,104 @@ The possession output is built as a cumulative game total and then differenced a
 **Output column**: `Assist_Points`
 
 Most possessions are `0`, `2`, or `3`. Rare `4` / `5` rows can occur when a continued possession contains multiple assisted makes under the standard possession definition (for example: assisted and-one make, missed `1 of 1`, offensive rebound, then another assisted make).
+
+---
+
+## 7A. ASSIST_POINTS Receiver/Passer Hierarchy
+
+**Processor**: `process_assist_point_roles_py()`
+
+**Solver**: `run_assist_points_hierarchy.py`
+
+The hierarchy keeps the parent `ASSIST_POINTS` standard-possession target, then
+expands every offensive possession to five focal-player opportunity rows:
+
+- `ASSIST_POINTS_RECEIVER`: the focal player gets `Receiver_Assist_Points` when
+  that player made an assisted field goal.
+- `ASSIST_POINTS_PASSER`: the focal player gets `Passer_Assist_Points` when the
+  `(... N AST)` description tag resolves to that player against the offensive
+  lineup.
+
+Each row stores `Focal_Player`, the other four offensive players as `O1-O4`, and
+the five defenders as `D1-D5`. The role solver fits three ridge blocks:
+
+```text
+role focal player + four offensive teammates + five defenders
+```
+
+The final hierarchy does not solve the two role targets as standalone RAPMs.
+It keeps the common sample where both roles are fully resolved, then fits one
+focal-player contrast target:
+
+```text
+Passer_Receiver_Contrast =
+    Passer_Assist_Points - Receiver_Assist_Points
+```
+
+The teammate and defense blocks are nuisance controls. The focal contrast
+coefficient is combined with the standard offensive `ASSIST_POINTS` RAPM:
+
+```text
+passer_assist_points_rapm =
+    (assist_points_off_rapm + passer_minus_receiver_rapm) / 2
+
+receiver_assist_points_rapm =
+    (assist_points_off_rapm - passer_minus_receiver_rapm) / 2
+
+passer_assist_points_rapm + receiver_assist_points_rapm =
+    assist_points_off_rapm
+```
+
+The final identity is checked for every player. Within either role parquet:
+
+```text
+sum(five resolved role targets) + Unresolved_Assist_Points = Assist_Points
+```
+
+`Unresolved_Assist_Points` is repeated as possession metadata and should be
+taken with `first`, not summed across the five opportunity rows.
+
+---
+
+## 7B. On-Ball / Off-Ball Scoring Hierarchy
+
+**Processor**: `process_scoring_roles_py()`
+
+**Solver**: `run_scoring_role_hierarchy.py`
+
+`SCORING_PARENT` matches the standard scoring target: actual made-FG points plus
+shooter-expected FT value on each standard possession. Every possession is
+expanded to five focal-player rows:
+
+- `SCORING_ONBALL`: the focal player receives the scoring value when that player
+  took the made field goal or free throw.
+- `SCORING_OFFBALL`: each of the four non-shooters receives one quarter of the
+  scoring value.
+
+On fully resolved possessions, both five-row role targets independently sum to
+the parent:
+
+```text
+sum(OnBall_Scoring_Points) = Scoring_Points
+sum(OffBall_Scoring_Points) = Scoring_Points
+```
+
+The solver fits `OnBall_Scoring_Points - OffBall_Scoring_Points` with the same
+focal-player, four-teammate, and five-defender ridge blocks used by the assist
+hierarchy. Final components are:
+
+```text
+onball_scoring_rapm =
+    (offensive_rapm + onball_minus_offball_rapm) / 2
+
+offball_scoring_rapm =
+    (offensive_rapm - onball_minus_offball_rapm) / 2
+```
+
+Therefore `onball_scoring_rapm + offball_scoring_rapm = offensive_rapm` for
+every player. This is an adjusted shooter/non-shooter allocation. The off-ball
+component is not an optical estimate of movement, screening, gravity, or a
+catch-and-shoot play-type label.
 
 ---
 
@@ -975,6 +1198,8 @@ allowed values mean suppressing those buckets.
 |-----------|----------------------|------------------|--------|-----------|-----------|
 | **RAPM** | Standard EOP (makes, DREBs, TOVs, final FTs, end of period) | `Off_Diff`/`Def_Diff` | Points | Scores more | Allows fewer |
 | **TS** | Scoring attempts only (EOP minus turnovers) | `Net_Diff` | Points (FT luck-adj) | Scores efficiently | Allows fewer |
+| **TS_SELF_SHOT** | Resolved TS attempts × shooter | `TS_Points` | Full attempt value | Conditional shooter-role input | Context block only |
+| **TS_TEAMMATE_SHOT** | Resolved TS attempts × four nonshooters | `TS_Points` | Full attempt value | Conditional teammate-shot input | Context block only |
 | **TOV** | Standard EOP | `Is_Turnover` | 0 or 1 | Fewer TOVs* | More forced TOVs* |
 | **REB** | Rebound opportunities only | `Offensive_Rebound` | 0 or 1 | More OREBs | Fewer OREBs allowed |
 | **SHOOTER_OREB** | Missed FGA with next-event rebound | `Offensive_Rebound`, `Self_Offensive_Rebound` | 0 or 1 | More teammate/self recovery after misses | Fewer OREBs allowed |
@@ -982,6 +1207,11 @@ allowed values mean suppressing those buckets.
 | **RIM_FREQ** | Every FGA | `Is_Rim_Attempt` | 0 or 1 | More rim attacks | Fewer rim attempts allowed |
 | **RIM_FG_PCT** | Rim attempts only | `Is_Rim_Make` | 0 or 1 | Better rim finishing | Better rim protection |
 | **ASSIST_POINTS** | Standard EOP | `Assist_Points` | Usually 0, 2, 3 | More assisted scoring | Allows less assisted scoring |
+| **ASSIST_POINTS_RECEIVER** | Standard EOP × five focal players | `Receiver_Assist_Points` | 0, 2, 3 per focal row | Receiver input to additive hierarchy | Context block only |
+| **ASSIST_POINTS_PASSER** | Standard EOP × five focal players | `Passer_Assist_Points` | 0, 2, 3 per focal row | Passer input to additive hierarchy | Context block only |
+| **SCORING_PARENT** | Standard EOP | `Scoring_Points` | Expected-FT point value | Parent offensive scoring RAPM | Scoring allowed |
+| **SCORING_ONBALL** | Standard EOP × five focal players | `OnBall_Scoring_Points` | Scorer value or 0 | Shooter input to additive hierarchy | Context block only |
+| **SCORING_OFFBALL** | Standard EOP × five focal players | `OffBall_Scoring_Points` | One-quarter teammate scoring | Non-shooter input to additive hierarchy | Context block only |
 | **RIM_ASSIST** | Standard EOP | `Is_Rim_Assist` | Usually 0 or 1 | More assisted rim makes | Allows fewer assisted rim makes |
 | **DUNK** | Standard EOP | `Is_Dunk` | Usually 0 or 1 | More made dunks | Allows fewer made dunks |
 | **DUNK_ASSIST** | Standard EOP | `Is_Dunk_Assist` | Usually 0 or 1 | More assisted made dunks | Allows fewer assisted made dunks |
@@ -1027,6 +1257,11 @@ Examples:
 - `RIM_FREQ23_PS.parquet` - 2022-23 playoffs
 - `LA_RAPM25.parquet` - 2024-25 luck-adjusted RAPM
 - `ASSIST_POINTS26.parquet` - 2025-26 assisted FG points
+- `ASSIST_POINTS_RECEIVER26.parquet` - 2025-26 focal-player assisted points received
+- `ASSIST_POINTS_PASSER26.parquet` - 2025-26 focal-player assisted points created by passes
+- `SCORING_PARENT26.parquet` - 2025-26 standard-possession scoring parent
+- `SCORING_ONBALL26.parquet` - 2025-26 focal-player scoring-shot role
+- `SCORING_OFFBALL26.parquet` - 2025-26 focal-player non-shooter scoring role
 - `PLAYTYPE_TS_MIX26.parquet` - 2025-26 descriptor-based playtype scoring mix
 
 ---

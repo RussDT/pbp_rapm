@@ -44,8 +44,11 @@ csv-viewer/public/data/
 
 # NBA pipeline generated artifacts
 nba_pipeline/cache/
+nba_pipeline/external/gabriel_wnba/
+nba_pipeline/external/gabriel_wnba_boxscores/
 nba_pipeline/external/merged_playbyplay/
 nba_pipeline/external/site_Data/
+nba_pipeline/external/wnba_darko_daily/
 nba_pipeline/logs/
 nba_pipeline/master_results/
 nba_pipeline/processed/
@@ -60,7 +63,15 @@ nba_pipeline/docs/videos/decomp-rapm/.thumbnails/
 # WNBA generated artifacts
 wnba_test/Processed/
 wnba_test/Results/
+wnba_test/GabrielNormalized/
+wnba_test/GabrielNormalizedClean/
+
+# Proprietary local input drops
+/databallr_share (2).zip
 
 # Local research generated outputs
 randle_strong_weak/outputs*/
 randle_strong_weak/*browser.html
+
+# Nested clone of the private unified-rapm repo (separate git project)
+/unified-rapm/

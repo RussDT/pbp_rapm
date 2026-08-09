@@ -27,7 +27,10 @@ Applied to both sides of the ball:
 - `Defense = dTOV + dTS + dSC`
 - `Total RAPM = oTOV + oTS + oSC + dTOV + dTS + dSC`
 
-Use this point-additive formula only for active point-valued surfaces, such as `weighted_factors_alt3_efg_value_*` and the SixRings factor-game pool. Do not use it to relabel legacy native-rate `oREB` / `dREB` files.
+Use this point-additive formula for active point-valued surfaces such as
+`weighted_factors_decomp_*`, ShotQuality-EV VPM/Impact Monster, and the
+SixRings factor-game pool. Do not use it to relabel legacy native-rate `oREB`
+/ `dREB` files. Treat `weighted_factors_alt3_efg_value_*` as legacy.
 
 ## Public Explanation
 

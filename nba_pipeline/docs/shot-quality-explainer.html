@@ -1,0 +1,2028 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Visual explainer for the repo-owned NBA Shot Quality stack: immediate shot EV, shooter talent, defender geometry, shot-clock burden, and expected second-chance continuation.">
+  <title>How Our Shot Quality Stack Works</title>
+  <style>
+    :root {
+      --ink: #17221c;
+      --muted: #617068;
+      --paper: #f7f6f0;
+      --panel: #fffefa;
+      --line: #d9ddd6;
+      --forest: #174f3a;
+      --green: #2e7d5b;
+      --mint: #dfeee6;
+      --navy: #24466d;
+      --blue: #dfe9f5;
+      --gold: #b77a1e;
+      --gold-soft: #f2e6cd;
+      --coral: #a94f42;
+      --coral-soft: #f4dfdb;
+      --violet: #63548a;
+      --violet-soft: #e9e4f2;
+      --shadow: 0 22px 65px rgba(26, 38, 31, 0.11);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(23, 34, 28, 0.035) 1px, transparent 1px),
+        linear-gradient(rgba(23, 34, 28, 0.035) 1px, transparent 1px),
+        var(--paper);
+      background-size: 46px 46px;
+      font: 16px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: inherit; }
+
+    button {
+      font: inherit;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      max-width: 880px;
+      margin-bottom: 22px;
+      font-size: clamp(46px, 7.5vw, 96px);
+      line-height: 0.92;
+      letter-spacing: -0.055em;
+    }
+
+    h2 {
+      margin-bottom: 14px;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 18px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 22px;
+      height: 3px;
+      content: "";
+      background: currentColor;
+    }
+
+    .lead {
+      max-width: 790px;
+      color: #3e4c44;
+      font-size: clamp(19px, 2.15vw, 25px);
+      line-height: 1.42;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .hero {
+      min-height: 88vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+      gap: 52px;
+      align-items: center;
+      padding: 64px 0 48px;
+    }
+
+    .hero-note {
+      max-width: 700px;
+      margin-top: 30px;
+      padding: 15px 18px;
+      border-left: 4px solid var(--gold);
+      background: rgba(255, 254, 250, 0.6);
+      color: #403c31;
+    }
+
+    .hero-visual {
+      position: relative;
+      min-height: 610px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .court {
+      position: absolute;
+      inset: 22px;
+      overflow: hidden;
+      border: 2px solid var(--forest);
+      background:
+        radial-gradient(circle at 50% 11%, transparent 0 73px, rgba(23, 79, 58, 0.3) 74px 76px, transparent 77px),
+        linear-gradient(160deg, rgba(223, 238, 230, 0.95), rgba(242, 230, 205, 0.72));
+    }
+
+    .court::before {
+      position: absolute;
+      top: -110px;
+      left: 12%;
+      width: 76%;
+      height: 285px;
+      content: "";
+      border: 2px solid rgba(23, 79, 58, 0.48);
+      border-radius: 0 0 50% 50%;
+    }
+
+    .court::after {
+      position: absolute;
+      top: 0;
+      left: 35%;
+      width: 30%;
+      height: 210px;
+      content: "";
+      border: 2px solid rgba(23, 79, 58, 0.48);
+      border-top: 0;
+    }
+
+    .rim {
+      position: absolute;
+      z-index: 2;
+      top: 62px;
+      left: calc(50% - 23px);
+      width: 46px;
+      height: 12px;
+      border: 4px solid var(--coral);
+      border-radius: 50%;
+    }
+
+    .shot-arc {
+      position: absolute;
+      z-index: 3;
+      top: 80px;
+      left: 29%;
+      width: 44%;
+      height: 250px;
+      border-top: 4px dashed var(--gold);
+      border-radius: 50%;
+      transform: rotate(-10deg);
+    }
+
+    .ball {
+      position: absolute;
+      z-index: 4;
+      top: 126px;
+      left: 48%;
+      width: 26px;
+      height: 26px;
+      border: 2px solid #7a4611;
+      border-radius: 50%;
+      background: #d48b34;
+      box-shadow: 0 6px 18px rgba(70, 38, 8, 0.22);
+    }
+
+    .hero-stack {
+      position: absolute;
+      z-index: 6;
+      right: 42px;
+      bottom: 42px;
+      left: 42px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .hero-step {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 13px 15px;
+      border: 1px solid rgba(23, 34, 28, 0.13);
+      background: rgba(255, 254, 250, 0.94);
+      box-shadow: 0 10px 28px rgba(21, 32, 25, 0.09);
+    }
+
+    .hero-step b {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: white;
+      font-size: 12px;
+    }
+
+    .hero-step span { font-weight: 700; }
+    .hero-step em { color: var(--muted); font-style: normal; font-size: 13px; }
+
+    .jump-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .jump-links a {
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 254, 250, 0.68);
+      text-decoration: none;
+    }
+
+    section {
+      padding: 68px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: minmax(245px, 0.72fr) minmax(0, 1.28fr);
+      gap: 42px;
+      align-items: start;
+    }
+
+    .section-intro {
+      position: sticky;
+      top: 20px;
+    }
+
+    .section-intro p {
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      padding: 21px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(25, 35, 30, 0.055);
+    }
+
+    .card p:last-child { margin-bottom: 0; }
+
+    .feature-number {
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      margin-bottom: 12px;
+      border-radius: 50%;
+      background: var(--mint);
+      color: var(--forest);
+      font-weight: 800;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .chip {
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fafaf6;
+      color: #445149;
+      font-size: 12px;
+    }
+
+    .formula-flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .formula-node {
+      position: relative;
+      padding: 20px 17px;
+      border-top: 5px solid var(--green);
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(25, 35, 30, 0.055);
+    }
+
+    .formula-node:not(:last-child)::after {
+      position: absolute;
+      z-index: 3;
+      top: 42%;
+      right: -18px;
+      width: 23px;
+      content: "→";
+      color: var(--muted);
+      font-size: 24px;
+      text-align: center;
+    }
+
+    .formula-node:nth-child(2) { border-color: var(--navy); }
+    .formula-node:nth-child(3) { border-color: var(--gold); }
+    .formula-node:nth-child(4) { border-color: var(--violet); }
+
+    .formula-node code {
+      display: block;
+      margin-top: 11px;
+      color: var(--muted);
+      font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .output-ladder {
+      display: grid;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .output-row {
+      display: grid;
+      grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr);
+      gap: 18px;
+      align-items: center;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .output-row strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .output-row span { color: var(--muted); }
+
+    .lab {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .lab-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: end;
+      padding: 24px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(135deg, var(--mint), #fff9ec);
+    }
+
+    .lab-head p { max-width: 640px; margin-bottom: 0; color: #435148; }
+
+    .monogram {
+      display: grid;
+      place-items: center;
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: white;
+      font-size: 23px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    .shot-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 16px 24px 0;
+    }
+
+    .shot-tab {
+      cursor: pointer;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .shot-tab[aria-pressed="true"] {
+      border-color: var(--forest);
+      background: var(--forest);
+      color: white;
+    }
+
+    .shot-lab-body {
+      display: grid;
+      grid-template-columns: minmax(270px, 0.8fr) minmax(0, 1.2fr);
+      gap: 28px;
+      padding: 24px;
+    }
+
+    .shot-copy {
+      padding-right: 24px;
+      border-right: 1px solid var(--line);
+    }
+
+    .shot-description {
+      margin-bottom: 18px;
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.24;
+    }
+
+    .shot-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .meta-item {
+      padding: 10px;
+      background: #f6f6f0;
+    }
+
+    .meta-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .meta-item strong { display: block; margin-top: 3px; }
+
+    .equation {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 10px 0 23px;
+      font-size: clamp(20px, 2.8vw, 34px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .equation .operator { color: var(--muted); }
+    .equation .answer { color: var(--forest); }
+
+    .waterfall {
+      display: grid;
+      gap: 15px;
+    }
+
+    .water-row {
+      display: grid;
+      grid-template-columns: 148px minmax(0, 1fr) 66px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .water-track {
+      position: relative;
+      height: 20px;
+      overflow: hidden;
+      background: #eceee9;
+    }
+
+    .water-fill {
+      height: 100%;
+      min-width: 2px;
+      transition: width 320ms ease, margin-left 320ms ease;
+    }
+
+    .fill-context { background: var(--green); }
+    .fill-talent { background: var(--navy); }
+    .fill-defense { background: var(--gold); }
+    .fill-final { background: var(--violet); }
+
+    .water-value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+    }
+
+    .result-note {
+      margin-top: 20px;
+      padding: 13px 15px;
+      border-left: 4px solid var(--coral);
+      background: var(--coral-soft);
+    }
+
+    .result-note strong { color: #71372f; }
+
+    .profile-chart {
+      padding: 22px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(25, 35, 30, 0.055);
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin: 10px 0 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .legend-item { display: flex; gap: 7px; align-items: center; }
+    .swatch { width: 18px; height: 4px; background: var(--green); }
+    .swatch.actual { background: var(--forest); }
+    .swatch.context { background: var(--gold); }
+    .swatch.sq { background: var(--navy); }
+
+    #jokicCareerChart {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    .player-comparison {
+      display: grid;
+      gap: 13px;
+      margin-top: 22px;
+    }
+
+    .player-row {
+      display: grid;
+      grid-template-columns: 150px 64px minmax(180px, 1fr) 72px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .player-bars {
+      position: relative;
+      height: 26px;
+      background: #eceee9;
+    }
+
+    .diet-bar,
+    .talent-bar {
+      position: absolute;
+      left: 0;
+      height: 9px;
+    }
+
+    .diet-bar { top: 3px; background: var(--gold); }
+    .talent-bar { bottom: 3px; background: var(--navy); }
+
+    .player-lift {
+      color: var(--forest);
+      text-align: right;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .feature-atlas {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .atlas-group {
+      padding: 18px;
+      border-top: 5px solid var(--green);
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(25, 35, 30, 0.05);
+    }
+
+    .atlas-group:nth-child(2) { border-color: var(--gold); }
+    .atlas-group:nth-child(3) { border-color: var(--navy); }
+    .atlas-group:nth-child(4) { border-color: var(--violet); }
+    .atlas-group:nth-child(5) { border-color: var(--coral); }
+    .atlas-group:nth-child(6) { border-color: var(--forest); }
+
+    .atlas-group ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      color: #47544c;
+    }
+
+    .atlas-group li { margin: 5px 0; }
+
+    .not-used {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .not-item {
+      padding: 14px;
+      border: 1px dashed #b8beb8;
+      color: var(--muted);
+      text-decoration: line-through;
+      text-decoration-color: var(--coral);
+      text-decoration-thickness: 2px;
+    }
+
+    .model-lanes {
+      display: grid;
+      gap: 14px;
+    }
+
+    .lane {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr) 155px;
+      gap: 18px;
+      align-items: center;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .lane-tag {
+      display: inline-block;
+      padding: 5px 8px;
+      background: var(--mint);
+      color: var(--forest);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .lane.warning .lane-tag { background: var(--gold-soft); color: #76531c; }
+    .lane.audit .lane-tag { background: var(--violet-soft); color: #4d416e; }
+
+    .lane p { margin-bottom: 0; color: var(--muted); }
+
+    .lane-use {
+      color: var(--forest);
+      font-size: 13px;
+      font-weight: 800;
+      text-align: right;
+    }
+
+    .validation-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .metric-panel {
+      padding: 22px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .metric-bar-row {
+      display: grid;
+      grid-template-columns: 126px minmax(0, 1fr) 68px;
+      gap: 10px;
+      align-items: center;
+      margin-top: 13px;
+    }
+
+    .metric-track {
+      position: relative;
+      height: 17px;
+      background: #eceee9;
+    }
+
+    .metric-fill {
+      height: 100%;
+      background: var(--gold);
+    }
+
+    .metric-fill.challenger { background: var(--green); }
+    .metric-fill.safe { background: var(--navy); }
+    .metric-value { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .better {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 5px 8px;
+      background: var(--mint);
+      color: var(--forest);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .rapm-bridge {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .bridge-node {
+      position: relative;
+      min-height: 142px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .bridge-node:not(:last-child)::after {
+      position: absolute;
+      z-index: 2;
+      top: 48%;
+      right: -14px;
+      width: 18px;
+      content: "→";
+      color: var(--muted);
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .bridge-node strong { display: block; margin-bottom: 8px; }
+    .bridge-node span { color: var(--muted); font-size: 13px; }
+
+    .guardrail {
+      margin-top: 20px;
+      padding: 18px;
+      border: 1px solid #d9c391;
+      background: var(--gold-soft);
+      color: #493b22;
+    }
+
+    .value-spine {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .value-stage {
+      position: relative;
+      min-height: 190px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(25, 35, 30, 0.05);
+    }
+
+    .value-stage::before {
+      display: block;
+      margin-bottom: 13px;
+      color: var(--green);
+      content: attr(data-step);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .value-stage:nth-child(2)::before { color: var(--navy); }
+    .value-stage:nth-child(3)::before { color: var(--coral); }
+    .value-stage code {
+      display: block;
+      margin-top: 14px;
+      padding: 10px;
+      background: #f3f4ef;
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: normal;
+    }
+
+    .status-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .status-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .status-card span {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .status-card strong {
+      display: block;
+      color: var(--forest);
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .status-card small {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .comparison-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(25, 35, 30, 0.05);
+    }
+
+    .comparison-table {
+      width: 100%;
+      min-width: 690px;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+    }
+
+    .comparison-table th:first-child,
+    .comparison-table td:first-child {
+      text-align: left;
+    }
+
+    .comparison-table th {
+      color: var(--muted);
+      background: #f3f4ef;
+      font-size: 11px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .comparison-table tbody tr:last-child td { border-bottom: 0; }
+    .comparison-table .winner { color: var(--forest); font-weight: 900; }
+    .comparison-table .neutral { color: var(--muted); }
+
+    .takeaway-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .takeaway {
+      padding: 18px;
+      border-left: 5px solid var(--green);
+      background: var(--mint);
+    }
+
+    .takeaway.caution {
+      border-color: var(--gold);
+      background: var(--gold-soft);
+    }
+
+    .takeaway p { margin-bottom: 0; color: #405047; }
+
+    .geometry-columns {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .geometry-list {
+      padding: 20px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .geometry-list ul {
+      columns: 2;
+      margin: 12px 0 0;
+      padding-left: 18px;
+      color: #47544c;
+    }
+
+    .geometry-list li {
+      break-inside: avoid;
+      margin: 6px 0;
+    }
+
+    .provider-verdicts {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .provider-row {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr) 120px;
+      gap: 16px;
+      align-items: center;
+      padding: 15px 17px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .provider-row p { margin: 0; color: var(--muted); }
+    .provider-result {
+      color: var(--forest);
+      font-size: 12px;
+      font-weight: 900;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .provider-result.failed { color: var(--coral); }
+    .provider-result.neutral { color: var(--gold); }
+
+    .clock-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.25fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .clock-face {
+      display: grid;
+      place-items: center;
+      min-height: 350px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      background: linear-gradient(145deg, #112c23, #24466d);
+      color: white;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .clock-number {
+      display: grid;
+      place-items: center;
+      width: 178px;
+      height: 178px;
+      border: 6px solid #f0bd58;
+      border-radius: 50%;
+      color: #f7d999;
+      font: 900 72px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      box-shadow: inset 0 0 0 10px rgba(255,255,255,0.06);
+    }
+
+    .clock-face strong { display: block; margin-top: 20px; font-size: 22px; }
+    .clock-face p { max-width: 270px; margin: 8px auto 0; color: #d8e5df; }
+
+    .clock-bins {
+      display: grid;
+      gap: 11px;
+    }
+
+    .clock-bin {
+      padding: 15px 17px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .clock-bin-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .clock-bin-head span { color: var(--muted); font-size: 12px; }
+    .clock-trio { display: grid; gap: 6px; }
+    .clock-line {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) 56px;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .clock-track { height: 8px; background: #eceee9; }
+    .clock-fill { height: 100%; background: var(--gold); }
+    .clock-fill.actual { background: var(--forest); }
+    .clock-fill.adjusted { background: var(--navy); }
+
+    .role-swap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
+      margin: 20px 0;
+    }
+
+    .role-card {
+      padding: 20px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(25, 35, 30, 0.05);
+    }
+
+    .role-card.actual { border-top: 6px solid var(--coral); }
+    .role-card.swap { border-top: 6px solid var(--green); }
+    .role-card strong { display: block; margin-bottom: 9px; }
+    .role-card p { margin-bottom: 0; color: var(--muted); }
+    .swap-arrow {
+      display: grid;
+      place-items: center;
+      color: var(--gold);
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    .embiid-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .embiid-stat {
+      padding: 16px;
+      background: #f3f4ef;
+    }
+
+    .embiid-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .embiid-stat strong {
+      display: block;
+      margin-top: 5px;
+      color: var(--forest);
+      font-size: 23px;
+    }
+
+    .verdict {
+      margin-top: 20px;
+      padding: 20px;
+      border: 2px solid var(--forest);
+      background: var(--mint);
+    }
+
+    .verdict strong { color: var(--forest); }
+
+    .boundary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .boundary-card {
+      padding: 17px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .boundary-card span {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 4px 7px;
+      background: var(--blue);
+      color: var(--navy);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .boundary-card p { margin-bottom: 0; color: var(--muted); }
+
+    .footer {
+      padding: 40px 0 70px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 930px) {
+      .hero,
+      .section-grid,
+      .shot-lab-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 44px;
+      }
+
+      .hero-visual { min-height: 560px; }
+      .section-intro { position: static; }
+      .shot-copy { padding-right: 0; border-right: 0; }
+      .formula-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .formula-node:nth-child(2)::after { display: none; }
+      .feature-atlas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .not-used { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .status-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .value-spine,
+      .boundary-grid { grid-template-columns: 1fr; }
+      .clock-grid { grid-template-columns: 1fr; }
+      .embiid-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .rapm-bridge { grid-template-columns: 1fr; }
+      .bridge-node { min-height: 0; }
+      .bridge-node:not(:last-child)::after { display: none; }
+    }
+
+    @media (max-width: 650px) {
+      main { width: min(100% - 24px, 1180px); }
+      section { padding: 52px 0; }
+      .cards,
+      .feature-atlas,
+      .validation-grid,
+      .formula-flow,
+      .takeaway-grid,
+      .geometry-columns {
+        grid-template-columns: 1fr;
+      }
+
+      .formula-node::after { display: none; }
+      .hero-visual { min-height: 510px; }
+      .hero-stack { right: 26px; bottom: 26px; left: 26px; }
+      .hero-step { grid-template-columns: 28px 1fr; }
+      .hero-step em { grid-column: 2; }
+      .lab-head { grid-template-columns: 1fr; }
+      .monogram { width: 58px; height: 58px; font-size: 18px; }
+      .water-row { grid-template-columns: 112px minmax(0, 1fr) 56px; font-size: 13px; }
+      .player-row { grid-template-columns: 110px 48px minmax(110px, 1fr) 60px; gap: 7px; font-size: 12px; }
+      .lane { grid-template-columns: 1fr; }
+      .lane-use { text-align: left; }
+      .not-used { grid-template-columns: 1fr; }
+      .output-row { grid-template-columns: 1fr; gap: 4px; }
+      .status-strip,
+      .embiid-stats { grid-template-columns: 1fr; }
+      .provider-row { grid-template-columns: 1fr; }
+      .provider-result { text-align: left; }
+      .geometry-list ul { columns: 1; }
+      .role-swap { grid-template-columns: 1fr; }
+      .swap-arrow { transform: rotate(90deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .water-fill { transition: none; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <div>
+      <div class="eyebrow">Immediate SQ → clock state → second-chance continuation</div>
+      <h1>How our Shot Quality stack sees the whole shot.</h1>
+      <p class="lead">We now separate three questions: how good the attempt was, how the clock and shooter changed its make probability, and what the miss was likely to create afterward.</p>
+      <div class="hero-note"><strong>The key distinction:</strong> immediate shot EV and possession value at release are not the same object. A shot can look fine as a field-goal attempt and still carry a rebound-geometry cost because the wrong player was pulled away from the rim.</div>
+      <nav class="jump-links" aria-label="Page sections">
+        <a href="#pipeline">The pipeline</a>
+        <a href="#jokic-lab">Jokić examples</a>
+        <a href="#features">Every feature</a>
+        <a href="#walkforward">Walk-forward test</a>
+        <a href="#geometry">Defender geometry</a>
+        <a href="#clock">Shot clock</a>
+        <a href="#second-chance">Embiid effect</a>
+        <a href="#rapm">How RAPM uses it</a>
+      </nav>
+    </div>
+
+    <div class="hero-visual" aria-label="A basketball shot moving through four model stages">
+      <div class="court">
+        <div class="rim"></div>
+        <div class="shot-arc"></div>
+        <div class="ball"></div>
+      </div>
+      <div class="hero-stack">
+        <div class="hero-step"><b>1</b><span>Shot context</span><em>distance · zone · action · modifiers</em></div>
+        <div class="hero-step"><b>2</b><span>Shooter talent</span><em>pregame form + date-as-of EPM</em></div>
+        <div class="hero-step"><b>3</b><span>Release geometry</span><em>closest + second defender positioning</em></div>
+        <div class="hero-step"><b>4</b><span>Clock state</span><em>grenades are not ordinary attempts</em></div>
+        <div class="hero-step"><b>5</b><span>Continuation</span><em>miss × OREB × points after recovery</em></div>
+      </div>
+    </div>
+  </header>
+
+  <section id="pipeline">
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">The pipeline</div>
+        <h2>One shot, several honest answers.</h2>
+        <p>The model is deliberately layered. Each output answers a different basketball question and can be used without automatically importing the layers above it.</p>
+      </div>
+
+      <div>
+        <div class="formula-flow">
+          <article class="formula-node">
+            <h3>Season baseline</h3>
+            <p>What is an average two or three worth in this season and competition?</p>
+            <code>season × RS/PS × 2PT/3PT</code>
+          </article>
+          <article class="formula-node">
+            <h3>Shot context</h3>
+            <p>Refine by location, distance, family, action code, and descriptive modifiers.</p>
+            <code>shot_context_ev</code>
+          </article>
+          <article class="formula-node">
+            <h3>Shooter talent</h3>
+            <p>Add a shrunk player-season residual for this kind of shot.</p>
+            <code>+ shooter_season_talent</code>
+          </article>
+          <article class="formula-node">
+            <h3>Pre-release state</h3>
+            <p>Add physical defender geometry and the actual shot-clock state when those research features are available.</p>
+            <code>+ geometry + clock</code>
+          </article>
+        </div>
+
+        <div class="output-ladder">
+          <div class="output-row"><strong>shot_context_ev</strong><span>Pure shot diet: the expected points for this physical/action context, without naming the shooter.</span></div>
+          <div class="output-row"><strong>shot_quality_ev</strong><span>Context plus career-window shooter talent in the matching talent bucket.</span></div>
+          <div class="output-row"><strong>shot_quality_season_ev</strong><span>Context plus the player-season talent estimate. This is the current RAPM target for field-goal attempts.</span></div>
+          <div class="output-row"><strong>shot_quality_prior_ev</strong><span>Context plus only the shooter information available before the shot in chronological order.</span></div>
+          <div class="output-row"><strong>shot_quality_with_defense_ev</strong><span>Context + player-season talent + the on-court defense adjustment. Useful for shot analysis, not used directly as the defensive RAPM target.</span></div>
+          <div class="output-row"><strong>clock_conditioned_shot_ev</strong><span>The same shot expectation after accounting for actual time remaining. A neutral-clock score exposes grenade burden.</span></div>
+          <div class="output-row"><strong>release_possession_ev</strong><span>Immediate shot EV plus the expected continuation created by a miss and offensive rebound.</span></div>
+        </div>
+
+        <div class="value-spine" aria-label="Immediate shot EV to possession value">
+          <article class="value-stage" data-step="Layer 1 · the shot">
+            <h3>Immediate shot EV</h3>
+            <p>How many points should the field-goal attempt itself score?</p>
+            <code>P(make | context, shooter, defense, clock) × 2 or 3</code>
+          </article>
+          <article class="value-stage" data-step="Layer 2 · after the miss">
+            <h3>Expected continuation</h3>
+            <p>How often will this miss be recovered, and what is that recovery worth?</p>
+            <code>P(miss) × P(OREB | shooter, zone, lineups) × points / OREB</code>
+          </article>
+          <article class="value-stage" data-step="Layer 3 · at release">
+            <h3>Release possession EV</h3>
+            <p>The complete pre-result value of choosing this attempt in this configuration.</p>
+            <code>immediate shot EV + expected continuation EV</code>
+          </article>
+        </div>
+
+        <div class="guardrail"><strong>Why a “1.10 shot becomes 1.09” needs a baseline:</strong> continuation EV is nonnegative in absolute terms. The negative Embiid adjustment is relative to the continuation a neutral shooter/lineup configuration would have generated. Absolute release EV adds continuation; the centered decision-quality scale subtracts the neutral continuation first.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="jokic-lab">
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">Real examples</div>
+        <h2>Put a Jokić shot through the model.</h2>
+        <p>These are actual rows from the 2026 playoff artifact. Choose a shot to see the calculation change.</p>
+      </div>
+
+      <div class="lab">
+        <div class="lab-head">
+          <div>
+            <h3>Nikola Jokić · 2026 playoffs</h3>
+            <p>The actual make or miss is shown only after the estimate. It is not a same-row scoring feature.</p>
+          </div>
+          <div class="monogram" aria-label="Nikola Jokic initials">NJ</div>
+        </div>
+
+        <div class="shot-tabs" role="group" aria-label="Choose a Jokic shot example">
+          <button class="shot-tab" type="button" data-shot="hook" aria-pressed="true">Turnaround hook</button>
+          <button class="shot-tab" type="button" data-shot="three" aria-pressed="false">25-foot three</button>
+          <button class="shot-tab" type="button" data-shot="cut" aria-pressed="false">Cutting layup</button>
+          <button class="shot-tab" type="button" data-shot="floater" aria-pressed="false">Driving floater</button>
+        </div>
+
+        <div class="shot-lab-body" aria-live="polite">
+          <div class="shot-copy">
+            <div id="shotDescription" class="shot-description">Jokic 5' Turnaround Hook Shot</div>
+            <div class="shot-meta">
+              <div class="meta-item"><span>Zone</span><strong id="shotZone">Short mid</strong></div>
+              <div class="meta-item"><span>Family</span><strong id="shotFamily">Hook</strong></div>
+              <div class="meta-item"><span>Modifier</span><strong id="shotModifier">Turnaround</strong></div>
+              <div class="meta-item"><span>Support</span><strong id="shotSupport">15,808 similar shots</strong></div>
+              <div class="meta-item"><span>Clock</span><strong id="shotClock">Q1 · 10:45</strong></div>
+              <div class="meta-item"><span>Result</span><strong id="shotResult">Made · 2 points</strong></div>
+            </div>
+            <div class="result-note"><strong>Why Jokić matters:</strong> the physical shot starts at its context value. His player-season finishing talent then moves the expectation—sometimes dramatically—without changing the definition of the underlying shot.</div>
+          </div>
+
+          <div>
+            <div class="small">EXPECTED POINTS CALCULATION</div>
+            <div class="equation">
+              <span id="eqContext">1.070</span>
+              <span class="operator">+</span>
+              <span id="eqTalent">0.233</span>
+              <span class="operator">+</span>
+              <span id="eqDefense">−0.019</span>
+              <span class="operator">=</span>
+              <span id="eqFinal" class="answer">1.284</span>
+            </div>
+
+            <div class="waterfall">
+              <div class="water-row">
+                <span>Shot context</span>
+                <div class="water-track"><div id="barContext" class="water-fill fill-context" style="width:53.5%"></div></div>
+                <span id="valContext" class="water-value">1.070</span>
+              </div>
+              <div class="water-row">
+                <span>Shooter lift</span>
+                <div class="water-track"><div id="barTalent" class="water-fill fill-talent" style="width:11.6%"></div></div>
+                <span id="valTalent" class="water-value">+0.233</span>
+              </div>
+              <div class="water-row">
+                <span>Defense adj.</span>
+                <div class="water-track"><div id="barDefense" class="water-fill fill-defense" style="width:1.0%"></div></div>
+                <span id="valDefense" class="water-value">−0.019</span>
+              </div>
+              <div class="water-row">
+                <span>Final SQ</span>
+                <div class="water-track"><div id="barFinal" class="water-fill fill-final" style="width:64.2%"></div></div>
+                <span id="valFinal" class="water-value">1.284</span>
+              </div>
+            </div>
+            <p class="small" style="margin-top:18px">Expected points is not a guarantee. A 1.284-EV shot can miss; a 0.80-EV shot can go in. SQ describes the probability distribution before the result.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">What it sees in a player</div>
+        <h2>Jokić changed the value—not the label—of the shot.</h2>
+        <p>The gap between context EV and shooter-adjusted EV shows what the talent layer contributes beyond shot diet.</p>
+      </div>
+
+      <div>
+        <div class="profile-chart">
+          <h3>Jokić shot value by season</h3>
+          <div class="chart-legend">
+            <span class="legend-item"><i class="swatch actual"></i>Actual points / FGA</span>
+            <span class="legend-item"><i class="swatch context"></i>Context EV</span>
+            <span class="legend-item"><i class="swatch sq"></i>Shooter-adjusted SQ</span>
+          </div>
+          <svg id="jokicCareerChart" viewBox="0 0 820 355" role="img" aria-label="Jokic actual points per field goal attempt, context expected value, and shooter-adjusted expected value from 2016 to 2026"></svg>
+          <p class="small">RS + PS rows in each season. The model’s shrinkage keeps the shooter-adjusted line from simply copying actual results.</p>
+        </div>
+
+        <div class="profile-chart" style="margin-top:18px">
+          <h3>2026: shot diet versus shooter-adjusted value</h3>
+          <p class="small">Gold = average value of the attempts a player took. Blue = value after player-season shooting talent. “Lift” is blue minus gold.</p>
+          <div id="playerComparison" class="player-comparison"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">Feature atlas</div>
+        <h2>Every feature family in the repo-owned model.</h2>
+        <p>The core model is built from ordinary play-by-play and lineup data. The richer optical challenger is a separate research lane.</p>
+      </div>
+
+      <div>
+        <div class="feature-atlas">
+          <article class="atlas-group">
+            <h3>1 · Competition baseline</h3>
+            <ul>
+              <li>Season end year</li>
+              <li>Regular season or playoffs</li>
+              <li>Shot value: two or three</li>
+              <li>Global 2PT / 3PT prior</li>
+            </ul>
+          </article>
+          <article class="atlas-group">
+            <h3>2 · Location</h3>
+            <ul>
+              <li>Parsed distance in feet</li>
+              <li>Distance bin</li>
+              <li>Rim</li>
+              <li>Short midrange</li>
+              <li>Long midrange</li>
+              <li>Deep two</li>
+              <li>Three</li>
+            </ul>
+          </article>
+          <article class="atlas-group">
+            <h3>3 · Shot family</h3>
+            <ul>
+              <li>Dunk</li>
+              <li>Layup</li>
+              <li>Tip</li>
+              <li>Hook</li>
+              <li>Floater</li>
+              <li>Three</li>
+              <li>Jumper</li>
+              <li>Other two</li>
+            </ul>
+          </article>
+          <article class="atlas-group">
+            <h3>4 · Description modifiers</h3>
+            <ul>
+              <li>Driving · running · cutting</li>
+              <li>Pull-up · step-back</li>
+              <li>Turnaround · fadeaway</li>
+              <li>Bank · alley-oop · putback</li>
+              <li>Reverse · finger roll · floating</li>
+              <li>Raw event action type</li>
+            </ul>
+          </article>
+          <article class="atlas-group">
+            <h3>5 · Shooter talent</h3>
+            <ul>
+              <li>Shooter NBA ID</li>
+              <li>Talent bucket: three</li>
+              <li>Rim finishing</li>
+              <li>Short touch</li>
+              <li>Midrange jumper</li>
+              <li>Career-window LOO residual</li>
+              <li>Player-season LOO residual</li>
+              <li>Pregame chronological prior</li>
+              <li>Date-as-of EPM 3P / mid projection</li>
+              <li>EPM attempts per 100 + snapshot age</li>
+            </ul>
+          </article>
+          <article class="atlas-group">
+            <h3>6 · Defensive context</h3>
+            <ul>
+              <li>Five defender IDs: D1–D5</li>
+              <li>Defender season</li>
+              <li>Matching talent bucket</li>
+              <li>Residual points allowed</li>
+              <li>750-row empirical-Bayes shrink</li>
+              <li>Average available defender effect</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="not-used" aria-label="Features intentionally not used by the core shot context model">
+          <div class="not-item">Current make / miss</div>
+          <div class="not-item">Made-only assist tag</div>
+          <div class="not-item">External initial_ev</div>
+          <div class="not-item">Score after the shot</div>
+        </div>
+
+        <div class="guardrail"><strong>Important:</strong> shooter identity does not enter <code>shot_context_ev</code>. It enters only the named talent layers. That is what lets us cleanly ask either “how good was the attempt?” or “how good was the attempt for this shooter?”</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="walkforward">
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">Strict walk-forward · 2024–25 threes</div>
+        <h2>Calibration and prediction are different wins.</h2>
+        <p>Coefficients trained before 2024–25. Shooter priors used completed earlier games only. EPM snapshots were date-as-of. No test-season calibration was applied after the fact.</p>
+      </div>
+
+      <div>
+        <div class="status-strip">
+          <div class="status-card"><span>Test shots</span><strong>97,267</strong><small>Across 1,310 games</small></div>
+          <div class="status-card"><span>Actual output</span><strong>1.08058</strong><small>Points per three-point attempt</small></div>
+          <div class="status-card"><span>Context + EPM</span><strong>1.08061</strong><small>Aggregate prediction—no post-fit correction</small></div>
+          <div class="status-card"><span>Best shot loss</span><strong>2.05249</strong><small>Geometry + prior-game SQ identity MSE</small></div>
+        </div>
+
+        <div class="comparison-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr><th>Model</th><th>Predicted PPS</th><th>PPS bias</th><th>Points MSE</th><th>Log loss</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Raw provider <code>initial_ev</code></td><td>1.07110</td><td>−0.00948</td><td>2.05410</td><td>0.64823</td></tr>
+              <tr><td>Prior-season Platt <code>initial_ev</code></td><td>1.05629</td><td>−0.02429</td><td>2.05466</td><td>0.64837</td></tr>
+              <tr><td>Context + shooter EPM</td><td class="winner">1.08061</td><td class="winner">+0.00003</td><td>2.05780</td><td>0.64920</td></tr>
+              <tr><td>Context + EPM + NBA assignment</td><td>1.08066</td><td>+0.00008</td><td>2.05787</td><td>0.64921</td></tr>
+              <tr><td>Context + EPM + SQ geometry</td><td>1.07305</td><td>−0.00754</td><td>2.05298</td><td>0.64797</td></tr>
+              <tr><td><strong>Geometry + prior-game SQ identity</strong></td><td>1.07671</td><td>−0.00387</td><td class="winner">2.05249</td><td class="winner">0.64783</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="takeaway-grid">
+          <article class="takeaway">
+            <h3>On the nose, legitimately</h3>
+            <p>Context + EPM missed league-wide PPS by only <code>0.000032</code>. That was a real forward aggregate forecast, helped by date-as-of EPM and prior-game shooter updates—not a 2024–25 after-the-fact calibration.</p>
+          </article>
+          <article class="takeaway caution">
+            <h3>But not the best shot ranker</h3>
+            <p>Raw <code>initial_ev</code> still beat context + EPM on shot-level loss. Physical geometry is what produced the clear incremental gain; the full geometry arm only edged raw <code>initial_ev</code> directionally on 2024–25 threes.</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="geometry">
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">Release geometry</div>
+        <h2>What the strict modern challenger actually sees.</h2>
+        <p>The recovered ShotQuality feature store supplies physical pre-release geometry. Geometry clearly improves our context model; the complete 2024–25 three-point arm only edges raw <code>initial_ev</code> directionally, so we do not call it a crushing win.</p>
+      </div>
+
+      <div>
+        <div class="geometry-columns">
+          <article class="geometry-list">
+            <h3>Closest-defender geometry</h3>
+            <ul>
+              <li>Contest score</li>
+              <li>Distance to closest defender</li>
+              <li>Cosine angle to closest defender</li>
+              <li>Closest defender behind</li>
+              <li>Closest defender inside</li>
+              <li>Closest defender blocking</li>
+              <li>Height of closest defender</li>
+              <li>Bounding-box height difference</li>
+              <li>Geometry availability flag</li>
+            </ul>
+          </article>
+          <article class="geometry-list">
+            <h3>Help and floor geometry</h3>
+            <ul>
+              <li>Distance to second-closest defender</li>
+              <li>Cosine angle to second defender</li>
+              <li>Second defender behind</li>
+              <li>Second defender blocking</li>
+              <li>Harmonic mean defender distance</li>
+              <li>Average defender distance</li>
+              <li>Defenders in paint</li>
+              <li>Defenders closer to basket</li>
+              <li>Spacing</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="guardrail"><strong>What this strict arm does not use:</strong> no current-shot result, no same-season full-sample defender FG%, no <code>D_LEBRON</code>, no inferred second-defender identity, and no NBA matchup assignment disguised as physical closest-defender distance.</div>
+
+        <div class="provider-verdicts" aria-label="Defender provider test results">
+          <div class="provider-row">
+            <strong>SQ geometry</strong>
+            <p>Physical closest/second-closest positioning improves three-point points MSE by <code>−0.00482</code> versus context + EPM.</p>
+            <span class="provider-result">Clear gain</span>
+          </div>
+          <div class="provider-row">
+            <strong>NBA assignment</strong>
+            <p><code>DEF_ID</code> is a matchup assignment, sometimes multi-player. Its prior-game allowed-rate feature is neutral versus context + EPM.</p>
+            <span class="provider-result neutral">Neutral</span>
+          </div>
+          <div class="provider-row">
+            <strong>Five-man D-EPM</strong>
+            <p>Summed and richer opposing-lineup D-EPM aggregates do not improve conditional three-point outcomes and can worsen the geometry arm.</p>
+            <span class="provider-result failed">Failed challenger</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="clock">
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">Shot-clock state</div>
+        <h2>A grenade is not an ordinary miss.</h2>
+        <p>The same held-out model scores the real clock and a 14-second neutral counterfactual. Their difference measures clock drag without rewarding the current result.</p>
+      </div>
+
+      <div>
+        <div class="clock-grid">
+          <div class="clock-face">
+            <div>
+              <div class="clock-number">2.4</div>
+              <strong>Grenade territory</strong>
+              <p>At 0–4 seconds, canonical SQ predicted 43.11% makes. Actual was 36.26%. Clock-conditioned SQ predicted 36.34%.</p>
+            </div>
+          </div>
+
+          <div class="clock-bins">
+            <article class="clock-bin">
+              <div class="clock-bin-head"><strong>0–4 seconds</strong><span>14,103 shots</span></div>
+              <div class="clock-trio">
+                <div class="clock-line"><span>Actual</span><div class="clock-track"><div class="clock-fill actual" style="width:72.52%"></div></div><strong>36.26%</strong></div>
+                <div class="clock-line"><span>Canonical SQ</span><div class="clock-track"><div class="clock-fill" style="width:86.22%"></div></div><strong>43.11%</strong></div>
+                <div class="clock-line"><span>Clock SQ</span><div class="clock-track"><div class="clock-fill adjusted" style="width:72.68%"></div></div><strong>36.34%</strong></div>
+              </div>
+            </article>
+            <article class="clock-bin">
+              <div class="clock-bin-head"><strong>4–7 seconds</strong><span>20,217 shots</span></div>
+              <div class="clock-trio">
+                <div class="clock-line"><span>Actual</span><div class="clock-track"><div class="clock-fill actual" style="width:85.40%"></div></div><strong>42.70%</strong></div>
+                <div class="clock-line"><span>Canonical SQ</span><div class="clock-track"><div class="clock-fill" style="width:88.80%"></div></div><strong>44.40%</strong></div>
+                <div class="clock-line"><span>Clock SQ</span><div class="clock-track"><div class="clock-fill adjusted" style="width:85.22%"></div></div><strong>42.61%</strong></div>
+              </div>
+            </article>
+            <article class="clock-bin">
+              <div class="clock-bin-head"><strong>7–14 seconds</strong><span>99,648 shots</span></div>
+              <div class="clock-trio">
+                <div class="clock-line"><span>Actual</span><div class="clock-track"><div class="clock-fill actual" style="width:93.72%"></div></div><strong>46.86%</strong></div>
+                <div class="clock-line"><span>Canonical SQ</span><div class="clock-track"><div class="clock-fill" style="width:93.08%"></div></div><strong>46.54%</strong></div>
+                <div class="clock-line"><span>Clock SQ</span><div class="clock-track"><div class="clock-fill adjusted" style="width:93.90%"></div></div><strong>46.95%</strong></div>
+              </div>
+            </article>
+            <article class="clock-bin">
+              <div class="clock-bin-head"><strong>14–24 seconds</strong><span>85,191 shots</span></div>
+              <div class="clock-trio">
+                <div class="clock-line"><span>Actual</span><div class="clock-track"><div class="clock-fill actual" style="width:100%"></div></div><strong>50.22%</strong></div>
+                <div class="clock-line"><span>Canonical SQ</span><div class="clock-track"><div class="clock-fill" style="width:97.84%"></div></div><strong>49.14%</strong></div>
+                <div class="clock-line"><span>Clock SQ</span><div class="clock-track"><div class="clock-fill adjusted" style="width:99.80%"></div></div><strong>50.12%</strong></div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="takeaway-grid">
+          <article class="takeaway">
+            <h3>Clock adds real prediction</h3>
+            <p>On 219,159 2026 RS shots, clock conditioning improves Brier by <code>−0.000658</code> versus the same-fold recalibrated baseline; the game-cluster interval is <code>[−0.000762, −0.000551]</code>.</p>
+          </article>
+          <article class="takeaway caution">
+            <h3>Burden, not automatic credit</h3>
+            <p>Jokić carried 92 recorded grenades and 16.17 expected possession points of burden; Embiid carried 56 and 10.13. The model does not know who caused the late clock or literally handed over the ball.</p>
+          </article>
+        </div>
+
+        <div class="guardrail"><strong>Current clock limitation:</strong> the clock experiment is grouped out of fold on the repo-owned SQ surface, but its historical context maps are not yet a fully expanding daily fit. It is a clean incremental clock result, not yet the final production walk-forward model.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="second-chance">
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">After the miss · the Embiid effect</div>
+        <h2>Who takes the shot changes who can rebound it.</h2>
+        <p>A center taking a long two changes the rebound configuration. The model compares the actual shooter setup with the same-zone shot taken by each teammate while the center moves into the vacated non-shooter role.</p>
+      </div>
+
+      <div>
+        <div class="role-swap" aria-label="Embiid role-swap counterfactual">
+          <article class="role-card actual">
+            <strong>Actual configuration</strong>
+            <h3>Embiid takes the long two</h3>
+            <p>The other four offensive players form the crash group. The shooter×zone term knows Embiid is the perimeter shooter.</p>
+          </article>
+          <div class="swap-arrow" aria-hidden="true">⇄</div>
+          <article class="role-card swap">
+            <strong>Role-vacancy counterfactual</strong>
+            <h3>A teammate takes the same shot</h3>
+            <p>Embiid moves into that teammate’s non-shooter slot. We score all four swaps and average them equally.</p>
+          </article>
+        </div>
+
+        <div class="value-stage" data-step="The release-value equation">
+          <h3>Immediate quality plus continuation</h3>
+          <p>The shot and rebound branches are priced separately, then added.</p>
+          <code>release EV = immediate SQ EV + P(miss) × P(OREB | shot, shooter, O1–O4, D1–D5) × points per OREB</code>
+        </div>
+
+        <h3 style="margin-top:24px">Embiid long twos · descriptive 2022–26 accounting</h3>
+        <div class="embiid-stats">
+          <div class="embiid-stat"><span>Attempts</span><strong>1,877</strong></div>
+          <div class="embiid-stat"><span>Actual configuration</span><strong>16.88%</strong></div>
+          <div class="embiid-stat"><span>Role swap</span><strong>18.46%</strong></div>
+          <div class="embiid-stat"><span>SC value difference</span><strong>−0.0096</strong></div>
+        </div>
+        <p class="small">The <code>18.66%</code> shooter-hidden baseline already sees the exact other four offensive players and five defenders. It is not “because Embiid is labeled a center.” The shooter×zone role term moves the actual configuration from that context toward 16.88%; the equal-teammate swap is 18.46%.</p>
+
+        <h3 style="margin-top:26px">Did that extra layer improve a true forward prediction?</h3>
+        <div class="comparison-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr><th>Immediate model</th><th>Continuation</th><th>Predicted release value</th><th>Actual</th><th>Points MSE</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Provider <code>initial_ev</code></td><td>Context / lineup</td><td>1.1827</td><td>1.2109</td><td class="winner">1.71238</td></tr>
+              <tr><td>Provider <code>initial_ev</code></td><td>Shooter-specific</td><td>1.1829</td><td>1.2109</td><td>1.71231</td></tr>
+              <tr><td>Context + EPM</td><td>Shooter-specific</td><td>1.1961</td><td>1.2109</td><td>1.71665</td></tr>
+              <tr><td>Geometry + identity</td><td>Context / lineup</td><td>1.1973</td><td>1.2109</td><td>1.71267</td></tr>
+              <tr><td><strong>Geometry + identity</strong></td><td><strong>Shooter-specific</strong></td><td>1.1975</td><td>1.2109</td><td>1.71253</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="verdict">
+          <strong>The honest verdict:</strong> shooter×zone continuation gives our context+EPM and geometry arms a small, statistically clear combined gain—about <code>−0.00014</code> MSE. But the complete geometry model remains statistically tied with provider <code>initial_ev</code> once both receive the same forward-safe contextual continuation. Useful layer; not yet a decisive vendor win.
+        </div>
+
+        <div class="takeaway-grid">
+          <article class="takeaway">
+            <h3>2024–25 Embiid forward slice</h3>
+            <p>On 96 first-FGA long twos: <code>−1.15</code> percentage points of OREB probability versus the teammate role swap, <code>−0.0084</code> points per attempt, and <code>−0.81</code> total modeled points.</p>
+          </article>
+          <article class="takeaway caution">
+            <h3>What the target includes</h3>
+            <p>The strict test uses initial-FGA points plus downstream <code>SECOND_CHANCE_CLEAN</code>. First-chance free throws are excluded, so this isolates the shot + rebound branch rather than pretending it is already every point in full PPP.</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">Information contracts</div>
+        <h2>Four model lanes. Four different claims.</h2>
+        <p>Good evaluation starts by labeling what information each model was allowed to see.</p>
+      </div>
+
+      <div class="model-lanes">
+        <div class="lane">
+          <div><span class="lane-tag">Strict season-forward</span></div>
+          <p>Coefficients train before the test season; shooter/defender priors exclude the current game; EPM snapshots are date-as-of.</p>
+          <div class="lane-use">Best evidence for prediction</div>
+        </div>
+        <div class="lane warning">
+          <div><span class="lane-tag">Safe crossfit</span></div>
+          <p>Outcome-derived maps are rebuilt inside every outer training fold. Validation games never contribute labels to their own features.</p>
+          <div class="lane-use">Use for honest historical tests</div>
+        </div>
+        <div class="lane audit">
+          <div><span class="lane-tag">Retrospective v4</span></div>
+          <p>Uses a full-history defense-adjusted anchor. Excellent research ceiling, but other outcomes from the same season can influence the estimate.</p>
+          <div class="lane-use">Audit only—not forward VPM</div>
+        </div>
+        <div class="lane">
+          <div><span class="lane-tag">Production core</span></div>
+          <p>Canonical <code>RUSSELL_SHOTQUALITY</code> uses repo-owned immediate shot EV. Clock, provider geometry, and expected continuation remain research overlays.</p>
+          <div class="lane-use">Current RAPM contract</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="validation">
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">Supporting evidence</div>
+        <h2>What the broader research models tell us.</h2>
+        <p>Lower Brier score is better. These grouped out-of-fold and historical tests hold out complete games—but they are a different evidence lane from the stricter train-before-2024–25 comparison above.</p>
+      </div>
+
+      <div class="validation-grid">
+        <article class="metric-panel">
+          <h3>Grouped-OOF rich-feature ceiling · midrange</h3>
+          <p class="small">2024–25, five game-group folds; a broader feature set than the strict forward challenger.</p>
+          <div class="metric-bar-row"><span>Vendor initial_ev</span><div class="metric-track"><div class="metric-fill" style="width:95.8%"></div></div><span class="metric-value">.239596</span></div>
+          <div class="metric-bar-row"><span>Our challenger</span><div class="metric-track"><div class="metric-fill challenger" style="width:94.6%"></div></div><span class="metric-value">.236455</span></div>
+          <span class="better">0.003141 lower · 95% game CI excludes zero</span>
+        </article>
+        <article class="metric-panel">
+          <h3>Grouped-OOF rich-feature ceiling · threes</h3>
+          <p class="small">Same grouped evaluation and identical shot rows; useful ceiling evidence, not a daily deployment simulation.</p>
+          <div class="metric-bar-row"><span>Vendor initial_ev</span><div class="metric-track"><div class="metric-fill" style="width:91.6%"></div></div><span class="metric-value">.228990</span></div>
+          <div class="metric-bar-row"><span>Our challenger</span><div class="metric-track"><div class="metric-fill challenger" style="width:91.0%"></div></div><span class="metric-value">.227618</span></div>
+          <span class="better">0.001372 lower · 95% game CI excludes zero</span>
+        </article>
+        <article class="metric-panel">
+          <h3>All-history safe crossfit · all shots</h3>
+          <p class="small">4,267,890 midrange and three-point attempts.</p>
+          <div class="metric-bar-row"><span>Portable v3</span><div class="metric-track"><div class="metric-fill" style="width:93.5%"></div></div><span class="metric-value">.233722</span></div>
+          <div class="metric-bar-row"><span>Safe crossfit</span><div class="metric-track"><div class="metric-fill safe" style="width:92.3%"></div></div><span class="metric-value">.230791</span></div>
+          <span class="better">0.002931 lower · especially strong on midrange</span>
+        </article>
+        <article class="metric-panel">
+          <h3>Where the safe model still loses</h3>
+          <p class="small">The full-history defense baseline is retrospective but remains a strong research competitor.</p>
+          <div class="metric-bar-row"><span>Retrospective defense</span><div class="metric-track"><div class="metric-fill" style="width:91.8%"></div></div><span class="metric-value">.229484</span></div>
+          <div class="metric-bar-row"><span>Safe crossfit</span><div class="metric-track"><div class="metric-fill safe" style="width:92.3%"></div></div><span class="metric-value">.230791</span></div>
+          <span class="better" style="background:var(--gold-soft);color:#76531c">0.001306 higher overall · historical midrange is the gap</span>
+        </article>
+      </div>
+
+      <div class="guardrail"><strong>How to read these wins:</strong> they prove that the stored context can carry real signal when game groups are held out. They do not override the strict season-forward result: on 2024–25 threes, rich SQ geometry is the feature family that clearly improves shot-level error, while context + date-as-of EPM mainly fixes aggregate calibration.</div>
+    </div>
+  </section>
+
+  <section id="rapm">
+    <div class="section-grid">
+      <div class="section-intro">
+        <div class="eyebrow">From shots to impact</div>
+        <h2>How Shot Quality enters RAPM—and where the overlays stop.</h2>
+        <p>The production shot model estimates immediate event value. RAPM then asks which players consistently change the quality of attempts created and allowed while controlling for lineups. Clock-conditioned and continuation-aware value are still research layers.</p>
+      </div>
+
+      <div>
+        <div class="rapm-bridge">
+          <div class="bridge-node"><strong>Raw play-by-play</strong><span>Every field-goal attempt is parsed and joined to the ten players on court.</span></div>
+          <div class="bridge-node"><strong>Per-shot SQ</strong><span>FGA gets <code>shot_quality_season_ev</code>. FT gets expected FT value. Other events get zero.</span></div>
+          <div class="bridge-node"><strong>Possession rows</strong><span>Shot EV is aggregated into the standard possession and written with opposite O/D signs.</span></div>
+          <div class="bridge-node"><strong>Ridge solve</strong><span>Offense and defense player coefficients control for teammates and opponents.</span></div>
+          <div class="bridge-node"><strong>RUSSELL_SHOTQUALITY</strong><span>Player impact on the expected value of shots created and conceded.</span></div>
+        </div>
+
+        <div class="guardrail"><strong>Why defense-adjusted per-shot EV is not the RAPM target:</strong> <code>shot_quality_with_defense_ev</code> already contains an on-court defender residual. Feeding it directly into defensive RAPM would make the solve partly circular. The production RAPM surface therefore uses <code>shot_quality_season_ev</code>.</div>
+
+        <div class="boundary-grid">
+          <article class="boundary-card">
+            <div class="mini-label">Production SQ RAPM</div>
+            <h3>Immediate shot value</h3>
+            <p><code>RUSSELL_SHOTQUALITY</code> uses <code>shot_quality_season_ev</code> on each FGA. It does not currently add shot-clock burden or expected OREB continuation.</p>
+          </article>
+          <article class="boundary-card">
+            <div class="mini-label">Active public decomposition</div>
+            <h3>Realized second chance stays physical</h3>
+            <p>The public family is <code>weighted_factors_decomp_*</code>. Actual downstream second-chance value remains the separate <code>SECOND_CHANCE_CLEAN</code> factor; legacy Alt3 files are audit surfaces.</p>
+          </article>
+          <article class="boundary-card">
+            <div class="mini-label">Research overlay</div>
+            <h3>Release possession EV</h3>
+            <p>Immediate SQ + clock state + expected miss/OREB continuation is the candidate prediction target tested here. It must beat the same baseline with the same continuation context before promotion.</p>
+          </article>
+          <article class="boundary-card">
+            <div class="mini-label">Possible VPM prior</div>
+            <h3>Stabilized summaries only</h3>
+            <p>VPM should never ingest raw provider defender joins, event rows, or fold predictions. Only reliable multi-season player summaries—such as grenade burden or clock-adjusted shooting talent—may graduate after incremental tests.</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <strong>Data snapshot:</strong> repo-owned <code>pbp_shot_quality_1997_2026.parquet</code>, 60 RS/PS files and 6,327,218 unique shots. Jokić examples and player comparisons come from that stored artifact. The strict 2024–25 three-point test covers 97,267 shots; the 2024–25 shot-plus-continuation test covers 131,477 first-FGA releases; and the shot-clock study covers 219,159 2025–26 regular-season shots. Every result is labeled by evidence lane so production SQ, public DECOMP, forward challengers, and retrospective ceilings are not conflated.
+  </footer>
+</main>
+
+<script>
+  const shots = {
+    hook: {
+      description: "Jokic 5' Turnaround Hook Shot",
+      zone: "Short mid",
+      family: "Hook",
+      modifier: "Turnaround",
+      support: "15,808 similar shots",
+      clock: "Q1 · 10:45",
+      result: "Made · 2 points",
+      context: 1.070412,
+      talent: 0.232767,
+      defense: -0.019260,
+      final: 1.283919
+    },
+    three: {
+      description: "MISS Jokic 25' 3PT Jump Shot",
+      zone: "Three",
+      family: "Three",
+      modifier: "None",
+      support: "466,270 similar shots",
+      clock: "Q2 · 5:11",
+      result: "Missed · 0 points",
+      context: 1.109370,
+      talent: 0.024491,
+      defense: -0.026470,
+      final: 1.107391
+    },
+    cut: {
+      description: "Jokic 2' Cutting Layup Shot",
+      zone: "Rim",
+      family: "Layup",
+      modifier: "Cutting",
+      support: "37,394 similar shots",
+      clock: "Q4 · 8:45",
+      result: "Made · 2 points",
+      context: 1.560527,
+      talent: 0.219295,
+      defense: -0.041371,
+      final: 1.738451
+    },
+    floater: {
+      description: "MISS Jokic 10' Driving Floating Jump Shot",
+      zone: "Short mid",
+      family: "Floater",
+      modifier: "Driving · floating",
+      support: "30,712 similar shots",
+      clock: "Q3 · 2:36",
+      result: "Missed · 0 points",
+      context: 0.869152,
+      talent: 0.236104,
+      defense: -0.017505,
+      final: 1.087751
+    }
+  };
+
+  function signed(value) {
+    return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(3)}`;
+  }
+
+  function updateShot(key) {
+    const shot = shots[key];
+    document.getElementById("shotDescription").textContent = shot.description;
+    document.getElementById("shotZone").textContent = shot.zone;
+    document.getElementById("shotFamily").textContent = shot.family;
+    document.getElementById("shotModifier").textContent = shot.modifier;
+    document.getElementById("shotSupport").textContent = shot.support;
+    document.getElementById("shotClock").textContent = shot.clock;
+    document.getElementById("shotResult").textContent = shot.result;
+    document.getElementById("eqContext").textContent = shot.context.toFixed(3);
+    document.getElementById("eqTalent").textContent = signed(shot.talent);
+    document.getElementById("eqDefense").textContent = signed(shot.defense);
+    document.getElementById("eqFinal").textContent = shot.final.toFixed(3);
+    document.getElementById("valContext").textContent = shot.context.toFixed(3);
+    document.getElementById("valTalent").textContent = signed(shot.talent);
+    document.getElementById("valDefense").textContent = signed(shot.defense);
+    document.getElementById("valFinal").textContent = shot.final.toFixed(3);
+    document.getElementById("barContext").style.width = `${Math.min(100, shot.context / 2 * 100)}%`;
+    document.getElementById("barTalent").style.width = `${Math.min(100, Math.abs(shot.talent) / 2 * 100)}%`;
+    document.getElementById("barDefense").style.width = `${Math.max(1, Math.min(100, Math.abs(shot.defense) / 2 * 100))}%`;
+    document.getElementById("barFinal").style.width = `${Math.min(100, shot.final / 2 * 100)}%`;
+    document.querySelectorAll(".shot-tab").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.shot === key));
+    });
+  }
+
+  document.querySelectorAll(".shot-tab").forEach((button) => {
+    button.addEventListener("click", () => updateShot(button.dataset.shot));
+  });
+
+  const career = [
+    { year: 2016, actual: 1.070, context: 1.002, sq: 1.117 },
+    { year: 2017, actual: 1.210, context: 1.004, sq: 1.194 },
+    { year: 2018, actual: 1.108, context: 0.980, sq: 1.114 },
+    { year: 2019, actual: 1.091, context: 1.037, sq: 1.121 },
+    { year: 2020, actual: 1.137, context: 1.007, sq: 1.141 },
+    { year: 2021, actual: 1.189, context: 1.013, sq: 1.181 },
+    { year: 2022, actual: 1.236, context: 1.026, sq: 1.220 },
+    { year: 2023, actual: 1.280, context: 1.028, sq: 1.255 },
+    { year: 2024, actual: 1.213, context: 1.031, sq: 1.210 },
+    { year: 2025, actual: 1.225, context: 1.023, sq: 1.210 },
+    { year: 2026, actual: 1.209, context: 1.029, sq: 1.197 }
+  ];
+
+  function renderCareerChart() {
+    const svg = document.getElementById("jokicCareerChart");
+    const w = 820;
+    const h = 355;
+    const pad = { left: 54, right: 22, top: 18, bottom: 42 };
+    const minY = 0.94;
+    const maxY = 1.31;
+    const x = (i) => pad.left + i * ((w - pad.left - pad.right) / (career.length - 1));
+    const y = (v) => pad.top + (maxY - v) / (maxY - minY) * (h - pad.top - pad.bottom);
+    const css = getComputedStyle(document.documentElement);
+    const colors = {
+      grid: css.getPropertyValue("--line").trim(),
+      text: css.getPropertyValue("--muted").trim(),
+      actual: css.getPropertyValue("--forest").trim(),
+      context: css.getPropertyValue("--gold").trim(),
+      sq: css.getPropertyValue("--navy").trim()
+    };
+    const parts = [];
+    [1.0, 1.1, 1.2, 1.3].forEach((tick) => {
+      parts.push(`<line x1="${pad.left}" y1="${y(tick)}" x2="${w - pad.right}" y2="${y(tick)}" stroke="${colors.grid}" />`);
+      parts.push(`<text x="${pad.left - 10}" y="${y(tick) + 4}" text-anchor="end" fill="${colors.text}" font-size="12">${tick.toFixed(1)}</text>`);
+    });
+    career.forEach((d, i) => {
+      parts.push(`<text x="${x(i)}" y="${h - 15}" text-anchor="middle" fill="${colors.text}" font-size="12">${String(d.year).slice(2)}</text>`);
+    });
+    const pathFor = (field) => career.map((d, i) => `${i ? "L" : "M"} ${x(i).toFixed(1)} ${y(d[field]).toFixed(1)}`).join(" ");
+    parts.push(`<path d="${pathFor("context")}" fill="none" stroke="${colors.context}" stroke-width="3" />`);
+    parts.push(`<path d="${pathFor("sq")}" fill="none" stroke="${colors.sq}" stroke-width="3" />`);
+    parts.push(`<path d="${pathFor("actual")}" fill="none" stroke="${colors.actual}" stroke-width="3" />`);
+    ["context", "sq", "actual"].forEach((field) => {
+      career.forEach((d, i) => parts.push(`<circle cx="${x(i)}" cy="${y(d[field])}" r="3.5" fill="${colors[field]}" />`));
+    });
+    parts.push(`<text x="${w - pad.right}" y="${y(career.at(-1).actual) - 9}" text-anchor="end" fill="${colors.actual}" font-size="12" font-weight="700">actual 1.209</text>`);
+    parts.push(`<text x="${w - pad.right}" y="${y(career.at(-1).sq) + 17}" text-anchor="end" fill="${colors.sq}" font-size="12" font-weight="700">SQ 1.197</text>`);
+    parts.push(`<text x="${w - pad.right}" y="${y(career.at(-1).context) - 9}" text-anchor="end" fill="${colors.context}" font-size="12" font-weight="700">context 1.029</text>`);
+    svg.innerHTML = parts.join("");
+  }
+
+  const players = [
+    { name: "Jokić", shots: 1253, context: 1.029, sq: 1.197 },
+    { name: "Curry", shots: 848, context: 1.023, sq: 1.158 },
+    { name: "Antetokounmpo", shots: 638, context: 1.272, sq: 1.281 },
+    { name: "Dončić", shots: 1457, context: 1.003, sq: 1.098 },
+    { name: "Gilgeous-Alexander", shots: 1606, context: 1.054, sq: 1.140 },
+    { name: "Durant", shots: 1388, context: 1.025, sq: 1.151 }
+  ];
+
+  function renderPlayers() {
+    const container = document.getElementById("playerComparison");
+    container.innerHTML = players.map((player) => {
+      const max = 1.35;
+      const lift = player.sq - player.context;
+      return `
+        <div class="player-row">
+          <strong>${player.name}</strong>
+          <span class="small">${player.shots} FGA</span>
+          <div class="player-bars" aria-label="${player.name}: context ${player.context.toFixed(3)}, shooter-adjusted ${player.sq.toFixed(3)}">
+            <div class="diet-bar" style="width:${player.context / max * 100}%"></div>
+            <div class="talent-bar" style="width:${player.sq / max * 100}%"></div>
+          </div>
+          <span class="player-lift">+${lift.toFixed(3)}</span>
+        </div>`;
+    }).join("");
+  }
+
+  renderCareerChart();
+  renderPlayers();
+</script>
+</body>
+</html>

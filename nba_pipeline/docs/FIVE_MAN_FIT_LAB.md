@@ -184,9 +184,12 @@ observed shared sample. The calculator does not simulate positions, coaching,
 minutes, injuries, matchups, or future player development. It is a
 same-input-scale comparison tool, not a forecast of an actual season.
 
-The 2014-2026 leaderboard mirrors the recovered five-year table approach:
-raw EPM usage sum, normalized top-two usage, top-two on-ball, potential-assist
-supply, usage fit, and total fit versus EPM are visible as sortable columns.
+The 2014-2026 leaderboard mirrors the recovered five-year table approach. Its
+lead sortable columns are possessions, total fit versus EPM, actual
+opponent-adjusted offensive performance versus the five-player O-EPM
+expectation, and raw EPM usage sum. Normalized top-two usage, top-two on-ball,
+potential-assist supply, usage fit, and the remaining result/mechanism fields
+stay available to the right.
 Click a header once for its default order and again to reverse it; the header
 row and lineup identity stay pinned while the table scrolls. Opening a row
 exposes every raw feature value beside its points-per-100 contribution and

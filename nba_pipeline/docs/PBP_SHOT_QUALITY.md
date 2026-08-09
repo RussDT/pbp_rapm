@@ -56,6 +56,45 @@ The model deliberately does not use made-shot assist tags as a context feature,
 because assist tags are only visible after a made basket and would leak the
 outcome.
 
+## Provider boundary
+
+This repo-owned model uses ordinary on-court `D1-D5` lineup members. Its
+internal `defender_id` aggregation key is not an assigned-defender provider
+field.
+
+NBA matchup assignments and ShotQuality closest-defender assignments must stay
+separate. The transitional ShotQuality enrichment writes
+`sq_primary_defender_id` with `sq_provider=shotquality`; it no longer writes
+the legacy `sq_defender_id`. It retains conflicting provider or raw-event keys
+as explicit `sq_match_status` ambiguity rows with null SQ payload instead of
+using a keep-first join.
+
+ShotQuality has no native second-defender ID. Second-defender geometry may be
+used as geometry, but any biometric identity reconstruction is inferred and can
+duplicate the primary defender. See
+[NBA Event-Enrichment Contract](./NBA_EVENT_ENRICHMENT_CONTRACT.md).
+
+The separate
+[Second-Chance Opportunity Prior](./SECOND_CHANCE_OPPORTUNITY_PRIOR.md) uses
+these pre-shot fields and make probabilities to price the miss/rebound branch.
+It remains a research explanation layer and does not change the SQ estimate or
+the active public DECOMP.
+
+The
+[Shot-Clock SQ and Grenade Burden](./SQ_SHOT_CLOCK_CHALLENGER.md) challenger
+adds calibrated clock state over the chronological-prior SQ anchor. It produces
+game-held-out clock-conditioned and neutral-clock probabilities plus an
+expected-possession bridge through the second-chance prior. It remains
+experimental and does not change `RUSSELL_SHOTQUALITY`.
+
+The
+[Season-Forward SQ](./SQ_WALK_FORWARD_CHALLENGER.md) challenger freezes model
+coefficients on prior seasons and compares internal context, as-of EPM shooter
+skill, ShotQuality closest-defender geometry, and a prior-game defender
+identity estimate. Geometry improves forward loss for 2024-25 mids/threes and
+2025-26 threes, and on covered 2025-26 midrange rows. The NBA matchup archive
+is a separate longer identity provider and is not coalesced with SQ geometry.
+
 ## Estimation
 
 The context EV is an empirical-Bayes, leave-one-shot estimate:
@@ -90,6 +129,29 @@ make/miss result.
 shots for that shooter/bucket in the sorted raw-file sequence. The resulting
 live-style estimate is `shot_quality_prior_ev`.
 
+### Candidate external as-of talent anchor
+
+`scripts/fetch_epm_data.py` can cache Dunks & Threes date-aware predictive
+shooting rates. `p_fg3pct` and `p_fgpct_mid` are candidate shooter-talent
+anchors for threes and midrange jumpers, respectively; their attempt-rate
+companions are needed to identify unsupported/near-zero-volume estimates.
+
+These fields describe estimated player skill, not shot context. A valid
+challenger should join the prediction requested for game date D, which the
+provider documents as excluding games on D, and compare:
+
+```text
+internal chronological talent only
+vs EPM as-of talent only
+vs a frozen blend
+```
+
+The shot-context and clock features must be identical across arms, and
+evaluation remains against subsequent actual makes/points. The surviving
+2024-26 A/B showed only a small attempt-weighted log-loss improvement from
+adding EPM features, so this is a prediction candidate rather than a promoted
+production replacement.
+
 ## Defense Adjustment
 
 The shot table now carries `O1-O5` and `D1-D5` for the offensive and defensive
@@ -104,7 +166,7 @@ actual_points - (shot_context_ev + shooter_season_talent_ev_added)
 For every defender on court, the script estimates a season/bucket residual
 allowed from those opponent residuals:
 
-- key: `defender_id`, `season_end_year`, `talent_bucket`
+- internal lineup key: `defender_id`, `season_end_year`, `talent_bucket`
 - shrink: `defender_shrink`, default `750` defender-shot rows
 - sign: positive means opponents scored above context-plus-shooter expectation;
   negative means the defender suppressed opponent shooting
@@ -114,6 +176,7 @@ five defender estimates. It is added to `shot_quality_season_ev` to create
 `shot_quality_with_defense_ev`.
 
 This is an on-court dEFG-style residual, not a fully deconfounded RAPM solve.
+It is also not an NBA-matchup or ShotQuality primary-defender assignment.
 It is useful for adding defender context to shot EV and for quick
 player-season defensive shot suppression tables. A later version can replace
 this empirical-Bayes on-court estimate with a ridge solve if we want stronger

@@ -37,7 +37,7 @@ logging.basicConfig(
 load_dotenv(PROJECT_ROOT / ".env")
 
 # Default source file
-DEFAULT_SOURCE_FILE = MASTER_RESULTS_DIR / "weighted_factors_21_26_all_rb_td700.csv"
+DEFAULT_SOURCE_FILE = MASTER_RESULTS_DIR / "weighted_factors_21_26_all_rb_se_td700.csv"
 
 # Metrics that get ranks/percentiles (higher = better for all)
 RANKED_METRICS = [
@@ -114,7 +114,7 @@ def upload_to_supabase_records(supabase: Client, records: list, year: int) -> bo
 def main():
     parser = argparse.ArgumentParser(description="Upload time-decay RAPM to Supabase")
     parser.add_argument('--source-file', type=str, default=None,
-                        help='Path to weighted_factors CSV (default: weighted_factors_21_26_all_rb_td700.csv)')
+                        help='Path to weighted_factors CSV (default: weighted_factors_21_26_all_rb_se_td700.csv)')
     args = parser.parse_args()
 
     source_file = Path(args.source_file) if args.source_file else DEFAULT_SOURCE_FILE

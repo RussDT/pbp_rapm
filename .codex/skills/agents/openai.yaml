@@ -1,0 +1,4 @@
+interface:
+  display_name: "Six-Factor RAPM & VPM"
+  short_description: "Predictive RAPM, DECOMP, and VPM doctrine"
+  default_prompt: "Use $six-factor-rapm to evaluate this NBA player-metric, DECOMP, or game-prediction question."

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import argparse
+import json
 import logging
 import time
 from pathlib import Path
@@ -132,6 +134,23 @@ def _from_pbpstats(season_year: int, is_playoffs: bool) -> pd.DataFrame:
     return _normalize_pbpstats_totals(stats, "pbpstats")
 
 
+def refresh_wnba_pbpstats_totals(
+    season_year: int,
+    is_playoffs: bool,
+) -> pd.DataFrame:
+    """Force-refresh the backend player-totals cache for a live metric build."""
+    stats = _from_pbpstats(int(season_year), bool(is_playoffs))
+    if stats.empty:
+        raise RuntimeError(
+            f"PBP Stats returned no WNBA player totals for {season_year} "
+            f"{'PS' if is_playoffs else 'RS'}"
+        )
+    for key in list(_CACHE):
+        if key[:2] == (int(season_year), bool(is_playoffs)):
+            del _CACHE[key]
+    return stats.copy()
+
+
 def load_wnba_player_shooting_stats(
     season_year: int,
     is_playoffs: bool,
@@ -196,3 +215,29 @@ def load_wnba_player_shooting_stats(
         )
     _CACHE[cache_key] = stats
     return stats.copy()
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--refresh", type=int, metavar="SEASON")
+    parser.add_argument("--playoffs", action="store_true")
+    args = parser.parse_args()
+    if args.refresh is None:
+        parser.error("--refresh SEASON is required")
+    stats = refresh_wnba_pbpstats_totals(args.refresh, args.playoffs)
+    print(
+        json.dumps(
+            {
+                "season": args.refresh,
+                "season_type": "Playoffs" if args.playoffs else "Regular Season",
+                "rows": int(len(stats)),
+                "cache_path": str(_backend_pbp_path(args.refresh, args.playoffs)),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

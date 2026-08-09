@@ -135,6 +135,14 @@ private configs, prior manifests, and evidence remain usable. Do not copy the
 private VPM shot data into this public repo: some of it is derived from
 licensed ShotQuality data.
 
+The argument-driven public-side target attachment foundation now lives in
+`scripts/build_vpm_target_swap.py`. It writes isolated scratch parquets, uses
+clock-first raw ordering, and proves the EV-adjusted five-shot tree plus
+mid/three residual closure before writing. Recovery inventory, the exact
+target formula, the completed 2021-2026 build command, and remaining data gaps
+are documented in
+[VPM Reproduction and Recovery Status](./VPM_REPRODUCTION.md).
+
 ## Recovery provenance
 
 This implementation was reconstructed on 2026-07-13 from:

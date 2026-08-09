@@ -21,6 +21,7 @@ from process_rapm_blocks import (
     PROCESSED_DIR,
     process_rapm_py,
     process_ts_py,
+    build_ts_shot_roles_from_processed,
     process_tov_py,
     process_reb_py,
     process_shooter_oreb_py,
@@ -43,6 +44,8 @@ from process_rapm_blocks import (
     process_first_chance_clean_py,
     process_second_chance_clean_py,
     process_assist_points_py,
+    process_assist_point_roles_py,
+    process_scoring_roles_py,
     process_rim_assist_py,
     process_dunk_py,
     process_dunk_assist_py,
@@ -142,6 +145,12 @@ Examples:
         rapm_no_la_df, rapm_la_df = None, None
 
     ts_df = process_ts_py(file_to_process, processing_year, processing_season)
+    if ts_df is not None and not ts_df.empty:
+        ts_self_shot_df, ts_teammate_shot_df = build_ts_shot_roles_from_processed(
+            ts_df, file_to_process
+        )
+    else:
+        ts_self_shot_df, ts_teammate_shot_df = None, None
     reb_df = process_reb_py(file_to_process, processing_year, processing_season)
     shooter_oreb_df = process_shooter_oreb_py(file_to_process, processing_year, processing_season)
     block_recovery_df = process_block_recovery_py(file_to_process, processing_year, processing_season)
@@ -167,6 +176,16 @@ Examples:
     first_chance_clean_df = process_first_chance_clean_py(file_to_process, processing_year, processing_season)
     second_chance_clean_df = process_second_chance_clean_py(file_to_process, processing_year, processing_season)
     assist_points_df = process_assist_points_py(file_to_process, processing_year, processing_season)
+    assist_points_roles = process_assist_point_roles_py(file_to_process, processing_year, processing_season)
+    if assist_points_roles is not None:
+        assist_points_receiver_df, assist_points_passer_df = assist_points_roles
+    else:
+        assist_points_receiver_df, assist_points_passer_df = None, None
+    scoring_roles = process_scoring_roles_py(file_to_process, processing_year, processing_season)
+    if scoring_roles is not None:
+        scoring_onball_df, scoring_offball_df, scoring_parent_df = scoring_roles
+    else:
+        scoring_onball_df, scoring_offball_df, scoring_parent_df = None, None, None
     rim_assist_df = process_rim_assist_py(file_to_process, processing_year, processing_season)
     dunk_df = process_dunk_py(file_to_process, processing_year, processing_season)
     dunk_assist_df = process_dunk_assist_py(file_to_process, processing_year, processing_season)
@@ -212,6 +231,8 @@ Examples:
     # Save other outputs
     other_outputs = {
         "TS": ts_df,
+        "TS_SELF_SHOT": ts_self_shot_df,
+        "TS_TEAMMATE_SHOT": ts_teammate_shot_df,
         "REB": reb_df,
         "SHOOTER_OREB": shooter_oreb_df,
         "BLOCK_RECOVERY": block_recovery_df,
@@ -234,6 +255,11 @@ Examples:
         "FIRST_CHANCE_CLEAN": first_chance_clean_df,
         "SECOND_CHANCE_CLEAN": second_chance_clean_df,
         "ASSIST_POINTS": assist_points_df,
+        "ASSIST_POINTS_RECEIVER": assist_points_receiver_df,
+        "ASSIST_POINTS_PASSER": assist_points_passer_df,
+        "SCORING_ONBALL": scoring_onball_df,
+        "SCORING_OFFBALL": scoring_offball_df,
+        "SCORING_PARENT": scoring_parent_df,
         "RIM_ASSIST": rim_assist_df,
         "DUNK": dunk_df,
         "DUNK_ASSIST": dunk_assist_df,

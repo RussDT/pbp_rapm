@@ -24,6 +24,11 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 
+try:
+    from curl_cffi import requests as cffi_requests
+except ImportError:
+    cffi_requests = None
+
 
 PBP_URL = "https://cdn.wnba.com/static/json/liveData/playbyplay/playbyplay_{game_id}.json"
 BOXSCORE_URL = "https://cdn.wnba.com/static/json/liveData/boxscore/boxscore_{game_id}.json"
@@ -72,12 +77,39 @@ RAW_COLUMNS = [
     "home_description",
     "visitor_description",
     "seconds_remaining_quarter",
+    "time_quarter",
     "score",
+    "score_margin",
     "event_type",
 ]
 
 
 def fetch_json(url: str, timeout: int = 30) -> dict[str, Any]:
+    if cffi_requests is not None:
+        response = cffi_requests.get(
+            url,
+            timeout=timeout,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Accept": "application/json,text/plain,*/*",
+                "Referer": "https://www.wnba.com/",
+            },
+            impersonate="chrome",
+        )
+        if response.status_code != 200:
+            raise RuntimeError(f"failed to fetch {url}: HTTP {response.status_code}")
+        content_type = str(response.headers.get("content-type") or "").lower()
+        body = response.text.lstrip()
+        if "json" not in content_type and not body.startswith(("{", "[")):
+            raise RuntimeError(
+                f"failed to fetch {url}: HTTP 200 response was not JSON "
+                "(likely an Akamai block page)"
+            )
+        try:
+            return response.json()
+        except Exception as exc:
+            raise RuntimeError(f"failed to decode JSON from {url}: {exc}") from exc
+
     req = Request(
         url,
         headers={
@@ -94,6 +126,33 @@ def fetch_json(url: str, timeout: int = 30) -> dict[str, Any]:
 
 
 def try_fetch_json(url: str, timeout: int = 30) -> dict[str, Any] | None:
+    if cffi_requests is not None:
+        try:
+            response = cffi_requests.get(
+                url,
+                timeout=timeout,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "application/json,text/plain,*/*",
+                    "Referer": "https://www.wnba.com/",
+                },
+                impersonate="chrome",
+            )
+        except Exception:
+            return None
+        if response.status_code in {403, 404}:
+            return None
+        if response.status_code != 200:
+            raise RuntimeError(f"failed to fetch {url}: HTTP {response.status_code}")
+        content_type = str(response.headers.get("content-type") or "").lower()
+        body = response.text.lstrip()
+        if "json" not in content_type and not body.startswith(("{", "[")):
+            return None
+        try:
+            return response.json()
+        except Exception:
+            return None
+
     req = Request(
         url,
         headers={
@@ -195,6 +254,13 @@ def clock_to_seconds(clock: str | None) -> float:
             return 0.0
     minutes, seconds = text.split("M", 1)
     return (float(minutes) * 60.0) + (float(seconds) if seconds else 0.0)
+
+
+def clock_display(clock: str | None) -> str:
+    total_seconds = clock_to_seconds(clock)
+    minutes = int(total_seconds // 60)
+    seconds = int(total_seconds % 60)
+    return f"{minutes}:{seconds:02d}"
 
 
 def event_type_number(action: dict[str, Any]) -> int:
@@ -304,6 +370,19 @@ def apply_substitution(lineup: list[int], action: dict[str, Any]) -> list[int]:
 
 
 def apply_substitution_group(lineup: list[int], actions: list[dict[str, Any]]) -> list[int]:
+    player_directions: dict[int, set[str]] = {}
+    for action in actions:
+        player_id = int(action.get("personId") or 0)
+        subtype = str(action.get("subType") or "").lower()
+        if player_id and subtype in {"in", "out"}:
+            player_directions.setdefault(player_id, set()).add(subtype)
+
+    if any(directions == {"in", "out"} for directions in player_directions.values()):
+        updated = list(lineup)
+        for action in actions:
+            updated = apply_substitution(updated, action)
+        return updated[:5]
+
     updated = list(lineup)
     for action in actions:
         if str(action.get("subType") or "").lower() == "out":
@@ -321,9 +400,17 @@ def pad_lineup(lineup: list[int]) -> list[float | int | None]:
     return padded
 
 
-def normalize_game(game_id: str) -> pd.DataFrame:
-    pbp = fetch_json(PBP_URL.format(game_id=game_id))
-    boxscore = fetch_json(BOXSCORE_URL.format(game_id=game_id))
+def normalize_actions(
+    game_id: str,
+    actions: list[dict[str, Any]],
+    boxscore: dict[str, Any],
+) -> pd.DataFrame:
+    """Normalize liveData actions once boxscore starters are available.
+
+    Keeping this transformation separate from network fetching lets the WNBA
+    pipeline consume Gabriel's archived ``pbp_modern`` CSVs while using the
+    canonical liveData boxscore only for teams, player identity, and starters.
+    """
     away_team, home_team = team_info(boxscore)
     away_id = int(away_team["teamId"])
     home_id = int(home_team["teamId"])
@@ -332,7 +419,6 @@ def normalize_game(game_id: str) -> pd.DataFrame:
     player_lookup = boxscore_player_lookup(away_team, home_team)
 
     rows: list[dict[str, Any]] = []
-    actions = pbp["game"]["actions"]
     idx = 0
     while idx < len(actions):
         action_group = [actions[idx]]
@@ -342,24 +428,90 @@ def normalize_game(game_id: str) -> pd.DataFrame:
             action_group.append(actions[idx])
             idx += 1
 
-        away_subs = [
-            action for action in action_group
-            if action.get("actionType") == "substitution" and int(action.get("teamId") or 0) == away_id
+        lineup_snapshots: list[
+            tuple[list[float | int | None], list[float | int | None]]
+        ] = []
+        snapshot_candidates: list[
+            tuple[
+                float,
+                tuple[list[float | int | None], list[float | int | None]],
+            ]
+        ] = [
+            (
+                -0.5,
+                (pad_lineup(away_lineup), pad_lineup(home_lineup)),
+            )
         ]
-        home_subs = [
-            action for action in action_group
-            if action.get("actionType") == "substitution" and int(action.get("teamId") or 0) == home_id
-        ]
-        if away_subs:
-            away_lineup = apply_substitution_group(away_lineup, away_subs)
-        if home_subs:
-            home_lineup = apply_substitution_group(home_lineup, home_subs)
+        group_idx = 0
+        while group_idx < len(action_group):
+            action = action_group[group_idx]
+            if str(action.get("actionType") or "").lower() != "substitution":
+                snapshot = (pad_lineup(away_lineup), pad_lineup(home_lineup))
+                lineup_snapshots.append(snapshot)
+                snapshot_candidates.append((float(group_idx), snapshot))
+                group_idx += 1
+                continue
 
-        away_players = pad_lineup(away_lineup)
-        home_players = pad_lineup(home_lineup)
-        for action in action_group:
+            block_end = group_idx
+            while (
+                block_end < len(action_group)
+                and str(action_group[block_end].get("actionType") or "").lower()
+                == "substitution"
+            ):
+                block_end += 1
+            substitution_block = action_group[group_idx:block_end]
+            away_subs = [
+                sub
+                for sub in substitution_block
+                if int(sub.get("teamId") or 0) == away_id
+            ]
+            home_subs = [
+                sub
+                for sub in substitution_block
+                if int(sub.get("teamId") or 0) == home_id
+            ]
+            if away_subs:
+                away_lineup = apply_substitution_group(away_lineup, away_subs)
+            if home_subs:
+                home_lineup = apply_substitution_group(home_lineup, home_subs)
+            snapshot = (pad_lineup(away_lineup), pad_lineup(home_lineup))
+            lineup_snapshots.extend([snapshot] * len(substitution_block))
+            snapshot_candidates.append((block_end - 0.5, snapshot))
+            group_idx = block_end
+
+        for action_idx, (action, snapshot) in enumerate(
+            zip(action_group, lineup_snapshots)
+        ):
             team_id = int(action.get("teamId") or 0)
             person_id = int(action.get("personId") or 0)
+            away_players, home_players = snapshot
+            action_type = str(action.get("actionType") or "").lower()
+            actor_lineup = (
+                away_players
+                if team_id == away_id
+                else home_players if team_id == home_id else []
+            )
+            if (
+                action_type != "substitution"
+                and person_id > 0
+                and actor_lineup
+                and person_id not in actor_lineup
+            ):
+                team_snapshot_idx = 0 if team_id == away_id else 1
+                matching_snapshots = [
+                    (position, candidate)
+                    for position, candidate in snapshot_candidates
+                    if person_id in candidate[team_snapshot_idx]
+                ]
+                if matching_snapshots:
+                    _, (away_players, home_players) = min(
+                        matching_snapshots,
+                        key=lambda item: (
+                            abs(item[0] - action_idx),
+                            item[0] > action_idx,
+                            item[0],
+                        ),
+                    )
             player_info = player_lookup.get(person_id, {})
             description = action.get("description") or ""
             score_away = pd.to_numeric(action.get("scoreAway"), errors="coerce")
@@ -368,9 +520,10 @@ def normalize_game(game_id: str) -> pd.DataFrame:
                 score_away = 0
             if pd.isna(score_home):
                 score_home = 0
+            home_margin = int(score_home - score_away)
 
             row = {
-                "game_id": str(pbp["game"]["gameId"]),
+                "game_id": str(game_id),
                 "event_num": action.get("actionNumber"),
                 "clock": action.get("clock"),
                 "period": action.get("period"),
@@ -399,7 +552,9 @@ def normalize_game(game_id: str) -> pd.DataFrame:
                 "home_description": description if team_id == home_id else "",
                 "visitor_description": description if team_id == away_id else "",
                 "seconds_remaining_quarter": clock_to_seconds(action.get("clock")),
+                "time_quarter": clock_display(action.get("clock")),
                 "score": f"{int(score_away)} - {int(score_home)}",
+                "score_margin": "TIE" if home_margin == 0 else str(home_margin),
                 "event_type": event_type_number(action),
             }
             for player_idx in range(5):
@@ -408,6 +563,18 @@ def normalize_game(game_id: str) -> pd.DataFrame:
             rows.append(row)
 
     return pd.DataFrame(rows, columns=RAW_COLUMNS)
+
+
+def normalize_game(game_id: str) -> pd.DataFrame:
+    pbp = fetch_json(PBP_URL.format(game_id=game_id))
+    boxscore = fetch_json(BOXSCORE_URL.format(game_id=game_id))
+    returned_game_id = str(pbp.get("game", {}).get("gameId") or game_id)
+    if returned_game_id != str(game_id):
+        raise RuntimeError(
+            f"play-by-play game id mismatch: requested {game_id}, received {returned_game_id}"
+        )
+    actions = pbp.get("game", {}).get("actions", [])
+    return normalize_actions(game_id=str(game_id), actions=actions, boxscore=boxscore)
 
 
 def load_existing_game_ids(output_path: Path) -> set[str]:

@@ -15,10 +15,10 @@ END_SEASON = 2026
 
 # Source files mapping: (target_file, source_folder, source_file, start_season)
 SOURCE_FILES = [
-    ("5y_josh_rapm.csv", "rapm_22_26_all", "weighted_factors_22_26_all.csv", 2022),
-    ("4y_josh_rapm.csv", "rapm_23_26_all", "weighted_factors_23_26_all.csv", 2023),
-    ("3y_josh_rapm.csv", "rapm_24_26_all", "weighted_factors_24_26_all.csv", 2024),
-    ("2y_josh_rapm.csv", "rapm_25_26_all", "weighted_factors_25_26_all.csv", 2025),
+    ("5y_josh_rapm.csv", "rapm_22_26_all_se", "weighted_factors_22_26_all_se.csv", 2022),
+    ("4y_josh_rapm.csv", "rapm_23_26_all_se", "weighted_factors_23_26_all_se.csv", 2023),
+    ("3y_josh_rapm.csv", "rapm_24_26_all_se", "weighted_factors_24_26_all_se.csv", 2024),
+    ("2y_josh_rapm.csv", "rapm_25_26_all_se", "weighted_factors_25_26_all_se.csv", 2025),
 ]
 
 # Target column order

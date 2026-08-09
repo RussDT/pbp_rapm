@@ -56,10 +56,16 @@ For season-summary harnesses, treat the processed filename as the canonical seas
 - `rapm.py --age-dummies` uses `dpm_history.csv` only as a player-season age lookup (`nba_id`, `season`, `age`); the age fixed effects are still estimated inside the possession regression. `03_run_rapm_analysis.py --age-dummies` applies age fixed effects to the full daily weighted-factor metric suite and writes `_agefe` outputs.
 - The active public factor family is `weighted_factors_decomp_*`: five exact first-chance shot children (`DECOMP_RIM_FREQ`, `DECOMP_RIM_FG`, `DECOMP_MID_FG`, `DECOMP_THREE_FREQ`, `DECOMP_THREE_FG`) plus `ALT_FT`, `ALT_TOV_VALUE`, and `SECOND_CHANCE_CLEAN`. See `docs/PUBLIC_DECOMP.md`; Alt3 files are legacy/audit.
 - `scripts/tune_forward_component_alphas.py` is the production-side compatibility module used by the private `alt3_3factor_research` stabilized-RAPM and VPM scripts. It must keep RS/PS family loading, training-split baselines, and target construction aligned with `rapm.py`.
+- `scripts/build_vpm_target_swap.py` is the RAPM-side adapter at the cross-repo seam. RAPM owns canonical PBP/DECOMP/solver behavior; the sibling VPM repo owns frozen EV sources and experiment decisions and invokes this adapter through `vpm/run_harness.py prepare-targets`. Do not duplicate target-writing logic in the research repo.
+- The long-term VPM goal is to beat standalone EPM on predeclared, date-correct future-game forecasts. Keep future actual-possession prediction as the intermediate gate, use common availability/minutes assumptions to isolate player-metric quality, and test lineup synergy or full-system forecasting as separate layers.
+- The accepted VPM player board comes from the sibling harness `estimate-board` command after an as-of prior build. Use the standalone v2 x2 TD550/component-alpha specification without an EPM blend or rejected absence adjustment. Determine current players from latest-season PBP participation and report box-feature coverage separately.
+- `vpm-explorer/` is the public Sites reader for the VPM board (`https://vpm-lab-2026.russdt.chatgpt.site`). Its current frozen CSV/manifest are the EPM12 x2 predictive research board; label it as development-leading rather than untouched confirmation. It verifies all ten component identities plus six-factor/offense/defense/net closure and labels five-player sums as additive studies rather than lineup predictions. Keep broader RAPM/research drilldowns in a separate non-additive lane, preserve the bounded-scroll board, and make the player view a connected identity → offense/defense/total VPM → `3 x 2` factor → component hierarchy. The `3 x 2` map stays intact on mobile. Its TS tiles condense the eight raw TS inputs into four exact display rollups: Rim = rim frequency + rim FG; Mid = mid EV + mid residual; 3P = three frequency + three EV + three residual; FT = FT value. Keep the original ten-component engine and tests intact. On desktop, keep the connected header and both factor rows visible as a compact single-screen read by controlling header, intro, side-bar, tile, and inter-row height while preserving the explanatory copy. Remove secondary prose before values on mobile and use explicit turnover-value wording. The default player-card theme is a warm-white/black Geist editorial treatment with chartreuse reserved for aggregate VPM totals; keep the restrained blue-offense/green-defense dark treatment as the switchable alternate. Refresh the board only after a deliberate new harness build.
 - `FIRST_CHANCE` carries ShotQuality-era `Is_FC_Transition_Possession` and `Has_FC_FGA` labels for the 2023-24 through 2025-26 transition/half-court split. The `FC_TRANSITION_SCORING` / `FC_HALFCOURT_SCORING` aliases use same-sample PPP placeholders, while `FC_MODE_MIX + FC_TRANSITION_VALUE + FC_HALFCOURT_VALUE = FIRST_CHANCE.Net_Diff` at row level.
 - Supabase-backed player-stat processors prefer `SUPABASE_SERVICE_ROLE_KEY` over `SUPABASE_KEY`; keep the service role key available for local backend processing so FT% / 3P% lookups do not silently fall back to defaults.
 - Preferred long historical core runs use `run_historical_core_weighted_factors.py --fixed-season-effects --age-poly-coefficients ...`: fixed RS raw season baselines and fixed polynomial age offsets are subtracted from the row target before centering and solving, instead of adding estimated nuisance columns.
 - Databallr WOWY / lineup net-rating work should use `scripts/build_clean_lineup_net_rating.py` as the duplicate raw action-score possession path instead of `RAPM*.parquet`; it treats period boundaries as hard splits, emits foreign-side technical/admin FT points as zero-possession scoring rows for the shooting team, and drops empty admin-only period-end rows.
+- The Five-Man Fit Lab historical refit starts at 2014 and uses clean lineup possessions, season-end EPM/E-Skills, on-ball time, and potential assists. Normalize the five EPM `p_usg` predictions to 100% for displayed allocation/concentration; raw sums are role-demand diagnostics, not lineup usage. Keep the fitted construction model, actual scoreboard, and repo-owned `FIRST_CHANCE + SECOND_CHANCE_CLEAN` mechanism ledger separate. The current defensive challenger failed 2024-2026 confirmation, so public defense remains the five-player D-EPM sum. Never substitute DPM.
+- The Five-Man Fit hypothetical builder exports the latest complete-season player pool with the frozen offensive model parameters. Hypothetical lineups get no exact-five identity term; show raw role demand, normalized usage allocation, domain and feature contributions, O-EPM-based offense, and D-EPM-sum defense.
 
 ## Metrics
 | Metric | Column | Description | Years |
@@ -67,13 +73,29 @@ For season-summary harnesses, treat the processed filename as the canonical seas
 | RAPM | Net_Diff, Off_Diff, Def_Diff | Point differential per possession | All |
 | LA_RAPM | LA_OffNet, LA_DefNet | Luck-adjusted (FT/3PT regression) | All |
 | TS | Net_Diff | True shooting efficiency | All |
+| TS_SELF_SHOT | TS_Points | Full TS attempt value with the shooter as focal player | All |
+| TS_TEAMMATE_SHOT | TS_Points | Full TS attempt value with each nonshooter as focal player | All |
 | TOV | Is_Turnover | Turnover rate | All |
 | REB | Offensive_Rebound | Offensive rebound rate | All |
 | SHOOTER_OREB | Offensive_Rebound, Self_Offensive_Rebound | Missed-FGA team/self OREB with shooter separated from four non-shooters | All |
+
+For forward SQ + second-chance evaluation, use first-FGA shot points plus the
+matching terminal `SECOND_CHANCE_CLEAN` value, fit OREB and continuation
+pricing only on prior seasons, and compare shooter × zone against the identical
+shooter-hidden shot-context/exact-lineup continuation lane. The rolling
+2024-25 and 2025-26 tests confirm contextual continuation in both seasons but
+not a stable pooled shooter × zone gain; the 2025-26 pooled increment crosses
+zero, and Embiid's forward long-two role-vacancy effect shrinks from `-1.15`
+OREB percentage points to `-0.13`.
 | BLOCK_RECOVERY | Block_Recovered_By_Defense | Defensive recovery rate after blocked FGAs | All |
 | RIM_FREQ | Is_Rim_Attempt | Rim attempt frequency (layups/dunks/tips) | All |
 | RIM_FG_PCT | Is_Rim_Make | Rim FG% | All |
 | ASSIST_POINTS | Assist_Points | Assisted FG points per possession | All |
+| ASSIST_POINTS_RECEIVER | Receiver_Assist_Points | Assisted FG points received by each focal offensive player; five rows per possession | All |
+| ASSIST_POINTS_PASSER | Passer_Assist_Points | Assisted FG points created by each focal passer; five rows per possession | All |
+| SCORING_PARENT | Scoring_Points | Actual FG plus shooter-expected FT points per standard possession | All |
+| SCORING_ONBALL | OnBall_Scoring_Points | Focal player scoring value when taking the shot/FT; five rows per possession | All |
+| SCORING_OFFBALL | OffBall_Scoring_Points | One-quarter non-shooter share of teammate scoring; five rows per possession | All |
 | RIM_ASSIST | Is_Rim_Assist | Assisted rim makes per possession | All |
 | THREE_FREQ | Is_Three_Attempt | 3PA frequency (3PA / FGA) | All |
 | THREE_FG_PCT | Is_Three_Make | 3PT FG% (3PM / 3PA) | All |
@@ -155,6 +177,10 @@ python reprocess_metric.py SECOND_CHANCE 14 25     # Reprocess any metric
 python reprocess_metric.py FIRST_CHANCE 14 25      # Clean first-chance parquets
 python reprocess_metric.py SECOND_CHANCE_CLEAN 14 25  # Clean second-chance parquets
 python reprocess_metric.py ASSIST_POINTS 14 26     # Historical assisted points parquets
+python reprocess_metric.py ASSIST_POINTS_RECEIVER 26 26 --season-types rs  # Role-attributed receiver opportunities
+python reprocess_metric.py ASSIST_POINTS_PASSER 26 26 --season-types rs    # Role-attributed passer opportunities
+python reprocess_metric.py SCORING_ROLES 22 26 --season-types rs          # Parent + paired on/off-ball scoring roles
+python reprocess_metric.py TS_SHOT_ROLES 22 26 --season-types rs         # Paired self-shot/teammate-shot TS roles
 python reprocess_metric.py THREE_FREQ 14 26        # Historical 3PA frequency parquets
 python reprocess_metric.py MIDRANGE_FG_PCT 14 26   # Historical midrange FG% parquets
 python reprocess_metric.py PLAYTYPE_TS_MIX 24 26   # Descriptor playtype-mix parquets
@@ -246,11 +272,34 @@ Two-digit season windows may cross 1999-2000; `97 0` expands to 1997-2000 and fi
 | `initial_ev` | Shot expected value at release |
 | `dynamic_ev` | Shot expected value with game context |
 | `sq_shooter_id` | Shooter NBA player ID (from SQ) |
-| `sq_defender_id` | Closest defender NBA player ID (from SQ) |
+| `sq_primary_defender_id` | ShotQuality closest-defender NBA player ID |
+| `sq_provider` | Defender/enrichment provider provenance |
+| `sq_match_status` | Exact, provider-ambiguous, raw-key-ambiguous, or unmatched |
+| `sq_match_candidate_count` | Distinct SQ candidates for the transitional event key |
+| `sq_source_row_count` | Raw SQ rows observed for the transitional event key |
 
-**Join key:** `game_id` + `event_num` (matches `GAME_EVENT_ID` in SQ CSVs)
+**Transitional join key:** `game_id` + `event_num` (matches `GAME_EVENT_ID` in
+SQ CSVs). This pair is not guaranteed unique. Exact duplicate SQ payloads may
+collapse, but conflicting provider rows and duplicate raw keys remain explicit
+ambiguities with null payload. Never resolve them with `keep="first"`.
 
 **Coverage:** ~35-40% of PBP rows have SQ data (only shot attempts have SQ data)
+
+NBA matchup defender assignments and ShotQuality closest-defender assignments
+are separate providers. Do not coalesce either into a generic `defender_id`.
+ShotQuality has no native second-defender ID; keep second-defender geometry but
+label any reconstructed identity as inferred. Canonical contract:
+`docs/NBA_EVENT_ENRICHMENT_CONTRACT.md`.
+The strict 2023-24-to-2024-25 three-point comparison preserves every
+pipe-separated NBA assignment and finds the assignment prior neutral versus
+context+EPM but clearly worse than rich SQ release geometry; see
+`docs/SQ_DEFENDER_PROVIDER_COMPARISON.md`. Neither defender benchmark includes
+OREB continuation in its immediate points-per-shot target.
+The same comparison now joins exact raw event lineups and five as-of D-EPM
+values. Both summed and richer opposing-lineup D-EPM aggregates are
+neutral-to-worse, including when added to SQ geometry+identity; retain this as
+a failed challenger rather than assuming all-in personnel impact predicts a
+conditional three-point outcome.
 
 ### Repo-Owned PBP Shot Quality
 `build_pbp_shot_quality.py` is independent of the external ShotQuality
@@ -282,6 +331,10 @@ The script auto-detects file type by checking for specific columns:
 - `Is_Rim_Attempt` → RIM_FREQ file
 - `Is_Rim_Make` → RIM_FG_PCT file
 - `Assist_Points` → ASSIST_POINTS file
+- `Receiver_Assist_Points` / `Passer_Assist_Points` → five focal-player opportunity rows used by `run_assist_points_hierarchy.py` to fit a role contrast and produce additive children of parent offensive `ASSIST_POINTS`
+- `OnBall_Scoring_Points` / `OffBall_Scoring_Points` → five focal-player scoring-role rows used by `run_scoring_role_hierarchy.py`; the final components add to `SCORING_PARENT` offensive RAPM
+- `TS_Points` in `TS_SELF_SHOT` / `TS_TEAMMATE_SHOT` → conditional shot-role rows used by `run_ts_shot_role_hierarchy.py`; parent oTS is split exactly into self-shot, teammate-shot, and shot-mix components
+- Prefer `run_joint_ts_shooter_interaction.py` for current oTS role work: one row per attempt, player-season-centered shooter interactions, grouped game CV with the one-SE role-alpha rule, and exact direct self-shot + teammate-shot closure. Keep the separate-role Shapley runner as an audit prototype.
 - `Is_Rim_Assist` → RIM_ASSIST file
 - `Is_Three_Attempt` → THREE_FREQ file
 - `Is_Three_Make` → THREE_FG_PCT file
@@ -379,8 +432,8 @@ The TOV rubberband coefficients are in `Off_Diff = -Is_Turnover` units. So a neg
 ### Pipeline Steps
 1. Fetch latest 2026 PBP data
 2. Process RAPM parquets
-3. Run RAPM analysis for 1-6 year windows (26-26 through 21-26)
-4. Time-decay 700 runs (21-26 plain, 21-26 td700+rubberband) + upload to Supabase
+3. Run RAPM analysis for 1-6 year windows (26-26 through 21-26), all with `--season-effects` (August 2026 playoff-handling change; outputs carry `_se`)
+4. Time-decay 700 runs (21-26 se+td700, 21-26 rb+se+td700) + upload to Supabase (`weighted_factors_21_26_all_rb_se_td700.csv`)
 5. 13-year rubberband run (14-26)
 6. Active eight-component DECOMP player rolling bundles for the 1Y-5Y current windows, with both CSV and parquet outputs; the team-level Alt3 bundle remains an audit artifact
 7. Standalone metrics with td700 (RIM_FREQ, RIM_FG_PCT, MIDRANGE_FREQ, MIDRANGE_FG_PCT, TRANSITION_FREQ, TRANSITION_RIM, INITIAL_EV)
@@ -403,15 +456,15 @@ The TOV rubberband coefficients are in `Off_Diff = -Is_Turnover` units. So a neg
 ### rapms Repo
 **Location:** `/Users/russellthomas/Docs/rapms/` (GitHub: RussDT/rapms)
 **Contents:** `master_results/` with the published standard and alt3 CSVs:
-- `weighted_factors_{26,25_26,24_26,23_26,22_26,21_26}_all.csv`
-- `weighted_factors_21_26_all_td700.csv`
+- `weighted_factors_{26,25_26,24_26,23_26,22_26,21_26}_all_se.csv` (pre-August-2026 syncs used `_all.csv`; stale copies may remain downstream)
+- `weighted_factors_21_26_all_se_td700.csv`
 - `weighted_factors_14_26_all_rb.csv`
-- `weighted_factors_alt3_{26,25_26,24_26,23_26,22_26,21_26}_all.csv`
+- `weighted_factors_alt3_{26,25_26,24_26,23_26,22_26,21_26}_all_se.csv`
 - `weighted_factors_alt3_efg_value_{26,25_26,24_26,23_26,22_26}_all_rb_se_a2000_4000.{csv,parquet}`
 - `weighted_factors_alt3_efg_value_{00_09,10_19,20_26,97_06,17_26}_all_rb_se_a2000_4000.{csv,parquet}` for explicit RAPM DECOMP era/support windows; current peak metrics use `00_09`, `10_19`, and `20_26` for the `2000s RAPM`, `2010s RAPM`, and `2020s RAPM` rows.
 - `team_weighted_factors_alt3_efg_value_24_26_all_a25.{csv,parquet}`
-- `weighted_factors_alt3_21_26_all_td700.csv`
-- `weighted_factors_alt3_21_26_all_rb_td700.csv`
+- `weighted_factors_alt3_21_26_all_se_td700.csv`
+- `weighted_factors_alt3_21_26_all_rb_se_td700.csv`
 - `weighted_factors_alt3_14_26_all_rb.csv`
 - `{rimfreq,rimfgpct,midrangefreq}_21_26_all_td700_results.csv`
 - `{transitionfreq,transitionrim,initialev}_24_26_all_td700_results.csv`
@@ -438,6 +491,134 @@ If `autocomplete_map.csv` lags active fringe players, `scripts/rapm.py` should b
 - Validation harness: `scripts/validate_friend_pbp_ingest.py`
 - Isolated artifacts: `validation/friend_ingest/`
 - Current best status: shot-zone metrics are exact, TOV flags are exact on matched rows, RAPM has 14,541/14,542 official rows matched with one official-only goaltend-and-one event, remaining friend-only rows are mostly zero-value team rebounds around blocked-shot jump-ball/admin sequences, and the bigger solve-level gap is lineup parity (`740` of `14,541` matched RAPM rows differ in O/D player sets).
+
+## WNBA Gabriel Ingest And Benchmark
+
+- Sync the ignored public checkout at `external/gabriel_wnba/` with
+  `../wnba_test/sync_gabriel_wnba.py`, then run
+  `../wnba_test/audit_wnba_source_inputs.py` before processing.
+- Modern Gabriel CSV headers evolve per game. Normalize by column name and
+  reconstruct lineups from cached boxscore starters plus ordered consecutive
+  substitution blocks. Use outs-before-ins unless one player appears in both
+  directions inside the same team block, then replay that block sequentially.
+  A corrected non-sub action may borrow the nearest same-clock actor-compatible
+  snapshot without mutating the persistent lineup.
+- Preserve the full normalized archive. Use
+  `validate_wnba_normalized_lineups.py --write-clean` for the conservative
+  whole-game-exclusion solve surface.
+- Proprietary WNBA daily ratings remain ignored local inputs. Main validation
+  uses latest `rating_date < game_date`; same-day and future rows are forbidden
+  until provider timing semantics are confirmed.
+- `../wnba_test/build_wnba_box_priors.py` is the preferred current WNBA research
+  build: factor-specific public box predictions trained only on earlier seasons
+  and inserted inside the exact single-season prior-centered ridge. The
+  forward-selected specification is offense alpha `5000`, defense alpha
+  `40000`, and prior scale `1.5`; defense is now on the audited grid edge and
+  should be extended next without using 2026 for selection.
+  `../wnba_test/build_wnba_metric_history.py` produces the canonical
+  2022-2026 reader, with 2022 labeled as a no-prior warm-up and 2023-2026 using
+  only earlier seasons for box-prior training. Preserve exact FT, TOV,
+  atomic-total, and fitted display identities.
+  `build_prior_informed_wnba.py` remains the historical-RAPM-state prototype,
+  and proprietary ratings remain external benchmarks only.
+- Use `../wnba_test/tune_wnba_component_alphas.py` for VPM-style WNBA
+  factor-alpha research. It must score the summed component coefficient maps
+  against future actual possessions and keep 2026 out of selection. The July
+  29 factor-specific candidate lost to uniform `5000/40000` on 2026, so do not
+  promote it; `factor_trust.csv` is a marginal diagnostic only.
+- Build WNBA attempt-level expected points with
+  `../wnba_test/build_wnba_pbp_shot_quality.py`. Model features must be
+  available before the result; raw action labels, outcomes, actual points,
+  full descriptions, and made-only assist tags are forbidden. The current
+  impact scope is MID and THREE only, with RIM left on actual outcomes. The
+  modern-only season-forward model improves 2026 eligible-shot MSE by `1.068%`
+  over a shot-value baseline. Classic PBP contributes 239,829 additional
+  historical MID/THREE attempts, but neither the 2018-plus nor full-history
+  window beat modern-only on 2026, so historical input stays opt-in. The model
+  remains research-only until it is attached additively to the MID/THREE clean
+  first-chance targets with RIM unchanged and passes a forward component-sum
+  gate. See
+  `docs/WNBA_PBP_SHOT_QUALITY.md`.
+- Run the current 2026 rating through
+  `../wnba_test/update_wnba_metrics.py --as-of "$(date +%F)"`. This stages the
+  WNBA CDN pull, requires a clean current-season lineup report, force-refreshes
+  PBP Stats totals, rebuilds all six CSV surfaces, and uses only the frozen
+  pre-2026 `5000/40000/1.5` solve. Stable outputs are under
+  `../wnba_test/Results/current/`; build the self-contained results/box-prior
+  review with `../wnba_test/build_wnba_results_review.py`. Current box-prior
+  eligibility requires positive offensive and defensive possessions; PBP Stats
+  `Minutes` is audit-only because valid active-player rows can report
+  nonpositive minutes. Preserve those exposure conflicts in the manifest. See
+  `docs/WNBA_DAILY_UPDATE.md`.
+- Audit the ignored WNBA RTSS/Second Spectrum export with
+  `../wnba_test/audit_rtss_wnba_features.py`. Common facts come from 2D
+  markings; 3D is an ID-keyed enrichment because seven games have populated
+  2D and empty 3D possessions and some nonempty event tables differ. Prefer
+  `chance_players` for rich five-on-five reconstruction, use game plus shot
+  `pbpId` for numeric WNBA identity evidence, and finish unresolved identities
+  through roster/team/stint constraints rather than fuzzy names. Provider
+  `qSQ`/`qSP` remain benchmarks, post-release/outcome fields are not pre-shot
+  features, and rich ShotQuality impact remains MID/THREE only. See
+  `docs/WNBA_RTSS_FEATURE_AUDIT.md`.
+- Refresh that ignored mirror from `s3://rtss-data/wnba/`: verify the active
+  AWS identity, list the prefix, inspect `api/portal/schedules.json`, dry-run
+  `aws s3 sync`, and then sync to `../downloads/rtss-data/wnba/`. The former
+  local IAM user `rtss-data` no longer exists; manual reads currently work
+  through the bucket policy, while unattended automation should use a new
+  least-privilege profile. Never store signed URLs or credentials in docs or
+  generated manifests.
+- Build WNBA RTSS component-prior candidates with
+  `../wnba_test/build_wnba_rtss_prior_features.py` and evaluate them with
+  `../wnba_test/evaluate_wnba_rtss_priors.py`. The first paired
+  2023->2024-selection / 2025-confirmation screen produced nine two-metric wins
+  among 14 development-eligible component sides, strongest for defensive THREE
+  frequency, defensive FT, and offensive second chance. It is underpowered
+  because selection fits only the 2023 RTSS season and does not alter the
+  frozen live box prior. Keep the six RIM/MID/THREE frequency/finishing priors
+  separate, train the box backbone on every earlier 2022+ season, and use only
+  compact multi-year stabilized RTSS corrections. The 2025 holdout is spent,
+  and raw `qSP-qSQ` needs a frozen season-relative transform plus provider
+  timing audit before fresh future confirmation. See
+  `docs/WNBA_RTSS_PRIOR_RESEARCH.md`.
+- Use `../wnba_test/cross_validate_wnba_rtss_priors.py` for symmetric
+  leave-one-2023/2024/2025-season-out development with a full non-held-out
+  2022-2025 box backbone and RTSS fit only to cross-fitted box residuals.
+  `shots.assistOpp` labels potential-assisted versus self-created attempts on
+  makes and misses; `shots.assisted` is made-only outcome information.
+  `passes.assistOpp` supplies potential assists created. Current development
+  improves both pooled RMSE and correlation for 15/24 component-sides; the
+  offensive shot candidates are RIM frequency, MID frequency, MID finishing,
+  and THREE frequency, while RIM/THREE finishing stay box-only. All three RTSS
+  seasons are now development data.
+- Use `../wnba_test/cross_validate_wnba_rtss_total_priors.py` for the separate
+  direct-total prior diagnostic. It builds annual clean-total ORAPM/DRAPM
+  targets, varies offense and defense target penalties in orthogonal sweeps,
+  and interprets RTSS with held-out-season permutation families plus sign
+  stability. `off_alpha=250` is the lowest defensible exploratory offense
+  target (RTSS-only `R2=0.292`, correlation `0.541`); even
+  `def_alpha=1000` gives RTSS-only `R2=0.007`, so low-alpha direct defense is
+  not a usable prior target. Box remains stronger and monolithic RTSS additions
+  do not help it. Keep the lane research-only and preserve factor-specific
+  priors for the additive model.
+- Use `../wnba_test/build_wnba_rtss_playmaking_roles.py` for the separate
+  FGA-only shooter/passer/presence role model. Exact `chance_players` rows and
+  player-centered shooter/potential-assist-passer interactions must close
+  `scoring + passer shot + presence` to the offensive shot parent. Freeze one
+  pooled-CV role alpha across all annual targets, and price
+  `passes.turnover` as a separate cost child of net playmaking. Current
+  development supports on-ball time plus potential assists for passer shot
+  value (`R2 0.597`), finds rim assists redundant, and finds no creation-stat
+  prior for presence. Do not call the FGA-only output full oTS until the FT
+  component is added. See `docs/WNBA_RTSS_PLAYMAKING_RAPM.md`.
+- Bootstrap WNBA box/component priors from NBA history only with aligned-target
+  hierarchical partial pooling: league-season standardization, NBA slope
+  priors, WNBA deviation penalties, and component-specific transfer strength
+  selected on WNBA folds. Compare WNBA-only, NBA-only, naive pooled, and
+  hierarchical candidates. There is no local men's RTSS markings surface with
+  the identical `assistOpp`/`qSQ` schema, so rich creation-role and geometry
+  residual coefficients remain WNBA-only.
+- Canonical workflow and initial 2026 holdout:
+  `docs/WNBA_GABRIEL_INGEST_AND_BENCHMARK.md`.
 
 
 <claude-mem-context>

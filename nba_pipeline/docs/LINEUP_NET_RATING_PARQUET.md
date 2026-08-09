@@ -35,6 +35,11 @@ The clean net-rating path:
 - emits one row per counted possession with `O1-O5`, `D1-D5`, `off_points`,
   `def_points`, `off_poss`, `def_poss`, and `row_type`
 
+The final group assembly is vectorized for full-season builds. A frozen
+2013-14 game fixture (`0021300001`) was compared column by column against the
+earlier group-loop implementation: all 187 output rows, every field, and the
+184-point scoreboard total matched exactly.
+
 This preserves final buzzer possessions as zero-point possessions while avoiding
 extra phantom possessions when a turnover, make, or defensive rebound already
 closed the period.
@@ -68,6 +73,23 @@ nba_pipeline/processed/LINEUP_NET_RATING_POSSESSIONS26.parquet
 
 Generated parquets and validation CSVs are artifacts and should stay out of git
 unless explicitly curated.
+
+Build the feature-complete 2014-2026 regular-season surface with:
+
+```bash
+for year in {14..26}; do
+  python nba_pipeline/scripts/build_clean_lineup_net_rating.py \
+    --year "$year" \
+    --season-type RS
+done
+```
+
+`scripts/export_historical_lineup_fit_lab.py` consumes those generated
+possession parquets for actual two-sided Five-Man Fit Lab results. It joins
+exact-five aggregates from `FIRST_CHANCE`, `SECOND_CHANCE_CLEAN`,
+`ASSIST_POINTS`, and `RIM_ASSIST` to build the separate PBP mechanism and
+fingerprint layers. Actual scoreboard ratings and expected-FT mechanism value
+remain distinct.
 
 ## Initial Evidence
 

@@ -38,12 +38,12 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 # Files to upload: (filename, year_interval, rb)
 SOURCE_FILES = [
-    ("weighted_factors_26_all.csv", "1Y", False),
-    ("weighted_factors_25_26_all.csv", "2Y", False),
-    ("weighted_factors_24_26_all.csv", "3Y", False),
-    ("weighted_factors_23_26_all.csv", "4Y", False),
-    ("weighted_factors_22_26_all.csv", "5Y", False),
-    ("weighted_factors_21_26_all.csv", "6Y", False),
+    ("weighted_factors_26_all_se.csv", "1Y", False),
+    ("weighted_factors_25_26_all_se.csv", "2Y", False),
+    ("weighted_factors_24_26_all_se.csv", "3Y", False),
+    ("weighted_factors_23_26_all_se.csv", "4Y", False),
+    ("weighted_factors_22_26_all_se.csv", "5Y", False),
+    ("weighted_factors_21_26_all_se.csv", "6Y", False),
     ("weighted_factors_14_26_all_rb.csv", "13Y", True),
 ]
 

@@ -13,12 +13,12 @@ ENDING_SEASON = 2026
 
 # Source files mapping: (folder, filename, length_of_rapm)
 SOURCE_FILES = [
-    ("rapm_26_all", "weighted_factors_26_all.csv", 1),
-    ("rapm_25_26_all", "weighted_factors_25_26_all.csv", 2),
-    ("rapm_24_26_all", "weighted_factors_24_26_all.csv", 3),
-    ("rapm_23_26_all", "weighted_factors_23_26_all.csv", 4),
-    ("rapm_22_26_all", "weighted_factors_22_26_all.csv", 5),
-    ("rapm_21_26_all", "weighted_factors_21_26_all.csv", 6),
+    ("rapm_26_all_se", "weighted_factors_26_all_se.csv", 1),
+    ("rapm_25_26_all_se", "weighted_factors_25_26_all_se.csv", 2),
+    ("rapm_24_26_all_se", "weighted_factors_24_26_all_se.csv", 3),
+    ("rapm_23_26_all_se", "weighted_factors_23_26_all_se.csv", 4),
+    ("rapm_22_26_all_se", "weighted_factors_22_26_all_se.csv", 5),
+    ("rapm_21_26_all_se", "weighted_factors_21_26_all_se.csv", 6),
 ]
 
 

@@ -2,6 +2,15 @@
 
 `wnba_test/clean_decomp_wnba.py` ports the NBA clean first-/second-chance EFG-value approach to the WNBA CSV workflow.
 
+For the consolidated definition of the primary native RAPM, the distinction
+between the native and clean outputs, the complete data/artifact inventory, and
+the current held-out result, see
+[WNBA Metric Build Status](./WNBA_METRIC_BUILD_STATUS.md).
+
+For the Gabriel public PBP checkout, lineup-normalized clean source, proprietary
+rating audit, and held-out 2026 metric benchmark, see
+[WNBA Gabriel Ingest and Initial Metric Benchmark](./WNBA_GABRIEL_INGEST_AND_BENCHMARK.md).
+
 ## Outputs
 
 Processed clean possession files are written to:
@@ -67,6 +76,9 @@ This path uses:
 It is the current fallback when the old stats API endpoints time out. The fetcher
 reconstructs row lineups from boxscore starters and grouped substitution events,
 then writes the same raw CSV columns consumed by `process_rapm_wnba.py`.
+When the Gabriel source checkout is present, `process_rapm_wnba.py` uses its
+local `data/wnba_game_dates.csv` schedule before attempting the legacy remote
+NBA schedule fallback. This is required for real WNBA `game_date` values.
 
 Process one or more raw WNBA files:
 
@@ -116,6 +128,153 @@ python wnba_test/clean_decomp_wnba.py run 26 26 RS \
 `process-and-run` should be used when changing FT logic because the expected FT
 values and FT frequency/severity trip values are baked into the processed
 `FIRST_CHANCE` and `SECOND_CHANCE_CLEAN` CSV rows before the solve.
+
+## Historical-State Prior Build
+
+The first 2026 true-prior prototype uses a prior-centered ridge solve, not the
+zero-centered multi-year command above. `build_prior_informed_wnba.py` selects
+annual RAPM-state persistence plus separate offense and defense penalties on
+2023-2025 next-season folds, then opens 2026 once.
+
+The selected robust specification is offense alpha `1750`, defense alpha `2000`,
+and annual persistence `0.90`. The selection rule treats candidates within
+`0.005` game-margin RMSE of the minimum as tied and uses mean forward
+correlation as the tie-breaker.
+
+```bash
+.venv/bin/python wnba_test/build_prior_informed_wnba.py \
+  --off-alphas 250,500,750,1000,1750,3000 \
+  --def-alphas 250,500,750,1000,2000,4000 \
+  --persistences 0.5,0.65,0.75,0.9,1.0 \
+  --skip-current-components \
+  --output-dir wnba_test/Results/prior_informed_robust
+
+.venv/bin/python wnba_test/build_prior_informed_wnba.py \
+  --reuse-selection-dir wnba_test/Results/prior_informed_robust \
+  --output-dir wnba_test/Results/prior_informed_robust
+```
+
+The live output is:
+
+```text
+wnba_test/Results/clean_decomp_26_rs_a1750_2000_prior1_walkforward_selected/
+  weighted_factors_alt3_efg_value_26_rs_a1750_2000_prior1_walkforward_selected.csv
+```
+
+Every clean component receives its own frozen pre-2026 prior. The atomic prior
+sum is reconciled to the selected dynamic total in the existing
+`ALT_FC_COMPLETION` baseline bucket before solving. This is required for the
+written offense, defense, and net display sums to close exactly.
+
+The output includes `prior_*`, `delta_*`, and `has_prior` audit columns. The
+current 2026 update is descriptive/in-sample; use
+`prior_informed_robust/preseason_2026_prior_state.csv`, not the live file, for
+the frozen 2026 benchmark. Proprietary DPM/PI/NPI ratings are external
+comparisons only and never enter the local objective.
+
+## Factor-Specific Box-Prior Build
+
+The preferred current research output is the single-season box-prior build:
+
+```bash
+.venv/bin/python wnba_test/build_wnba_box_priors.py \
+  --off-alphas 5000,7500,10000 \
+  --def-alphas 20000,30000,40000 \
+  --prior-scales 1.25,1.5,1.75
+```
+
+It trains separate public box-to-RAPM models for each EFG atom, FT, first-chance
+completion/turnover, and second chance, using only earlier seasons for the
+season being predicted. FT severity and scoring-turnover value are algebraic
+children, and the total prior is the exact sum of the atomic priors. The
+selected 2026 specification is offense alpha `5000`, defense alpha `40000`, and
+box-prior scale `1.5`; selection used only the 2024 and 2025 next-season folds.
+
+The live output is:
+
+```text
+wnba_test/Results/current/wnba_current_metrics.csv
+```
+
+The July 29 output contains 222 players with no nulls or duplicate player ids.
+Offense, defense, and net display residuals are exactly zero. The 2026
+likelihood is single-season only; current-season stabilized box production
+supplies `221` priors and one unresolved player uses zero. Current-source
+eligibility is based on positive offensive and defensive possessions, not the
+PBP Stats `Minutes` field. The July 29 exposure audit finds `55` players with
+nonpositive normalized minutes and valid possessions; the daily manifest
+retains the affected-player list. Because the active-player priors use 2026
+production, this file is a live descriptive rating, not a frozen preseason
+forecast.
+
+Refresh it with the staged, validation-gated daily command:
+
+```bash
+.venv/bin/python wnba_test/update_wnba_metrics.py --as-of "$(date +%F)"
+```
+
+## Joint Component-Alpha Research
+
+Run the VPM-style joint component-sum coordinate descent with:
+
+```bash
+.venv/bin/python wnba_test/tune_wnba_component_alphas.py
+```
+
+It changes one component-side ridge alpha at a time while scoring the sum of
+all nine component models against future actual possession points. Selection
+uses 2023-to-2024 and 2024-to-2025 folds; 2026 is confirmation only.
+
+The July 29 candidate gained `276.984e-6` MSE on development versus uniform
+`5000/40000`, then lost `418.799e-6` on 2026. It is not promoted. Use its
+`factor_trust.csv` only as a marginal lineup-signal diagnostic; keep the live
+box-prior solve at `5000/40000/1.5`.
+
+## Play-by-Play Shot-Quality Research
+
+Build the WNBA attempt-level expected-points table with:
+
+```bash
+.venv/bin/python wnba_test/build_wnba_pbp_shot_quality.py
+```
+
+The model is restricted to midrange and three-point attempts and uses location,
+distance, zone, shot family, shot-form modifiers, and period-clock context,
+plus a strictly prior-season shooter residual. Rim remains actual-outcome
+based. Outcome, raw Made Shot/Missed Shot action labels, and made-only assist
+tags are forbidden features. The selected model improves 2026 eligible-shot
+MSE by `1.068%` over a two-/three-point baseline, but it has not yet been
+attached to the clean first-chance target. See
+[WNBA Play-by-Play Shot Quality](./WNBA_PBP_SHOT_QUALITY.md).
+
+## Five-Season Single-Season History
+
+Build the reader-ready 2022-2026 player-season history with:
+
+```bash
+PYTHONPATH=. .venv/bin/python wnba_test/build_wnba_metric_history.py
+```
+
+This reuses the selected `5000/40000`, `1.5` true-prior architecture for
+2023-2026 and trains every season's box models only on earlier seasons. The 2022
+file is an explicitly labeled pure-RAPM warm-up because there is no earlier
+reliable modern-lineup season for prior training. Completed years use `ALL`;
+2026 uses `RS`.
+
+The consolidated CSV is:
+
+```text
+wnba_test/Results/box_prior_true_prior/history/
+  wnba_single_season_metrics_2022_2026.csv
+```
+
+The compact reader is
+`wnba_single_season_leaderboard_2022_2026.csv` in the same directory. The full
+file contains 882 player-seasons with `rank`, a 1,000-possession
+`qualified_rank`, offense, positive-good defense, total impact, prior source,
+prior values, lineup updates, and the complete additive clean decomposition.
+Use `--reuse-season-outputs` to refresh only the consolidated table and
+manifest after the five season files already exist.
 
 ## FT Source
 

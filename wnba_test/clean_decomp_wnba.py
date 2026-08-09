@@ -35,6 +35,7 @@ from wnba_test.process_rapm_wnba import (
     prepare_wnba_standard_possession_df,
 )
 from wnba_test.wnba_stats_source import load_wnba_player_shooting_stats
+from wnba_test.wnba_names import load_wnba_name_map
 
 
 WNBA_ROOT = ROOT / "wnba_test"
@@ -86,11 +87,7 @@ def _season_from_suffix(year_suffix: int) -> tuple[int, str]:
 
 
 def _load_name_map() -> dict[str, str]:
-    path = WNBA_ROOT / "player_index_map.csv"
-    if not path.exists():
-        return {}
-    df = pd.read_csv(path)
-    return dict(zip(df["EntityId"].astype(str), df["pbp_name"].astype(str)))
+    return load_wnba_name_map()
 
 
 def _infer_year_from_path(path: Path) -> int:
@@ -690,14 +687,109 @@ def _time_decay_weights(transformed: pd.DataFrame, half_life_days: float | None)
     return np.power(0.5, age_days / float(half_life_days))
 
 
-def _run_direct_ridge(
+def _solve_ridge_with_prior(
+    X,
+    y: np.ndarray,
+    weights: np.ndarray,
+    penalties: np.ndarray,
+    prior: np.ndarray,
+) -> np.ndarray:
+    """Solve ridge around an explicit coefficient prior.
+
+    This minimizes
+
+        ||W^(1/2) (y - X beta)||^2 + sum_j penalty_j (beta_j - prior_j)^2
+
+    rather than shrinking every coefficient toward zero.
+    """
+    sqrt_weights = np.sqrt(weights)
+    X_weighted = X.multiply(sqrt_weights[:, None])
+    y_weighted = y * sqrt_weights
+    xtx = (X_weighted.T @ X_weighted).toarray()
+    xty = np.asarray(X_weighted.T @ y_weighted).reshape(-1)
+    system = xtx + np.diag(penalties)
+    rhs = xty + penalties * prior
+    return np.linalg.solve(system, rhs).astype(float)
+
+
+def _build_centered_prior(
+    prior_results: pd.DataFrame | None,
+    player_to_col: dict[str, int],
+    all_players: list[str],
+    off_poss: dict[str, int],
+    def_poss: dict[str, int],
+    prior_scale: float,
+) -> tuple[np.ndarray, set[str]]:
+    """Map prior result rows into raw solver units and exposure-center them."""
+    prior = np.zeros(len(player_to_col), dtype=float)
+    if prior_results is None or prior_results.empty:
+        return prior, set()
+
+    required = {"player_id", "off", "def"}
+    missing = required.difference(prior_results.columns)
+    if missing:
+        raise ValueError(f"Prior results are missing columns: {sorted(missing)}")
+
+    frame = prior_results[["player_id", "off", "def"]].copy()
+    frame["player_id"] = (
+        pd.to_numeric(frame["player_id"], errors="coerce")
+        .astype("Int64")
+        .astype(str)
+    )
+    frame = frame.loc[frame["player_id"].ne("<NA>")].drop_duplicates(
+        "player_id", keep="last"
+    )
+    off_map = dict(
+        zip(frame["player_id"], pd.to_numeric(frame["off"], errors="coerce"))
+    )
+    def_map = dict(
+        zip(frame["player_id"], pd.to_numeric(frame["def"], errors="coerce"))
+    )
+
+    matched_players: set[str] = set()
+    for player in all_players:
+        off_value = off_map.get(player)
+        def_value = def_map.get(player)
+        if pd.notna(off_value) or pd.notna(def_value):
+            matched_players.add(player)
+        if pd.notna(off_value):
+            prior[player_to_col[f"{player}_off"]] = float(off_value) / 100.0
+        if pd.notna(def_value):
+            # Prior result frames use the solver's raw defense convention:
+            # lower is better defense and net = off - def.
+            prior[player_to_col[f"{player}_def"]] = float(def_value) / 100.0
+
+    prior *= float(prior_scale)
+    total_off = sum(off_poss.values())
+    total_def = sum(def_poss.values())
+    if total_off:
+        off_offset = (
+            sum(
+                prior[player_to_col[f"{player}_off"]] * off_poss[player]
+                for player in all_players
+            )
+            / total_off
+        )
+        for player in all_players:
+            prior[player_to_col[f"{player}_off"]] -= off_offset
+    if total_def:
+        def_offset = (
+            sum(
+                prior[player_to_col[f"{player}_def"]] * def_poss[player]
+                for player in all_players
+            )
+            / total_def
+        )
+        for player in all_players:
+            prior[player_to_col[f"{player}_def"]] -= def_offset
+    return prior, matched_players
+
+
+def _prepare_direct_ridge_problem(
     df: pd.DataFrame,
-    name_map: dict[str, str],
-    off_alpha: float = 3000.0,
-    def_alpha: float = 3000.0,
     time_decay_days: float | None = None,
-) -> pd.DataFrame:
-    """Run one direct ridge RAPM solve and keep full precision for additivity."""
+) -> dict[str, object]:
+    """Prepare one RAPM design once so hyperparameter grids can reuse it."""
     transformed = transform_to_home_away_format(df)
     if "game_date" not in transformed.columns and "game_date" in df.columns:
         game_dates = (
@@ -721,18 +813,6 @@ def _run_direct_ridge(
         player_to_col[f"{player}_def"] = idx
         idx += 1
 
-    X, y = build_design_matrix(transformed, player_to_col)
-    weights = _time_decay_weights(transformed, time_decay_days)
-    sqrt_weights = np.sqrt(weights)
-    X_weighted = X.multiply(sqrt_weights[:, None])
-    y_weighted = (y - np.average(y, weights=weights)) * sqrt_weights
-    penalties = np.zeros(X.shape[1], dtype=float)
-    for key, col in player_to_col.items():
-        penalties[col] = off_alpha if key.endswith("_off") else def_alpha
-    xtx = (X_weighted.T @ X_weighted).toarray()
-    xty = X_weighted.T @ y_weighted
-    beta = np.linalg.solve(xtx + np.diag(penalties), xty).astype(float)
-
     off_poss = {player: 0 for player in all_players}
     def_poss = {player: 0 for player in all_players}
     for _, row in transformed.iterrows():
@@ -740,13 +820,61 @@ def _run_direct_ridge(
         home = [str(int(row[f"h{i}"])) for i in range(1, 6)]
         offense, defense = (home, away) if row["home_poss"] == 1 else (away, home)
         for player in offense:
-            if player == "0":
-                continue
-            off_poss[player] = off_poss.get(player, 0) + 1
+            if player != "0":
+                off_poss[player] = off_poss.get(player, 0) + 1
         for player in defense:
-            if player == "0":
-                continue
-            def_poss[player] = def_poss.get(player, 0) + 1
+            if player != "0":
+                def_poss[player] = def_poss.get(player, 0) + 1
+
+    X, y = build_design_matrix(transformed, player_to_col)
+    weights = _time_decay_weights(transformed, time_decay_days)
+    return {
+        "X": X,
+        "y": y,
+        "weights": weights,
+        "all_players": all_players,
+        "player_to_col": player_to_col,
+        "off_poss": off_poss,
+        "def_poss": def_poss,
+    }
+
+
+def _solve_direct_ridge_problem(
+    problem: dict[str, object],
+    name_map: dict[str, str],
+    off_alpha: float = 3000.0,
+    def_alpha: float = 3000.0,
+    prior_results: pd.DataFrame | None = None,
+    prior_scale: float = 1.0,
+) -> pd.DataFrame:
+    """Solve a prepared RAPM problem and retain prior/update diagnostics."""
+    X = problem["X"]
+    y = np.asarray(problem["y"], dtype=float)
+    weights = np.asarray(problem["weights"], dtype=float)
+    all_players = list(problem["all_players"])
+    player_to_col = dict(problem["player_to_col"])
+    off_poss = dict(problem["off_poss"])
+    def_poss = dict(problem["def_poss"])
+
+    penalties = np.zeros(X.shape[1], dtype=float)
+    for key, col in player_to_col.items():
+        penalties[col] = off_alpha if key.endswith("_off") else def_alpha
+    prior, matched_prior_players = _build_centered_prior(
+        prior_results,
+        player_to_col,
+        all_players,
+        off_poss,
+        def_poss,
+        prior_scale,
+    )
+    centered_y = y - np.average(y, weights=weights)
+    beta = _solve_ridge_with_prior(
+        X,
+        centered_y,
+        weights,
+        penalties,
+        prior,
+    )
 
     total_off = sum(off_poss.values())
     total_def = sum(def_poss.values())
@@ -763,16 +891,49 @@ def _run_direct_ridge(
     for player in all_players:
         off = beta[player_to_col[f"{player}_off"]] * 100.0
         defense = beta[player_to_col[f"{player}_def"]] * 100.0
+        prior_off = prior[player_to_col[f"{player}_off"]] * 100.0
+        prior_def = prior[player_to_col[f"{player}_def"]] * 100.0
         rows.append({
             "player_id": player,
             "player_name": name_map.get(player, f"ID_{player}"),
             "off": off,
             "def": defense,
             "net_rapm": off - defense,
+            "prior_off": prior_off,
+            "prior_def": prior_def,
+            "prior_net_rapm": prior_off - prior_def,
+            "delta_off": off - prior_off,
+            "delta_def": defense - prior_def,
+            "delta_net_rapm": (off - defense) - (prior_off - prior_def),
+            "has_prior": int(player in matched_prior_players),
             "off_poss": off_poss[player],
             "def_poss": def_poss[player],
         })
-    return pd.DataFrame(rows).sort_values("net_rapm", ascending=False).reset_index(drop=True)
+    result = pd.DataFrame(rows).sort_values("net_rapm", ascending=False).reset_index(drop=True)
+    result.attrs["matched_prior_players"] = len(matched_prior_players)
+    result.attrs["total_players"] = len(all_players)
+    return result
+
+
+def _run_direct_ridge(
+    df: pd.DataFrame,
+    name_map: dict[str, str],
+    off_alpha: float = 3000.0,
+    def_alpha: float = 3000.0,
+    time_decay_days: float | None = None,
+    prior_results: pd.DataFrame | None = None,
+    prior_scale: float = 1.0,
+) -> pd.DataFrame:
+    """Run one direct ridge RAPM solve and keep full precision for additivity."""
+    problem = _prepare_direct_ridge_problem(df, time_decay_days=time_decay_days)
+    return _solve_direct_ridge_problem(
+        problem,
+        name_map,
+        off_alpha=off_alpha,
+        def_alpha=def_alpha,
+        prior_results=prior_results,
+        prior_scale=prior_scale,
+    )
 
 
 def run_metric(
@@ -783,6 +944,8 @@ def run_metric(
     off_alpha: float,
     def_alpha: float,
     time_decay_days: float | None,
+    prior_results: pd.DataFrame | None = None,
+    prior_scale: float = 1.0,
 ) -> pd.DataFrame:
     if prefix == "RAPM":
         df = _load_clean_total_df(years, season_type)
@@ -798,6 +961,8 @@ def run_metric(
         off_alpha=off_alpha,
         def_alpha=def_alpha,
         time_decay_days=time_decay_days,
+        prior_results=prior_results,
+        prior_scale=prior_scale,
     )
 
 
@@ -816,6 +981,9 @@ def build_clean_weighted_factors(
     off_alpha: float = 3000.0,
     def_alpha: float = 3000.0,
     time_decay_days: float | None = None,
+    prior_results_by_prefix: dict[str, pd.DataFrame] | None = None,
+    prior_scale: float = 1.0,
+    output_label: str | None = None,
 ) -> Path:
     years = list(range(start_year, end_year + 1))
     name_map = _load_name_map()
@@ -831,6 +999,12 @@ def build_clean_weighted_factors(
             off_alpha=off_alpha,
             def_alpha=def_alpha,
             time_decay_days=time_decay_days,
+            prior_results=(
+                prior_results_by_prefix.get(prefix)
+                if prior_results_by_prefix is not None
+                else None
+            ),
+            prior_scale=prior_scale,
         )
 
     base = results["RAPM"].copy()
@@ -840,6 +1014,21 @@ def build_clean_weighted_factors(
     out["off"] = pd.to_numeric(base["off"], errors="coerce")
     out["def"] = -pd.to_numeric(base["def"], errors="coerce")
     out["net_rapm"] = pd.to_numeric(base["net_rapm"], errors="coerce")
+    prior_audit_cols: list[str] = []
+    if prior_results_by_prefix is not None:
+        out["prior_off"] = pd.to_numeric(base["prior_off"], errors="coerce")
+        out["prior_def"] = -pd.to_numeric(base["prior_def"], errors="coerce")
+        out["prior_net_rapm"] = pd.to_numeric(base["prior_net_rapm"], errors="coerce")
+        out["delta_off"] = pd.to_numeric(base["delta_off"], errors="coerce")
+        out["delta_def"] = -pd.to_numeric(base["delta_def"], errors="coerce")
+        out["delta_net_rapm"] = pd.to_numeric(base["delta_net_rapm"], errors="coerce")
+        out["has_prior"] = (
+            pd.to_numeric(base["has_prior"], errors="coerce").fillna(0).astype(int)
+        )
+        prior_audit_cols = [
+            "prior_off", "prior_def", "prior_net_rapm",
+            "delta_off", "delta_def", "delta_net_rapm", "has_prior",
+        ]
     out["possessions"] = out["off_poss"] + out["def_poss"]
 
     player_ids = out["player_id"]
@@ -881,7 +1070,7 @@ def build_clean_weighted_factors(
     out["dALT_TOV_VALUE_split"] = out["dALT_BADPASS_TOV_VALUE"] + out["dALT_SCORING_TOV_VALUE"]
 
     value_cols = out.select_dtypes(include=[np.number]).columns.difference(
-        ["Latest_Year", "off_poss", "def_poss", "possessions"]
+        ["Latest_Year", "has_prior", "off_poss", "def_poss", "possessions"]
     )
     out[value_cols] = out[value_cols].round(3)
 
@@ -898,6 +1087,7 @@ def build_clean_weighted_factors(
         "dALT_FT", "dALT_FT_FREQ", "dALT_FT_SEVERITY", "dALT_TOV_VALUE", "dSC", "dFC", "dDISPLAY_SUM", "dRESID",
         "dALT_TOV_LOSS_VALUE", "dALT_BADPASS_TOV_VALUE", "dALT_SCORING_TOV_VALUE", "dALT_TOV_VALUE_split",
         "nALT_EFG_VALUE", "nALT_FT", "nALT_FT_FREQ", "nALT_FT_SEVERITY", "nALT_TOV_VALUE", "nSC", "nDISPLAY_SUM", "RESID",
+        *prior_audit_cols,
         "off", "def", "net_rapm", "possessions", "off_poss", "def_poss",
     ]
     out = out[ordered].sort_values("net_rapm", ascending=False)
@@ -909,6 +1099,10 @@ def build_clean_weighted_factors(
         run_suffix_parts.append(f"td{int(time_decay_days)}")
     if off_alpha != 3000.0 or def_alpha != 3000.0:
         run_suffix_parts.append(f"a{int(off_alpha)}_{int(def_alpha)}")
+    if prior_results_by_prefix is not None:
+        run_suffix_parts.append(f"prior{prior_scale:g}")
+    if output_label:
+        run_suffix_parts.append(re.sub(r"[^A-Za-z0-9_.-]+", "_", output_label))
     run_suffix = "_".join(run_suffix_parts)
     out_dir = RESULTS_DIR / f"clean_decomp_{year_range}_{run_suffix}"
     out_dir.mkdir(parents=True, exist_ok=True)

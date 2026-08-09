@@ -18,11 +18,15 @@ from multiprocessing import Pool, cpu_count
 RAW_DIR = os.path.join(os.path.dirname(__file__), '..', 'raw_data')
 PROC_DIR = os.path.join(os.path.dirname(__file__), '..', 'processed')
 
-# Map metric name to (module, processor_function, output_prefix, kwargs, tuple_index)
+# Map metric name to (module, processor_function, output_prefix, kwargs, tuple_index).
+# output_prefix may be a tuple when one processor should save multiple outputs.
 METRIC_REGISTRY = {
     'RAPM':            ('process_rapm',            'process_rapm_py',            'RAPM',            {'o_luck': 0.0, 'd_luck': 0.0, 'missing_ft_fallback': 'actual'}, 0),
     'LA_RAPM':         ('process_rapm',            'process_rapm_py',            'LA_RAPM',         {'o_luck': 1.0, 'd_luck': 1.0, 'missing_ft_fallback': 'actual'}, 1),
     'TS':              ('process_ts',              'process_ts_py',              'TS',              {}, None),
+    'TS_SELF_SHOT':    ('process_ts_shot_roles',   'process_ts_shot_roles_py',   'TS_SELF_SHOT',    {}, 0),
+    'TS_TEAMMATE_SHOT': ('process_ts_shot_roles',  'process_ts_shot_roles_py',   'TS_TEAMMATE_SHOT', {}, 1),
+    'TS_SHOT_ROLES':   ('process_ts_shot_roles',   'process_ts_shot_roles_py',   ('TS_SELF_SHOT', 'TS_TEAMMATE_SHOT'), {}, None),
     'TOV':             ('process_tov',             'process_tov_py',             'TOV',             {}, None),
     'REB':             ('process_reb',             'process_reb_py',             'REB',             {}, None),
     'SHOOTER_OREB':    ('process_shooter_oreb',    'process_shooter_oreb_py',    'SHOOTER_OREB',    {}, None),
@@ -30,6 +34,12 @@ METRIC_REGISTRY = {
     'RIM_FREQ':        ('process_rim_freq',        'process_rim_freq_py',        'RIM_FREQ',        {}, None),
     'RIM_FG_PCT':      ('process_rim_fg_pct',      'process_rim_fg_pct_py',      'RIM_FG_PCT',      {}, None),
     'ASSIST_POINTS':   ('process_assist_points',   'process_assist_points_py',   'ASSIST_POINTS',   {}, None),
+    'ASSIST_POINTS_RECEIVER': ('process_assist_point_roles', 'process_assist_point_roles_py', 'ASSIST_POINTS_RECEIVER', {}, 0),
+    'ASSIST_POINTS_PASSER': ('process_assist_point_roles', 'process_assist_point_roles_py', 'ASSIST_POINTS_PASSER', {}, 1),
+    'SCORING_ONBALL': ('process_scoring_roles', 'process_scoring_roles_py', 'SCORING_ONBALL', {}, 0),
+    'SCORING_OFFBALL': ('process_scoring_roles', 'process_scoring_roles_py', 'SCORING_OFFBALL', {}, 1),
+    'SCORING_PARENT': ('process_scoring_roles', 'process_scoring_roles_py', 'SCORING_PARENT', {}, 2),
+    'SCORING_ROLES': ('process_scoring_roles', 'process_scoring_roles_py', ('SCORING_ONBALL', 'SCORING_OFFBALL', 'SCORING_PARENT'), {}, None),
     'RIM_ASSIST':      ('process_rim_assist',      'process_rim_assist_py',      'RIM_ASSIST',      {}, None),
     'DUNK':            ('process_dunk',            'process_dunk_py',            'DUNK',            {}, None),
     'DUNK_ASSIST':     ('process_dunk_assist',     'process_dunk_assist_py',     'DUNK_ASSIST',     {}, None),
@@ -81,17 +91,48 @@ def process_one(args):
     """Process a single raw parquet."""
     fname, yr, label = args
     input_path = os.path.join(_raw_dir, fname)
-    out_name = fname.replace('NBA', _output_prefix)
-    out_path = os.path.join(_processed_dir, out_name)
+    paired_prefixes = (
+        tuple(_output_prefix)
+        if isinstance(_output_prefix, (tuple, list))
+        else None
+    )
+    out_name = (
+        ",".join(fname.replace('NBA', prefix) for prefix in paired_prefixes)
+        if paired_prefixes
+        else fname.replace('NBA', _output_prefix)
+    )
 
     try:
         result = _process_func(input_path, yr, label, **(_process_kwargs or {}))
         if result is None:
             return (out_name, 0, False, "processor returned None")
+        if paired_prefixes:
+            if not isinstance(result, tuple) or len(result) != len(paired_prefixes):
+                return (
+                    out_name,
+                    0,
+                    False,
+                    f"expected {len(paired_prefixes)} processor outputs",
+                )
+            total_rows = 0
+            for prefix, frame in zip(paired_prefixes, result):
+                if frame is None:
+                    return (
+                        out_name,
+                        total_rows,
+                        False,
+                        f"processor returned None for {prefix}",
+                    )
+                paired_name = fname.replace('NBA', prefix)
+                paired_path = os.path.join(_processed_dir, paired_name)
+                frame.to_parquet(paired_path, index=False)
+                total_rows += len(frame)
+            return (out_name, total_rows, True, None)
         # process_rapm returns a tuple (no_la, la).
         if isinstance(result, tuple):
             result = result[_tuple_index] if _tuple_index is not None else result[0]
         if result is not None:
+            out_path = os.path.join(_processed_dir, out_name)
             result.to_parquet(out_path, index=False)
             return (out_name, len(result), True, None)
         else:

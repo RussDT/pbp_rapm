@@ -107,11 +107,18 @@ source CSVs are actually available.
 **Output files created in `processed/` (parquet format for space efficiency):**
 - `RAPM26.parquet`, `LA_RAPM26.parquet` - Point differential (with/without luck adjustment)
 - `TS26.parquet` - True shooting
+- `TS_SELF_SHOT26.parquet` - One focal-shooter row per resolved TS attempt
+- `TS_TEAMMATE_SHOT26.parquet` - Four focal-nonshooter rows per resolved TS attempt
 - `TOV26.parquet` - Turnovers
 - `REB26.parquet` - Offensive rebounds
 - `RIM_FREQ26.parquet` - Rim attempt frequency
 - `RIM_FG_PCT26.parquet` - Rim FG%
 - `ASSIST_POINTS26.parquet` - Assisted FG points per possession
+- `ASSIST_POINTS_RECEIVER26.parquet` - Five receiver-opportunity rows per possession
+- `ASSIST_POINTS_PASSER26.parquet` - Five passer-opportunity rows per possession
+- `SCORING_PARENT26.parquet` - Matching standard-possession scoring parent
+- `SCORING_ONBALL26.parquet` - Five focal-player shooter-role rows per possession
+- `SCORING_OFFBALL26.parquet` - Five focal-player non-shooter-role rows per possession
 - `RIM_ASSIST26.parquet` - Assisted rim makes per possession
 - `THREE_FREQ26.parquet` - 3-point attempt frequency
 - `THREE_FG_PCT26.parquet` - 3-point percentage
@@ -121,6 +128,29 @@ source CSVs are actually available.
 - `MIDRANGE_FG_PCT26.parquet` - Midrange FG%
 
 Add `_PS` suffix for playoffs (e.g., `NBA26_PS.parquet` → `RAPM26_PS.parquet`)
+
+Build and solve the five-year regular-season TS shot-role hierarchy:
+
+```bash
+python scripts/reprocess_metric.py TS_SHOT_ROLES 22 26 --season-types rs
+python scripts/rapm.py TS 22 26 RS --off-alpha 3000 --def-alpha 5000
+python scripts/run_ts_shot_role_hierarchy.py 22 26 RS \
+  --parent-results ../results/ts_22_26_rs_a3000_5000_results.csv
+```
+
+Run the preferred joint attempt-level oTS model:
+
+```bash
+python scripts/run_joint_ts_shooter_interaction.py 22 26 RS \
+  --off-alpha 3000 \
+  --def-alpha 5000 \
+  --cv-folds 3 \
+  --parent-results ../results/ts_22_26_rs_a3000_5000_results.csv
+```
+
+The joint runner centers shooter interactions by player-season shot share,
+chooses the role alpha with grouped-by-game CV plus the one-SE rule, and writes
+the main result, season baselines, and role-alpha CV audit under `results/`.
 
 ---
 
@@ -142,6 +172,8 @@ python rapm.py <TYPE> <START_YEAR> <END_YEAR> <SEASON_TYPE> [--pure]
 | --pure | flag | Use raw points (no luck adjustment) |
 | --cv-alpha | flag | Cross-validate offense/defense alphas separately |
 | --season-effects | flag | Add season-phase fixed effects (earliest observed season-phase omitted as reference, preferring RS over PS within a season) |
+| --ps-prior | flag | `ALL` runs only: two-stage playoff handling; solve RS rows first, then refit with ridge shrinkage centered on the RS solution. Descriptive surface (failed the forward gate); writes `*_psprior_stage.csv`; see `docs/PLAYOFF_HANDLING.md` |
+| --ps-prior-stage2 | `full` / `ps-only` | Stage-2 sample for `--ps-prior`: `full` refits all RS+PS rows (expands scale ~1.28x); `ps-only` updates the RS priors from playoff rows alone (preferred descriptive variant) |
 | --age-dummies | flag | Add signed age-bin fixed effects (18-38, 38+ -> 38); `03_run_rapm_analysis.py` applies it to every weighted-factor metric solve |
 | --age-curve | flag | RAPM only: shrink toward a learned age-mean prior |
 | --strength-splits | flag | RAPM only: add DARKO strong/not-strong opponent interaction columns for each player |
@@ -226,6 +258,8 @@ With `--strength-legacy-scale`, the filename gets `_strength_scaled`. The export
 With `--strength-sensitivity`, the filename gets `_strengthsens`. The export estimates separate offensive and defensive continuous slopes against season-standardized DARKO lineup strength, then reports `net_strength_slope`, `net_vs_weak_1sd`, `net_vs_avg_strength`, `net_vs_strong_1sd`, `strong_minus_weak`, and `weak_minus_strong_drop`. Negative `strong_minus_weak` means the player projects worse as opponent quality rises. The default slope penalty is 4x the base player penalty; increase `--strength-sensitivity-alpha-mult` for a more conservative diagnostic.
 
 With `--season-effects`, result filenames get `_se` and `rapm.py` also writes a companion `*_season_effects.csv` file that shows the estimated `(season, RS/PS)` coefficients relative to the omitted reference season-phase. In `ALL` runs, regular season and playoffs are estimated separately rather than sharing one season dummy.
+
+With `--ps-prior`, result filenames get `psprior` (or `psprioronly` with `--ps-prior-stage2 ps-only`) and the solve runs in two stages: regular-season rows first, then a refit with ridge shrinkage centered on the RS solution so playoff opponents are anchored at their RS-established levels. Pair it with `--season-effects`. Both modes failed the August 2026 forward gate, so treat these as descriptive playoff-attribution surfaces; see `docs/PLAYOFF_HANDLING.md`.
 
 With `--cv-alpha`, result filenames get `_cv` and `rapm.py` also writes a companion `*_alpha_cv.csv` file with per-fold losses and the selected offense/defense alpha path. The default grid is `300,500,1000,2000,3000,5000,7000,10000`, and you can override it with `--cv-alpha-grid`.
 
@@ -362,6 +396,12 @@ python rapm.py RAPM 26 26 ALL
 python rapm.py RIM_FREQ 26 26 ALL
 python rapm.py RIM_FG_PCT 26 26 ALL
 python rapm.py ASSIST_POINTS 26 26 ALL
+python run_assist_points_hierarchy.py 26 26 RS \
+  --parent-results ../results/assist_points_26_rs_a3000_5000_results.csv
+python reprocess_metric.py SCORING_ROLES 22 26 --season-types rs
+python rapm.py SCORING_PARENT 22 26 RS --off-alpha 3000 --def-alpha 5000
+python run_scoring_role_hierarchy.py 22 26 RS \
+  --parent-results ../results/scoring_parent_22_26_rs_a3000_5000_results.csv
 python rapm.py RIM_ASSIST 26 26 ALL
 python rapm.py THREE_FREQ 26 26 ALL
 python rapm.py THREE_FG_PCT 26 26 ALL

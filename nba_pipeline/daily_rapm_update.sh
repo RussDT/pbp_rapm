@@ -82,36 +82,36 @@ fi
 # 4. Run RAPM analyses (most common year ranges)
 log ""
 log "[$(date +%H:%M:%S)] Running RAPM analysis (1 year)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 26 26 ALL
+run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 26 26 ALL --season-effects
 
 log ""
 log "[$(date +%H:%M:%S)] Running RAPM analysis (2 years)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 25 26 ALL
+run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 25 26 ALL --season-effects
 
 log ""
 log "[$(date +%H:%M:%S)] Running RAPM analysis (3 years)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 24 26 ALL
+run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 24 26 ALL --season-effects
 
 log ""
 log "[$(date +%H:%M:%S)] Running RAPM analysis (4 years)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 23 26 ALL
+run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 23 26 ALL --season-effects
 
 log ""
 log "[$(date +%H:%M:%S)] Running RAPM analysis (5 years)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 22 26 ALL
+run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 22 26 ALL --season-effects
 
 log ""
 log "[$(date +%H:%M:%S)] Running RAPM analysis (6 years)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 21 26 ALL
+run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 21 26 ALL --season-effects
 
 # 4. Additional weighted-factors runs
 log ""
 log "[$(date +%H:%M:%S)] Running RAPM analysis (6 years, time decay 700)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 21 26 ALL --timedecay --half-life 700
+run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 21 26 ALL --season-effects --timedecay --half-life 700
 
 log ""
 log "[$(date +%H:%M:%S)] Running RAPM analysis (6 years, time decay 700 + rubberband)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 21 26 ALL --timedecay --half-life 700 --rubberband
+run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" 21 26 ALL --season-effects --timedecay --half-life 700 --rubberband
 
 log ""
 log "[$(date +%H:%M:%S)] Uploading timedecay RAPM to Supabase..."
@@ -245,22 +245,22 @@ RAPMS_DIR="/Users/russellthomas/Docs/rapms"
 RAPMS_MASTER="$RAPMS_DIR/master_results"
 
 for f in \
-    "weighted_factors_26_all.csv" \
-    "weighted_factors_25_26_all.csv" \
-    "weighted_factors_24_26_all.csv" \
-    "weighted_factors_23_26_all.csv" \
-    "weighted_factors_22_26_all.csv" \
-    "weighted_factors_21_26_all.csv" \
-    "weighted_factors_21_26_all_td700.csv" \
+    "weighted_factors_26_all_se.csv" \
+    "weighted_factors_25_26_all_se.csv" \
+    "weighted_factors_24_26_all_se.csv" \
+    "weighted_factors_23_26_all_se.csv" \
+    "weighted_factors_22_26_all_se.csv" \
+    "weighted_factors_21_26_all_se.csv" \
+    "weighted_factors_21_26_all_se_td700.csv" \
     "weighted_factors_14_26_all_rb.csv" \
-    "weighted_factors_alt3_26_all.csv" \
-    "weighted_factors_alt3_25_26_all.csv" \
-    "weighted_factors_alt3_24_26_all.csv" \
-    "weighted_factors_alt3_23_26_all.csv" \
-    "weighted_factors_alt3_22_26_all.csv" \
-    "weighted_factors_alt3_21_26_all.csv" \
-    "weighted_factors_alt3_21_26_all_td700.csv" \
-    "weighted_factors_alt3_21_26_all_rb_td700.csv" \
+    "weighted_factors_alt3_26_all_se.csv" \
+    "weighted_factors_alt3_25_26_all_se.csv" \
+    "weighted_factors_alt3_24_26_all_se.csv" \
+    "weighted_factors_alt3_23_26_all_se.csv" \
+    "weighted_factors_alt3_22_26_all_se.csv" \
+    "weighted_factors_alt3_21_26_all_se.csv" \
+    "weighted_factors_alt3_21_26_all_se_td700.csv" \
+    "weighted_factors_alt3_21_26_all_rb_se_td700.csv" \
     "weighted_factors_alt3_14_26_all_rb.csv" \
     "rimfreq_21_26_all_td700_results.csv" \
     "rimfgpct_21_26_all_td700_results.csv" \

@@ -210,81 +210,179 @@ def build_possessions(year: int, season_type: str, game_id: str | None = None) -
         is_admin_free_throw_text
     )
 
-    rows: list[dict[str, object]] = []
-    for (gid, poss_group), group in parsed.groupby(["game_id", "net_poss_group"], sort=False):
-        has_live_event = bool(group["is_live_net_rating_event"].any())
-        has_score = bool((group["home_action_points"] + group["away_action_points"]).ne(0).any())
-        if not has_live_event and not has_score:
+    keys = ["game_id", "net_poss_group"]
+    parsed["_segment_offense"] = parsed["TeamOnOffense"].replace("", np.nan)
+    parsed["_has_action_score"] = (
+        parsed["home_action_points"] + parsed["away_action_points"]
+    ).ne(0)
+
+    grouped = parsed.groupby(keys, sort=False, dropna=False)
+    summary = grouped.agg(
+        start_event_num=("event_num", "first"),
+        end_event_num=("event_num", "last"),
+        start_time=("time_quarter", "first"),
+        end_time=("time_quarter", "last"),
+        event_count=("event_num", "size"),
+        period_count=("period", "nunique"),
+        has_live_event=("is_live_net_rating_event", "any"),
+        has_score=("_has_action_score", "any"),
+        home_points_total=("home_action_points", "sum"),
+        away_points_total=("away_action_points", "sum"),
+        poss_offense=("_segment_offense", "last"),
+    ).reset_index()
+
+    terminal_columns = [
+        *keys,
+        "period",
+        "event_type",
+        "event_text",
+        "home_team_abbr",
+        "away_team_abbr",
+        *[f"h{i}" for i in range(1, 6)],
+        *[f"a{i}" for i in range(1, 6)],
+    ]
+    terminal = grouped.tail(1)[terminal_columns].copy()
+    summary = summary.merge(terminal, on=keys, how="left", validate="one_to_one")
+    summary = summary[summary["has_live_event"] | summary["has_score"]].copy()
+
+    missing_offense = ~summary["poss_offense"].isin(["Home", "Away"])
+    if missing_offense.any():
+        group_lookup = grouped
+        for index in summary.index[missing_offense]:
+            row = summary.loc[index]
+            group = group_lookup.get_group((row["game_id"], row["net_poss_group"]))
+            summary.at[index, "poss_offense"] = infer_segment_offense(
+                group,
+                row.get("home_team_abbr"),
+                row.get("away_team_abbr"),
+            )
+    summary = summary[summary["poss_offense"].isin(["Home", "Away"])].copy()
+
+    offense_lookup = summary[keys + ["poss_offense"]]
+    parsed = parsed.merge(offense_lookup, on=keys, how="left", suffixes=("", "_resolved"))
+    split_admin = parsed[
+        parsed["is_admin_free_throw"]
+        & (parsed["home_action_points"].gt(0) | parsed["away_action_points"].gt(0))
+        & parsed["action_scoring_side"].isin(["Home", "Away"])
+        & parsed["action_scoring_side"].ne(parsed["poss_offense_resolved"])
+    ].copy()
+    if split_admin.empty:
+        admin_points = pd.DataFrame(
+            columns=[*keys, "home_admin_points", "away_admin_points"]
+        )
+    else:
+        admin_points = (
+            split_admin.groupby(keys, sort=False, dropna=False)
+            .agg(
+                home_admin_points=("home_action_points", "sum"),
+                away_admin_points=("away_action_points", "sum"),
+            )
+            .reset_index()
+        )
+    summary = summary.merge(admin_points, on=keys, how="left")
+    summary[["home_admin_points", "away_admin_points"]] = summary[
+        ["home_admin_points", "away_admin_points"]
+    ].fillna(0.0)
+    summary["home_points"] = (
+        summary["home_points_total"] - summary["home_admin_points"]
+    )
+    summary["away_points"] = (
+        summary["away_points_total"] - summary["away_admin_points"]
+    )
+    is_home_offense = summary["poss_offense"].eq("Home")
+    summary["off_points"] = np.where(
+        is_home_offense, summary["home_points"], summary["away_points"]
+    )
+    summary["def_points"] = np.where(
+        is_home_offense, summary["away_points"], summary["home_points"]
+    )
+
+    possession_rows = pd.DataFrame(
+        {
+            "game_id": summary["game_id"].astype(str),
+            "season": int(year),
+            "season_type": season_type.upper(),
+            "period": summary["period"].astype(int),
+            "net_poss_group": summary["net_poss_group"].astype(int),
+            "start_event_num": summary["start_event_num"].astype(int),
+            "end_event_num": summary["end_event_num"].astype(int),
+            "start_time": summary["start_time"].astype(str),
+            "end_time": summary["end_time"].astype(str),
+            "poss_offense": summary["poss_offense"].astype(str),
+            "off_team_abbr": np.where(
+                is_home_offense,
+                summary["home_team_abbr"],
+                summary["away_team_abbr"],
+            ),
+            "def_team_abbr": np.where(
+                is_home_offense,
+                summary["away_team_abbr"],
+                summary["home_team_abbr"],
+            ),
+            "home_points": summary["home_points"].astype(float),
+            "away_points": summary["away_points"].astype(float),
+            "off_points": summary["off_points"].astype(float),
+            "def_points": summary["def_points"].astype(float),
+            "off_poss": 1,
+            "def_poss": 1,
+            "event_count": summary["event_count"].astype(int),
+            "period_count": summary["period_count"].astype(int),
+            "terminal_event_type": summary["event_type"].astype(str),
+            "terminal_event_text": summary["event_text"].astype(str),
+            "row_type": "possession",
+        }
+    )
+    for idx in range(1, 6):
+        possession_rows[f"O{idx}"] = np.where(
+            is_home_offense, summary[f"h{idx}"], summary[f"a{idx}"]
+        )
+        possession_rows[f"D{idx}"] = np.where(
+            is_home_offense, summary[f"a{idx}"], summary[f"h{idx}"]
+        )
+
+    admin_rows: list[dict[str, object]] = []
+    for admin in split_admin.itertuples(index=False):
+        admin_row = pd.Series(admin._asdict())
+        admin_offense = str(admin_row["action_scoring_side"])
+        if admin_offense not in {"Home", "Away"}:
             continue
-
-        terminal = group.iloc[-1]
-        offense = infer_segment_offense(group, terminal.get("home_team_abbr"), terminal.get("away_team_abbr"))
-        if offense not in {"Home", "Away"}:
-            continue
-
-        defense = "Away" if offense == "Home" else "Home"
-        split_admin_rows = group[
-            group["is_admin_free_throw"]
-            & (group["home_action_points"].gt(0) | group["away_action_points"].gt(0))
-            & group["action_scoring_side"].isin(["Home", "Away"])
-            & group["action_scoring_side"].ne(offense)
-        ].copy()
-
-        home_admin_points = float(split_admin_rows["home_action_points"].sum()) if not split_admin_rows.empty else 0.0
-        away_admin_points = float(split_admin_rows["away_action_points"].sum()) if not split_admin_rows.empty else 0.0
-        home_points = float(group["home_action_points"].sum()) - home_admin_points
-        away_points = float(group["away_action_points"].sum()) - away_admin_points
-        off_points = home_points if offense == "Home" else away_points
-        def_points = away_points if offense == "Home" else home_points
-
-        rows.append(
+        admin_home_points = float(admin_row["home_action_points"])
+        admin_away_points = float(admin_row["away_action_points"])
+        admin_off_points = (
+            admin_home_points if admin_offense == "Home" else admin_away_points
+        )
+        admin_group = pd.DataFrame([admin_row])
+        admin_rows.append(
             base_row(
-                gid,
+                admin_row["game_id"],
                 year,
                 season_type,
-                group,
-                terminal,
-                poss_group,
-                offense,
-                home_points,
-                away_points,
-                off_points,
-                def_points,
-                1,
-                1,
-                "possession",
+                admin_group,
+                admin_row,
+                admin_row["net_poss_group"],
+                admin_offense,
+                admin_home_points,
+                admin_away_points,
+                admin_off_points,
+                0.0,
+                0,
+                0,
+                "admin_free_throw",
             )
         )
 
-        for admin in split_admin_rows.itertuples(index=False):
-            admin_row = pd.Series(admin._asdict())
-            admin_offense = str(admin_row["action_scoring_side"])
-            if admin_offense not in {"Home", "Away"}:
-                continue
-            admin_home_points = float(admin_row["home_action_points"])
-            admin_away_points = float(admin_row["away_action_points"])
-            admin_off_points = admin_home_points if admin_offense == "Home" else admin_away_points
-            admin_group = group.loc[group["event_num"].eq(admin_row["event_num"])].copy()
-            rows.append(
-                base_row(
-                    gid,
-                    year,
-                    season_type,
-                    admin_group,
-                    admin_row,
-                    poss_group,
-                    admin_offense,
-                    admin_home_points,
-                    admin_away_points,
-                    admin_off_points,
-                    0.0,
-                    0,
-                    0,
-                    "admin_free_throw",
-                )
-            )
-
-    return pd.DataFrame(rows)
+    if admin_rows:
+        output = pd.concat(
+            [possession_rows, pd.DataFrame(admin_rows)],
+            ignore_index=True,
+        )
+        output["_row_order"] = output["row_type"].eq("admin_free_throw").astype(int)
+        output = output.sort_values(
+            ["game_id", "net_poss_group", "_row_order", "start_event_num"],
+            kind="stable",
+        ).drop(columns="_row_order")
+        return output.reset_index(drop=True)
+    return possession_rows.reset_index(drop=True)
 
 
 def validate_possessions(poss: pd.DataFrame) -> dict[str, object]:

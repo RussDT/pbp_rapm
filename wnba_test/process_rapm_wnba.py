@@ -184,7 +184,45 @@ def ft_off_check_py(df):
 # Global variable to cache game dates DF (optional, improves performance if processing multiple files)
 _game_dates_cache = None
 
-def load_game_dates(url="https://raw.githubusercontent.com/gabriel1200/shot_data/refs/heads/master/game_dates.csv"):
+GABRIEL_WNBA_GAME_DATES = (
+    ROOT / "nba_pipeline" / "external" / "gabriel_wnba" / "data" / "wnba_game_dates.csv"
+)
+
+
+def prepare_local_wnba_game_dates(path):
+    """Load Gabriel's WNBA schedule into the processor's game-date schema."""
+    game_dates_df = pd.read_csv(path, dtype={"gameId": str})
+    required = {"gameId", "date"}
+    missing = required - set(game_dates_df.columns)
+    if missing:
+        raise ValueError(f"WNBA game-date file is missing columns: {sorted(missing)}")
+    game_ids = (
+        game_dates_df["gameId"]
+        .astype(str)
+        .str.replace(r"\.0$", "", regex=True)
+        .str.zfill(10)
+    )
+    parsed_dates = pd.to_datetime(game_dates_df["date"], utc=True, errors="coerce")
+    prepared = pd.DataFrame(
+        {
+            "GAME_ID": pd.to_numeric(game_ids, errors="coerce"),
+            "game_date": parsed_dates.dt.strftime("%Y-%m-%d"),
+            "season": pd.to_numeric(
+                "20" + game_ids.str.slice(3, 5),
+                errors="coerce",
+            ),
+        }
+    )
+    prepared = prepared.dropna(subset=["GAME_ID", "game_date", "season"])
+    prepared["GAME_ID"] = prepared["GAME_ID"].astype(int)
+    prepared["season"] = prepared["season"].astype(int)
+    return prepared.drop_duplicates(subset=["GAME_ID"], keep="last")
+
+
+def load_game_dates(
+    url="https://raw.githubusercontent.com/gabriel1200/shot_data/refs/heads/master/game_dates.csv",
+    local_path=GABRIEL_WNBA_GAME_DATES,
+):
     """
     Loads and prepares the game dates data from the specified URL.
     Handles caching, type conversion, and deduplication.
@@ -194,7 +232,20 @@ def load_game_dates(url="https://raw.githubusercontent.com/gabriel1200/shot_data
         # print("        Using cached game dates data.") # Uncomment for debug
         return _game_dates_cache.copy() # Return a copy to prevent modification of cache
 
-    print(f"        Loading game dates data from {url}...")
+    if Path(local_path).exists():
+        print(f"        Loading WNBA game dates from {local_path}...")
+        try:
+            game_dates_df = prepare_local_wnba_game_dates(local_path)
+            print(
+                f"        Processed local WNBA game dates: {len(game_dates_df)} unique games found."
+            )
+            _game_dates_cache = game_dates_df
+            return game_dates_df.copy()
+        except Exception as e:
+            print(f"        Error processing local WNBA game dates: {e}")
+            return None
+
+    print(f"        Local WNBA game dates unavailable; loading fallback data from {url}...")
     try:
         response = requests.get(url, timeout=20) # Added timeout
         response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)

@@ -39,14 +39,19 @@ OUTPUT_COLUMNS = [
     "shooter_name",
     "shot_side",
     "shot_clock_est",
+    "shot_clock_lower",
+    "shot_clock_upper",
     "shot_clock_raw",
     "elapsed_since_reset",
     "reset_len",
+    "rule_reset_len",
     "reset_reason",
     "reset_event_num",
     "reset_time_quarter",
     "confidence",
+    "confidence_score",
     "confidence_reason",
+    "needs_review",
 ]
 
 
@@ -98,7 +103,24 @@ def _clock_seconds(row: pd.Series) -> int:
         return int(row["clock_sec"])
     minute = int(row.get("minute_remaining_quarter", 0) or 0)
     second = int(row.get("seconds_remaining_quarter", 0) or 0)
-    return minute * 60 + second
+    return second if second > 59 else minute * 60 + second
+
+
+def normalize_clock_seconds(df: pd.DataFrame) -> pd.Series:
+    """Normalize Gabriel total-seconds and modern minute/second clocks."""
+    minute = pd.to_numeric(
+        df.get("minute_remaining_quarter", pd.Series(0, index=df.index)),
+        errors="coerce",
+    ).fillna(0)
+    second = pd.to_numeric(
+        df.get("seconds_remaining_quarter", pd.Series(0, index=df.index)),
+        errors="coerce",
+    ).fillna(0)
+    normalized = (minute * 60 + second).where(second <= 59, second)
+    if "clock_sec" in df.columns:
+        existing = pd.to_numeric(df["clock_sec"], errors="coerce")
+        normalized = existing.where(existing.notna(), normalized)
+    return normalized.astype(int)
 
 
 def _event_side(row: pd.Series, kind: Optional[str] = None) -> Optional[str]:
@@ -211,18 +233,33 @@ def _confidence(
     return "high", ";".join(reasons) if reasons else "ok"
 
 
-def estimate_shot_clock(raw_df: pd.DataFrame) -> pd.DataFrame:
+def offensive_rebound_reset_seconds(season_end_year: Optional[int]) -> int:
+    """Return the NBA offensive-rebound reset for a season.
+
+    The NBA moved the offensive-rebound reset from 24 to 14 seconds for the
+    2018-19 season.  ``None`` retains the modern 14-second behavior for
+    backwards compatibility with callers that do not provide a season.
+    """
+    if season_end_year is None:
+        return 14
+    year = int(season_end_year)
+    if year < 100:
+        year = 1900 + year if year >= 70 else 2000 + year
+    return 14 if year >= 2019 else 24
+
+
+def estimate_shot_clock(
+    raw_df: pd.DataFrame,
+    *,
+    season_end_year: Optional[int] = None,
+) -> pd.DataFrame:
     """Return one shot-clock estimate row for every raw FGA event."""
     if raw_df.empty:
         return pd.DataFrame(columns=OUTPUT_COLUMNS)
 
     df = raw_df.copy()
     df["_event_type_name"] = df["event_type"].map(_event_type_name)
-    if "clock_sec" not in df.columns:
-        df["clock_sec"] = (
-            pd.to_numeric(df.get("minute_remaining_quarter", 0), errors="coerce").fillna(0).astype(int) * 60
-            + pd.to_numeric(df.get("seconds_remaining_quarter", 0), errors="coerce").fillna(0).astype(int)
-        )
+    df["clock_sec"] = normalize_clock_seconds(df)
     df["_orig_order"] = range(len(df))
     df["event_num"] = pd.to_numeric(df["event_num"], errors="coerce").fillna(0).astype(int)
     df["period"] = pd.to_numeric(df["period"], errors="coerce").fillna(0).astype(int)
@@ -234,6 +271,7 @@ def estimate_shot_clock(raw_df: pd.DataFrame) -> pd.DataFrame:
     )
 
     estimates: list[dict[str, object]] = []
+    offensive_rebound_reset = offensive_rebound_reset_seconds(season_end_year)
     for game_id, game_df in sorted_df.groupby("game_id", sort=False):
         name_side = _build_game_name_side_map(game_df)
         for period, period_df in game_df.groupby("period", sort=False):
@@ -241,6 +279,7 @@ def estimate_shot_clock(raw_df: pd.DataFrame) -> pd.DataFrame:
             current_offense: Optional[str] = None
             reset_clock = period_length
             reset_len = 24
+            rule_reset_len = 24
             reset_reason = "period_start"
             reset_event_num: Optional[int] = None
             reset_time_quarter = f"{period_length // 60:02d}:00"
@@ -257,11 +296,17 @@ def estimate_shot_clock(raw_df: pd.DataFrame) -> pd.DataFrame:
                 confidence_reason: Optional[str] = None,
             ) -> None:
                 nonlocal current_offense, reset_clock, reset_len, reset_reason
-                nonlocal reset_event_num, reset_time_quarter, inherited_confidence_reasons
+                nonlocal rule_reset_len, reset_event_num, reset_time_quarter
+                nonlocal inherited_confidence_reasons
                 if offense:
                     current_offense = offense
                 reset_clock = clock
-                reset_len = length
+                rule_reset_len = length
+                # When the game clock is below the nominal reset, the effective
+                # clock available to the offense is the game clock.  Without
+                # this cap final-possession shots can be overstated badly (for
+                # example, 19 instead of 5 seconds after a change at 0:10).
+                reset_len = max(0, min(length, clock))
                 reset_reason = reason
                 reset_event_num = int(row["event_num"])
                 reset_time_quarter = str(row.get("time_quarter", ""))
@@ -284,6 +329,8 @@ def estimate_shot_clock(raw_df: pd.DataFrame) -> pd.DataFrame:
                         current_offense,
                         inherited_confidence_reasons,
                     )
+                    shot_clock_est = int(max(0, min(reset_len, raw_estimate)))
+                    confidence_score = {"high": 0.90, "medium": 0.60, "low": 0.20}[confidence]
                     estimates.append(
                         {
                             "game_id": game_id,
@@ -294,15 +341,23 @@ def estimate_shot_clock(raw_df: pd.DataFrame) -> pd.DataFrame:
                             "shooter_id": row.get("player1_id"),
                             "shooter_name": row.get("player1_name"),
                             "shot_side": shot_side or "",
-                            "shot_clock_est": int(max(0, min(24, raw_estimate))),
+                            "shot_clock_est": shot_clock_est,
+                            # Raw PBP clocks are whole-second timestamps.  The
+                            # interval records that irreducible quantization
+                            # uncertainty instead of implying sub-second truth.
+                            "shot_clock_lower": max(0, shot_clock_est - 1),
+                            "shot_clock_upper": min(reset_len, shot_clock_est + 1),
                             "shot_clock_raw": int(raw_estimate),
                             "elapsed_since_reset": int(elapsed_since_reset),
                             "reset_len": int(reset_len),
+                            "rule_reset_len": int(rule_reset_len),
                             "reset_reason": reset_reason,
                             "reset_event_num": reset_event_num,
                             "reset_time_quarter": reset_time_quarter,
                             "confidence": confidence,
+                            "confidence_score": confidence_score,
                             "confidence_reason": confidence_reason,
+                            "needs_review": confidence != "high",
                         }
                     )
                     last_live_miss_side = shot_side if event_type == "MISS" else None
@@ -311,6 +366,7 @@ def estimate_shot_clock(raw_df: pd.DataFrame) -> pd.DataFrame:
                     current_offense = None
                     reset_clock = period_length
                     reset_len = 24
+                    rule_reset_len = 24
                     reset_reason = "period_start"
                     reset_event_num = int(row["event_num"])
                     reset_time_quarter = str(row.get("time_quarter", ""))
@@ -368,7 +424,7 @@ def estimate_shot_clock(raw_df: pd.DataFrame) -> pd.DataFrame:
                             set_reset(
                                 offense=rebound_side,
                                 clock=clock,
-                                length=14,
+                                length=offensive_rebound_reset,
                                 reason="off_rebound",
                                 row=row,
                             )
@@ -484,7 +540,7 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     raw_df = pd.read_parquet(input_path)
-    estimates = estimate_shot_clock(raw_df)
+    estimates = estimate_shot_clock(raw_df, season_end_year=args.season)
     diagnostics = estimates[estimates["confidence"] != "high"].copy()
 
     stem = _output_stem(args.season, args.season_type)

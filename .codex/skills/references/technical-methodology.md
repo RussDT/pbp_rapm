@@ -59,10 +59,15 @@ Each regression uses the same +1/-1 design matrix, so offense and defense coeffi
 ## Regression Specification
 
 - **Method**: Ridge regression
-- **Ridge alpha**: 3000 (for the ShotQuality decomposition; six-factor may differ -- check pipeline)
+- **Ridge alpha**: Series- and component-specific. Never assume one global
+  alpha. Read the immutable config or run manifest; active ShotQuality-EV VPM
+  uses separate offense/defense alphas for all ten components.
 - **Design matrix**: One column per player, +1 on-court offense, -1 on-court defense, alternating offense/defense blocks
-- **Time-decay**: Half-life of 700 days. Recent games weighted more heavily. Allows using ~3 seasons of data for stability while keeping recent performance dominant.
-- **Data scope**: ~650,000 non-turnover possessions from 2023-24 through 2025-26 seasons (for ShotQuality TS decomposition). Six-factor uses 2021-2026 time-decayed data (~1071 players).
+- **Time-decay**: Series-specific. Native long-window examples use TD700;
+  accepted/current VPM uses TD550; the single-season beta can use no
+  within-season decay. Verify the artifact before describing it.
+- **Data scope**: Series-specific. Preserve the exact date, season-type, and
+  possession-universe contract in every explanation.
 - **Output**: Offensive and defensive coefficients per player, expressed as impact vs league average
 
 ## The Units Problem
@@ -100,6 +105,10 @@ But they don't leave much residual at all. Nearly everything about a player's po
 That's not a decomposition -- it's a discovery. It tells you something about the structure of basketball itself.
 
 ## ShotQuality TS Decomposition Methodology
+
+This section describes the historical `SQ + Contest + FT` shot-only research
+surface. Do not confuse it with active public eight-component DECOMP or the
+ten-component ShotQuality-EV VPM. Read `decomp-and-vpm.md` for those models.
 
 ### The Exact-Sum Insight
 

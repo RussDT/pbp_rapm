@@ -13,8 +13,8 @@ LATEST_YEAR = 2026
 
 # Source files mapping: only 3Y and 5Y (folder, weighted_factors, year_interval)
 SOURCE_FILES = [
-    ("rapm_24_26_all", "weighted_factors_24_26_all.csv", "3Y"),
-    ("rapm_22_26_all", "weighted_factors_22_26_all.csv", "5Y"),
+    ("rapm_24_26_all_se", "weighted_factors_24_26_all_se.csv", "3Y"),
+    ("rapm_22_26_all_se", "weighted_factors_22_26_all_se.csv", "5Y"),
 ]
 
 # Target column order

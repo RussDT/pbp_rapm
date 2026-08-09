@@ -8,7 +8,11 @@ Adds columns to raw_data/NBA*.parquet files:
 - initial_ev: float (shot expected value at release)
 - dynamic_ev: float (shot expected value with game context)
 - sq_shooter_id: int (shooter NBA player ID from SQ)
-- sq_defender_id: int (closest defender NBA player ID from SQ)
+- sq_primary_defender_id: int (ShotQuality closest-defender NBA player ID)
+- sq_match_status: exact-key, provider-ambiguous, raw-key-ambiguous, or unmatched
+- sq_match_candidate_count: distinct ShotQuality candidates for the event key
+- sq_source_row_count: raw ShotQuality rows for the event key
+- sq_provider: provider provenance (`shotquality`)
 - sq_play_descriptors: raw ShotQuality descriptor list string
 - sq_descriptor_bundle: normalized descriptor bundle string
 - sq_desc_*: boolean descriptor columns for stable downstream modeling
@@ -22,12 +26,19 @@ Usage:
 import pandas as pd
 import ast
 import sys
+import numpy as np
 from pathlib import Path
-from glob import glob
 
 # Paths
 SQ_BASE = Path('/Users/russellthomas/Docs/2026_shotquality/nba_games')
 RAW_BASE = Path(__file__).parent.parent / 'raw_data'
+SQ_JOIN_KEYS = ['game_id', 'event_num']
+SQ_MATCH_DIAGNOSTIC_COLUMNS = [
+    'sq_provider',
+    'sq_match_status',
+    'sq_match_candidate_count',
+    'sq_source_row_count',
+]
 SQ_DESCRIPTOR_TAGS = [
     'alley_oop',
     'catch_and_shoot',
@@ -132,11 +143,136 @@ def load_shotquality_year(year: int) -> pd.DataFrame:
         'ev.initial_ev.value': 'initial_ev',
         'ev.dynamic_ev.value': 'dynamic_ev',
         'personId': 'sq_shooter_id',
-        'opp_personId': 'sq_defender_id'
+        'opp_personId': 'sq_primary_defender_id'
     })
     sq_merge['event_num'] = sq_merge['event_num'].astype('Int64')
 
     return sq_merge
+
+
+def _normalized_game_id(series: pd.Series) -> pd.Series:
+    return series.astype(str).str.lstrip('0')
+
+
+def resolve_shotquality_candidates(sq_data: pd.DataFrame) -> pd.DataFrame:
+    """Return one explicit ShotQuality assignment or ambiguity row per event key.
+
+    Exact duplicate provider rows are harmless and collapse after all payload
+    columns agree. Distinct rows on the same key are not resolved arbitrarily:
+    their payload is nulled and the key is retained as provider-ambiguous.
+    """
+    missing = set(SQ_JOIN_KEYS) - set(sq_data.columns)
+    if missing:
+        raise ValueError(f'ShotQuality data missing join columns: {sorted(missing)}')
+
+    work = sq_data.copy()
+    work['game_id'] = _normalized_game_id(work['game_id'])
+    work['event_num'] = pd.to_numeric(work['event_num'], errors='coerce').astype('Int64')
+    work = work.dropna(subset=SQ_JOIN_KEYS)
+
+    payload_columns = [
+        col for col in work.columns
+        if col not in {*SQ_JOIN_KEYS, *SQ_MATCH_DIAGNOSTIC_COLUMNS}
+    ]
+    output_columns = [
+        *SQ_JOIN_KEYS,
+        *payload_columns,
+        *SQ_MATCH_DIAGNOSTIC_COLUMNS,
+    ]
+    if work.empty:
+        return pd.DataFrame(columns=output_columns)
+
+    source_counts = (
+        work.groupby(SQ_JOIN_KEYS, dropna=False)
+        .size()
+        .rename('sq_source_row_count')
+        .reset_index()
+    )
+
+    distinct = work.drop_duplicates(subset=[*SQ_JOIN_KEYS, *payload_columns])
+    candidate_counts = (
+        distinct.groupby(SQ_JOIN_KEYS, dropna=False)
+        .size()
+        .rename('sq_match_candidate_count')
+        .reset_index()
+    )
+    counts = source_counts.merge(
+        candidate_counts,
+        on=SQ_JOIN_KEYS,
+        how='inner',
+        validate='one_to_one',
+    )
+
+    unique = distinct.merge(
+        counts,
+        on=SQ_JOIN_KEYS,
+        how='inner',
+        validate='many_to_one',
+    )
+    unique = unique[unique['sq_match_candidate_count'].eq(1)].copy()
+    unique['sq_provider'] = 'shotquality'
+    unique['sq_match_status'] = 'exact_event_key'
+
+    ambiguous = counts[counts['sq_match_candidate_count'].gt(1)].copy()
+    for col in payload_columns:
+        ambiguous[col] = pd.NA
+    ambiguous['sq_provider'] = 'shotquality'
+    ambiguous['sq_match_status'] = 'ambiguous_provider_event_key'
+
+    frames = [frame for frame in (unique, ambiguous) if not frame.empty]
+    resolved = pd.concat(frames, ignore_index=True, sort=False)
+    if resolved.duplicated(SQ_JOIN_KEYS).any():
+        raise AssertionError('Resolved ShotQuality assignments are not one row per key')
+    return resolved[output_columns]
+
+
+def attach_shotquality_rows(raw: pd.DataFrame, sq_data: pd.DataFrame) -> pd.DataFrame:
+    """Attach ShotQuality rows without assigning one provider shot twice.
+
+    `(game_id, event_num)` is a transitional crosswalk, not a canonical event
+    key. If either side has multiple distinct candidates, the enrichment
+    payload stays null and the ambiguity is recorded for later reconciliation.
+    """
+    missing = set(SQ_JOIN_KEYS) - set(raw.columns)
+    if missing:
+        raise ValueError(f'Raw PBP missing join columns: {sorted(missing)}')
+
+    raw_work = raw.copy()
+    raw_work['_sq_original_order'] = np.arange(len(raw_work), dtype='int64')
+    raw_work['game_id'] = _normalized_game_id(raw_work['game_id'])
+    raw_work['event_num'] = pd.to_numeric(
+        raw_work['event_num'], errors='coerce'
+    ).astype('Int64')
+
+    game_ids = set(raw_work['game_id'].unique())
+    sq_filtered = sq_data.copy()
+    sq_filtered['game_id'] = _normalized_game_id(sq_filtered['game_id'])
+    sq_filtered = sq_filtered[sq_filtered['game_id'].isin(game_ids)].copy()
+    resolved = resolve_shotquality_candidates(sq_filtered)
+
+    payload_columns = [
+        col for col in resolved.columns
+        if col not in {*SQ_JOIN_KEYS, *SQ_MATCH_DIAGNOSTIC_COLUMNS}
+    ]
+    enriched = raw_work.merge(
+        resolved,
+        on=SQ_JOIN_KEYS,
+        how='left',
+        validate='many_to_one',
+        sort=False,
+    )
+
+    ambiguous_rows = enriched.duplicated(SQ_JOIN_KEYS, keep=False).to_numpy()
+    if ambiguous_rows.any():
+        for col in payload_columns:
+            if pd.api.types.is_bool_dtype(enriched[col].dtype):
+                enriched[col] = enriched[col].astype('boolean')
+        enriched.loc[ambiguous_rows, payload_columns] = pd.NA
+        enriched.loc[ambiguous_rows, 'sq_match_status'] = 'ambiguous_raw_event_key'
+
+    enriched['sq_match_status'] = enriched['sq_match_status'].fillna('unmatched')
+    enriched = enriched.sort_values('_sq_original_order', kind='stable')
+    return enriched.drop(columns=['_sq_original_order']).reset_index(drop=True)
 
 
 def enrich_parquet(raw_file: Path, sq_data: pd.DataFrame) -> bool:
@@ -153,8 +289,10 @@ def enrich_parquet(raw_file: Path, sq_data: pd.DataFrame) -> bool:
 
     # Drop existing SQ columns if re-running
     sq_cols = ['is_transition', 'is_transition_dunk_or_layup', 'initial_ev',
-               'dynamic_ev', 'sq_shooter_id', 'sq_defender_id',
-               'sq_play_descriptors', 'sq_descriptor_bundle'] + [
+               'dynamic_ev', 'sq_shooter_id', 'sq_primary_defender_id',
+               'sq_defender_id',  # deprecated legacy field removed on rerun
+               'sq_play_descriptors', 'sq_descriptor_bundle',
+               *SQ_MATCH_DIAGNOSTIC_COLUMNS] + [
                    descriptor_col_name(tag) for tag in SQ_DESCRIPTOR_TAGS
                ]
     existing_sq_cols = [c for c in sq_cols if c in raw.columns]
@@ -162,31 +300,27 @@ def enrich_parquet(raw_file: Path, sq_data: pd.DataFrame) -> bool:
         raw = raw.drop(columns=existing_sq_cols)
         print(f'    Dropped existing SQ columns: {existing_sq_cols}')
 
-    # Normalize game_id types (raw has '0022500014', SQ has 22500014)
+    # Preserve the original ID representation for the written raw surface.
     raw_game_id_orig = raw['game_id'].copy()  # preserve original for saving
-    raw['game_id'] = raw['game_id'].astype(str).str.lstrip('0')
-    sq_data = sq_data.copy()
-    sq_data['game_id'] = sq_data['game_id'].astype(str).str.lstrip('0')
-
-    # Filter SQ data to only games in this parquet
-    game_ids = set(raw['game_id'].unique())
-    sq_filtered = sq_data[sq_data['game_id'].isin(game_ids)].copy()
-
-    # Normalize event_num types and dedupe SQ (multiple SQ rows per event possible)
-    sq_filtered['event_num'] = sq_filtered['event_num'].astype('Int64')
-    raw['event_num'] = raw['event_num'].astype('Int64')
-    sq_filtered = sq_filtered.drop_duplicates(subset=['game_id', 'event_num'], keep='first')
-
-    # Merge
-    enriched = raw.merge(sq_filtered, on=['game_id', 'event_num'], how='left')
+    enriched = attach_shotquality_rows(raw, sq_data)
 
     # Stats
     has_sq = enriched['is_transition'].notna().sum()
     trans = enriched['is_transition'].sum() if 'is_transition' in enriched else 0
     trans_dl = enriched['is_transition_dunk_or_layup'].sum() if 'is_transition_dunk_or_layup' in enriched else 0
+    provider_ambiguous = enriched['sq_match_status'].eq(
+        'ambiguous_provider_event_key'
+    ).sum()
+    raw_ambiguous = enriched['sq_match_status'].eq(
+        'ambiguous_raw_event_key'
+    ).sum()
 
     print(f'    Rows: {len(enriched):,} | With SQ: {has_sq:,} ({has_sq/len(enriched)*100:.1f}%)')
     print(f'    Transition: {trans:,} shots, {trans_dl:,} dunks/layups')
+    print(
+        f'    Ambiguous matches: provider={provider_ambiguous:,}, '
+        f'raw_event_key={raw_ambiguous:,}'
+    )
     print(f'    Columns: {initial_cols} -> {len(enriched.columns)}')
 
     # Restore original game_id format before saving

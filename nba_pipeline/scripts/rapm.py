@@ -176,6 +176,8 @@ def build_output_suffix(
     rubberband: bool = False,
     season_effects: bool = False,
     fixed_season_effects: bool = False,
+    ps_prior: bool = False,
+    ps_prior_stage2: str = 'full',
     age_dummies: bool = False,
     age_poly_degree: int | None = None,
     alpha_cv: bool = False,
@@ -200,6 +202,8 @@ def build_output_suffix(
         parts.append("se")
     if fixed_season_effects:
         parts.append("fse")
+    if ps_prior:
+        parts.append("psprior" if ps_prior_stage2 == 'full' else "psprioronly")
     if age_dummies:
         parts.append("agefe")
     if age_poly_degree is not None:
@@ -228,6 +232,31 @@ def build_output_suffix(
     return "_".join(parts)
 
 
+def _decay_weights_from_parsed_dates(parsed_dates: pd.Series, decay_base: float) -> np.ndarray:
+    """Shared decay-weight math. Rows with unparseable dates get the oldest
+    observed age (minimum weight) rather than silently receiving full weight."""
+    reference_date = parsed_dates.max()
+    n_missing = int(parsed_dates.isna().sum())
+    if pd.isna(reference_date):
+        logging.warning(
+            "Time decay: no parseable dates in sample (%d rows); using uniform weight 1.0",
+            len(parsed_dates),
+        )
+        return np.ones(len(parsed_dates), dtype=np.float64)
+    age_days = (reference_date - parsed_dates).dt.total_seconds() / 86400.0
+    if n_missing:
+        max_age = float(age_days.max())
+        logging.warning(
+            "Time decay: %d rows have unparseable dates; assigning the oldest observed age (%.0f days) instead of full weight",
+            n_missing,
+            max_age,
+        )
+        age_days = age_days.fillna(max_age)
+    weights = np.power(decay_base, age_days.values)
+    weights = np.clip(weights, 0.0, 1.0)
+    return weights.astype(np.float64)
+
+
 def compute_time_decay_weights(df: pd.DataFrame, decay_base: float = 0.999) -> np.ndarray:
     """
     Compute per-row weights using exponential time decay.
@@ -241,23 +270,13 @@ def compute_time_decay_weights(df: pd.DataFrame, decay_base: float = 0.999) -> n
         Array of weights, shape (n_samples,)
     """
     dates = pd.to_datetime(df['date'], errors='coerce')
-    reference_date = dates.max()
-    age_days = (reference_date - dates).dt.total_seconds() / 86400.0
-    age_days = age_days.fillna(0)
-    weights = np.power(decay_base, age_days.values)
-    weights = np.clip(weights, 0.0, 1.0)
-    return weights.astype(np.float64)
+    return _decay_weights_from_parsed_dates(dates, decay_base)
 
 
 def compute_time_decay_weights_from_dates(dates, decay_base: float = 0.999) -> np.ndarray:
     """Compute time-decay weights directly from a date-like series."""
     parsed_dates = pd.to_datetime(pd.Series(dates), errors='coerce')
-    reference_date = parsed_dates.max()
-    age_days = (reference_date - parsed_dates).dt.total_seconds() / 86400.0
-    age_days = age_days.fillna(0)
-    weights = np.power(decay_base, age_days.values)
-    weights = np.clip(weights, 0.0, 1.0)
-    return weights.astype(np.float64)
+    return _decay_weights_from_parsed_dates(parsed_dates, decay_base)
 
 
 def recenter_player_coefficients_by_side_possessions(
@@ -3172,6 +3191,8 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
                         rubberband=False, alpha_rb=None,
                         season_effects=False,
                         fixed_season_baselines=None,
+                        ps_prior=False,
+                        ps_prior_stage2='full',
                         age_dummies=False,
                         age_poly_coefficients=None,
                         age_poly_reference_age=AGE_DUMMY_REFERENCE,
@@ -3204,6 +3225,15 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
         half_life: Half-life in days for time decay (default: 700)
         season_effects: If True, add season fixed effects for multi-season runs
         fixed_season_baselines: Optional dict of season end year -> fixed row baseline to subtract from y
+        ps_prior: If True, run a two-stage playoff-aware solve: stage 1 fits the
+            regular-season rows only, stage 2 refits with ridge shrinkage
+            centered on the stage-1 coefficients instead of zero.
+            Requires both RS and PS rows in the loaded sample (season_type ALL).
+        ps_prior_stage2: 'full' refits the entire RS+PS sample in stage 2
+            (re-fitting RS rows against their own prior reduces effective
+            shrinkage and expands the rating scale); 'ps_only' fits only the
+            playoff rows in stage 2, so RS data is used once and playoff
+            evidence alone updates players away from their RS priors.
         age_dummies: If True, add signed age fixed effects for the requested metric
         age_poly_coefficients: Optional polynomial age curve CSV. Values are applied as fixed row offsets.
         age_poly_reference_age: Reference age for fixed age-poly offsets
@@ -3249,6 +3279,8 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
         mode_str += " - SEASON FE"
     if fixed_season_baselines is not None:
         mode_str += " - FIXED SEASON OFFSETS"
+    if ps_prior:
+        mode_str += " - PS PRIOR"
     if age_dummies:
         mode_str += " - AGE FE"
     if age_poly_coefficients is not None:
@@ -3533,18 +3565,138 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
             actual_off_alpha,
             actual_def_alpha,
         )
-    beta = simplified_alternating_rapm(
-        X, y_centered, player_to_col, all_players,
-        alpha_offense=actual_off_alpha, alpha_defense=actual_def_alpha,
-        max_iter=200, tol=1e-4,
-        off_prior=off_prior,
-        def_prior=def_prior,
-        weights=weights,
-        rubberband=rubberband,
-        alpha_rb=alpha_rb,
-        season_effects=season_effects,
-        age_dummies=age_dummies,
-    )
+
+    ps_off_prior = None
+    ps_def_prior = None
+    ps_prior_meta = None
+    if ps_prior:
+        if off_prior is not None or def_prior is not None:
+            raise ValueError("ps_prior cannot be combined with off_prior/def_prior files.")
+        if cv_alpha:
+            raise ValueError("ps_prior cannot be combined with cv_alpha; fix alphas explicitly.")
+        phase_values = df_transformed['season_phase'].astype(str).str.upper().values
+        rs_mask = phase_values == 'RS'
+        ps_mask = phase_values == 'PS'
+        n_rs = int(rs_mask.sum())
+        n_ps = int(ps_mask.sum())
+        if n_rs == 0 or n_ps == 0:
+            raise ValueError(
+                f"ps_prior requires both RS and PS possessions in the loaded sample "
+                f"(rs_rows={n_rs}, ps_rows={n_ps}); run with season_type ALL."
+            )
+        logging.info(
+            "PS prior stage 1: solving RS-only sample (%d of %d rows) to build offense/defense priors",
+            n_rs,
+            len(y),
+        )
+        weights_rs = weights[rs_mask] if weights is not None else None
+        y_rs = y[rs_mask]
+        if weights_rs is not None:
+            y_rs_mean = np.average(y_rs, weights=weights_rs)
+        else:
+            y_rs_mean = np.mean(y_rs)
+        beta_rs = simplified_alternating_rapm(
+            X[rs_mask], y_rs - y_rs_mean, player_to_col, all_players,
+            alpha_offense=actual_off_alpha, alpha_defense=actual_def_alpha,
+            max_iter=200, tol=1e-4,
+            off_prior=None,
+            def_prior=None,
+            weights=weights_rs,
+            rubberband=rubberband,
+            alpha_rb=alpha_rb,
+            season_effects=season_effects,
+            age_dummies=age_dummies,
+        )
+
+        home_poss_arr = df_transformed['home_poss'].values
+        h_slots = df_transformed[[f'h{k}' for k in range(1, 6)]].values.astype(int)
+        a_slots = df_transformed[[f'a{k}' for k in range(1, 6)]].values.astype(int)
+        offense_slots = np.where(home_poss_arr[:, None] == 1, h_slots, a_slots)
+        defense_slots = np.where(home_poss_arr[:, None] == 1, a_slots, h_slots)
+
+        def count_phase_slots(slot_matrix, row_mask):
+            values = pd.Series(slot_matrix[row_mask].ravel())
+            values = values[values > 0]
+            return defaultdict(int, values.astype(str).value_counts().to_dict())
+
+        rs_off_counts = count_phase_slots(offense_slots, rs_mask)
+        rs_def_counts = count_phase_slots(defense_slots, rs_mask)
+        # Center the stage-1 priors so each side is mean-zero over RS
+        # possessions, matching the mean-zero convention of the pooled solve.
+        recenter_player_coefficients_by_side_possessions(
+            beta_rs,
+            player_to_col,
+            all_players,
+            rs_off_counts,
+            rs_def_counts,
+        )
+        ps_off_prior = {
+            p: float(beta_rs[player_to_col[f"{p}_off"]])
+            for p in all_players
+            if rs_off_counts[p] > 0
+        }
+        ps_def_prior = {
+            p: float(beta_rs[player_to_col[f"{p}_def"]])
+            for p in all_players
+            if rs_def_counts[p] > 0
+        }
+        ps_prior_meta = {
+            'rs_rows': n_rs,
+            'ps_rows': n_ps,
+            'rs_off_counts': rs_off_counts,
+            'rs_def_counts': rs_def_counts,
+            'ps_off_counts': count_phase_slots(offense_slots, ps_mask),
+            'ps_def_counts': count_phase_slots(defense_slots, ps_mask),
+        }
+        logging.info(
+            "PS prior stage 1 complete: offense priors for %d players, defense priors for %d players; "
+            "players without RS possessions shrink to zero",
+            len(ps_off_prior),
+            len(ps_def_prior),
+        )
+
+    if ps_prior and ps_prior_stage2 not in ('full', 'ps_only'):
+        raise ValueError(f"Unsupported ps_prior_stage2 mode: {ps_prior_stage2}")
+    if ps_prior and ps_prior_stage2 == 'ps_only':
+        # Stage 2 (ps-only): playoff rows alone update the RS priors. RS data
+        # is used exactly once (stage 1), so the surface keeps the stage-1
+        # shrinkage scale instead of expanding from a second pass over RS rows.
+        weights_ps = weights[ps_mask] if weights is not None else None
+        y_ps = y[ps_mask]
+        if weights_ps is not None:
+            y_ps_mean = np.average(y_ps, weights=weights_ps)
+        else:
+            y_ps_mean = np.mean(y_ps)
+        logging.info(
+            "PS prior stage 2 (ps-only): updating priors on %d playoff rows (centered mean=%.4f)",
+            int(ps_mask.sum()),
+            y_ps_mean,
+        )
+        beta = simplified_alternating_rapm(
+            X[ps_mask], y_ps - y_ps_mean, player_to_col, all_players,
+            alpha_offense=actual_off_alpha, alpha_defense=actual_def_alpha,
+            max_iter=200, tol=1e-4,
+            off_prior=ps_off_prior,
+            def_prior=ps_def_prior,
+            weights=weights_ps,
+            rubberband=rubberband,
+            alpha_rb=alpha_rb,
+            season_effects=season_effects,
+            age_dummies=age_dummies,
+        )
+    else:
+        beta = simplified_alternating_rapm(
+            X, y_centered, player_to_col, all_players,
+            alpha_offense=actual_off_alpha, alpha_defense=actual_def_alpha,
+            max_iter=200, tol=1e-4,
+            off_prior=ps_off_prior if ps_prior else off_prior,
+            def_prior=ps_def_prior if ps_prior else def_prior,
+            weights=weights,
+            rubberband=rubberband,
+            alpha_rb=alpha_rb,
+            season_effects=season_effects,
+            age_dummies=age_dummies,
+        )
     
     # Calculate player possessions (total, offensive, defensive)
     def count_player_slots(frame, columns):
@@ -3578,7 +3730,42 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
         off_offset,
         def_offset,
     )
-    
+
+    # PS prior stage audit: prior (stage 1, RS-possession-centered), final
+    # (stage 2, pooled-possession-centered), and their delta. The two sides use
+    # slightly different centering universes, so deltas carry a small global
+    # offset in addition to each player's playoff update.
+    ps_prior_stage_df = None
+    if ps_prior and ps_prior_meta is not None:
+        stage_rows = []
+        for p in all_players:
+            off_p = ps_off_prior.get(p, 0.0) if ps_off_prior else 0.0
+            def_p = ps_def_prior.get(p, 0.0) if ps_def_prior else 0.0
+            off_f = beta[player_to_col[f"{p}_off"]]
+            def_f = beta[player_to_col[f"{p}_def"]]
+            ps_poss = ps_prior_meta['ps_off_counts'][p] + ps_prior_meta['ps_def_counts'][p]
+            total_poss = player_possessions[p]
+            stage_rows.append({
+                'player_id': p,
+                'player_name': name_map.get(p, f"ID_{p}"),
+                'off_prior': round(off_p * 100, 3),
+                'def_prior': round(def_p * 100, 3),
+                'net_prior': round((off_p - def_p) * 100, 3),
+                'off_final': round(off_f * 100, 3),
+                'def_final': round(def_f * 100, 3),
+                'net_final': round((off_f - def_f) * 100, 3),
+                'off_delta': round((off_f - off_p) * 100, 3),
+                'def_delta': round((def_f - def_p) * 100, 3),
+                'net_delta': round(((off_f - def_f) - (off_p - def_p)) * 100, 3),
+                'rs_off_poss': ps_prior_meta['rs_off_counts'][p],
+                'rs_def_poss': ps_prior_meta['rs_def_counts'][p],
+                'ps_off_poss': ps_prior_meta['ps_off_counts'][p],
+                'ps_def_poss': ps_prior_meta['ps_def_counts'][p],
+                'ps_share': round(ps_poss / total_poss, 4) if total_poss else 0.0,
+            })
+        ps_prior_stage_df = pd.DataFrame(stage_rows).sort_values('net_final', ascending=False)
+
+
     strength_offsets = {}
     if strength_split_payload and strength_split_payload.get('enabled'):
         for side in ['off', 'def']:
@@ -3807,6 +3994,8 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
             rubberband=rubberband,
             season_effects=season_effects,
             fixed_season_effects=fixed_season_baselines is not None,
+            ps_prior=ps_prior,
+            ps_prior_stage2=ps_prior_stage2,
             age_dummies=age_dummies,
             age_poly_degree=age_poly_degree,
             alpha_cv=cv_alpha,
@@ -3836,6 +4025,8 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
             rubberband=rubberband,
             season_effects=season_effects,
             fixed_season_effects=fixed_season_baselines is not None,
+            ps_prior=ps_prior,
+            ps_prior_stage2=ps_prior_stage2,
             age_dummies=age_dummies,
             age_poly_degree=age_poly_degree,
             alpha_cv=cv_alpha,
@@ -3867,6 +4058,10 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
         alpha_cv_file = output_file.with_name(output_file.stem.replace("_results", "_alpha_cv") + ".csv")
         cv_summary.to_csv(alpha_cv_file, index=False)
         logging.info(f"Saved alpha CV summary to {alpha_cv_file}")
+    if ps_prior_stage_df is not None:
+        ps_stage_file = output_file.with_name(output_file.stem.replace("_results", "_psprior_stage") + ".csv")
+        ps_prior_stage_df.to_csv(ps_stage_file, index=False)
+        logging.info(f"Saved PS prior stage summary to {ps_stage_file}")
     if publish_to_rapms:
         local_publish_path, rapms_publish_path = publish_result_to_rapms(output_file, publish_name=publish_name)
         logging.info("Published result to %s and %s", local_publish_path, rapms_publish_path)
@@ -3957,6 +4152,9 @@ Examples:
 
   # Cross-validate separate offense/defense alphas
   python rapm.py RAPM 26 26 RS --cv-alpha
+
+  # Playoff-aware two-stage solve: playoffs shrink toward the RS solution
+  python rapm.py RAPM 22 26 ALL --season-effects --ps-prior
         """
     )
     
@@ -3964,6 +4162,7 @@ Examples:
                        choices=['RAPM', 'TOV', 'REB', 'TS', 'RIM_FREQ', 'RIM_FG_PCT', 'LA_RAPM', 'MIDRANGE_FREQ',
                                 'MIDRANGE_FG_PCT',
                                 'ASSIST_POINTS', 'RIM_ASSIST', 'DUNK', 'DUNK_ASSIST',
+                                'SCORING_PARENT',
                                 'BLOCK_RECOVERY',
                                 'THREE_FREQ', 'THREE_FG_PCT', 'PLAYTYPE_TS_MIX',
                                 'PLAYTYPE_PROXY_PTS',
@@ -4079,6 +4278,15 @@ Examples:
                        action='store_true',
                        help='Add season fixed effects (one omitted-reference dummy per season) to absorb leaguewide year-to-year baseline shifts.')
 
+    parser.add_argument('--ps-prior',
+                       action='store_true',
+                       help='Two-stage playoff handling: solve the regular-season rows first, then refit with ridge shrinkage centered on the RS solution instead of zero. Anchors playoff opponents at their RS-established levels so good-vs-good playoff possessions stop compressing participants toward the mean. Requires season_type ALL; writes a companion *_psprior_stage.csv audit.')
+
+    parser.add_argument('--ps-prior-stage2',
+                       choices=['full', 'ps-only'],
+                       default='full',
+                       help='Stage-2 sample for --ps-prior. "full" refits all RS+PS rows (re-fitting RS rows against their own prior reduces effective shrinkage and expands the rating scale ~1.3x); "ps-only" fits only playoff rows so RS data is used once and playoff evidence alone updates the priors.')
+
     parser.add_argument('--fixed-season-baselines',
                        type=str,
                        default=None,
@@ -4159,6 +4367,19 @@ Examples:
             parser.error(str(exc))
     if args.publish_name and not args.publish_to_rapms:
         parser.error("--publish-name requires --publish-to-rapms.")
+    if args.ps_prior:
+        if args.season_type != 'ALL':
+            parser.error("--ps-prior requires season_type ALL (needs both RS and PS possessions).")
+        if args.cv_alpha:
+            parser.error("--ps-prior cannot be combined with --cv-alpha; fix alphas explicitly.")
+        if args.off_prior or args.def_prior:
+            parser.error("--ps-prior cannot be combined with --off-prior/--def-prior.")
+        if args.age_curve:
+            parser.error("--ps-prior cannot be combined with --age-curve.")
+        if args.strength_splits or args.strength_sensitivity:
+            parser.error("--ps-prior cannot be combined with strength modes.")
+    elif args.ps_prior_stage2 != 'full':
+        parser.error("--ps-prior-stage2 requires --ps-prior.")
     
     # Determine how many cores to use and update global
     if args.cores is not None:
@@ -4270,6 +4491,8 @@ Examples:
                                   alpha_rb=args.alpha_rb,
                                   season_effects=args.season_effects,
                                   fixed_season_baselines=fixed_season_baselines,
+                                  ps_prior=args.ps_prior,
+                                  ps_prior_stage2=args.ps_prior_stage2.replace('-', '_'),
                                   age_dummies=args.age_dummies,
                                   age_poly_coefficients=args.age_poly_coefficients,
                                   age_poly_reference_age=args.age_poly_reference_age,

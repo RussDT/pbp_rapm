@@ -3,6 +3,27 @@
 This file is short-term session memory only.
 Durable operating rules belong in root `AGENTS.md` and `CLAUDE.md`.
 
+## 2026-08-08 — v5 own-lag prior bundle fails the solve gate (informative null)
+
+- Joint alphas x scale harness on v5 (`vpm/evidence/alpha_harvest_v5feat/`): paired
+  v5-vs-v4 at matched cells = -1.06e-6, CI [-35.8,+33.4], 3/8 cuts. Registered rule
+  required >= 0 -> v5 rejected; EPM12 x2 remains the leading research base.
+- Mechanism: prior increment at harvested alphas v5 +390.7 vs v4 +391.9 (x1e-6) —
+  own-lag added ~nothing in-solve despite +3-23% label-space wins, because the solve
+  window already contains the seasons the lag summarizes. Derived rule: in-solve prior
+  features must be informationally EXTERNAL to the solve window; own-solve lags are
+  for no-possession consumers (season-start, cross-league) only.
+- Falsifiable prediction half-confirmed: one-SE base alphas leave the 750 floor as
+  prior scale rises (any informative prior absorbs the persistence role), but v5's
+  ranges are identical to v4's. Verdict + full numbers appended to
+  `vpm/evidence/prior_feature_lab/PREREGISTRATION_V5.md`. 2026-27 untouched.
+- Rim-DFG screen (exploratory, v6 ledger): `rim_points_saved_100` beats blocks-only
+  d_rim_fg prior +1.24% (5/6) in label space; freq leg marginal, contested-shots dead.
+  External info (passes post-v5 rule). Jokic audit: tracking rim_dif% +0.6 AGREES with
+  the solve's ~neutral rim contest; his dVPM is rebounding/fouls/positioning. Also:
+  local boxscore.csv/tracking 2025-26 rows are partial early-season snapshots — panel
+  rule must use 2025 until refreshed (calendar-complete != file-complete).
+
 ## How To Use
 
 1. Read the latest entries at session start.
@@ -26,37 +47,32 @@ Never store secrets, tokens, or credentials here.
 
 ## Session Log
 
-### 2026-07-23 19:33 (local)
-- Task: Publish the already validated Help Index production build to its existing Sites project.
-- What went wrong: The site's actual access metadata resolved as owner-only custom access, despite the request describing it as public, so the open-world deployment path was not applicable.
-- Fix applied: Reused the existing project and source repository, committed and pushed only the nested app repository, packaged the existing `dist/` without rebuilding, saved version 8 from the pushed commit, and deployed through the verified owner-only path without changing access.
-- Prevention rule added: Resolve actual Sites access metadata before choosing the deployment tool; preserve that access rather than inferring it from the site's URL.
-- Outcome: Deployment succeeded at the existing `nba-help-index.russdt.chatgpt.site` URL.
+### 2026-08-08
+- Task: Diagnose and fix playoff handling in multi-year/timedecay RAPM after playoff inclusion was observed to lower participants' ratings.
+- Fix applied: Added `rapm.py --ps-prior` (+ `--ps-prior-stage2 full|ps-only`): stage-1 RS-only solve, stage-2 refit shrunk toward the RS solution via the existing prior-centered ridge; companion `*_psprior_stage.csv` audit. Fixed the silent max-weight bug for unparseable dates in `compute_time_decay_weights`. Built `diagnose_ps_pooling.py` (RS-vs-candidate playoff delta report) and `evaluate_ps_handling.py` (forward gate, paired game-clustered MSE vs rs_only). New doc `docs/PLAYOFF_HANDLING.md`.
+- Prevention rule added: measured mechanisms — playoff lineups are ~+7.3 pts/100 stronger both sides (good-vs-good ridge compression), PS environment is 1.4-3.6 pts/100 lower-scoring, td700 upweights same-season PS rows ~1.11x. Full-sample prior-centered stage 2 expands the rating scale ~1.28x (reduced effective shrinkage) — always run a shrinkage-dose control candidate when gating prior-centered variants.
+- Outcome: Forward gate (22-24->25, 23-25->26): `all_se` tied-best with rs_only (-9.2e-6, n.s.); both psprior modes significantly worse (+244/+357e-6), a1500 control worse (+157e-6). Verdict: `-se` on the daily ALL runs, keep `psprior ps-only` as the descriptive playoff-attribution surface (22-26: non-participants move by one constant; early exits -0.16..-0.28, deep runs +0.32), never as the canonical rating. 2026-27 untouched.
+- Production flip (operator-approved, same day): added `--season-effects` to the daily 1Y-6Y and both td700 runs with `_se` filenames flowing through; updated sync lists, `upload_timedecay_rapm.py` (now `weighted_factors_21_26_all_rb_se_td700.csv`), `upload_six_factor.py`, `update_2026_{josh_rapm,purerapm,scaledoutput}.py`, and the CLAUDE.md publish list. 14-26 rb run and skipped scposs mapper left unchanged. Filename cross-check vs `build_result_suffix` passed for all eight runs; external rapms-repo consumers must switch to `_se` names.
 
-### 2026-07-23 19:30 (local)
-- Task: Rebuild The Help Index as a redesigned editorial data product (new frontend architecture, same data contracts) and redeploy.
-- What went wrong: The single-file dashboard mixed state, data, and layout; the dark hero/sidebar design fought the numbers; and in dev the server transparently decodes `.json.gz`, so blind `DecompressionStream` piping aborted every data fetch.
-- Fix applied: Split the app into a normalized view-state container (`help-index-app.tsx`), `lib/` data+format layers with cached pair-shard loads, and `components/` (search, zero-baseline career arc with pooled combined seasons, Lineup Company card, rankings); rebuilt the CSS as a light navy/gold/blue system with geometry-stable interaction states; made the fetch helper sniff gzip magic bytes before decompressing.
-- Prevention rule added: URL state, view normalization (clamp to seasons a player actually has), and expansion-reset-by-context-key live in the container, not effects; gzip fetch helpers must handle Content-Encoding-decoded responses.
-- Outcome: Lint clean, build passes, five tests pass (including a new all-schedule career pair-closure test on a second shard), desktop/mobile browser validation done, and the redesign was republished to the existing Sites project.
+### 2026-08-07
+- Task: Run the joint alphas x EPM12-prior-scale search the two-stage legacy design never explored.
+- Fix applied: Emitted date-safe EPM12 priors for all 8 modern harvest cuts via the engine's `build_intelligent_priors` (label maturation preserved), then extended `harvest_alpha_configs.py --priors` to solve zero/unit-prior endpoints and score all scales on the affine path.
+- Prevention rule added: With-prior alpha evidence is modern-era only (EPM12 mappers need >=3 matured label windows, impossible before late 2019); optimal alphas shift up with prior scale (base 750->1500, resid_def floor 12000->24000), so never tune alphas no-prior and assume they transfer unmodified to the prior-centered solve — but the cost of doing so is only ~18e-6, inside noise.
+- Outcome: Joint best/harvested = `b1500_1500_v2_r12000_96000` @ scale 2.5 (+547.3e-6 vs uniform no-prior, CI [+399,+702]); prior increment plateaus +309-323e-6 over scales 2.0-3.0; priors and alpha structure are sub-additive stabilizers (+308/+318 alone, +547 together). Frozen as `vpm/configs/ev_alphas_harvest_priors_v1.json`; incumbent comparison reserved for untouched 2026-27.
 
-### 2026-07-23 18:23 (local)
-- Task: Test whether the Embiid-style shooter/zone OREB continuation improves forward shot-release value prediction.
-- What went wrong: Immediate `initial_ev` and shot-plus-second-chance targets are not directly comparable, and the first full run retained large parquet buffers and used an allocation-heavy lineup loop.
-- Fix applied: Added a strict 2022-24 to 2024-25 first-FGA release benchmark, gave provider and internal SQ models identical contextual continuation lanes, added the shooter-specific nested ablation and role swap, pushed parquet filters/released Arrow buffers, and vectorized lineup parsing.
-- Prevention rule added: Judge shooter-specific second-chance value against the same immediate model plus shooter-hidden continuation; never call the automatic gain from adding continuation to a continuation-bearing target an SQ victory.
-- Outcome: Shooter × zone gives a small clear combined gain for context+EPM and geometry+identity, but the full geometry model remains tied with provider `initial_ev` given the same continuation.
+### 2026-08-08
+- Task: Assess whether The Help Index can estimate championships added by a player's top teammates.
+- Fix applied: Framed the estimand at player-team-season level using pre-playoff teammate help, nonlinear title odds, and counterfactual/Shapley attribution rather than a career ring-count regression.
+- Prevention rule added: Do not use realized playoff exposure as a title predictor or call modeled championship-probability differences causal; traded-player seasons require team-segmented help rows.
+- Outcome: Recommended a season-level championship-odds model with summed expected-rings-added attribution across seasons and top-20 career teammate rollups.
 
-### 2026-07-23 18:14 (local)
-- Task: Remove Help Index layout jank and make both teammate and career-help rankings expandable.
-- What went wrong: Yellow top rules felt ornamental, selected leaderboard rows changed padding and shifted their columns, season context was visually buried, six teammate rows and twelve leaderboard rows were hard truncations, and weighted help visually replaced the teammate's own impact.
-- Fix applied: Removed the top rules, made leaderboard states geometry-invariant, promoted the season/career label, made as-of DPM impact the primary teammate value, opened teammate rows at 10 with +10 expansion, and opened the league board at 25 with +25 expansion.
-- Prevention rule added: Interactive states must never change row box metrics; pair contribution stays secondary when the reader is asking for the teammate's own impact.
-- Outcome: The production build and all four app/reconciliation tests pass.
+### 2026-08-08 14:10 (local)
+- Task: Explain Kalman filters visually.
+- Fix applied: Built and verified an interactive predict-measure-update explainer with adjustable sensor noise and responsive desktop/mobile layouts.
+- Outcome: The visual shows how uncertainty controls the weighted blend and how repeated updates narrow the estimate.
 
-### 2026-07-23 17:58 (local)
-- Task: Convert Lineup Company into a coherent share card and clarify teammate value and coverage.
-- What went wrong: Orange conflicted with navy/yellow, Avg DPM and help looked duplicative, unloaded cards collapsed, and teammate names were not actionable.
-- Fix applied: Unified the navy/yellow palette, embedded focal player and context in a stable-height card, made rows clickable, added context-preserving share links, prioritized rank/percent together/help, and added per-pair rated coverage and definitions.
-- Prevention rule added: Label a teammate's own rating separately from his weighted help contribution; never hide pair-level historical DPM coverage.
-- Outcome: Four app tests and the production build pass; null career-pair DPM affects 18.62% of RS, 10.35% of PS, and 17.89% of combined rows, while Paul Pierce's top RS teammates have 61.6%-95.7% rated coverage.
+### 2026-08-08
+- Task: Prior feature lab (16 engineers + 4 adversarial reviewers) and the v4 solve-level gate vs EPM12.
+- Fix applied: All 16 recipes reproduced and confirmed: 8 replacements (makes-above interactions swept the FG/FT recipes), 2 new defensive priors (d_ft foul volume, d_three_freq defender profile), 5 honest nulls; emitted the 14-recipe v4 bundle date-safely and ran the joint alphas x scale harness.
+- Prevention rule added: Label-space mapper gains do not translate 1:1 to solve level — paired v4-vs-EPM12 at matched cells is only +7 to +22e-6 with CIs crossing zero, because priors and the likelihood substitute. Judge prior upgrades by the paired solve-level delta, never the prior-increment or label-space numbers alone.
+- Outcome: v4 is non-worse with positive point estimates and two extra covered sides; screens after the lab found the o_ft role-split (+4.2%, craft-over-role beta 2.4x) and the own-lag primitive (+13.7% d_rim_freq label-space) — own-lag ties to the historical alpha-floor on rim deterrence (low alpha was a poor man's persistence prior) and is the leading v5 candidate.

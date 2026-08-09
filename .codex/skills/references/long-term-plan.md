@@ -1,275 +1,283 @@
-# Six-Factor RAPM Long-Term Plan
+# Predictive Six-Factor RAPM and VPM Roadmap
 
-This note captures the intended long-term direction for the six-factor RAPM stack. It is not the same thing as the active production spec. Use it when the task is about:
+## Table of Contents
 
-- future modeling direction
-- long-term roadmap for six-factor RAPM
-- how to improve the current `2026` single-season true-prior beta
-- EPM-inspired prior architecture
-- estimated skills / stabilized stat priors
-- replacing the current messy prior-testing lane with a cleaner single-season validation loop
+- [North Star](#north-star)
+- [What Beating EPM Means](#what-beating-epm-means)
+- [System Architecture](#system-architecture)
+- [Why Decomposition Matters](#why-decomposition-matters)
+- [Validation Ladder](#validation-ladder)
+- [Fair Game-Prediction Benchmark](#fair-game-prediction-benchmark)
+- [Prior Architecture](#prior-architecture)
+- [Lineups, Availability, and Synergy](#lineups-availability-and-synergy)
+- [Research Priorities](#research-priorities)
+- [Non-Goals](#non-goals)
+- [Promotion Standard](#promotion-standard)
 
-## Goal
+## North Star
 
-Build a `single-season impact metric` that:
+Build a date-aware, interpretable NBA player metric whose player estimates
+produce better **future game predictions** than EPM.
 
-- keeps the final lineup solve current-season only
-- uses better priors than raw current-season box rows
-- produces all 9 public metrics:
-  - `ORAPM`
-  - `DRAPM`
-  - `RAPM`
-  - `oTS`
-  - `oTOV`
-  - `oREB`
-  - `dTS`
-  - `dTOV`
-  - `dREB`
-- can compete with or beat `BPM`, `LEBRON`, and `EPM` as a current-season impact metric
+The intended product is not merely a cleaner retrospective RAPM or a rating
+that resembles public consensus. It must improve forecasts when converted into
+team and lineup expectations for games that had not happened at estimation
+time.
 
-The final product should be:
+Preserve two simultaneous requirements:
 
-- single-season by lineup likelihood
-- prior-informed, not pure
-- factor-structured, not one monolithic all-in-one
+1. Predictive accuracy: win on frozen future games.
+2. Structural legibility: explain the estimate through additive basketball
+   mechanisms without sacrificing the forecast.
 
-## Current Problem
+## What Beating EPM Means
 
-The current prior lane was inherited from a multi-year box-to-factor workflow.
+Do not define success as:
 
-What it currently does well:
+- higher correlation with current or future EPM;
+- higher correlation with a noisy future RAPM estimate;
+- a better-looking leaderboard;
+- one favorable point estimate with an interval crossing zero;
+- an ensemble that contains EPM unless the claim is explicitly about the
+  ensemble rather than standalone VPM.
 
-- finds useful features
-- produces stable priors
-- avoids fully ad hoc box weights
+Define success before opening the holdout. A valid standalone claim requires:
 
-What is currently misaligned:
+- frozen as-of VPM and EPM values;
+- the same future games;
+- the same player availability, lineup, and minute assumptions when isolating
+  player-metric quality;
+- a predeclared game forecast construction;
+- a primary scoring rule, such as game-margin squared error, with any win
+  probability/log-loss metric declared in advance;
+- paired game-level uncertainty;
+- wins across multiple dates or one untouched season, not one cherry-picked
+  segment.
 
-- the legacy prior-testing target is a multi-year, time-decayed, rubberbanded factor snapshot
-- the current product goal is single-season, no within-season time decay
-- this means the prior validation target is cleaner than the product target, but not the same object
+Report effect sizes and intervals. “Beat” means the predeclared primary error
+is lower and the paired uncertainty clears the promotion threshold.
 
-So the current lane is acceptable for feature screening, but not the final scientific justification for the single-season product.
+## System Architecture
 
-## Product Direction
+Build the system in layers:
 
-The long-term intended architecture is:
+```text
+canonical PBP and box/provider data
+    -> date-safe event/possession targets
+    -> additive DECOMP/VPM component solves
+    -> stabilized factor-specific skill priors
+    -> as-of player offense/defense estimates
+    -> lineup/team forecast using expected availability and minutes
+    -> future game score, margin, and win probability
+```
 
-1. `Estimated Skills`
-2. `Factor-Specific SPM Priors`
-3. `Single-Season True-Prior RAPM`
+Keep each layer replaceable and auditable. A better shot model should not
+require rewriting the lineup solver; a better availability model should not
+change historical player estimates.
 
-Conceptually:
+Use the current ten-component VPM as the player-estimation core:
 
-`raw stats -> estimated skill stats -> factor priors -> current-season RAPM solve`
+- eight shot/FT/EV-residual components;
+- direct turnover value;
+- direct second-chance value;
+- offense and defense estimated separately;
+- all components additive to actual possession value.
 
-This is the main EPM-inspired idea worth borrowing. The point is not to copy EPM exactly. The point is to use:
+## Why Decomposition Matters
 
-- stat-specific stabilization
-- multi-year information for skill estimation
-- factor-specific priors
-- current-season lineup truth in the final solve
+Use decomposition as predictive infrastructure:
 
-## Long-Term Architecture
+- Different mechanisms stabilize at different speeds.
+- Each component can use its own offense/defense alpha.
+- Priors can be narrow and mechanism-specific instead of broad star halos.
+- Failure analysis can identify whether a miss came from shot value, turnover
+  value, second chance, availability, or lineup interaction.
+- Denoised training targets can reduce luck while exact residuals preserve the
+  actual-points total.
+- Product explanations can expose the same structure used by the model.
 
-### 1. Estimated Skill Layer
-
-For each backend stat we care about, build a stabilized `skill` estimate rather than relying on the raw current-season box row.
-
-Examples:
-
-- `oTS` skills:
-  - scoring efficiency skill
-  - burden-adjusted scoring skill
-  - rim-assist creation skill
-  - spacing / gravity skill
-- `oTOV` skills:
-  - scoring-turnover skill
-  - bad-pass turnover skill
-  - offensive load skill
-  - hub creation / decision burden skill
-- `oREB` skills:
-  - self-OREB skill
-  - reboundable miss creation
-  - positional burden-adjusted OREB skill
-- `dTS` skills:
-  - rim deterrence skill
-  - rim contest skill
-  - foul discipline skill
-  - shot suppression / contest skill
-- `dTOV` skills:
-  - steal skill
-  - deflection skill
-  - forced-turnover skill
-  - disruption / chaos skill
-- `dREB` skills:
-  - defensive rebound conversion skill
-  - box-out skill
-  - block recovery skill
-  - cleanup / team-finish skill
-
-These skills should be:
-
-- date-aware
-- age-aware where useful
-- stat-specific in stabilization speed
-- context-aware when the stat calls for it
-
-The purpose is to separate `true talent` from `single-season noise`.
-
-### 2. Factor-Specific SPM Priors
-
-Do not use one giant all-in-one prior as the final target.
-
-Train separate priors for:
-
-- `oTS`
-- `oTOV`
-- `oREB`
-- `dTS`
-- `dTOV`
-- `dREB`
-
-Each factor should get its own:
-
-- target
-- feature family
-- shrinkage profile
-- validation scorecard
-
-This is the core edge of the six-factor framework relative to monolithic all-in-ones.
-
-### 3. Single-Season True-Prior Solve
-
-The final metric should remain:
-
-- current-season only in the lineup likelihood
-- prior-centered in the regression
-- solved separately for scoring margin and the three factor families
-
-Long-term preference:
-
-- no within-season time decay for the published single-season series unless a no-decay backtest clearly loses
-- priors should be strong enough to stabilize, but not so strong that they pre-decide offensive stars or defensive specialists
+Do not promote a component merely because its own target improves. The summed
+future possession and game forecasts decide whether the decomposition helped.
 
 ## Validation Ladder
 
-The intended validation ladder is:
+### Stage 0: Algebra and Provenance
 
-### Stage 1: Feature Screening
+Require exact row identities, stable keys, source hashes, as-of dates, config
+locks, and reproducible manifests. Do not evaluate a model whose target layer
+does not close.
 
-Use the cleaner historical multi-year lane only for:
+### Stage 1: Component Reliability
 
-- feature ideation
-- rough screening
-- checking whether a new variable is directionally useful
+Measure multi-season stability, shrinkage curves, calibration, and forward
+component prediction. Use this to choose candidate priors and alphas, not to
+claim the final metric wins.
 
-Do not treat this as final validation for the single-season product.
+### Stage 2: Summed Future Possession Prediction
 
-### Stage 2: Single-Season Target Validation
+Grade all components together on future actual possession points. Compare on
+identical rows against:
 
-Build pure single-season factor truth for each season.
+- plain RAPM;
+- EV no-prior;
+- the accepted prior lane;
+- complete EPM converted to the same prediction surface.
 
-Preferred target years:
+Use equal-cut or another frozen weighting rule and paired game-clustered
+intervals. This is the current VPM harness's main scientific gate.
 
-- `2019`
-- `2020`
-- `2021`
-- `2022`
-- `2023`
-- `2024`
-- `2025`
+### Stage 3: Lineup-Level Prediction
 
-This is noisy, but it is the correct object.
+Aggregate as-of player estimates into actual or expected five-man lineups.
+Score future lineup offensive, defensive, and net outcomes. Keep an additive
+player-only forecast separate from any synergy model.
 
-Use:
+### Stage 4: Game-Level Prediction
 
-- possession weighting
-- pooled multi-year evaluation
-- role / minute bucket inspection
+Construct pregame forecasts using only information known before tipoff. Score
+future game margins and, when modeled, win probabilities.
 
-### Stage 3: Same-Season Cutoff Testing
+Run two comparisons:
 
-Preferred primary validation:
+1. Player-model isolation: VPM and EPM share the same minutes/availability and
+   game context.
+2. Full-system comparison: each complete forecasting system uses its frozen
+   supporting models.
 
-- freeze a season at real cutoff dates
-- fit the prior and true-prior solve using only information available at that cutoff
-- predict the rest of the same season
+The first tells whether the player metric is better. The second tells whether
+the product is better.
 
-This is the best direct test of whether the metric works in practice as an in-season tool.
+### Stage 5: Untouched Confirmation
 
-### Stage 4: Year-Over-Year Testing
+Freeze the whole pipeline before opening a new season or predeclared window:
 
-Preferred secondary validation:
+- component targets and alphas;
+- prior mappings and scale;
+- returning-player and absence rules;
+- lineup/minute and availability assumptions;
+- game-context adjustments;
+- metrics and pass/fail thresholds.
 
-- fit season `Y`
-- test against season `Y+1`
+Run once. Report success or failure without retuning on the opened window.
 
-This is useful for shrinkage calibration and talent-stability justification, but it should not be the only test because it can over-reward overly conservative priors.
+## Fair Game-Prediction Benchmark
 
-### Stage 5: Competitor Benchmarking
+Use these rules when comparing with EPM:
 
-Once the internal metric is stable, compare against:
+- Fetch or freeze EPM values using their real as-of availability contract.
+- Never use end-of-season EPM to predict earlier games.
+- Map player IDs and active rosters before seeing outcomes.
+- Use the same possessions/games and minimum coverage rules.
+- Center and scale ratings only with training/development data.
+- Do not give one model actual future minutes and the other projected minutes.
+- Cluster comparisons by game; do not treat possessions as independent evidence
+  for a game-level claim.
+- Inspect early-season, trades, rookies, returning players, low-exposure
+  players, and availability shocks as predeclared slices.
+- Report standalone VPM, standalone EPM, and any VPM/EPM ensemble separately.
 
-- `BPM`
-- `LEBRON`
-- `EPM`
+Complete EPM remains benchmark material. EPM predictive `p_*` rates may be
+candidate skill priors because they are estimated box-score skills rather than
+complete impact outputs. Never use `eWINS` as a prior.
 
-Do not train to match them. Use them only as external benchmarks.
+## Prior Architecture
 
-## Alpha Philosophy
+Build narrow, factor-specific priors from stabilized estimated skills:
 
-For the single-season true-prior solve:
+```text
+raw date-safe stats
+    -> stat-specific talent estimates
+    -> component/side prior mappings
+    -> prior-centered lineup solve
+```
 
-- pure single-season RAPM is too noisy on its own
-- priors should matter materially
-- but the right alpha is not something to guess from multi-year pure RAPM defaults
+Prefer:
 
-Important principles:
+- possession-weighted multi-season skill estimates;
+- stat-specific half-lives and empirical-Bayes shrinkage;
+- age curves estimated only from training dates;
+- compact one-to-five-feature recipes;
+- separate offense and defense mappings;
+- forward labels matured before the emission date;
+- expanding-window season-forward mapper diagnostics.
 
-- single-season PI-RAPM should usually shrink harder than multi-year pure RAPM
-- prior-centered alpha is stronger than zero-centered alpha
-- offensive and defensive alpha should be tuned separately
-- factor priors should not all be trusted equally
+Candidate mechanisms include:
 
-Long-term preference:
+- shot location, finishing, and attempt-load skills;
+- turnover type, creation load, and passing burden;
+- second-chance creation and completion;
+- rim deterrence, contest, foul discipline, disruption, and block recovery;
+- physical measurements when they improve future forecasts;
+- stabilized clock/grenade, defender-role, or continuation summaries after
+  multi-season admission tests.
 
-- tune alpha on same-season cutoff tests
-- use year-over-year as secondary support
-- avoid picking alpha only from the inherited multi-year next-snapshot lane
+Reject broad “offense” or “defense” halos that spray one signal across every
+component without incremental evidence.
 
-## Current Modeling Priorities
+## Lineups, Availability, and Synergy
 
-The main next-step priorities are:
+Do not confuse a player rating with a complete game forecast.
 
-1. Replace raw current-season box rows with estimated skill rows where possible.
-2. Keep the compact `oTS` backend formula philosophy, but feed it better stabilized skill inputs.
-3. Build cleaner skill priors for `dTS`, `dTOV`, and `dREB`, where raw box inputs are especially noisy.
-4. Introduce physical measurements where useful, especially:
-   - `height_wo_shoes_in`
-   - `wingspan_in`
-5. Rebuild the validation harness around pure single-season targets.
-6. Tune offense and defense shrinkage under the correct single-season spec.
+Separate:
 
-## What Not To Do
+- additive player values;
+- expected minutes and availability;
+- opponent and home/rest context;
+- lineup fit and non-additive synergy;
+- coaching and deployment effects.
 
-- Do not treat the current multi-year box-prior holdout `R^2` as if it fully validates the single-season product.
-- Do not collapse the six factors into one public training target.
-- Do not let the priors become a broad “all offense halo” or “all defense halo”.
-- Do not optimize only for year-over-year persistence.
-- Do not mistake raw current-season box rows for the ideal final prior input layer.
+First test additive VPM against additive EPM under common supporting inputs.
+Then test whether a separately validated lineup/synergy layer adds value.
 
-## Desired End State
+Do not stack retrospective mechanism drilldowns onto player VPM. A synergy
+term needs shared-sample shrinkage and its own forward validation.
 
-The desired end state is:
+## Research Priorities
 
-- a current-season true-prior RAPM product with all 9 metrics
-- factor-specific priors built from stabilized skill stats
-- validation aligned to single-season use cases
-- clear evidence that the metric is more informative than pure RAPM and competitive with public all-in-ones
+Prioritize work by expected leverage on future games:
+
+1. Build the direct VPM-versus-EPM game-prediction harness.
+2. Freeze a common availability/minutes layer for player-model isolation.
+3. Extend reliable as-of histories for rookies, returning players, and traded
+   players.
+4. Improve defensive shot-value priors, where box scores miss the most.
+5. Admit richer ShotQuality only through a new frozen forward target gate.
+6. Test mechanism-specific personnel and role features rather than generic
+   impact leakage.
+7. Add lineup/synergy residuals only after the additive player base is stable.
+8. Calibrate game margins and win probabilities on development seasons.
+9. Preserve an untouched season for the final standalone EPM comparison.
+
+## Non-Goals
+
+- Do not optimize the metric to reproduce EPM.
+- Do not select on public leaderboard aesthetics.
+- Do not call component-level accuracy a game-prediction win.
+- Do not use raw provider rows or fold predictions as player priors.
+- Do not let an availability model conceal a weaker player metric.
+- Do not reopen spent holdouts.
+- Do not silently promote a richer SQ target, prior family, or absence rule.
+- Do not collapse the ten factors into one opaque learned score unless that
+  candidate is evaluated as a separate, interpretable tradeoff.
+
+## Promotion Standard
+
+Promote only when all of the following hold:
+
+1. Target algebra and provenance pass.
+2. The summed future possession forecast improves.
+3. The direct game-level comparison improves under common supporting inputs.
+4. Paired uncertainty clears the predeclared threshold.
+5. Key date/role/exposure slices do not reveal a catastrophic regression.
+6. An untouched future window confirms the frozen specification.
+7. The public explanation matches the actual model and data lineage.
 
 Short version:
 
-`single-season lineup truth + multi-year skill estimation + factor-specific priors`
-
-That is the long-term design target.
+```text
+date-safe estimated skills
++ additive DECOMP/VPM lineup truth
++ fair lineup/game aggregation
++ untouched future tests
+= a credible attempt to beat EPM at predicting games
+```

@@ -16,11 +16,17 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 import numpy as np
 import pandas as pd
 from scipy.sparse import coo_matrix
 from sklearn.linear_model import Ridge
 import statsmodels.api as sm
+
+from wnba_test.wnba_names import load_wnba_name_map
 
 # Configure logging
 logging.basicConfig(
@@ -340,12 +346,8 @@ def main():
             reb_files.append(processed_dir / f"REB{year}_PS.csv")
     
     # Load name map
-    name_map = {}
-    wnba_map_path = "wnba_test/player_index_map.csv"
-    if os.path.exists(wnba_map_path):
-        wnba_df = pd.read_csv(wnba_map_path)
-        name_map = dict(zip(wnba_df['EntityId'].astype(str), wnba_df['pbp_name']))
-        logging.info(f"Loaded {len(name_map)} player names")
+    name_map = load_wnba_name_map()
+    logging.info(f"Loaded {len(name_map)} player names")
     
     # Run all 4 RAPM types
     logging.info("\n" + "=" * 70)
