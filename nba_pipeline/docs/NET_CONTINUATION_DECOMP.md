@@ -104,6 +104,21 @@ reshuffling concentrates in the BASELINE child (slope 1.20). Use the
 five-child tree for display sums, the separated family for cell-level
 interpretation.
 
+## Full-split six-child shot family (preferred display grain)
+
+Owner decision 2026-08-08: no baseline bucket may carry player value.
+The full-split family (`ALT_EFG_{RIM,MID,THREE}_FREQ_FULL` gross /
+`ALT_EFG_{RIM,MID,THREE}_FREQ_NET` net, plus the shared FG conversion
+children) prices frequency at the FULL per-attempt zone value, so the
+six atoms sum to the entire EFG mass and the former baseline volume
+signal reads as deterrence/generation inside the frequency cells
+(FT-trip reference entries ride in MID_FREQ, matching the five-child
+convention). Signature result: net pricing amplifies frequency cells
+(attempts are worth more with continuation priced in) and compresses
+conversion cells — value migrates from making shots to controlling
+where shots happen and what follows them. Totals match the five-child
+tree exactly; closure enforced at 1e-9 for both pricings.
+
 ## Seven-component closure (solve-stack invariance)
 
 The complete net stack {five DECOMP_NET children, SC_NET,
