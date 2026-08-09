@@ -1009,6 +1009,12 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
                 "      Public DECOMP possession identity "
                 f"child gap max={parent_gap:.6f}; EFG gap max={efg_gap:.6f}"
             )
+        if {'First_Chance_Diff', 'FC_CONT_KAPPA_Diff'}.issubset(nba_filt.columns):
+            # Net-priced first-chance total: the counterfactual value a
+            # turnover destroys (gross FC points + expected continuation).
+            nba_filt['FC_TS_NET_Diff'] = (
+                nba_filt['First_Chance_Diff'] + nba_filt['FC_CONT_KAPPA_Diff']
+            )
         net_cols = [
             'FC_DECOMP_NET_RIM_FREQ_Diff',
             'FC_DECOMP_NET_RIM_FG_Diff',

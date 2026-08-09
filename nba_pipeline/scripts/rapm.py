@@ -96,6 +96,8 @@ ALT_BASELINE_PREFIXES = {
     'DECOMP_NET_THREE_FREQ',
     'DECOMP_NET_THREE_FG',
     'DECOMP_NET_MID_VALUE',
+    'ALT_TS_NET',
+    'ALT_TOV_NET_VALUE',
 }
 ALT_FIRST_CHANCE_TOV_PREFIXES = {'ALT_TOV', 'ALT_BADPASS_TOV', 'ALT_SCORING_TOV'}
 ALT_PREFIXES = ALT_BASELINE_PREFIXES | ALT_FIRST_CHANCE_TOV_PREFIXES
@@ -140,6 +142,7 @@ ALT_COMPONENT_COLUMNS = {
     'DECOMP_NET_THREE_FREQ': 'FC_DECOMP_NET_THREE_FREQ_Diff',
     'DECOMP_NET_THREE_FG': 'FC_DECOMP_NET_THREE_FG_Diff',
     'DECOMP_NET_MID_VALUE': 'FC_DECOMP_NET_MID_VALUE_Diff',
+    'ALT_TS_NET': 'FC_TS_NET_Diff',
 }
 DEFAULT_ALPHA_GRID = [300, 500, 1000, 2000, 3000, 5000, 7000, 10000]
 AGE_CURVE_TARGETS = {
@@ -349,6 +352,8 @@ def compute_alt_first_chance_baselines(
     for prefix in prefixes_to_compute:
         if prefix in {'ALT_TOV_VALUE', 'ALT_BADPASS_TOV_VALUE', 'ALT_SCORING_TOV_VALUE'}:
             component_prefixes_to_compute.append('ALT_TS')
+        elif prefix == 'ALT_TOV_NET_VALUE':
+            component_prefixes_to_compute.append('ALT_TS_NET')
         elif prefix == 'ALT_FC_COMPLETION':
             component_prefixes_to_compute.extend(['ALT_EFG_VALUE', 'ALT_FT'])
         else:
@@ -384,6 +389,8 @@ def compute_alt_first_chance_baselines(
         baselines['ALT_FT'] = baselines['ALT_TS'] - baselines['ALT_SQ'] - baselines['ALT_MAKE']
     if 'ALT_TOV_VALUE' in prefixes_to_compute and 'ALT_TS' in baselines:
         baselines['ALT_TOV_VALUE'] = baselines['ALT_TS']
+    if 'ALT_TOV_NET_VALUE' in prefixes_to_compute and 'ALT_TS_NET' in baselines:
+        baselines['ALT_TOV_NET_VALUE'] = baselines['ALT_TS_NET']
     if 'ALT_BADPASS_TOV_VALUE' in prefixes_to_compute and 'ALT_TS' in baselines:
         baselines['ALT_BADPASS_TOV_VALUE'] = baselines['ALT_TS']
     if 'ALT_SCORING_TOV_VALUE' in prefixes_to_compute and 'ALT_TS' in baselines:
@@ -1608,6 +1615,14 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
         scoring_tov = df['Is_Turnover'] - df.get('Is_BadPass_TOV', 0)
         df['Off_Diff'] = -scoring_tov
         df['Def_Diff'] = scoring_tov
+        return df
+    elif prefix == 'ALT_TOV_NET_VALUE' and 'Is_Turnover' in df.columns:
+        if alt_baselines is None or prefix not in alt_baselines:
+            raise ValueError("ALT_TOV_NET_VALUE requires a same-sample ALT_TS_NET baseline.")
+        logging.info("Detected ALT_TOV_NET_VALUE (net-continuation turnover complement)")
+        is_turnover = pd.to_numeric(df['Is_Turnover'], errors='coerce').fillna(0).astype(int)
+        df['Off_Diff'] = np.where(is_turnover == 1, -alt_baselines[prefix], 0.0)
+        df['Def_Diff'] = -df['Off_Diff']
         return df
     elif prefix == 'ALT_TOV_VALUE' and 'Is_Turnover' in df.columns:
         if alt_baselines is None or prefix not in alt_baselines:
@@ -4198,6 +4213,7 @@ Examples:
                               'DECOMP_NET_MID_FG', 'DECOMP_NET_THREE_FREQ',
                               'DECOMP_NET_THREE_FG', 'DECOMP_NET_MID_VALUE',
                               'ALT_TOV_VALUE', 'ALT_BADPASS_TOV_VALUE', 'ALT_SCORING_TOV_VALUE',
+                              'ALT_TOV_NET_VALUE',
                               'ALT_FC_COMPLETION',
                               'FC_TRANSITION_SCORING', 'FC_HALFCOURT_SCORING',
                               'FC_MODE_MIX', 'FC_TRANSITION_VALUE', 'FC_HALFCOURT_VALUE',
@@ -4445,6 +4461,7 @@ Examples:
         'DECOMP_NET_THREE_FG': 'FIRST_CHANCE',
         'DECOMP_NET_MID_VALUE': 'FIRST_CHANCE',
         'ALT_TOV_VALUE': 'FIRST_CHANCE',
+        'ALT_TOV_NET_VALUE': 'FIRST_CHANCE',
         'ALT_BADPASS_TOV_VALUE': 'FIRST_CHANCE',
         'ALT_SCORING_TOV_VALUE': 'FIRST_CHANCE',
         'ALT_FC_COMPLETION': 'FIRST_CHANCE',

@@ -69,6 +69,25 @@ columns; the family target itself is unchanged.
   misses their lineups did not secure. Rim-protecting bigs keep their
   value because their own rebounding closes the loop.
 
+## Turnover repricing (`ALT_TOV_NET_VALUE`)
+
+The same logic applies to the turnover counterfactual. Gross
+`ALT_TOV_VALUE` prices a clean first-chance turnover at the average
+non-turnover first chance (`ALT_TS` baseline, ~1.150). The net
+counterfactual adds the expected continuation of the ~41% of non-TOV
+first chances that end in a recoverable miss: `ALT_TS_NET` baseline =
+mean(`FC_TS_NET_Diff`) = mean(gross FC + kappa) on non-TOV rows, ~1.319
+(2024-2026 pooled). `ALT_TOV_NET_VALUE` is the mirror alias on that
+baseline; player values rescale by ~1.15x on both sides.
+
+Net relative pricing of defensive events (pooled 2024-2026): steal
++1.32 (possession dead with certainty) > forced rim miss +0.79 net of
+continuation > forced three miss +0.74. Gross pricing had misses at full
+value and turnovers underpaid. Caruso illustrates the correction: his
+shot-defense+SC sum drops 0.41 under net pricing while his TOV value
+gains +0.36 — total roughly unchanged, composition corrected (steals
+were undervalued relative to contests).
+
 ## Status / boundaries
 
 - Research/validation lane only. Production parquets, the public DECOMP
