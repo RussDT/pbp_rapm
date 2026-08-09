@@ -26,7 +26,14 @@ def process_second_chance_clean_py(file_path, year, season_str):
     # positive offense value implies negative defense value on the same row.
     nba_filt['Def_Diff'] = -nba_filt['Second_Chance_Diff']
 
-    output = _finalize_df(nba_filt, ['Net_Diff', 'Off_Diff', 'Def_Diff'], year)
+    numerator_cols = ['Net_Diff', 'Off_Diff', 'Def_Diff']
+    # Net-continuation companion target: second chance net of the kappa paid
+    # into the NET first-chance tree on the same possession.
+    for col in ['SC_NET_CONT_Diff', 'FC_CONT_KAPPA_Diff']:
+        if col in nba_filt.columns:
+            numerator_cols.append(col)
+
+    output = _finalize_df(nba_filt, numerator_cols, year)
     end_time = time.time()
     print(f"  Finished SECOND_CHANCE_CLEAN Processing. Time: {end_time - start_time:.2f} seconds.")
     return output
