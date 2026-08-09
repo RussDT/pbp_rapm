@@ -88,6 +88,22 @@ shot-defense+SC sum drops 0.41 under net pricing while his TOV value
 gains +0.36 — total roughly unchanged, composition corrected (steals
 were undervalued relative to contests).
 
+## Net baseline-separated family (audit surface)
+
+The five-child tree welds the mid-numeraire ("a reference mid shot
+happened" per FGA) into MID_FG, so that cell mixes pure mid conversion
+with a shot-volume bookkeeping term that the net repricing amplifies
+~20%. The baseline-separated family (`ALT_EFG_BASELINE_NET` +
+`ALT_EFG_{RIM,MID,THREE}_NET`, columns `FC_NET_EFG_BASELINE_Diff` /
+`FC_*_EFG_AA_NET_Diff`) removes the weld: each zone cell is pure
+conversion above the overall net average and the numeraire is its own
+child. Verified 2024-2026: pure conversion cells transform as clean
+compressions (gross-net corr 0.998+, slopes rim 0.78 < mid 0.85 <
+three 0.89, ordered exactly by kappa/attempt-value), and all
+reshuffling concentrates in the BASELINE child (slope 1.20). Use the
+five-child tree for display sums, the separated family for cell-level
+interpretation.
+
 ## Seven-component closure (solve-stack invariance)
 
 The complete net stack {five DECOMP_NET children, SC_NET,

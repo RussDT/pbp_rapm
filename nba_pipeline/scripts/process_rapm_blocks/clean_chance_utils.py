@@ -625,6 +625,38 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
         f"fc misses={int(fc_missed_fga.sum())}, action gap max={net_action_gap:.6f})"
     )
 
+    # Net baseline-separated family: the numeraire is its own explicit child
+    # (net EFG baseline per FGA) and each zone carries pure conversion above
+    # the overall net average. Audit surface for the compact five-child tree.
+    fc_net_efg_avg = (
+        float(net_actual[first_chance_fga].mean())
+        if first_chance_fga.any() else fc_efg_avg_pts
+    )
+    nba_df_checked['FC_NET_EFG_BASELINE_Action_Score'] = np.where(
+        is_fga, fc_net_efg_avg,
+        pd.to_numeric(ft_sq_baseline_values, errors='coerce').fillna(0.0),
+    )
+    nba_df_checked['FC_RIM_EFG_AA_NET_Action_Score'] = np.where(
+        is_rim_fga, net_actual - fc_net_efg_avg, 0.0)
+    nba_df_checked['FC_MID_EFG_AA_NET_Action_Score'] = np.where(
+        is_mid_fga, net_actual - fc_net_efg_avg, 0.0)
+    nba_df_checked['FC_THREE_EFG_AA_NET_Action_Score'] = np.where(
+        is_three_fga, net_actual - fc_net_efg_avg, 0.0)
+    sep_gap = float(np.nanmax(np.abs(
+        nba_df_checked['FC_NET_EFG_BASELINE_Action_Score']
+        + nba_df_checked['FC_RIM_EFG_AA_NET_Action_Score']
+        + nba_df_checked['FC_MID_EFG_AA_NET_Action_Score']
+        + nba_df_checked['FC_THREE_EFG_AA_NET_Action_Score']
+        - net_action_target
+    )))
+    if sep_gap > 1e-9:
+        raise ValueError(
+            f"Net baseline-separated identity failed: max gap={sep_gap:.12f}")
+    print(
+        "      Calculated net baseline-separated EFG family "
+        f"(net_efg_avg={fc_net_efg_avg:.4f}, gap max={sep_gap:.6f})"
+    )
+
     component_pairs = [
         ('FC_SQ_Action_Score', 'First_Chance_SQ_Net'),
         ('FC_MAKE_Action_Score', 'First_Chance_MAKE_Net'),
@@ -657,6 +689,10 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
         ('FC_DECOMP_NET_THREE_FG_Action_Score', 'First_Chance_DECOMP_NET_THREE_FG_Net'),
         ('FC_DECOMP_NET_MID_VALUE_Action_Score', 'First_Chance_DECOMP_NET_MID_VALUE_Net'),
         ('FC_CONT_KAPPA_Action_Score', 'First_Chance_CONT_KAPPA_Net'),
+        ('FC_NET_EFG_BASELINE_Action_Score', 'First_Chance_NET_EFG_BASELINE_Net'),
+        ('FC_RIM_EFG_AA_NET_Action_Score', 'First_Chance_RIM_EFG_AA_NET_Net'),
+        ('FC_MID_EFG_AA_NET_Action_Score', 'First_Chance_MID_EFG_AA_NET_Net'),
+        ('FC_THREE_EFG_AA_NET_Action_Score', 'First_Chance_THREE_EFG_AA_NET_Net'),
     ]
     for source_col, target_col in component_pairs:
         if source_col in nba_df_checked.columns:
@@ -720,6 +756,10 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('First_Chance_DECOMP_NET_MID_VALUE_Total', 'First_Chance_DECOMP_NET_MID_VALUE_Net'),
             ('First_Chance_CONT_KAPPA_Total', 'First_Chance_CONT_KAPPA_Net'),
             ('Second_Chance_Net_Cont_Total', 'Second_Chance_Net_Cont'),
+            ('First_Chance_NET_EFG_BASELINE_Total', 'First_Chance_NET_EFG_BASELINE_Net'),
+            ('First_Chance_RIM_EFG_AA_NET_Total', 'First_Chance_RIM_EFG_AA_NET_Net'),
+            ('First_Chance_MID_EFG_AA_NET_Total', 'First_Chance_MID_EFG_AA_NET_Net'),
+            ('First_Chance_THREE_EFG_AA_NET_Total', 'First_Chance_THREE_EFG_AA_NET_Net'),
         ]:
             if net_col in nba_df_checked.columns:
                 nba_df_checked[total_col] = nba_df_checked.groupby(group_cols)[net_col].cumsum()
@@ -760,6 +800,10 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('First_Chance_DECOMP_NET_MID_VALUE_Total', 'First_Chance_DECOMP_NET_MID_VALUE_Net'),
             ('First_Chance_CONT_KAPPA_Total', 'First_Chance_CONT_KAPPA_Net'),
             ('Second_Chance_Net_Cont_Total', 'Second_Chance_Net_Cont'),
+            ('First_Chance_NET_EFG_BASELINE_Total', 'First_Chance_NET_EFG_BASELINE_Net'),
+            ('First_Chance_RIM_EFG_AA_NET_Total', 'First_Chance_RIM_EFG_AA_NET_Net'),
+            ('First_Chance_MID_EFG_AA_NET_Total', 'First_Chance_MID_EFG_AA_NET_Net'),
+            ('First_Chance_THREE_EFG_AA_NET_Total', 'First_Chance_THREE_EFG_AA_NET_Net'),
         ]:
             if net_col in nba_df_checked.columns:
                 nba_df_checked[total_col] = nba_df_checked[net_col].cumsum()
@@ -816,6 +860,10 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('FC_DECOMP_NET_MID_VALUE_Diff', 'First_Chance_DECOMP_NET_MID_VALUE_Total'),
             ('FC_CONT_KAPPA_Diff', 'First_Chance_CONT_KAPPA_Total'),
             ('SC_NET_CONT_Diff', 'Second_Chance_Net_Cont_Total'),
+            ('FC_NET_EFG_BASELINE_Diff', 'First_Chance_NET_EFG_BASELINE_Total'),
+            ('FC_RIM_EFG_AA_NET_Diff', 'First_Chance_RIM_EFG_AA_NET_Total'),
+            ('FC_MID_EFG_AA_NET_Diff', 'First_Chance_MID_EFG_AA_NET_Total'),
+            ('FC_THREE_EFG_AA_NET_Diff', 'First_Chance_THREE_EFG_AA_NET_Total'),
         ]:
             if total_col in nba_filt.columns:
                 nba_filt[diff_col] = (
@@ -868,6 +916,10 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('FC_DECOMP_NET_MID_VALUE_Diff', 'First_Chance_DECOMP_NET_MID_VALUE_Total'),
             ('FC_CONT_KAPPA_Diff', 'First_Chance_CONT_KAPPA_Total'),
             ('SC_NET_CONT_Diff', 'Second_Chance_Net_Cont_Total'),
+            ('FC_NET_EFG_BASELINE_Diff', 'First_Chance_NET_EFG_BASELINE_Total'),
+            ('FC_RIM_EFG_AA_NET_Diff', 'First_Chance_RIM_EFG_AA_NET_Total'),
+            ('FC_MID_EFG_AA_NET_Diff', 'First_Chance_MID_EFG_AA_NET_Total'),
+            ('FC_THREE_EFG_AA_NET_Diff', 'First_Chance_THREE_EFG_AA_NET_Total'),
         ]:
             if total_col in nba_filt.columns:
                 nba_filt[diff_col] = (
