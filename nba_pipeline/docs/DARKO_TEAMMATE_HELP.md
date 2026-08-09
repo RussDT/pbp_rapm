@@ -164,6 +164,114 @@ each career schedule. The sharding avoids downloading an all-player career
 teammate table when one player is selected. Deployment data is committed in the
 standalone app source; the larger analysis CSVs remain generated artifacts.
 
+## Estimated Championship Help
+
+`scripts/build_championship_help.py` adds a separate retrospective model for
+the question: how much did a player's season-specific teammate context change
+his modeled probability of winning the championship?
+
+The estimation universe is 1998-2026. Inputs use every regular-season team
+lineup, including minutes when a selected player is off the floor. Playoff PBP
+supplies only the champion label. The retrospective surface uses the exact
+same-season DARKO snapshot; it does not carry the prior year's snapshot through
+the current season. This is intentionally hindsight-aware description, not an
+as-of forecast.
+
+For each team-season and metric, every player's contribution is:
+
+```text
+player_team_contribution
+  = same_season_DARKO * player_team_exposures / team_total_exposures
+
+team_strength = sum(player_team_contribution over the full roster)
+```
+
+Therefore starters, reserves, and bench-only stretches all enter the team's
+title environment. The player contributions close to team DPM, O-DPM, and
+D-DPM at machine precision. Same-season DARKO covers `99.9996%` of player
+exposure slots; the tiny uncovered remainder is neutral `0.0` and remains
+reported in team coverage rather than removing a team from the championship
+choice set.
+
+The probability unit is one team-season, not one player-season. Each season has
+exactly one champion and includes all `29` or `30` teams. A nonnegative
+regularized conditional-logit score is converted through a within-season
+softmax:
+
+```text
+P(team wins title | season)
+  = exp(team_score) / sum(exp(score) over every team that season)
+```
+
+Consequently each season's actual team probabilities sum exactly to `1.0`.
+Overall-DPM and separate offense/defense specifications are compared across six
+regularization strengths by leaving out one full season at a time. The 2026-08
+build selected separate offense and defense at `C=5.0` by champion log loss:
+
+- `863` team-seasons, `29` seasons, and exactly `29` champion labels;
+- leave-one-season-out champion log loss `1.668791`;
+- season-level multiclass Brier score `0.733128`;
+- top-one accuracy `44.83%`;
+- maximum annual probability-mass gap `6.66e-16`.
+
+The displayed actual title probability is the held-out model's team
+probability and is identical for every qualifying player assigned to that team.
+For traded players, the focal player is assigned to the team for which he
+appeared latest in the regular season. A focal player needs at least `500`
+exposures on that final team and an exact same-season DARKO row.
+
+For player `p` in season `s`, the displayed total is:
+
+```text
+teammate_help_championships[p,s]
+  = P(team title | actual full-roster team strength)
+    - P(team title | focal contribution fixed, every teammate at 0.0 DPM)
+```
+
+The focal player's own exposure-weighted team-strength contribution is excluded
+from teammate help and held fixed in the counterfactual. Every other roster
+player is restored from the neutral `0.0`-DPM baseline. Opponent scores stay
+fixed and the focal team's counterfactual probability is renormalized against
+the full season choice set. Zero DPM is league average, not replacement level.
+The career number sums the held-out season probability differences; it is not a
+redistribution of observed rings and not causal credit.
+
+Each season's total is allocated over the focal player's teammates using `128`
+deterministic Shapley permutations. The order-averaged marginal probabilities
+close exactly to the actual-versus-neutral season total; the maximum build gap
+is `9.99e-16`. A teammate's attribution uses all of his team exposures, not
+only possessions shared with the focal player. Career teammate rows are then
+summed and ranked, and the app publishes the top 20 for the selected player.
+
+Canonical analysis artifacts live under `results/championship_help/`:
+
+- `team_seasons.csv` and `team_player_contributions.csv`;
+- `player_team_seasons.csv` and `player_teammate_team_seasons.csv`;
+- `champions.csv`;
+- `model_cv.csv`, `model_oof_predictions.csv`, and
+  `team_season_estimates.csv`;
+- `player_season_estimates.csv` and
+  `player_teammate_season_estimates.csv`;
+- `career_player_estimates.csv` and `career_teammate_estimates.csv`;
+- `metadata.json`.
+
+Build or refresh the full model and app shards with:
+
+```bash
+.venv/bin/python nba_pipeline/scripts/build_championship_help.py
+```
+
+Use `--reuse-data` to refit and republish from the existing team/roster CSVs
+without rereading every raw and processed season. The app receives a compressed
+career index plus 64 player-ID shards under
+`teammate-help-app/public/data/championship-help/`.
+
+Limitations: same-season DARKO contains hindsight; the model does not identify
+injuries, bracket strength, opponent matchups, coaching, or causal teammate
+effects; and selection/tuning occurred on this historical window.
+Leave-one-season-out scoring protects whole-season folds but does not turn this
+retrospective product into a future-title forecasting claim.
+
 ## App
 
 `teammate-help-app/` is a standalone vinext/Sites project. The 2026-07 redesign
@@ -180,8 +288,8 @@ architecture:
   and season/career pair shards; the fetch helper detects the gzip magic bytes
   so transparently-decoded dev responses still parse) and formatting/metric
   configuration.
-- `app/components/` holds `player-search`, `career-arc`, `lineup-company`, and
-  `rankings`.
+- `app/components/` holds `player-search`, `career-arc`, `lineup-company`,
+  `rankings`, and the season-by-season `championship-help` panel.
 
 Product behavior:
 
@@ -202,6 +310,12 @@ Product behavior:
 - rankings follow the active context (single season or career schedule), flip
   between most and least help, expose coverage and possession filters, open
   with 25 players, and expand by 25 through the full qualified field;
+- Estimated Championship Help shows actual-era titles, expected titles under
+  actual and neutral teammate context, the summed probability difference, a
+  selectable season spike history, and the top 20 Shapley-attributed teammates.
+  It uses same-season team-level regular-season inputs, includes bench/off-floor
+  team minutes, excludes the focal player's own team-strength contribution from
+  help, and displays held-out team odds that sum to 100% across every season;
 - career standing (help, rank, percentile with a marker track, coverage,
   seasons) uses the fixed qualification thresholds: 50% rated coverage plus
   `10,000` exposures for RS/combined or `1,000` for playoffs; percentile is
@@ -217,4 +331,6 @@ design-system invariants (no orange, no thick top borders, geometry-stable
 selection), confirm the full time/schedule span, recheck browser-artifact pair
 reconciliation, prove combined career exposure and help reconcile to the RS and
 playoff components, and confirm career pair contributions close to career help
-for every schedule on a second reference career.
+for every schedule on a second reference career. The tests also confirm that
+championship-help career totals equal the sum of season estimates and that the
+published model metadata and Shapley reconciliation remain valid.

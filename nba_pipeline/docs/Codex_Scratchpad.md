@@ -84,3 +84,10 @@ Never store secrets, tokens, or credentials here.
 - Fix applied: Added final-team player/team segmentation, regular-season-only common-sample own-plus-help features, leave-one-season-out model selection, actual-versus-neutral title probabilities, exact deterministic Shapley teammate attribution, app shards, tests, docs, and the new Help Index panel/social card.
 - Prevention rule added: Use playoff data only for champion labels; never let traded-player early segments inherit titles, use realized playoff exposure as a predictor, or describe probability differences as causal ring credit.
 - Outcome: The 1998-2026 spline model selected at `C=1.0` posts LOYO log loss `0.153037` and AUC `0.832146`; 7,495 player-seasons and 115,936 pair-seasons reconcile at `5.55e-16`; the app displays season spikes and top-20 career teammate estimates.
+
+### 2026-08-08 — Championship-help team-probability rebuild
+- Task: Correct the championship surface after auditing whether annual title odds close across teams and whether 2009 used the intended DARKO timing.
+- What went wrong: The first build repeated the champion label on every qualifying player, so its independent player probabilities summed near a champion roster size rather than one; strict as-of lookup also made the 2008-09 display use 2007-08 DARKO.
+- Fix applied: Rebuilt one row per team-season from every regular-season lineup and exact same-season DARKO, fit a leave-one-season-out conditional softmax over all teams, held each focal player's own exposure-weighted contribution fixed, included teammates' bench/off-floor minutes, and reallocated the normalized probability delta with deterministic Shapley permutations.
+- Prevention rule added: Any quantity labeled team title odds must have one champion label and exactly unit probability mass inside every season; keep retrospective same-season estimates distinct from as-of forecasts.
+- Outcome: 863 team-seasons across 29 years close annual probability mass within `6.66e-16`; the selected offense/defense model is `C=5`, LOYO champion log loss `1.668791`, and 212,045 focal-player/teammate season rows reconcile within `9.99e-16`.

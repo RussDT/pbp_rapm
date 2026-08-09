@@ -110,6 +110,8 @@ This file complements `AGENTS.md` for coding agents working in `/Users/russellth
 - Career teammate summaries combine raw `NBA*.parquet` event-clock deltas for shared minutes with processed `RAPM*.parquet` possessions for ORTG/DRTG/net rating. Generated career-teammate CSVs under `nba_pipeline/results/career_teammates/` are artifacts unless explicitly curated for git.
 - Databallr WOWY / lineup net-rating work should use the duplicate raw action-score possession path in `nba_pipeline/scripts/build_clean_lineup_net_rating.py`, not `RAPM*.parquet`; period boundaries are hard splits, foreign-side technical/admin FT points are zero-possession scoring rows for the shooting team, and empty admin-only period-end rows should not become phantom possessions.
 
+- `scripts/build_championship_help.py` builds the 1998-2026 retrospective championship-help extension to The Help Index. Use one row per team-season, every regular-season lineup, exact same-season DARKO, one champion label, and a within-season conditional softmax whose probabilities sum exactly to one. Choose each traded focal player's final regular-season team; keep his own exposure-weighted team-strength contribution fixed; count teammates across all team minutes, including when he sits; and define help as actual full-roster probability minus the neutral-`0.0`-DPM teammate counterfactual. Deterministic Shapley rows must close exactly. Playoff PBP supplies only the champion label. Describe the result as retrospective contextual expected championships added, not causal ring credit or an as-of forecast. See `docs/DARKO_TEAMMATE_HELP.md`.
+
 ## Key Docs
 
 - `nba_pipeline/docs/README.md`

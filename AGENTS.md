@@ -128,6 +128,10 @@ If you touch decomposition logic, preserve the additive contract documented in:
 If you touch overall project status or modeling direction, update:
 - [nba_pipeline/docs/DRL_SHAPLEY_BUILD_STATUS.md](/Users/russellthomas/Docs/pbp_rapm/nba_pipeline/docs/DRL_SHAPLEY_BUILD_STATUS.md)
 
+## DARKO Championship Help
+
+- `nba_pipeline/scripts/build_championship_help.py` owns the 1998-2026 retrospective championship-help surface. Its probability unit is the team-season: use every regular-season lineup and exact same-season DARKO, include all teams, keep exactly one champion label per season, and normalize title odds with a within-season conditional softmax so annual probability mass is exactly one. Assign traded focal players to their final regular-season team, hold the focal player's own exposure-weighted team-strength contribution fixed, include teammates' bench/off-floor team minutes, and allocate actual-versus-neutral-0.0-DPM probability exactly with deterministic Shapley permutations. Playoff data supplies only the champion label. Call this retrospective contextual expected-championship help, never causal ring credit or an as-of forecast. Canonical docs: `nba_pipeline/docs/DARKO_TEAMMATE_HELP.md`.
+
 ## Current Research State
 
 Current autoresearch work only optimizes the value-model harness in:

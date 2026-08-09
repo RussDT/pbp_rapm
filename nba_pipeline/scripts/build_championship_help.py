@@ -13,28 +13,21 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import SplineTransformer, StandardScaler
+from scipy.optimize import minimize
+from scipy.special import expit, logsumexp
 
 try:
     from nba_pipeline.scripts.build_darko_teammate_help import (
         METRICS,
         PlayerRatingHistory,
-        attach_names,
         load_darko_history,
-        load_name_map,
         lookup_asof_ratings,
     )
 except ModuleNotFoundError:  # Direct script execution from the repository root.
     from build_darko_teammate_help import (  # type: ignore[no-redef]
         METRICS,
         PlayerRatingHistory,
-        attach_names,
         load_darko_history,
-        load_name_map,
         lookup_asof_ratings,
     )
 
@@ -47,10 +40,9 @@ RAW_DIR = PIPELINE_DIR / "raw_data"
 DEFAULT_DARKO_PATH = PIPELINE_DIR / ".cache" / "teammate_help" / "dpm_history.csv"
 DEFAULT_OUTPUT_DIR = PIPELINE_DIR / "results" / "championship_help"
 DEFAULT_APP_DATA_DIR = PROJECT_ROOT / "teammate-help-app" / "public" / "data" / "championship-help"
-MODEL_SPECS = ("own", "linear", "spline", "spline_interaction")
-MODEL_C_VALUES = (0.01, 0.05, 0.2, 1.0)
 MODEL_MIN_EXPOSURES = 500
-MODEL_MIN_COVERAGE = 50.0
+TEAM_MODEL_SPECS = ("overall", "sides")
+TEAM_MODEL_C_VALUES = (0.05, 0.2, 1.0, 5.0, 20.0, 100.0)
 APP_SHARDS = 64
 PLAYER_COLS = [f"P{i}" for i in range(1, 6)]
 LINEUP_COLS = [f"O{i}" for i in range(1, 6)]
@@ -72,184 +64,294 @@ RAW_CONTEXT_COLS = [
 ]
 
 
-@dataclass
-class ChampionshipOddsModel:
+@dataclass(frozen=True)
+class TeamTitleModel:
+    """Conditional team-season title model with within-season softmax odds."""
+
     spec: str
     c_value: float
-    estimator: Pipeline
+    feature_columns: tuple[str, ...]
+    means: np.ndarray
+    scales: np.ndarray
+    coefficients: np.ndarray
 
-    def _features(self, rows: pd.DataFrame) -> pd.DataFrame:
-        features = rows[["own_dpm", "help_dpm"]].copy()
-        features["interaction"] = features["own_dpm"] * features["help_dpm"]
-        return features
+    def score(self, rows: pd.DataFrame) -> np.ndarray:
+        values = rows.loc[:, list(self.feature_columns)].to_numpy(dtype=float)
+        standardized = (values - self.means) / self.scales
+        return standardized @ self.coefficients
 
-    def predict_probability(self, rows: pd.DataFrame) -> np.ndarray:
-        return self.estimator.predict_proba(self._features(rows))[:, 1]
+    def predict_probabilities(self, rows: pd.DataFrame) -> np.ndarray:
+        scores = self.score(rows)
+        probability = np.empty(len(rows), dtype=float)
+        seasons = rows["season"].to_numpy()
+        for season in pd.unique(seasons):
+            indexes = np.flatnonzero(seasons == season)
+            group_scores = scores[indexes]
+            probability[indexes] = np.exp(group_scores - logsumexp(group_scores))
+        return probability
+
+    def target_probabilities(
+        self,
+        states: pd.DataFrame,
+        actual_season_rows: pd.DataFrame,
+        team_id: int,
+    ) -> np.ndarray:
+        """Probability for one team over counterfactual states, opponents fixed."""
+        opponent_rows = actual_season_rows[actual_season_rows["team_id"].ne(team_id)]
+        opponent_scores = self.score(opponent_rows)
+        state_scores = self.score(states)
+        return expit(state_scores - float(logsumexp(opponent_scores)))
 
 
-def fit_championship_odds_model(
+def _team_model_columns(spec: str) -> tuple[str, ...]:
+    if spec == "overall":
+        return ("team_dpm",)
+    if spec == "sides":
+        return ("team_o_dpm", "team_d_dpm")
+    raise ValueError(f"Unknown team model spec: {spec}")
+
+
+def fit_team_title_model(
     rows: pd.DataFrame,
     spec: str,
     c_value: float,
-) -> ChampionshipOddsModel:
-    """Fit a regularized player-season championship-probability model."""
-    if spec == "own":
-        preprocessor = ColumnTransformer([("own", StandardScaler(), ["own_dpm"])])
-    elif spec == "linear":
-        preprocessor = ColumnTransformer(
-            [("linear", StandardScaler(), ["own_dpm", "help_dpm"])]
-        )
-    elif spec in {"spline", "spline_interaction"}:
-        transformers: list[tuple[str, object, list[str]]] = [
-            (
-                "own",
-                SplineTransformer(n_knots=4, degree=2, include_bias=False),
-                ["own_dpm"],
-            ),
-            (
-                "help",
-                SplineTransformer(n_knots=4, degree=2, include_bias=False),
-                ["help_dpm"],
-            ),
-        ]
-        if spec == "spline_interaction":
-            transformers.append(("interaction", StandardScaler(), ["interaction"]))
-        preprocessor = ColumnTransformer(transformers)
-    else:
-        raise ValueError(f"Unknown model spec: {spec}")
-    estimator = Pipeline(
-        [
-            ("features", preprocessor),
-            ("logit", LogisticRegression(C=float(c_value), max_iter=2_000)),
-        ]
+) -> TeamTitleModel:
+    """Fit a regularized conditional-logit model over each season's teams."""
+    feature_columns = _team_model_columns(spec)
+    values = rows.loc[:, list(feature_columns)].to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValueError("Team title-model features must be finite")
+    means = values.mean(axis=0)
+    scales = values.std(axis=0)
+    scales = np.where(scales > 1e-12, scales, 1.0)
+    standardized = (values - means) / scales
+    seasons = rows["season"].to_numpy()
+    outcomes = rows["won_championship"].to_numpy(dtype=int)
+    groups: list[tuple[np.ndarray, int]] = []
+    for season in pd.unique(seasons):
+        indexes = np.flatnonzero(seasons == season)
+        champion_indexes = np.flatnonzero(outcomes[indexes] == 1)
+        if len(champion_indexes) != 1:
+            raise ValueError(f"Season {season} must contain exactly one champion team")
+        groups.append((indexes, int(champion_indexes[0])))
+
+    penalty = 1.0 / float(c_value)
+
+    def objective(coefficients: np.ndarray) -> tuple[float, np.ndarray]:
+        scores = standardized @ coefficients
+        loss = 0.5 * penalty * float(coefficients @ coefficients)
+        gradient = penalty * coefficients.copy()
+        for indexes, champion_position in groups:
+            group_scores = scores[indexes]
+            group_probability = np.exp(group_scores - logsumexp(group_scores))
+            loss += float(logsumexp(group_scores) - group_scores[champion_position])
+            gradient += standardized[indexes].T @ group_probability
+            gradient -= standardized[indexes[champion_position]]
+        return loss, gradient
+
+    result = minimize(
+        fun=lambda coefficients: objective(coefficients),
+        x0=np.full(len(feature_columns), 0.5, dtype=float),
+        jac=True,
+        method="L-BFGS-B",
+        bounds=[(0.0, None)] * len(feature_columns),
     )
-    model = ChampionshipOddsModel(spec=spec, c_value=float(c_value), estimator=estimator)
-    features = model._features(rows)
-    estimator.fit(features, rows["won_championship"].astype(int))
-    return model
+    if not result.success:
+        raise RuntimeError(f"Team title model failed to converge: {result.message}")
+    return TeamTitleModel(
+        spec=spec,
+        c_value=float(c_value),
+        feature_columns=feature_columns,
+        means=means,
+        scales=scales,
+        coefficients=np.asarray(result.x, dtype=float),
+    )
 
 
-def prepare_model_sample(
-    player: pd.DataFrame,
-    min_exposures: int = MODEL_MIN_EXPOSURES,
-    min_coverage: float = MODEL_MIN_COVERAGE,
-) -> pd.DataFrame:
-    sample = player[
-        player["total_exposures"].ge(min_exposures)
-        & player["coverage_pct"].ge(min_coverage)
-        & player["own_dpm"].notna()
-        & player["help_dpm"].notna()
-    ].copy()
-    return sample.sort_values(["season", "player_id"], kind="mergesort").reset_index(drop=True)
-
-
-def cross_validated_predictions(
-    sample: pd.DataFrame,
+def cross_validated_team_predictions(
+    teams: pd.DataFrame,
     spec: str,
     c_value: float,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, dict[int, TeamTitleModel]]:
+    """Leave one complete season out and return normalized team probabilities."""
     predictions: list[pd.DataFrame] = []
-    for season in sorted(sample["season"].unique()):
-        train = sample[sample["season"] != season]
-        test = sample[sample["season"] == season]
-        model = fit_championship_odds_model(train, spec=spec, c_value=c_value)
-        fold = test[["season", "player_id", "team_id", "won_championship"]].copy()
-        fold["predicted_probability"] = model.predict_probability(test)
+    models: dict[int, TeamTitleModel] = {}
+    for season in sorted(pd.to_numeric(teams["season"], errors="raise").astype(int).unique()):
+        train = teams[teams["season"].ne(season)]
+        test = teams[teams["season"].eq(season)]
+        model = fit_team_title_model(train, spec=spec, c_value=c_value)
+        models[int(season)] = model
+        fold = test[["season", "team_id", "won_championship"]].copy()
+        fold["predicted_probability"] = model.predict_probabilities(test)
         predictions.append(fold)
-    return pd.concat(predictions, ignore_index=True)
+    output = pd.concat(predictions, ignore_index=True)
+    annual_mass = output.groupby("season")["predicted_probability"].sum()
+    max_gap = float((annual_mass - 1.0).abs().max())
+    if max_gap > 1e-12:
+        raise AssertionError(f"Annual team title probabilities miss 1 by {max_gap}")
+    return output, models
 
 
-def score_probability_predictions(predictions: pd.DataFrame) -> dict[str, float]:
-    outcomes = predictions["won_championship"].to_numpy(dtype=int)
-    probability = predictions["predicted_probability"].to_numpy(dtype=float)
+def score_team_probability_predictions(predictions: pd.DataFrame) -> dict[str, float]:
+    """Score one mutually exclusive champion choice per season."""
+    champion_probability = predictions.loc[
+        predictions["won_championship"].eq(1), "predicted_probability"
+    ].clip(lower=1e-15)
+    season_brier = predictions.assign(
+        squared_error=(
+            predictions["predicted_probability"] - predictions["won_championship"]
+        )
+        ** 2
+    ).groupby("season")["squared_error"].sum()
+    top = predictions.sort_values(
+        ["season", "predicted_probability", "team_id"],
+        ascending=[True, False, True],
+        kind="mergesort",
+    ).drop_duplicates("season")
+    annual_mass = predictions.groupby("season")["predicted_probability"].sum()
     return {
-        "brier": float(brier_score_loss(outcomes, probability)),
-        "log_loss": float(log_loss(outcomes, probability)),
-        "roc_auc": float(roc_auc_score(outcomes, probability)),
-        "mean_probability": float(probability.mean()),
-        "observed_rate": float(outcomes.mean()),
+        "champion_log_loss": float(-np.log(champion_probability).mean()),
+        "season_brier": float(season_brier.mean()),
+        "top_one_accuracy": float(top["won_championship"].mean()),
+        "max_annual_probability_sum_gap": float((annual_mass - 1.0).abs().max()),
     }
 
 
-def evaluate_model_grid(
-    sample: pd.DataFrame,
-) -> tuple[pd.DataFrame, dict[str, object], pd.DataFrame]:
+def evaluate_team_model_grid(
+    teams: pd.DataFrame,
+) -> tuple[
+    pd.DataFrame,
+    dict[str, object],
+    pd.DataFrame,
+    dict[int, TeamTitleModel],
+]:
     records: list[dict[str, object]] = []
-    prediction_cache: dict[tuple[str, float], pd.DataFrame] = {}
-    for spec in MODEL_SPECS:
-        for c_value in MODEL_C_VALUES:
-            predictions = cross_validated_predictions(sample, spec, c_value)
-            prediction_cache[(spec, c_value)] = predictions
-            records.append({"spec": spec, "c_value": c_value, **score_probability_predictions(predictions)})
+    cache: dict[tuple[str, float], tuple[pd.DataFrame, dict[int, TeamTitleModel]]] = {}
+    for spec in TEAM_MODEL_SPECS:
+        for c_value in TEAM_MODEL_C_VALUES:
+            predictions, models = cross_validated_team_predictions(teams, spec, c_value)
+            cache[(spec, c_value)] = (predictions, models)
+            records.append(
+                {
+                    "spec": spec,
+                    "c_value": c_value,
+                    **score_team_probability_predictions(predictions),
+                }
+            )
     diagnostics = pd.DataFrame(records).sort_values(
-        ["log_loss", "brier", "spec", "c_value"], kind="mergesort"
+        ["champion_log_loss", "season_brier", "spec", "c_value"], kind="mergesort"
     ).reset_index(drop=True)
     winner = diagnostics.iloc[0]
     selected = {
         "spec": str(winner["spec"]),
         "c_value": float(winner["c_value"]),
-        "selection_metric": "leave-one-season-out log loss",
-        "brier": float(winner["brier"]),
-        "log_loss": float(winner["log_loss"]),
-        "roc_auc": float(winner["roc_auc"]),
-        "mean_probability": float(winner["mean_probability"]),
-        "observed_rate": float(winner["observed_rate"]),
+        "selection_metric": "leave-one-season-out champion log loss",
+        "champion_log_loss": float(winner["champion_log_loss"]),
+        "season_brier": float(winner["season_brier"]),
+        "top_one_accuracy": float(winner["top_one_accuracy"]),
+        "max_annual_probability_sum_gap": float(
+            winner["max_annual_probability_sum_gap"]
+        ),
     }
-    selected_predictions = prediction_cache[(selected["spec"], selected["c_value"])]
-    return diagnostics, selected, selected_predictions
+    predictions, models = cache[(selected["spec"], selected["c_value"])]
+    return diagnostics, selected, predictions, models
 
 
-def attribute_model_probabilities(
-    sample: pd.DataFrame,
-    pair: pd.DataFrame,
-    model: ChampionshipOddsModel,
+def attribute_team_probabilities(
+    players: pd.DataFrame,
+    teammates: pd.DataFrame,
+    teams: pd.DataFrame,
+    fold_models: dict[int, TeamTitleModel],
     permutations: int = 128,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, float | int]]:
-    """Estimate actual-vs-neutral title odds and allocate the change to teammates."""
-    seasons = sample.copy()
-    seasons["title_probability"] = model.predict_probability(seasons)
-    neutral = seasons.copy()
-    neutral["help_dpm"] = 0.0
-    seasons["neutral_teammate_title_probability"] = model.predict_probability(neutral)
-    seasons["teammate_help_championships"] = (
-        seasons["title_probability"] - seasons["neutral_teammate_title_probability"]
-    )
+    """Attribute normalized team title odds to every focal player's teammates."""
+    if permutations <= 0:
+        raise ValueError("permutations must be positive")
+    team_probability_parts: list[pd.DataFrame] = []
+    for season, choices in teams.groupby("season", sort=True):
+        model = fold_models[int(season)]
+        part = choices[["season", "team_id"]].copy()
+        part["title_probability"] = model.predict_probabilities(choices)
+        team_probability_parts.append(part)
+    team_probabilities = pd.concat(team_probability_parts, ignore_index=True)
+    annual_mass = team_probabilities.groupby("season")["title_probability"].sum()
+    annual_gap = float((annual_mass - 1.0).abs().max())
+    if annual_gap > 1e-12:
+        raise AssertionError(f"Actual team title probabilities miss 1 by {annual_gap}")
 
-    pair_keys = seasons[["season", "player_id", "team_id"]]
-    attributed = pair.merge(pair_keys, on=["season", "player_id", "team_id"], how="inner").copy()
+    seasons = players.merge(
+        team_probabilities, on=["season", "team_id"], how="left", validate="many_to_one"
+    )
+    seasons["neutral_teammate_title_probability"] = np.nan
+    seasons["teammate_help_championships"] = np.nan
+    attributed = teammates.copy()
     attributed["championships_added"] = 0.0
     max_gap = 0.0
-    for key, group in attributed.groupby(["season", "player_id", "team_id"], sort=False):
-        season, player_id, team_id = key
-        season_row = seasons[
-            seasons["season"].eq(season)
-            & seasons["player_id"].eq(player_id)
-            & seasons["team_id"].eq(team_id)
-        ].iloc[0]
-        values = group["contribution_dpm"].fillna(0.0).to_numpy(dtype=float)
-        count = len(values)
-        rng = np.random.default_rng((int(season) * 1_000_003 + int(player_id)) % (2**32))
+    max_actual_state_gap = 0.0
+
+    for season_index, season_row in seasons.iterrows():
+        season = int(season_row["season"])
+        player_id = int(season_row["player_id"])
+        team_id = int(season_row["team_id"])
+        model = fold_models[season]
+        choices = teams[teams["season"].eq(season)]
+        group = attributed[
+            attributed["season"].eq(season)
+            & attributed["player_id"].eq(player_id)
+            & attributed["team_id"].eq(team_id)
+        ]
+        count = len(group)
+        if count == 0:
+            neutral_probability = float(season_row["title_probability"])
+            seasons.loc[season_index, "neutral_teammate_title_probability"] = neutral_probability
+            seasons.loc[season_index, "teammate_help_championships"] = 0.0
+            continue
+
+        rng = np.random.default_rng((season * 1_000_003 + player_id) % (2**32))
         orders = np.vstack([rng.permutation(count) for _ in range(permutations)])
-        ordered_values = values[orders]
-        cumulative = np.concatenate(
-            [np.zeros((permutations, 1)), np.cumsum(ordered_values, axis=1)], axis=1
-        )
         states = pd.DataFrame(
             {
-                "own_dpm": float(season_row["own_dpm"]),
-                "help_dpm": cumulative.ravel(),
+                "season": np.repeat(season, permutations * (count + 1)),
+                "team_id": np.repeat(team_id, permutations * (count + 1)),
             }
         )
-        probability = model.predict_probability(states).reshape(permutations, count + 1)
+        for metric in METRICS:
+            values = (
+                pd.to_numeric(group[f"contribution_{metric}"], errors="coerce")
+                .fillna(0.0)
+                .to_numpy(dtype=float)
+            )
+            ordered = values[orders]
+            cumulative = np.concatenate(
+                [np.zeros((permutations, 1)), np.cumsum(ordered, axis=1)], axis=1
+            )
+            own = float(season_row[f"own_team_contribution_{metric}"])
+            states[f"team_{metric}"] = (own + cumulative).ravel()
+        probability = model.target_probabilities(states, choices, team_id).reshape(
+            permutations, count + 1
+        )
+        neutral_probability = float(probability[0, 0])
+        actual_probability = float(season_row["title_probability"])
+        actual_state_gap = abs(float(probability[:, -1].mean()) - actual_probability)
+        max_actual_state_gap = max(max_actual_state_gap, actual_state_gap)
         deltas = np.diff(probability, axis=1)
         shapley = np.zeros(count, dtype=float)
         for position in range(count):
             np.add.at(shapley, orders[:, position], deltas[:, position])
         shapley /= permutations
         attributed.loc[group.index, "championships_added"] = shapley
-        target = float(season_row["teammate_help_championships"])
+        target = actual_probability - neutral_probability
         gap = abs(float(shapley.sum()) - target)
         max_gap = max(max_gap, gap)
+        seasons.loc[season_index, "neutral_teammate_title_probability"] = neutral_probability
+        seasons.loc[season_index, "teammate_help_championships"] = target
+
+    if max_actual_state_gap > 1e-10:
+        raise AssertionError(
+            f"Roster contributions do not reproduce actual team state: {max_actual_state_gap}"
+        )
+    if max_gap > 1e-10:
+        raise AssertionError(f"Shapley attribution gap {max_gap} exceeds tolerance")
     attributed = attributed.merge(
         seasons[
             [
@@ -263,15 +365,16 @@ def attribute_model_probabilities(
         ],
         on=["season", "player_id", "team_id"],
         how="left",
+        validate="many_to_one",
     )
     report = {
         "player_seasons": int(len(seasons)),
         "attributed_pair_seasons": int(len(attributed)),
         "permutations": int(permutations),
+        "max_actual_annual_probability_sum_gap": annual_gap,
+        "max_actual_state_reconciliation_gap": float(max_actual_state_gap),
         "max_shapley_reconciliation_gap": float(max_gap),
     }
-    if max_gap > 1e-10:
-        raise AssertionError(f"Shapley attribution gap {max_gap} exceeds tolerance")
     return seasons, attributed, report
 
 
@@ -436,25 +539,6 @@ def write_app_championship_data(
             }
         )
     (output_dir / "manifest.json").write_text(json.dumps(manifest, separators=(",", ":")))
-
-
-def build_probability_curves(
-    model: ChampionshipOddsModel,
-) -> list[dict[str, float]]:
-    help_values = np.linspace(-6.0, 14.0, 81)
-    curves: list[dict[str, float]] = []
-    for own_dpm in (-2.0, 0.0, 2.0, 4.0, 6.0):
-        grid = pd.DataFrame({"own_dpm": own_dpm, "help_dpm": help_values})
-        probability = model.predict_probability(grid)
-        curves.extend(
-            {
-                "own_dpm": own_dpm,
-                "help_dpm": float(help_dpm),
-                "title_probability": float(title_probability),
-            }
-            for help_dpm, title_probability in zip(help_values, probability)
-        )
-    return curves
 
 
 def normalize_game_ids(values: pd.Series) -> pd.Series:
@@ -843,6 +927,221 @@ def summarize_team_lineup_exposures(
     return player, pair
 
 
+def summarize_retrospective_team_season(
+    exposures: pd.DataFrame,
+    darko: pd.DataFrame,
+    season: int,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Build full-team strength from exact same-season DARKO and every lineup."""
+    required = {"game_date", "team_id", "team_abbr", "exposures", *PLAYER_COLS}
+    missing = required - set(exposures.columns)
+    if missing:
+        raise ValueError(f"Team exposures missing columns: {sorted(missing)}")
+    if exposures.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    ratings = darko[pd.to_numeric(darko["season"], errors="coerce").eq(season)].copy()
+    ratings["nba_id"] = pd.to_numeric(ratings["nba_id"], errors="coerce")
+    ratings["date"] = pd.to_datetime(ratings["date"], errors="coerce")
+    for metric in METRICS:
+        ratings[metric] = pd.to_numeric(ratings[metric], errors="coerce")
+    ratings = (
+        ratings.dropna(subset=["nba_id", "date"])
+        .sort_values(["nba_id", "date"], kind="mergesort")
+        .drop_duplicates("nba_id", keep="last")
+    )
+    ratings["nba_id"] = ratings["nba_id"].astype(np.int64)
+    rating_maps = {metric: ratings.set_index("nba_id")[metric] for metric in METRICS}
+    name_map = ratings.set_index("nba_id")["player_name"]
+
+    frame = exposures.copy()
+    frame["game_date"] = pd.to_datetime(frame["game_date"], errors="coerce")
+    frame["exposures"] = pd.to_numeric(frame["exposures"], errors="coerce").fillna(0.0)
+    player_parts: list[pd.DataFrame] = []
+    for slot in PLAYER_COLS:
+        player_ids = pd.to_numeric(frame[slot], errors="coerce").fillna(-1).astype(np.int64)
+        part = pd.DataFrame(
+            {
+                "team_id": frame["team_id"].to_numpy(),
+                "team_abbr": frame["team_abbr"].astype(str).to_numpy(),
+                "player_id": player_ids.to_numpy(),
+                "game_date": frame["game_date"].to_numpy(),
+                "player_exposures": frame["exposures"].to_numpy(dtype=float),
+            }
+        )
+        fully_rated = np.ones(len(part), dtype=bool)
+        for metric in METRICS:
+            values = player_ids.map(rating_maps[metric]).to_numpy(dtype=float)
+            fully_rated &= np.isfinite(values)
+            part[f"player_{metric}"] = values
+            part[f"weighted_{metric}"] = np.where(
+                np.isfinite(values), values * part["player_exposures"], 0.0
+            )
+        part["rated_exposures"] = np.where(
+            fully_rated, part["player_exposures"], 0.0
+        )
+        player_parts.append(part)
+
+    raw_roster = pd.concat(player_parts, ignore_index=True)
+    roster = (
+        raw_roster.groupby(
+            ["team_id", "team_abbr", "player_id"], as_index=False, sort=False
+        )
+        .agg(
+            first_game_date=("game_date", "min"),
+            last_game_date=("game_date", "max"),
+            player_exposures=("player_exposures", "sum"),
+            rated_exposures=("rated_exposures", "sum"),
+            **{
+                f"weighted_{metric}": (f"weighted_{metric}", "sum")
+                for metric in METRICS
+            },
+        )
+    )
+    team_totals = (
+        frame.groupby(["team_id", "team_abbr"], as_index=False, sort=False)["exposures"]
+        .sum()
+        .rename(columns={"exposures": "total_exposures"})
+    )
+    roster = roster.merge(team_totals, on=["team_id", "team_abbr"], how="left")
+    roster["player_name"] = roster["player_id"].map(name_map).fillna(
+        roster["player_id"].map(lambda value: f"ID {value}")
+    )
+    for metric in METRICS:
+        roster[f"player_{metric}"] = roster[f"weighted_{metric}"] / roster[
+            "rated_exposures"
+        ].replace(0, np.nan)
+        roster[f"contribution_{metric}"] = roster[f"weighted_{metric}"] / roster[
+            "total_exposures"
+        ].replace(0, np.nan)
+    roster["share_of_team_exposures_pct"] = (
+        100.0 * roster["player_exposures"] / roster["total_exposures"].replace(0, np.nan)
+    )
+    roster.insert(0, "season", int(season))
+
+    aggregate_columns = {
+        f"team_{metric}": (f"contribution_{metric}", "sum") for metric in METRICS
+    }
+    teams = (
+        roster.groupby(
+            ["season", "team_id", "team_abbr", "total_exposures"],
+            as_index=False,
+            sort=False,
+        )
+        .agg(
+            rated_player_exposures=("rated_exposures", "sum"),
+            **aggregate_columns,
+        )
+    )
+    teams["rating_coverage_pct"] = (
+        100.0
+        * teams["rated_player_exposures"]
+        / (5.0 * teams["total_exposures"]).replace(0, np.nan)
+    )
+    return (
+        teams.sort_values(["season", "team_id"], kind="mergesort").reset_index(drop=True),
+        roster.sort_values(["season", "team_id", "player_id"], kind="mergesort").reset_index(
+            drop=True
+        ),
+    )
+
+
+def build_player_title_context(
+    teams: pd.DataFrame,
+    roster: pd.DataFrame,
+    min_exposures: int = MODEL_MIN_EXPOSURES,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Create final-team focal rows and full-roster teammate contribution rows."""
+    final = roster.copy()
+    final["last_game_date"] = pd.to_datetime(final["last_game_date"], errors="coerce")
+    final = final.sort_values(
+        ["season", "player_id", "last_game_date", "player_exposures", "team_id"],
+        kind="mergesort",
+    ).drop_duplicates(["season", "player_id"], keep="last")
+    final = final[
+        final["player_exposures"].ge(min_exposures) & final["player_dpm"].notna()
+    ].copy()
+    final = final.drop(columns=["total_exposures"], errors="ignore")
+    team_columns = [
+        "season",
+        "team_id",
+        "team_abbr",
+        "team_dpm",
+        "team_o_dpm",
+        "team_d_dpm",
+        "total_exposures",
+        "rating_coverage_pct",
+    ]
+    for optional in ("champion_team_id", "won_championship"):
+        if optional in teams.columns:
+            team_columns.append(optional)
+    players = final.merge(
+        teams[team_columns], on=["season", "team_id", "team_abbr"], how="inner"
+    )
+    players = players.rename(
+        columns={
+            "player_dpm": "own_dpm",
+            "player_o_dpm": "own_o_dpm",
+            "player_d_dpm": "own_d_dpm",
+            "contribution_dpm": "own_team_contribution_dpm",
+            "contribution_o_dpm": "own_team_contribution_o_dpm",
+            "contribution_d_dpm": "own_team_contribution_d_dpm",
+            "player_exposures": "total_exposures_player",
+            "rated_exposures": "rated_exposures_player",
+        }
+    )
+    for metric in METRICS:
+        players[f"help_{metric}"] = (
+            players[f"team_{metric}"] - players[f"own_team_contribution_{metric}"]
+        )
+    players["coverage_pct"] = players["rating_coverage_pct"]
+    players["total_exposures"] = players["total_exposures_player"]
+    players["rated_exposures"] = players["rated_exposures_player"]
+
+    focal = players[["season", "team_id", "player_id", "player_name"]].copy()
+    teammate_source = roster.rename(
+        columns={
+            "player_id": "teammate_id",
+            "player_name": "teammate_name",
+            "player_exposures": "teammate_team_exposures",
+            "rated_exposures": "teammate_rated_exposures",
+            "player_dpm": "avg_teammate_dpm",
+            "player_o_dpm": "avg_teammate_o_dpm",
+            "player_d_dpm": "avg_teammate_d_dpm",
+        }
+    )
+    teammates = focal.merge(teammate_source, on=["season", "team_id"], how="left")
+    teammates = teammates[teammates["player_id"].ne(teammates["teammate_id"])].copy()
+    teammates["shared_exposures"] = teammates["teammate_team_exposures"]
+    teammates["rated_exposures"] = teammates["teammate_rated_exposures"]
+    teammates = teammates.sort_values(
+        ["season", "player_id", "team_id", "teammate_id"], kind="mergesort"
+    ).reset_index(drop=True)
+    players = players.sort_values(["season", "player_id"], kind="mergesort").reset_index(
+        drop=True
+    )
+    return players, teammates
+
+
+def validate_team_roster_reconciliation(
+    teams: pd.DataFrame,
+    roster: pd.DataFrame,
+    tolerance: float = 1e-10,
+) -> dict[str, float | int]:
+    sums = roster.groupby(["season", "team_id"], as_index=False)[
+        [f"contribution_{metric}" for metric in METRICS]
+    ].sum(min_count=1)
+    merged = teams.merge(sums, on=["season", "team_id"], how="left")
+    report: dict[str, float | int] = {"team_seasons": int(len(merged))}
+    for metric in METRICS:
+        gap = (merged[f"team_{metric}"] - merged[f"contribution_{metric}"]).abs()
+        max_gap = float(gap.max(skipna=True)) if gap.notna().any() else 0.0
+        report[f"max_{metric}_gap"] = max_gap
+        if max_gap > tolerance:
+            raise AssertionError(f"{metric} team-roster gap {max_gap} exceeds {tolerance}")
+    return report
+
+
 def extract_champion_from_games(games: pd.DataFrame, season: int) -> dict[str, object]:
     """Return the winner of the chronologically last completed playoff game."""
     completed = games.copy()
@@ -918,11 +1217,11 @@ def build_team_season_data(
     end_year: int,
     processed_dir: Path,
     raw_dir: Path,
-    histories: dict[int, PlayerRatingHistory],
+    darko: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, list[dict[str, object]]]:
-    """Build regular-season player/team context and playoff champion labels."""
-    player_frames: list[pd.DataFrame] = []
-    pair_frames: list[pd.DataFrame] = []
+    """Build retrospective team strength and playoff champion labels."""
+    team_frames: list[pd.DataFrame] = []
+    roster_frames: list[pd.DataFrame] = []
     champions: list[dict[str, object]] = []
     reports: list[dict[str, object]] = []
     processed_columns = ["game_id", "game_date", *LINEUP_COLS, *OPPONENT_COLS]
@@ -944,9 +1243,9 @@ def build_team_season_data(
         dates = possessions[["game_id", "game_date"]].drop_duplicates("game_id")
         regular_games, assignments = build_game_context(raw, dates)
         exposures = collapse_processed_team_exposures(possessions, assignments)
-        player, pair = summarize_team_lineup_exposures(exposures, histories, season=season)
-        player_frames.append(player)
-        pair_frames.append(pair)
+        teams, roster = summarize_retrospective_team_season(exposures, darko, season=season)
+        team_frames.append(teams)
+        roster_frames.append(roster)
 
         playoff_dates = pd.read_parquet(
             playoff_processed_path, columns=["game_id", "game_date"]
@@ -961,28 +1260,38 @@ def build_team_season_data(
                 "regular_games": int(len(regular_games)),
                 "regular_possessions": int(len(possessions)),
                 "team_exposures": int(exposures["exposures"].sum()),
-                "player_team_rows": int(len(player)),
-                "pair_team_rows": int(len(pair)),
+                "team_rows": int(len(teams)),
+                "roster_rows": int(len(roster)),
+                "rating_coverage_pct": float(
+                    100.0
+                    * teams["rated_player_exposures"].sum()
+                    / (5.0 * teams["total_exposures"].sum())
+                ),
                 "champion_team_id": int(champion["champion_team_id"]),
                 "champion_team_abbr": str(champion["champion_team_abbr"]),
             }
         )
         print(
-            f"{season}: {len(possessions):,} RS possessions, {len(player):,} player-team rows, "
+            f"{season}: {len(possessions):,} RS possessions, {len(teams):,} teams, "
             f"champion {champion['champion_team_abbr']}"
         )
 
-    player_team = pd.concat(player_frames, ignore_index=True)
-    pair_team = pd.concat(pair_frames, ignore_index=True)
+    team_seasons = pd.concat(team_frames, ignore_index=True)
+    roster = pd.concat(roster_frames, ignore_index=True)
     champion_frame = pd.DataFrame(champions)
-    selected_player, selected_pair = select_final_team_segments(player_team, pair_team)
-    selected_player = selected_player.merge(
-        champion_frame[["season", "champion_team_id"]], on="season", how="left"
+    team_seasons = team_seasons.merge(
+        champion_frame[["season", "champion_team_id", "champion_team_abbr"]],
+        on="season",
+        how="left",
     )
-    selected_player["won_championship"] = (
-        selected_player["team_id"] == selected_player["champion_team_id"]
+    team_seasons["won_championship"] = (
+        team_seasons["team_id"] == team_seasons["champion_team_id"]
     ).astype(int)
-    return selected_player, selected_pair, champion_frame, reports
+    champion_counts = team_seasons.groupby("season")["won_championship"].sum()
+    invalid = champion_counts[champion_counts.ne(1)]
+    if not invalid.empty:
+        raise ValueError(f"Champion team missing or duplicated: {invalid.to_dict()}")
+    return team_seasons, roster, champion_frame, reports
 
 
 def parse_args() -> argparse.Namespace:
@@ -1008,31 +1317,38 @@ def main() -> None:
     args = parse_args()
     if not args.darko.exists():
         raise FileNotFoundError(f"DARKO history not found: {args.darko}")
-    darko, histories = load_darko_history(args.darko)
-    names = load_name_map(darko)
+    darko, _ = load_darko_history(args.darko)
+    team_path = args.output_dir / "team_seasons.csv"
+    roster_path = args.output_dir / "team_player_contributions.csv"
     player_path = args.output_dir / "player_team_seasons.csv"
     pair_path = args.output_dir / "player_teammate_team_seasons.csv"
     champions_path = args.output_dir / "champions.csv"
     if args.reuse_data:
-        missing = [str(path) for path in (player_path, pair_path, champions_path) if not path.exists()]
+        missing = [
+            str(path)
+            for path in (team_path, roster_path, champions_path)
+            if not path.exists()
+        ]
         if missing:
             raise FileNotFoundError(f"Cannot reuse missing championship-help inputs: {missing}")
-        player = pd.read_csv(player_path)
-        pair = pd.read_csv(pair_path)
+        teams = pd.read_csv(team_path)
+        roster = pd.read_csv(roster_path)
         champions = pd.read_csv(champions_path)
         reports: list[dict[str, object]] = []
     else:
-        player, pair, champions, reports = build_team_season_data(
+        teams, roster, champions, reports = build_team_season_data(
             args.start_year,
             args.end_year,
             args.processed_dir,
             args.raw_dir,
-            histories,
+            darko,
         )
-        player = attach_names(player, names)
-        pair = attach_names(pair, names)
-    reconciliation = validate_pair_reconciliation(player, pair)
+    player, pair = build_player_title_context(teams, roster)
+    team_reconciliation = validate_team_roster_reconciliation(teams, roster)
+    player_reconciliation = validate_pair_reconciliation(player, pair)
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    teams.to_csv(team_path, index=False)
+    roster.to_csv(roster_path, index=False)
     player.to_csv(player_path, index=False)
     pair.to_csv(pair_path, index=False)
     champions.to_csv(champions_path, index=False)
@@ -1040,51 +1356,53 @@ def main() -> None:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "start_season": int(args.start_year),
         "end_season": int(args.end_year),
+        "team_seasons": int(len(teams)),
+        "roster_seasons": int(len(roster)),
         "player_seasons": int(len(player)),
         "pair_seasons": int(len(pair)),
-        "common_sample_coverage_pct": float(
-            100.0 * player["rated_exposures"].sum() / player["total_exposures"].sum()
+        "team_rating_coverage_pct": float(
+            100.0
+            * teams["rated_player_exposures"].sum()
+            / (5.0 * teams["total_exposures"].sum())
         ),
-        "reconciliation": reconciliation,
+        "team_reconciliation": team_reconciliation,
+        "player_reconciliation": player_reconciliation,
         "seasons": reports,
     }
     (args.output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
     print(f"Wrote data-only championship-help inputs to {args.output_dir}")
-    print(f"Reconciliation: {reconciliation}")
+    print(f"Team reconciliation: {team_reconciliation}")
+    print(f"Player reconciliation: {player_reconciliation}")
     if args.data_only:
         return
 
-    sample = prepare_model_sample(player)
-    diagnostics, selected, oof_predictions = evaluate_model_grid(sample)
-    model = fit_championship_odds_model(
-        sample,
-        spec=str(selected["spec"]),
-        c_value=float(selected["c_value"]),
-    )
-    seasons, attributed, shapley_report = attribute_model_probabilities(
-        sample,
+    sample = teams.sort_values(["season", "team_id"], kind="mergesort").reset_index(drop=True)
+    diagnostics, selected, oof_predictions, fold_models = evaluate_team_model_grid(sample)
+    seasons, attributed, shapley_report = attribute_team_probabilities(
+        player,
         pair,
-        model,
+        sample,
+        fold_models,
         permutations=args.shapley_permutations,
     )
     career, teammate, career_report = build_career_championship_help(seasons, attributed)
-    own_best = diagnostics[diagnostics["spec"].eq("own")].sort_values("log_loss").iloc[0]
-    selected["log_loss_improvement_vs_own_only"] = float(
-        own_best["log_loss"] - selected["log_loss"]
-    )
-    selected["brier_improvement_vs_own_only"] = float(
-        own_best["brier"] - selected["brier"]
-    )
-    selected["model_rows"] = int(len(sample))
-    selected["championship_player_seasons"] = int(sample["won_championship"].sum())
+    selected["model_team_seasons"] = int(len(sample))
+    selected["championship_team_seasons"] = int(sample["won_championship"].sum())
     selected["seasons"] = int(sample["season"].nunique())
     selected["minimum_exposures"] = MODEL_MIN_EXPOSURES
-    selected["minimum_coverage_pct"] = MODEL_MIN_COVERAGE
     selected["neutral_teammate_baseline_dpm"] = 0.0
-    selected["probability_curves"] = build_probability_curves(model)
+    selected["probability_unit"] = "team-season conditional softmax"
+    selected["rating_timing"] = "same-season retrospective DARKO snapshot"
 
     diagnostics.to_csv(args.output_dir / "model_cv.csv", index=False)
     oof_predictions.to_csv(args.output_dir / "model_oof_predictions.csv", index=False)
+    team_estimates = teams.merge(
+        oof_predictions[["season", "team_id", "predicted_probability"]],
+        on=["season", "team_id"],
+        how="left",
+        validate="one_to_one",
+    ).rename(columns={"predicted_probability": "title_probability"})
+    team_estimates.to_csv(args.output_dir / "team_season_estimates.csv", index=False)
     seasons.to_csv(args.output_dir / "player_season_estimates.csv", index=False)
     attributed.to_csv(args.output_dir / "player_teammate_season_estimates.csv", index=False)
     career.to_csv(args.output_dir / "career_player_estimates.csv", index=False)
@@ -1095,21 +1413,23 @@ def main() -> None:
             "shapley": shapley_report,
             "career_reconciliation": career_report,
             "interpretation": (
-                "Estimated change in a player's modeled championship probability relative to "
-                "the same own DARKO with neutral (0.0 DPM) teammate help. This is contextual "
-                "association, not a causal championship count."
+                "Estimated change in a team's normalized championship probability when every "
+                "teammate contribution is restored from a neutral 0.0-DPM baseline while the "
+                "focal player's own team-strength contribution stays fixed. This includes team "
+                "minutes when the focal player is off the floor and is not causal ring credit."
             ),
-            "leakage_guard": (
-                "Only regular-season exposures and backward-looking DARKO snapshots are model "
-                "inputs. Playoff data supplies the champion label only."
+            "retrospective_guard": (
+                "Regular-season lineup exposures use the exact same-season DARKO snapshot. "
+                "Playoff data supplies only the champion label. These are retrospective title "
+                "estimates, not pregame forecasts."
             ),
         }
     )
     (args.output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
     write_app_championship_data(args.app_data_dir, career, seasons, teammate, metadata)
     print(
-        f"Selected {selected['spec']} C={selected['c_value']} by LOYO log loss "
-        f"({selected['log_loss']:.6f}); wrote {len(career):,} career estimates and "
+        f"Selected {selected['spec']} C={selected['c_value']} by LOYO champion log loss "
+        f"({selected['champion_log_loss']:.6f}); wrote {len(career):,} career estimates and "
         f"{len(teammate):,} career teammate attributions"
     )
     print(f"Shapley reconciliation: {shapley_report}")
