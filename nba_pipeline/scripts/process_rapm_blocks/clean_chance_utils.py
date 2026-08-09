@@ -657,6 +657,64 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
         f"(net_efg_avg={fc_net_efg_avg:.4f}, gap max={sep_gap:.6f})"
     )
 
+    # Net six-atom shot family with NO baseline bucket: the six children
+    # carry the full EFG mass. freq_z = the FULL net value of a zone-z
+    # attempt occurring (net zone average per attempt); fg_z = conversion
+    # relative to the zone average. FT-trip reference entries follow the
+    # five-child convention and ride in MID_FREQ, so the six children sum
+    # exactly to the same target as the five-child net tree on every event.
+    for zone_mask, zone_avg, zn in (
+        (is_rim_fga, fc_net_rim_avg, 'RIM'),
+        (is_mid_fga, fc_net_mid_avg, 'MID'),
+        (is_three_fga, fc_net_three_avg, 'THREE'),
+    ):
+        nba_df_checked[f'FC_{zn}_EFG_FREQ_NET_Action_Score'] = np.where(
+            zone_mask, zone_avg, 0.0)
+        nba_df_checked[f'FC_{zn}_EFG_FG_NET_Action_Score'] = np.where(
+            zone_mask, net_actual - zone_avg, 0.0)
+    nba_df_checked['FC_MID_EFG_FREQ_NET_Action_Score'] = np.where(
+        is_fga,
+        nba_df_checked['FC_MID_EFG_FREQ_NET_Action_Score'],
+        pd.to_numeric(ft_sq_baseline_values, errors='coerce').fillna(0.0),
+    )
+    atom_sum = sum(
+        nba_df_checked[f'FC_{zn}_EFG_{kind}_NET_Action_Score']
+        for zn in ('RIM', 'MID', 'THREE') for kind in ('FREQ', 'FG'))
+    atom_gap = float(np.nanmax(np.abs(atom_sum - net_action_target)))
+    if atom_gap > 1e-9:
+        raise ValueError(f"Net six-atom identity failed: max gap={atom_gap:.12f}")
+    print(f"      Calculated net six-atom shot family (full split, gap max={atom_gap:.6f})")
+
+    # Gross full-split frequency children (same construction, gross pricing):
+    # freq_z = gross zone average per attempt; conversion children are the
+    # existing FC_{z}_EFG_FG columns. Six gross children close to the gross
+    # EFG target with no baseline bucket.
+    for zone_mask, zone_avg, zn in (
+        (is_rim_fga, fc_rim_avg_pts, 'RIM'),
+        (is_mid_fga, fc_mid_avg_pts, 'MID'),
+        (is_three_fga, fc_three_avg_pts, 'THREE'),
+    ):
+        nba_df_checked[f'FC_{zn}_EFG_FREQ_FULL_Action_Score'] = np.where(
+            zone_mask, zone_avg, 0.0)
+    nba_df_checked['FC_MID_EFG_FREQ_FULL_Action_Score'] = np.where(
+        is_fga,
+        nba_df_checked['FC_MID_EFG_FREQ_FULL_Action_Score'],
+        pd.to_numeric(ft_sq_baseline_values, errors='coerce').fillna(0.0),
+    )
+    gross_atom_sum = (
+        nba_df_checked['FC_RIM_EFG_FREQ_FULL_Action_Score']
+        + nba_df_checked['FC_MID_EFG_FREQ_FULL_Action_Score']
+        + nba_df_checked['FC_THREE_EFG_FREQ_FULL_Action_Score']
+        + nba_df_checked['FC_RIM_EFG_FG_Action_Score']
+        + nba_df_checked['FC_MID_EFG_FG_Action_Score']
+        + nba_df_checked['FC_THREE_EFG_FG_Action_Score']
+    )
+    gross_atom_gap = float(np.nanmax(np.abs(gross_atom_sum - efg_action_target)))
+    if gross_atom_gap > 1e-9:
+        raise ValueError(
+            f"Gross six-atom identity failed: max gap={gross_atom_gap:.12f}")
+    print(f"      Calculated gross six-atom shot family (full split, gap max={gross_atom_gap:.6f})")
+
     component_pairs = [
         ('FC_SQ_Action_Score', 'First_Chance_SQ_Net'),
         ('FC_MAKE_Action_Score', 'First_Chance_MAKE_Net'),
@@ -693,6 +751,15 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
         ('FC_RIM_EFG_AA_NET_Action_Score', 'First_Chance_RIM_EFG_AA_NET_Net'),
         ('FC_MID_EFG_AA_NET_Action_Score', 'First_Chance_MID_EFG_AA_NET_Net'),
         ('FC_THREE_EFG_AA_NET_Action_Score', 'First_Chance_THREE_EFG_AA_NET_Net'),
+        ('FC_RIM_EFG_FREQ_NET_Action_Score', 'First_Chance_RIM_EFG_FREQ_NET_Net'),
+        ('FC_RIM_EFG_FG_NET_Action_Score', 'First_Chance_RIM_EFG_FG_NET_Net'),
+        ('FC_MID_EFG_FREQ_NET_Action_Score', 'First_Chance_MID_EFG_FREQ_NET_Net'),
+        ('FC_MID_EFG_FG_NET_Action_Score', 'First_Chance_MID_EFG_FG_NET_Net'),
+        ('FC_THREE_EFG_FREQ_NET_Action_Score', 'First_Chance_THREE_EFG_FREQ_NET_Net'),
+        ('FC_THREE_EFG_FG_NET_Action_Score', 'First_Chance_THREE_EFG_FG_NET_Net'),
+        ('FC_RIM_EFG_FREQ_FULL_Action_Score', 'First_Chance_RIM_EFG_FREQ_FULL_Net'),
+        ('FC_MID_EFG_FREQ_FULL_Action_Score', 'First_Chance_MID_EFG_FREQ_FULL_Net'),
+        ('FC_THREE_EFG_FREQ_FULL_Action_Score', 'First_Chance_THREE_EFG_FREQ_FULL_Net'),
     ]
     for source_col, target_col in component_pairs:
         if source_col in nba_df_checked.columns:
@@ -760,6 +827,15 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('First_Chance_RIM_EFG_AA_NET_Total', 'First_Chance_RIM_EFG_AA_NET_Net'),
             ('First_Chance_MID_EFG_AA_NET_Total', 'First_Chance_MID_EFG_AA_NET_Net'),
             ('First_Chance_THREE_EFG_AA_NET_Total', 'First_Chance_THREE_EFG_AA_NET_Net'),
+            ('First_Chance_RIM_EFG_FREQ_NET_Total', 'First_Chance_RIM_EFG_FREQ_NET_Net'),
+            ('First_Chance_RIM_EFG_FG_NET_Total', 'First_Chance_RIM_EFG_FG_NET_Net'),
+            ('First_Chance_MID_EFG_FREQ_NET_Total', 'First_Chance_MID_EFG_FREQ_NET_Net'),
+            ('First_Chance_MID_EFG_FG_NET_Total', 'First_Chance_MID_EFG_FG_NET_Net'),
+            ('First_Chance_THREE_EFG_FREQ_NET_Total', 'First_Chance_THREE_EFG_FREQ_NET_Net'),
+            ('First_Chance_THREE_EFG_FG_NET_Total', 'First_Chance_THREE_EFG_FG_NET_Net'),
+            ('First_Chance_RIM_EFG_FREQ_FULL_Total', 'First_Chance_RIM_EFG_FREQ_FULL_Net'),
+            ('First_Chance_MID_EFG_FREQ_FULL_Total', 'First_Chance_MID_EFG_FREQ_FULL_Net'),
+            ('First_Chance_THREE_EFG_FREQ_FULL_Total', 'First_Chance_THREE_EFG_FREQ_FULL_Net'),
         ]:
             if net_col in nba_df_checked.columns:
                 nba_df_checked[total_col] = nba_df_checked.groupby(group_cols)[net_col].cumsum()
@@ -804,6 +880,15 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('First_Chance_RIM_EFG_AA_NET_Total', 'First_Chance_RIM_EFG_AA_NET_Net'),
             ('First_Chance_MID_EFG_AA_NET_Total', 'First_Chance_MID_EFG_AA_NET_Net'),
             ('First_Chance_THREE_EFG_AA_NET_Total', 'First_Chance_THREE_EFG_AA_NET_Net'),
+            ('First_Chance_RIM_EFG_FREQ_NET_Total', 'First_Chance_RIM_EFG_FREQ_NET_Net'),
+            ('First_Chance_RIM_EFG_FG_NET_Total', 'First_Chance_RIM_EFG_FG_NET_Net'),
+            ('First_Chance_MID_EFG_FREQ_NET_Total', 'First_Chance_MID_EFG_FREQ_NET_Net'),
+            ('First_Chance_MID_EFG_FG_NET_Total', 'First_Chance_MID_EFG_FG_NET_Net'),
+            ('First_Chance_THREE_EFG_FREQ_NET_Total', 'First_Chance_THREE_EFG_FREQ_NET_Net'),
+            ('First_Chance_THREE_EFG_FG_NET_Total', 'First_Chance_THREE_EFG_FG_NET_Net'),
+            ('First_Chance_RIM_EFG_FREQ_FULL_Total', 'First_Chance_RIM_EFG_FREQ_FULL_Net'),
+            ('First_Chance_MID_EFG_FREQ_FULL_Total', 'First_Chance_MID_EFG_FREQ_FULL_Net'),
+            ('First_Chance_THREE_EFG_FREQ_FULL_Total', 'First_Chance_THREE_EFG_FREQ_FULL_Net'),
         ]:
             if net_col in nba_df_checked.columns:
                 nba_df_checked[total_col] = nba_df_checked[net_col].cumsum()
@@ -864,6 +949,15 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('FC_RIM_EFG_AA_NET_Diff', 'First_Chance_RIM_EFG_AA_NET_Total'),
             ('FC_MID_EFG_AA_NET_Diff', 'First_Chance_MID_EFG_AA_NET_Total'),
             ('FC_THREE_EFG_AA_NET_Diff', 'First_Chance_THREE_EFG_AA_NET_Total'),
+            ('FC_RIM_EFG_FREQ_NET_Diff', 'First_Chance_RIM_EFG_FREQ_NET_Total'),
+            ('FC_RIM_EFG_FG_NET_Diff', 'First_Chance_RIM_EFG_FG_NET_Total'),
+            ('FC_MID_EFG_FREQ_NET_Diff', 'First_Chance_MID_EFG_FREQ_NET_Total'),
+            ('FC_MID_EFG_FG_NET_Diff', 'First_Chance_MID_EFG_FG_NET_Total'),
+            ('FC_THREE_EFG_FREQ_NET_Diff', 'First_Chance_THREE_EFG_FREQ_NET_Total'),
+            ('FC_THREE_EFG_FG_NET_Diff', 'First_Chance_THREE_EFG_FG_NET_Total'),
+            ('FC_RIM_EFG_FREQ_FULL_Diff', 'First_Chance_RIM_EFG_FREQ_FULL_Total'),
+            ('FC_MID_EFG_FREQ_FULL_Diff', 'First_Chance_MID_EFG_FREQ_FULL_Total'),
+            ('FC_THREE_EFG_FREQ_FULL_Diff', 'First_Chance_THREE_EFG_FREQ_FULL_Total'),
         ]:
             if total_col in nba_filt.columns:
                 nba_filt[diff_col] = (
@@ -920,6 +1014,15 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
             ('FC_RIM_EFG_AA_NET_Diff', 'First_Chance_RIM_EFG_AA_NET_Total'),
             ('FC_MID_EFG_AA_NET_Diff', 'First_Chance_MID_EFG_AA_NET_Total'),
             ('FC_THREE_EFG_AA_NET_Diff', 'First_Chance_THREE_EFG_AA_NET_Total'),
+            ('FC_RIM_EFG_FREQ_NET_Diff', 'First_Chance_RIM_EFG_FREQ_NET_Total'),
+            ('FC_RIM_EFG_FG_NET_Diff', 'First_Chance_RIM_EFG_FG_NET_Total'),
+            ('FC_MID_EFG_FREQ_NET_Diff', 'First_Chance_MID_EFG_FREQ_NET_Total'),
+            ('FC_MID_EFG_FG_NET_Diff', 'First_Chance_MID_EFG_FG_NET_Total'),
+            ('FC_THREE_EFG_FREQ_NET_Diff', 'First_Chance_THREE_EFG_FREQ_NET_Total'),
+            ('FC_THREE_EFG_FG_NET_Diff', 'First_Chance_THREE_EFG_FG_NET_Total'),
+            ('FC_RIM_EFG_FREQ_FULL_Diff', 'First_Chance_RIM_EFG_FREQ_FULL_Total'),
+            ('FC_MID_EFG_FREQ_FULL_Diff', 'First_Chance_MID_EFG_FREQ_FULL_Total'),
+            ('FC_THREE_EFG_FREQ_FULL_Diff', 'First_Chance_THREE_EFG_FREQ_FULL_Total'),
         ]:
             if total_col in nba_filt.columns:
                 nba_filt[diff_col] = (
