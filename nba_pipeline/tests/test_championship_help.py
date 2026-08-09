@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from nba_pipeline.scripts.build_championship_help import (
+    attach_neutral_playoff_baseline,
     attribute_team_probabilities,
     build_player_title_context,
     build_game_context,
@@ -11,6 +12,8 @@ from nba_pipeline.scripts.build_championship_help import (
     cross_validated_team_predictions,
     extract_champion_from_games,
     fit_team_title_model,
+    load_epm_snapshot_history,
+    select_epm_snapshot,
     select_team_model_candidate,
     select_final_team_segments,
     shapley_teammate_attribution,
@@ -19,6 +22,87 @@ from nba_pipeline.scripts.build_championship_help import (
     summarize_team_lineup_exposures,
 )
 from nba_pipeline.scripts.build_darko_teammate_help import PlayerRatingHistory
+
+
+def test_epm_history_uses_latest_monthly_snapshot_before_postseason(tmp_path) -> None:
+    pd.DataFrame(
+        [
+            {
+                "requested_date": "2025-04-01",
+                "date": "2025-04-01",
+                "game_dt": "2025-03-31",
+                "game_optimized": 0,
+                "player_id": 1,
+                "player_name": "One",
+                "oepm": 2.0,
+                "depm": 1.0,
+                "epm": 3.0,
+            }
+        ]
+    ).to_csv(tmp_path / "epm_all_2025-04-01_go0.csv", index=False)
+    pd.DataFrame(
+        [
+            {
+                "requested_date": "2025-05-01",
+                "date": "2025-05-01",
+                "game_dt": "2025-04-30",
+                "game_optimized": 0,
+                "player_id": 1,
+                "player_name": "One",
+                "oepm": 9.0,
+                "depm": 1.0,
+                "epm": 10.0,
+            }
+        ]
+    ).to_csv(tmp_path / "epm_all_2025-05-01_go0.csv", index=False)
+
+    history, report = load_epm_snapshot_history(tmp_path)
+    snapshot = select_epm_snapshot(history, "2025-04-20")
+
+    assert report["snapshots"] == 2
+    assert snapshot.loc[0, "nba_id"] == 1
+    assert snapshot.loc[0, "dpm"] == 3.0
+    assert snapshot.loc[0, "o_dpm"] == 2.0
+    assert snapshot.loc[0, "d_dpm"] == 1.0
+    assert snapshot.loc[0, "snapshot_requested_date"] == pd.Timestamp("2025-04-01")
+
+
+def test_epm_snapshot_selection_never_backfills_from_the_future(tmp_path) -> None:
+    pd.DataFrame(
+        [
+            {
+                "requested_date": "2025-05-01",
+                "date": "2025-05-01",
+                "game_dt": "2025-04-30",
+                "game_optimized": 0,
+                "player_id": 1,
+                "player_name": "One",
+                "oepm": 2.0,
+                "depm": 1.0,
+                "epm": 3.0,
+            }
+        ]
+    ).to_csv(tmp_path / "epm_all_2025-05-01_go0.csv", index=False)
+
+    history, _ = load_epm_snapshot_history(tmp_path)
+
+    with np.testing.assert_raises(ValueError):
+        select_epm_snapshot(history, "2025-04-20")
+
+
+def test_neutral_playoff_rotation_is_the_same_season_field_average() -> None:
+    teams = pd.DataFrame(
+        [
+            {"season": 2025, "team_id": 1, "team_dpm": 2.0, "team_o_dpm": 1.5, "team_d_dpm": 0.5},
+            {"season": 2025, "team_id": 2, "team_dpm": 6.0, "team_o_dpm": 4.0, "team_d_dpm": 2.0},
+        ]
+    )
+
+    result = attach_neutral_playoff_baseline(teams)
+
+    assert result["neutral_team_dpm"].tolist() == [4.0, 4.0]
+    assert result["neutral_team_o_dpm"].tolist() == [2.75, 2.75]
+    assert result["neutral_team_d_dpm"].tolist() == [1.25, 1.25]
 
 
 def test_final_team_segment_uses_last_regular_season_game() -> None:
@@ -630,13 +714,13 @@ def test_team_probability_attribution_holds_focal_fixed_and_reconciles_teammates
                     "team_dpm": float(3 - team),
                     "team_o_dpm": float(2 - team * 0.5),
                     "team_d_dpm": float(1 - team * 0.5),
-                    "total_exposures": 100.0,
+                    "total_exposures": 60.0,
                     "rating_coverage_pct": 100.0,
                     "champion_team_id": 0,
                     "won_championship": int(team == 0),
                 }
             )
-    teams = pd.DataFrame(team_rows)
+    teams = attach_neutral_playoff_baseline(pd.DataFrame(team_rows))
     roster = pd.DataFrame(
         [
             {
@@ -695,12 +779,28 @@ def test_team_probability_attribution_holds_focal_fixed_and_reconciles_teammates
 
     assert seasons["title_probability"].nunique() == 1
     assert np.allclose(
-        seasons["self_context_title_probability"]
+        seasons["neutral_team_title_probability"]
+        + seasons["normalized_self_title_probability_added"]
         + seasons["on_court_teammate_title_probability_added"]
         + seasons["bench_title_probability_added"],
         seasons["title_probability"],
         atol=1e-12,
     )
+    normalized_self = seasons.set_index("player_id")[
+        "normalized_self_title_probability_added"
+    ]
+    assert normalized_self[2] > normalized_self[1] > normalized_self[3] > 0
+    assert (
+        seasons["self_replacement_title_probability_added"] > 0
+    ).all()
+    assert (
+        seasons["self_context_title_probability"]
+        == seasons["neutral_teammate_title_probability"]
+    ).all()
+    assert (
+        seasons["self_context_title_probability"]
+        > seasons["neutral_team_title_probability"]
+    ).all()
     for player_id, group in attributed.groupby("player_id"):
         target = seasons.loc[
             seasons["player_id"].eq(player_id), "teammate_help_championships"

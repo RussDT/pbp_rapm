@@ -61,11 +61,6 @@ Never store secrets, tokens, or credentials here.
 
 ## Session Log
 
-### 2026-08-08 14:10 (local)
-- Task: Explain Kalman filters visually.
-- Fix applied: Built and verified an interactive predict-measure-update explainer with adjustable sensor noise and responsive desktop/mobile layouts.
-- Outcome: The visual shows how uncertainty controls the weighted blend and how repeated updates narrow the estimate.
-
 ### 2026-08-08
 - Task: Prior feature lab (16 engineers + 4 adversarial reviewers) and the v4 solve-level gate vs EPM12.
 - Fix applied: All 16 recipes reproduced and confirmed: 8 replacements (makes-above interactions swept the FG/FT recipes), 2 new defensive priors (d_ft foul volume, d_three_freq defender profile), 5 honest nulls; emitted the 14-recipe v4 bundle date-safely and ran the joint alphas x scale harness.
@@ -91,3 +86,10 @@ Never store secrets, tokens, or credentials here.
 - Fix applied: Added shared-lineup pair exposures, exact self + shared-floor + off-floor two-group Shapley closure, one-standard-error model selection, season-specific teammate shards, and season-responsive UI cards/tables. All regular-season teams remain in the choice set; playoff PBP supplies only the champion label.
 - Prevention rule added: Same-team actual odds must be byte-identical across qualifying players; never allocate credit by playoff qualification or realized playoff exposure; validate annual mass and all probability buckets independently.
 - Outcome: Overall-DPM `C=0.2`; annual mass gap `6.66e-16`, three-bucket gap `4.44e-16`. 2009 CLE is `29.625%` for all 14 qualifying players; LeBron splits to `11.013%` self, `+21.676 pp` shared-floor, `-3.064 pp` off-floor. Parker 2004 falls from `83.8%` to `40.6%` team odds.
+
+### 2026-08-08 — Championship Help rebuilt with monthly EPM and playoff rotations
+- Task: Replace the retrospective DARKO title model with monthly EPM and rethink the neutral teammate baseline.
+- User correction: Use the playoff rotation that actually played; neutral should reflect shortened postseason rotations rather than blindly setting four teammates and the bench to 0.
+- Fix applied: Pulled 297 private monthly EPM-only snapshots from November 2001 through July 2026, froze the last snapshot before each postseason, weighted by actual normalized playoff lineups, and set the common neutral origin to the season-average playoff rotation. Actual-context lift still replaces the focal player with 0 EPM; normalized self/on-floor/off-floor allocations close by continuous Shapley.
+- Prevention rule added: Keep raw provider snapshots private; never let later playoff EPM updates feed the rating being allocated, never let series length change team strength, and define neutral against the playoff field rather than the all-minute regular-season pool.
+- Outcome: 2002-2026 has 400 team-seasons and 4,894 player-seasons; overall EPM C=0.2, LOYO log loss 1.711152, annual mass gap 4.44e-16, and attribution gaps at floating-point noise.

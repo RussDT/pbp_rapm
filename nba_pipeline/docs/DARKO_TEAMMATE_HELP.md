@@ -166,6 +166,11 @@ standalone app source; the larger analysis CSVs remain generated artifacts.
 
 ## Estimated Championship Help
 
+> Superseded: the public championship surface now uses monthly pre-postseason
+> EPM and actual normalized playoff rotations. See
+> [EPM Championship Help](./EPM_CHAMPIONSHIP_HELP.md). The material below
+> documents the retired DARKO prototype only.
+
 `scripts/build_championship_help.py` adds a separate retrospective model for
 the question: how much did a player's season-specific teammate context change
 his modeled probability of winning the championship?
