@@ -63,6 +63,16 @@ The exact identity is:
 Individual teammate allocations use the same continuous response multiplier
 and sum exactly to shared-floor plus off-floor teammate lift.
 
+## Reader contract
+
+The public player page leads with the exact additive equation in one compact
+workspace: neutral rotation + normalized self + teammate help = actual team
+odds. Actual-context replacement lift is called out beside that equation
+because it is nonlinear and should not be mistaken for another additive
+bucket. Season spikes and the largest teammate lifts share one bounded panel.
+League rankings, the older shared-floor DARKO explorer, and methodology are
+collapsed disclosures so they do not compete with the title-odds answer.
+
 ## Current validation
 
 The 2002-2026 build contains 25 seasons, 400 playoff team-seasons, 4,894

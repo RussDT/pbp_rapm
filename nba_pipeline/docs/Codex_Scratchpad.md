@@ -61,12 +61,6 @@ Never store secrets, tokens, or credentials here.
 
 ## Session Log
 
-### 2026-08-08
-- Task: Prior feature lab (16 engineers + 4 adversarial reviewers) and the v4 solve-level gate vs EPM12.
-- Fix applied: All 16 recipes reproduced and confirmed: 8 replacements (makes-above interactions swept the FG/FT recipes), 2 new defensive priors (d_ft foul volume, d_three_freq defender profile), 5 honest nulls; emitted the 14-recipe v4 bundle date-safely and ran the joint alphas x scale harness.
-- Prevention rule added: Label-space mapper gains do not translate 1:1 to solve level — paired v4-vs-EPM12 at matched cells is only +7 to +22e-6 with CIs crossing zero, because priors and the likelihood substitute. Judge prior upgrades by the paired solve-level delta, never the prior-increment or label-space numbers alone.
-- Outcome: v4 is non-worse with positive point estimates and two extra covered sides; screens after the lab found the o_ft role-split (+4.2%, craft-over-role beta 2.4x) and the own-lag primitive (+13.7% d_rim_freq label-space) — own-lag ties to the historical alpha-floor on rim deterrence (low alpha was a poor man's persistence prior) and is the leading v5 candidate.
-
 ### 2026-08-08 — The Help Index championship-help launch
 - Task: Build and publish season-level estimated championship help from DARKO teammate context.
 - Fix applied: Added final-team player/team segmentation, regular-season-only common-sample own-plus-help features, leave-one-season-out model selection, actual-versus-neutral title probabilities, exact deterministic Shapley teammate attribution, app shards, tests, docs, and the new Help Index panel/social card.
@@ -93,3 +87,9 @@ Never store secrets, tokens, or credentials here.
 - Fix applied: Pulled 297 private monthly EPM-only snapshots from November 2001 through July 2026, froze the last snapshot before each postseason, weighted by actual normalized playoff lineups, and set the common neutral origin to the season-average playoff rotation. Actual-context lift still replaces the focal player with 0 EPM; normalized self/on-floor/off-floor allocations close by continuous Shapley.
 - Prevention rule added: Keep raw provider snapshots private; never let later playoff EPM updates feed the rating being allocated, never let series length change team strength, and define neutral against the playoff field rather than the all-minute regular-season pool.
 - Outcome: 2002-2026 has 400 team-seasons and 4,894 player-seasons; overall EPM C=0.2, LOYO log loss 1.711152, annual mass gap 4.44e-16, and attribution gaps at floating-point noise.
+
+### 2026-08-08 — The Help Index one-screen reader redesign
+- Task: Make the title-odds player view understandable without a long page scroll.
+- Fix applied: Replaced five competing headline cards with the exact neutral + self + teammate = actual equation, placed replacement lift beside it, bounded season/teammate lists in one panel, and collapsed rankings, DARKO, and methodology.
+- Prevention rule added: The primary title answer must remain visible as one coherent workspace; diagnostic and legacy surfaces default closed and may not compete with the player story.
+- Outcome: The compact reader passes the full build, lint, and nine-test deployment suite and preserves the same EPM data/model outputs.

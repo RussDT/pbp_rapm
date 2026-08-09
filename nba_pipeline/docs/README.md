@@ -114,7 +114,10 @@ Recent methodology notes:
   softmax sums to one; non-playoff teams have zero odds. Every player on one
   team receives identical actual odds, split exactly from the season-average
   playoff rotation into normalized self, shared-floor teammate, and off-floor
-  lift. Championship detail is published in 64 player-ID shards. See
+  lift. The public page presents that closure as one compact equation, keeps
+  season spikes and teammate lifts side by side, and collapses league rankings,
+  the DARKO archive, and methodology until requested. Championship detail is
+  published in 64 player-ID shards. See
   [EPM Championship Help](./EPM_CHAMPIONSHIP_HELP.md).
 - `scripts/build_rapm_noft.py` writes audit parquets such as `processed/RAPMnoFT26_PS.parquet` using the standard RAPM possession parser and lineups but actual made/missed FT outcomes instead of shooter expected FT%. This is for raw ORtg/DRtg comparison work; the default `RAPM` processor behavior remains expected-FT unless `ft_value_mode="actual"` is passed.
 - `scripts/build_pbp_shot_quality.py` builds a repo-owned shot-quality table from raw PBP descriptions, independent of external ShotQuality `initial_ev`. It writes per-FGA `shot_context_ev`, career and player-season shooter talent, defender-on-court residual allowed, `shot_quality_season_ev`, and `shot_quality_with_defense_ev`; the current full-history artifact is `results/pbp_shot_quality/pbp_shot_quality_1997_2026.parquet` with `6,327,218` unique 1997-2026 RS+PS shots. `RUSSELL_SHOTQUALITY` converts that table into standard-possession RAPM parquets by using `shot_quality_season_ev` for every FGA, expected FT value for FTs, and `0` for other events. The [Visual Shot Quality Explainer](./shot-quality-explainer.html) now separates this production immediate-SQ contract from strict forward defender-geometry, shot-clock, grenade-burden, and expected second-chance continuation challengers, with worked Jokić and Embiid examples. See [PBP Shot Quality](./PBP_SHOT_QUALITY.md).
