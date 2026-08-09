@@ -88,6 +88,24 @@ shot-defense+SC sum drops 0.41 under net pricing while his TOV value
 gains +0.36 — total roughly unchanged, composition corrected (steals
 were undervalued relative to contests).
 
+## Seven-component closure (solve-stack invariance)
+
+The complete net stack {five DECOMP_NET children, SC_NET,
+ALT_TOV_NET_VALUE} has a row-identical summed solve target with the
+gross stack, through two cancellation channels: miss rows (tree grants
++kappa, SC pays -kappa) and turnover rows (shot components impute TOV
+rows at their own baselines, and the net baselines are richer by
+exactly the mean-kappa ~0.17 that the net TOV price charges). Verified:
+at one uniform alpha the seven-component player sums match gross to
+solver convergence tolerance (max 0.007 pts/100). Corollaries:
+
+- Comparing partial stacks (e.g. six components without TOV) or mixing
+  alphas across slots shows small total drifts; these are shrinkage
+  re-slotting, not accounting gaps.
+- Under production per-class alphas, gross vs net totals differ
+  slightly by design; which parameterization predicts better is a
+  forward-gate question, not a closure question.
+
 ## Status / boundaries
 
 - Research/validation lane only. Production parquets, the public DECOMP
