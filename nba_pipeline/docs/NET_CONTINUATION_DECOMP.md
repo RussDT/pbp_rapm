@@ -137,6 +137,29 @@ solver convergence tolerance (max 0.007 pts/100). Corollaries:
   slightly by design; which parameterization predicts better is a
   forward-gate question, not a closure question.
 
+## VPM forward test (v4 netcont, 2026-08-10)
+
+The registered VPM forward gate for the net tree has now been run as
+development evidence (`vpm` repo, `research_harness_v4_netcont.json`).
+Pipeline: isolated `processed_netcont_lane/` FC/SC rebuild (row-aligned with
+canonical FC/SC/RAPM), `build_vpm_target_swap.py --net-lane` (net EV swap with
+`net_EV = ev_pts + kappa_z * (1 - p_make)`, common gross+net identity gate,
+`SECOND_CHANCE_CLEAN` rewritten to `SC_NET_CONT`, kappa recovered exactly with
+agreement 1.0 and machine-precision closures on all 22 files), then net
+forward labels, refit EPM12 priors, and the frozen-alpha evaluation at the
+four development cuts.
+
+Results (paired game-clustered bootstraps, 4,000 replicates, identical
+possessions): netcont x2 beats its own net EV no-prior by `+176.65e-6`
+`[95.31,260.61]` (4/4 cuts, all promotion gates pass) and beats the gross
+EPM12 x2 lane by `+18.43e-6` `[2.19,36.01]` (3/4 cuts, `P(<=0)=0.014`) on the
+elementwise-identical possession universe. Net EV no-prior vs gross EV
+no-prior is neutral (`-5.21e-6`, CI straddles zero): the answer to "are the
+gross buckets mispriced downstream?" is that the raw component sum is not
+hurt, but priors map measurably better onto net-priced components. All of
+this is development evidence; the accepted VPM boundary is unchanged until an
+untouched 2026-27 confirmation.
+
 ## Status / boundaries
 
 - Research/validation lane only. Production parquets, the public DECOMP
