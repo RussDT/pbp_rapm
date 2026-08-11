@@ -3,6 +3,78 @@
 This file is short-term session memory only.
 Durable operating rules belong in root `AGENTS.md` and `CLAUDE.md`.
 
+## 2026-08-11 — v5 netcont-feat VPM challenger: documented null
+
+- vpm harness gained a third prior feature source `epm_box_tracking`
+  (`build_epm_box_tracking_panel`): EPM `p_*` natives + 4 derived interactions,
+  latest fully-completed-season `boxscore.csv` + name-crosswalked tracking CSVs,
+  a two-season possession-weighted blend with a >50%-coverage guard, and
+  `dumb_pf_dec` — HL550-decayed strictly pre-cut non-shooting foul rate from
+  repo-owned `v5_events/foul_events.parquet`, shrunk with K=20 pseudo-games
+  (replaces vendor `DumbPenaltyFouls_100`, empty 2024-25+; registered
+  deviation, ground-truth panel r=0.96). Recipes can declare
+  `fallback_features`: rows missing base features get a separately fit
+  fallback model, rows missing both are dropped and counted in the manifest —
+  no silent NaN/fallback emission. Incumbent EPM-only recipes reproduce v4
+  netcont priors to max |diff| = 0.0.
+- `research_harness_v5_netcont_feat.json`: 14 recipes (9 upgraded, 3
+  incumbents, new d_three_freq/d_ft), `forward_target_source_subdir` reuses the
+  9 v4 net forward-target parquets, ridge_alpha 0 everywhere (harness-lane
+  protocol; lab alpha conventions are non-transferable). All recipes beat
+  their incumbents in label space on all validation cuts.
+- Solve level is a NULL: netcontfeat x2 vs netcont x2 `-21.28e-6`
+  `[-60.34,+18.78]`, 1/4 cuts, `P(<=0)=0.861`; vs gross epm12_x2 `-2.85e-6`
+  (neutral). Both scales still clear no-prior (+155.38/+132.01e-6, 4/4) — the
+  enrichment consumed the netcont repricing edge without adding to it.
+  Second straight lesson (after own-lag) that label-space prior wins do not
+  transfer to summed solve-level forward gains. netcont x2 stays the leading
+  research base; spent tiles and 2026-11-01 untouched.
+- Provenance fix shipped: `vpm/scripts/cross_experiment_bootstrap.py` is the
+  committed cross-lane bootstrap (asserts identical possession universes via
+  per-cluster row counts + actual-value fingerprints); it exactly reproduces
+  the recorded v4 netcont-vs-EPM12 `+18.43e-6`. 37/37 harness tests pass
+  (also fixed a stale monkeypatch in the target-source-manifest test).
+- Docs: vpm `RESEARCH_HARNESS.md` v5 section, `NET_CONTINUATION_DECOMP.md`
+  follow-up note, root `CLAUDE.md` netcont bullet updated with the null.
+
+## 2026-08-10 — RTSS-augmented WNBA board (development, 2025)
+
+- New `wnba_test/build_wnba_rtss_augmented_board.py`: solves the 2025 board
+  twice through the frozen live objective (`5000/40000`, prior scale `1.5`),
+  box-only vs box+RTSS corrections, and reports per-player deltas. Hard fence
+  `MAX_DEVELOPMENT_YEAR = 2025`; the 2026 confirmation season is untouched.
+- Candidate lanes read at runtime from v2 `best_by_component.csv`, filtered to
+  additively-mappable prefixes with one correction per (parent, side). Drops
+  `ALT_TOV_VALUE` / `ALT_BADPASS_TOV_VALUE` (no defensible parent) and the
+  `ALT_FT_FREQ`/def child in favor of the `ALT_FT`/def parent. 13 applied.
+- Gotcha worth remembering: `build_clean_weighted_factors` also solves
+  `RAPM` and the derived display children, and takes their priors from the
+  same dict. Correcting only the nine additive components leaves those stale —
+  `off`/`def`/`net_rapm` came back byte-identical between arms and the display
+  residual blew out to `5.28`. Fix is to correct the fitted twelve and re-run
+  `_derive_additive_priors`; residual back to `0.0000`.
+- Result: net correlation `0.971`, mean absolute net move `0.53`, mean rank
+  shift `7.6`. Concentrated on defense as hoped — def correlation `0.874`,
+  def spread `0.863 -> 1.094` (+27% separation).
+- `--forward-check` (rate 2024, score 2025) says RTSS does NOT help:
+  `+9.9e-6` MSE, CI `[-120.4, +153.6] e-6`. Corrections fit on 2023 alone
+  there, so it is the weakest form of the test, but it is the only
+  development-safe forward fold available. No promotion.
+- Carry-forward mode added (`--year 2026 --rtss-feature-year 2025`): the fence
+  is on RTSS consumption, not board year, so a 2026 board is buildable
+  without touching the holdout mirror; `--forward-check` refused there.
+  Script also refuses outright if the feature file was rebuilt with
+  `--include-confirmation-season`. Box-only arm reproduces the live
+  `wnba_current_metrics.csv` to `max |diff| = 0.0` — good isolation check.
+  2026 result: net corr `0.969`, def corr `0.845`, def spread `0.779 ->
+  `0.941` (+21%), mean rank shift `6.1`. Same defensive signature as 2025.
+- Confirmation still BLOCKED, and the earlier "101 RTSS games unsynced" note
+  was wrong: those 101 are unplayed. Mirror is 229 ENDED / 229 covered / 0
+  missing markings; RTSS trails the CDN by 13 played games. Real blocker is
+  just that 2026 RS is 242/330.
+- Docs: `WNBA_RTSS_PRIOR_RESEARCH.md` gained "RTSS-augmented board, 2025"
+  and "Carry-forward 2026 board" sections.
+
 ## 2026-08-10 — WNBA predictive program executed end to end (Phase 0/1/2-prep + Kalman)
 
 - Plan of record `docs/WNBA_BETTING_PROGRAM.md` adopted; game-day lane shares
@@ -104,57 +176,6 @@ Durable operating rules belong in root `AGENTS.md` and `CLAUDE.md`.
   turnover bucket and there is no screener area. Built page is checked ASCII-only and
   greps clean for both.
 
-## 2026-08-09 — zTOV% mix-adjusted turnover expectation prototype
-
-- `geniussports/` at repo root holds 2013-14→2025-26 SS/Genius player-season CSVs
-  (self-created & assisted shot attempts incl. misses, passes/potential assists with
-  `% Turned Over`, drives, picks, touches; RS+PS). Join by normalized name+season to
-  the vpm panel `nba_id`; required aliases: Enes Freedom (retroactive), KJ Martin
-  (2020+ son vs 2014 father), Juancho Hernangomez.
-- Repo raw-PBP player TOV split (event_type 5, desc contains 'Bad Pass'; player1
-  attribution, 'No Turnover' excluded) matches the legacy panel split r=0.999/1.000.
-- Original `shot_*` Genius files count ≈ FGA only (league self+ast 18.1 vs FGA 18.0;
-  TSA gap ≈ 0.44×FTA). User-supplied `shot_fixed_*` files are TSA-basis (fouled
-  attempts included; league 19.7 vs live TSA 20.1) — use those. Local vpm
-  `boxscore.csv` 2025-26 stat columns can be stale even when OffPoss matches live
-  (SGA TSA 35.3 stale vs 33.3 live); verify against Supabase
-  `player_stats_with_metrics` (`nonPassTOVPct` is a per-play scoring-TOV rate ≈
-  sc/(TSA100+tov100), not a TOV share; raw-PBP split cross-checks at r 0.995).
-- Final v3 fits (22-26 vs `alt_{scoring,badpass}_tov_value` off-RAPM): box expected
-  rates 6.0% self / 5.5% assisted per attempt + 11.7% per potential assist (+0.46
-  base); per-target impact breakevens 10.4/7.4/13.8; joint simultaneous solve
-  (one κ=−0.81, intercept −0.27) gives breakevens 13.7/6.3/11.0 with exact identity
-  pred = a + κ·rZTOV·involve/100, R²w 0.668 (unrestricted 0.675, r +0.755).
-- zTOV% = (actual − mix-expected)/involvement: corr with TOV value RAPM −0.63 (raw
-  TOV/100 −0.12, per-attempt −0.41), YoY r +0.74. Badpass TOV ≈ costlier than scoring
-  (−0.68 vs −0.58); passes/100 conditional on potential assists negative — only
-  creation passes earn allowance. Board: `results/ztov_research_22_26.csv`; explorer
-  artifact `https://claude.ai/code/artifact/528791bf-bbb1-4637-9fbb-fa78fa372392`.
-- zTS-compression test (same data lane, target `ts_22_26_rs_a3000_5000` off, 393
-  players 5000+ poss): Genius self/assisted mix is NOT a playtype substitute. Add-stat
-  ladder at 0 baseline: rTS .157 → self/ast-mix zTS .236 → +per-bucket qSQ .336 →
-  playtype zTS (`pt_adj_rTS`, live Supabase) .460; playtype at 0 beats every genius
-  variant at any baseline. Cause: assisted bucket pools rim finishing (69 TS) with
-  movement threes (52) — role2 range [−2.7,+2.0] vs playtype_diff [−6.2,+3.2], r .57.
-  League TS by bucket: self ~56.5, assisted ~61.5; conditional on qSQ the gap flips
-  (self > ast) — creation deficit is all shot quality. `results/zts_two_bucket_22_26.csv`.
-  Supabase scale trap: `mod_ts` is a fraction; `mod_rTS`/`playtype_diff`/`pt_adj_rTS`
-  are already percentage points.
-
-## 2026-08-08 — Net-continuation (kappa) DECOMP tree built and validated
-
-- New FC_DECOMP_NET_* tree prices first-chance FGA misses at ActualNet + kappa(zone)
-  (measured: rim ~0.47, mid ~0.33, three ~0.32 pts/miss, stable 2024-2026) with the
-  identical kappa paid back out of the possession's SC ledger (SC_NET_CONT_Diff);
-  closure exact per possession, enforced at build. Gross columns byte-identical.
-- Validation rebuild 2024-2026 RS+PS in `processed_netcont_validation/`; matched-alpha
-  solves: six-component sums unchanged (corr 0.998) but attribution moves — rim contest
-  compresses ~24%, the SC exposure artifact disappears (Kessler +0.68 -> -0.07), Jokic
-  d_SC unchanged, and miss-forcing wings without rebounding lose 0.3-0.4 real pts/100.
-- Doc: `docs/NET_CONTINUATION_DECOMP.md`. Research lane only; production/frozen lanes
-  untouched. EV-lane composition algebra (expected-continuation in EV comps, deflated
-  residuals) is written up there for the follow-on.
-
 ## How To Use
 
 1. Read the latest entries at session start.
@@ -167,36 +188,30 @@ Never store secrets, tokens, or credentials here.
 ## Session Log Template
 
 ```md
-### YYYY-MM-DD HH:MM (local)
-- Task:
-- What went wrong:
-- User correction:
-- Fix applied:
-- Prevention rule added:
-- Outcome:
-```
-
-## Session Log
-
-### 2026-08-08 — Championship Help rebuilt with monthly EPM and playoff rotations
-- Task: Replace the retrospective DARKO title model with monthly EPM and rethink the neutral teammate baseline.
-- User correction: Use the playoff rotation that actually played; neutral should reflect shortened postseason rotations rather than blindly setting four teammates and the bench to 0.
-- Fix applied: Pulled 297 private monthly EPM-only snapshots from November 2001 through July 2026, froze the last snapshot before each postseason, weighted by actual normalized playoff lineups, and set the common neutral origin to the season-average playoff rotation. Actual-context lift still replaces the focal player with 0 EPM; normalized self/on-floor/off-floor allocations close by continuous Shapley.
-- Prevention rule added: Keep raw provider snapshots private; never let later playoff EPM updates feed the rating being allocated, never let series length change team strength, and define neutral against the playoff field rather than the all-minute regular-season pool.
-- Outcome: 2002-2026 has 400 team-seasons and 4,894 player-seasons; overall EPM C=0.2, LOYO log loss 1.711152, annual mass gap 4.44e-16, and attribution gaps at floating-point noise.
-
-### 2026-08-08 — The Help Index one-screen reader redesign
-- Task: Make the title-odds player view understandable without a long page scroll.
-- Fix applied: Replaced five competing headline cards with the exact neutral + self + teammate = actual equation, placed replacement lift beside it, bounded season/teammate lists in one panel, and collapsed rankings, DARKO, and methodology.
-- Prevention rule added: The primary title answer must remain visible as one coherent workspace; diagnostic and legacy surfaces default closed and may not compete with the player story.
-- Outcome: The compact reader passes the full build, lint, and nine-test deployment suite and preserves the same EPM data/model outputs.
-
 ### 2026-08-09 — Merged remixed PR #31
 - Task: Merge `RussDT/remixed` PR #31 and deploy the backend only if required.
 - Outcome: Merged verification-only scripts, tests, and docs as `3277c154`; no backend runtime deployment was required.
 
 ### 2026-08-09 — Turnover risk and TSx2 by shot clock
-- Task: Describe where turnovers occur, how turnover risk changes as a possession survives, and how actual points per true-shooting attempt changes at the same time.
-- Fix applied: Added an exploratory endpoint/hazard/shot-value builder over 2024-2026 RS+PS, split 24-second starts from 14-second resets, mapped ordinary FTs to the same-clock foul or and-one FGA, included unmatched offensive fouls, and kept raw versus shot-calibrated clock estimates as a sensitivity range.
-- Prevention rule added: Do not treat the FGA-trained clock calibrator as turnover-event ground truth; separate turnover volume from conditional hazard, show the final four seconds with and without shot-clock violations, and treat the TSx2 curve as descriptive state selection rather than a pure causal waiting effect.
-- Outcome: 886,202 endpoints and 111,224 turnovers; on 24-second starts conditional turnover incidence rises from roughly 1.7-2.2% early to 10.7-12.8% late, while calibrated TSx2 falls monotonically from 1.433 to 0.876 (raw 1.468 to 0.992). The FT join covers 99.61% of ordinary attempts.
+- Task: Describe where turnovers occur, how turnover risk changes as a possession survives, how actual points per true-shooting attempt changes, and how much total possession value remains after including rebound continuation.
+- Fix applied: Added an exploratory endpoint/hazard/shot-value builder over 2024-2026 RS+PS, split 24-second starts from 14-second resets, mapped ordinary FTs to the same-clock foul or and-one FGA, included unmatched offensive fouls, and kept raw versus shot-calibrated clock estimates as a sensitivity range. Mapped initial 24-second cycles to canonical processed possession terminals and emitted a quarter-second evaluation grid for first-chance, second-chance, and total remaining value.
+- Prevention rule added: Do not treat the FGA-trained clock calibrator as turnover-event ground truth; separate turnover volume from conditional hazard, show the final four seconds with and without shot-clock violations, and treat the TSx2 and possession-value curves as descriptive state selection rather than a pure causal waiting effect. A quarter-second evaluation grid is a smooth model surface, not quarter-second observed timing; use the raw whole-second curve when the calibrated tail becomes sparse below four seconds.
+- Outcome: 886,202 endpoints and 111,224 turnovers; on 24-second starts conditional turnover incidence rises from roughly 1.7-2.2% early to 10.7-12.8% late, while calibrated TSx2 falls monotonically from 1.433 to 0.876 (raw 1.468 to 0.992). The FT join covers 99.61% of ordinary attempts. Across 755,570 uniquely mapped initial cycles, calibrated total remaining value falls from 1.160 points at 24 seconds to 1.007 at 4 seconds; second chance contributes roughly 0.15-0.17 points and exact row closure holds.
+
+### 2026-08-10 — WNBA RTSS defensive features and alpha-edge resolution
+- Task: Refresh the live WNBA board, add the missing RTSS defensive features (offensive fouls drawn, zone-split allowed shot quality, closest-defender dFGA), and resolve the alpha grid edges.
+- Fix applied: Read the previously unused `fouls` table (offensive fouls drawn and charges drawn are defensive credits via `fouledId`), split `def_mid3_qsq_epv` into MID and THREE, and added closest-defender dFGA volume/points-allowed/allowed-FG%/contest-mix by zone — 29 new features, 75 -> 105. Wired them into defensive CV arms only. Added `extend_wnba_offense_alpha_grid.py` mirroring the defense extension.
+- Prevention rule added: The RTSS feature builder fences the confirmation season by default; `--include-confirmation-season` requires an explicit `--output` so the fenced development surface is never overwritten. A one-sided alpha grid cannot close an edge — sweep both directions before claiming an interior optimum.
+- Outcome: Defensive CV improved on 9 of 12 sides (THREE finishing +0.06% -> -4.92%, RIM frequency -0.73% -> -4.58%, defensive TOV value +0.03% -> -1.51% on 3/3 folds); pooled 15/24 -> 17/24. Both alphas confirmed interior: offense `5000` beats `4000` by 2.85e-6 and `6000` by 3.56e-6; defense `40000` already held. Live board refreshed to 2026-08-10 (242 games, 224 players, exact additive closure); A'ja Wilson leads at 7.57 net.
+
+### 2026-08-10 — Shot-clock difficulty and clock-adjusted TS
+- Task: Convert inferred shot-clock context into a player TS adjustment and test whether it helps oTS regressions.
+- Fix applied: Added game-held-out isotonic TSx2 pricing by season and 24/14-second reset family, exact raw TS + clock difficulty = adjusted TS aggregation, a raw-clock primary surface, a calibrated-floor-4 sensitivity, and same-window plus season-forward ridge comparisons. Ordinary FT attempts inherit the foul/and-one clock and shooter; 41 conflicting FT-shooter anchors are excluded from player attribution.
+- Prevention rule added: Clock adjustment is context, not pure shooting talent or causal grenade burden. Keep raw timing primary, never present quarter-second or sub-four calibrated precision as observed, and require fresh-season evidence before admitting the feature to oTS/VPM priors.
+- Outcome: On 508 same-window players, adjusted TS-added improves RMSE by 0.0148 but its interval crosses zero. On the two season-forward transitions (746 player-seasons), raw adjusted TS-added improves future annual oTS RMSE from 1.5648 to 1.5349. The zTS ablation confirms playtype burden is the stronger layer: zTS alone reaches 1.5352, and clock on top reaches 1.5295, only -0.0057 incremental with CI [-0.0143, +0.0025]. A literal 2022-2026 pure-RS `Points + TSA` backfill gives only `+0.0075 R^2` from volume-scaled clock difficulty (`+0.0055` repeated-fold OOF), versus about `+0.091` from current playtype difficulty; clock adds zero after playtype. Exported current creation/shooting/early-offense/transition role numbers; keep clock diagnostic until a fresh forward test.
+
+### 2026-08-11 — PBP-only playtype difficulty forward test
+- Task: Measure how much broad own-shooter playtype difficulty can be recovered from ordinary PBP and compare it directly with Synergy on future oTS.
+- Fix applied: Added a six-bucket outcome-invariant classifier, prior-season category pricing, strict expanding chronological evaluation, exact-common candidate rows, a shared baseline-selected ridge alpha, and paired player-cluster uncertainty.
+- Prevention rule added: Keep this own-shooter prior separate from lineup `PLAYTYPE_PROXY_PTS`; do not use makes, misses, points, or made-only assist tags in category assignment, and do not promote from already examined 2025-2026 targets.
+- Outcome: PBP and Synergy difficulty correlate `0.908`, but PBP wins: future-oTS RMSE falls from `1.5303` to `1.4966` versus `1.5135` for Synergy on 735 player-seasons. Adding Synergy after PBP worsens RMSE. Freeze for untouched 2026-27 confirmation and a later summed-possession gate.

@@ -160,6 +160,18 @@ hurt, but priors map measurably better onto net-priced components. All of
 this is development evidence; the accepted VPM boundary is unchanged until an
 untouched 2026-27 confirmation.
 
+## VPM feature-enriched follow-up (v5 netcont-feat, 2026-08-11): null
+
+The follow-up challenger (`research_harness_v5_netcont_feat.json`) swapped the
+12 EPM12-style recipes for the v4feat prior-feature-lab winners
+(box/tracking/derived-EPM features, fallback models for rookies, and a
+repo-rebuilt decayed foul rate replacing the dead vendor foul column) on the
+identical net lane and forward targets. Every recipe beat its incumbent in
+label space, but at the solve level netcontfeat x2 does not beat plain netcont
+x2 (`-21.28e-6`, CI `[-60.34,+18.78]`, 1/4 cuts, `P(<=0)=0.861`) and is
+neutral vs gross EPM12 x2 (`-2.85e-6`). Plain-recipe netcont x2 remains the
+leading netcont research base; details in the vpm repo `RESEARCH_HARNESS.md`.
+
 ## Status / boundaries
 
 - Research/validation lane only. Production parquets, the public DECOMP
