@@ -3,6 +3,33 @@
 This file is short-term session memory only.
 Durable operating rules belong in root `AGENTS.md` and `CLAUDE.md`.
 
+## 2026-08-10 — WNBA predictive program executed end to end (Phase 0/1/2-prep + Kalman)
+
+- Plan of record `docs/WNBA_BETTING_PROGRAM.md` adopted; game-day lane shares
+  `wnba_test/wnba_gameday_common.py` (paths, tricodes, hash-chained JSONL logs;
+  `canonical_json` sanitizes numpy and rejects NaN). Built + tested (32/32,
+  offline): `build_wnba_game_logs.py` (1311 finals / 31,765 player rows,
+  Eastern game dates, cached non-finals refetched each run — 1022200029 is
+  permanently non-final at the CDN, skipped by design), `project_wnba_minutes.py`
+  (EWMA HL 1.5 tuned on 2025 only; beats both baselines 2025 and 2026),
+  `calibrate_wnba_forecast_sigma.py` (HCA 2.0003, sigma 12.6648 normal_std;
+  2026 replay RMSE 13.2768 ≈ DARKO-NPI 13.118), emit/capture/score with a
+  strict `emitted_at < tipoff` + `espn_state=='pre'` fence, reachable PENDING,
+  CRPS-vs-realized beside close-CLV. First live emission 2026-08-11 slate:
+  3 forecasts + 3 DraftKings snapshots, chains verified; model disagrees with
+  the market on WAS@LVA (model WAS by 4, market LVA -7.5) — watch the log.
+- `build_wnba_kalman_box.py`: DARKO-style per-stat Kalman panel, DE-tuned on
+  ≤2025 (seed 20260810), 2026 frozen holdout; all 14 stats beat trailing-10 on
+  dev AND holdout. Props-lane input only; doc `docs/WNBA_KALMAN_BOX.md`.
+- One-shot RTSS confirmation: prereg amended (design review, pre-outcome) to a
+  strictly forward primary — solve 2025 around each prior arm (corrections fit
+  2023-2024 only), score 2026 possessions; in-sample 2026 nowcast demoted to
+  secondary descriptive. Harness `run_wnba_rtss_confirmation.py --check`
+  correctly BLOCKED (242/330 finals, 101 RTSS games unsynced — needs
+  `aws login`). Defense-alpha grid extension on dev folds retained 40000
+  (monotonic degradation through 160000). Phase 3 preregs frozen (props,
+  cold-start). Next: conditional-sigma CRPS kill test → Phase 1.5 simulator.
+
 ## 2026-08-10 — Net-continuation VPM forward test (v4 netcont) run end to end
 
 - `build_vpm_target_swap.py --net-lane` (+ `--rapm-source-dir`) is the net EV swap:
@@ -127,27 +154,6 @@ Durable operating rules belong in root `AGENTS.md` and `CLAUDE.md`.
 - Doc: `docs/NET_CONTINUATION_DECOMP.md`. Research lane only; production/frozen lanes
   untouched. EV-lane composition algebra (expected-continuation in EV comps, deflated
   residuals) is written up there for the follow-on.
-
-## 2026-08-08 — v5 own-lag prior bundle fails the solve gate (informative null)
-
-- Joint alphas x scale harness on v5 (`vpm/evidence/alpha_harvest_v5feat/`): paired
-  v5-vs-v4 at matched cells = -1.06e-6, CI [-35.8,+33.4], 3/8 cuts. Registered rule
-  required >= 0 -> v5 rejected; EPM12 x2 remains the leading research base.
-- Mechanism: prior increment at harvested alphas v5 +390.7 vs v4 +391.9 (x1e-6) —
-  own-lag added ~nothing in-solve despite +3-23% label-space wins, because the solve
-  window already contains the seasons the lag summarizes. Derived rule: in-solve prior
-  features must be informationally EXTERNAL to the solve window; own-solve lags are
-  for no-possession consumers (season-start, cross-league) only.
-- Falsifiable prediction half-confirmed: one-SE base alphas leave the 750 floor as
-  prior scale rises (any informative prior absorbs the persistence role), but v5's
-  ranges are identical to v4's. Verdict + full numbers appended to
-  `vpm/evidence/prior_feature_lab/PREREGISTRATION_V5.md`. 2026-27 untouched.
-- Rim-DFG screen (exploratory, v6 ledger): `rim_points_saved_100` beats blocks-only
-  d_rim_fg prior +1.24% (5/6) in label space; freq leg marginal, contested-shots dead.
-  External info (passes post-v5 rule). Jokic audit: tracking rim_dif% +0.6 AGREES with
-  the solve's ~neutral rim contest; his dVPM is rebounding/fouls/positioning. Also:
-  local boxscore.csv/tracking 2025-26 rows are partial early-season snapshots — panel
-  rule must use 2025 until refreshed (calendar-complete != file-complete).
 
 ## How To Use
 

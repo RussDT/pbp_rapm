@@ -96,6 +96,48 @@ Do not substitute the 3D file for the 2D file:
 The production fact build should therefore fail or warn on unexpected
 2D-to-3D match bands rather than dropping unmatched 2D rows.
 
+## 3D Usability (August 10, 2026 full-mirror audit)
+
+A full-mirror scan (991 games) plus a stratified 32-game deep parse (8 per
+season, seed 20260810) upgraded the 3D contract from "cautious enrichment" to
+"reliable ID-keyed enrichment behind a trivial game-level gate":
+
+- Coverage is 984/991 games (99.3%): 2023 169/173, 2024 266/266,
+  2025 319/322, 2026 230/230. Failure is all-or-nothing per game (empty 3D
+  files are ~503 bytes while the paired 2D file is fully populated), and the
+  seven empty games are scattered — no team, arena, or early-season pattern.
+  Gate rule: require nonempty 3D possessions (file size is a usable proxy);
+  inside the gate the 2D-to-3D row match is >= 99.97% on every common table
+  and exact on possessions, chances, and shots.
+- 3D is a strict columnwise superset of 2D on shared tables (no 2D-only
+  columns). Five tables exist only in 3D and are populated in every sampled
+  game: `jumps` (~306/game: jump height, reason, wrist/eye/shoulder/hip max
+  heights, knee bend, footing), `defender_stance` (~936/game: per-defender
+  per-chance stance width, hand-high/low counts, hip position; off-ball ~99%
+  populated, on-ball 45-62%), `boxout_opportunities` (~124/game: boxout type
+  and per-player rebound outcome — the standout for a rebound-props lane),
+  `falls` (~27/game), and `missed_closeouts` (~8/game: responsible-defender
+  identity).
+- 3D-only columns on shared tables include: `shots` release mechanics
+  (releaseHand, releaseOnWayUp, release XY/Z speed, jump completion, pose
+  blobs, poseQSQ/poseQSP), `shot_contests` release-frame contest geometry
+  (maxWristHeight, wristDistanceToBallAtRelease, hipToHipDistanceAtRelease,
+  shotContestHand, body-orientation angles — ~100% populated on contested
+  shots), and `passes` (passHand, bouncePass, noLook, deflector/recoverer
+  ids; ball locations are [x,y,z] in 3D vs [x,y] in 2D, so pass ball height
+  is 3D-only; `bounceDistToReceiver` is a dead 0%-populated column).
+- Shared-column agreement is clean: 3D rounds to 2 decimals where 2D stores
+  full doubles (keep 2D values for shared columns); possession player-id
+  lists reorder but are set-identical; the one genuine divergence is that
+  `arcAngle`/`rimDepth`/`rimLeftRight` (present in BOTH files) are
+  recomputed and differ beyond rounding on ~27% of populated rows — pick one
+  source, and they are post-release/quarantined regardless.
+- Most valuable 3D-only signal for the sanctioned MID/THREE SQ lane: the
+  `shot_contests` release-frame contest geometry, which upgrades categorical
+  2D contest levels into continuous contest quality. Precondition before any
+  predictive use: the measurement-timing audit (release-frame vs
+  post-release). `poseQSQ`/`poseQSP` join `qSQ`/`qSP` as benchmark-only.
+
 ## Lineup Quality
 
 The embedded `offPlayerIds` / `defPlayerIds` possession arrays are not the best
