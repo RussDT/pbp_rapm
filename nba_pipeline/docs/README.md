@@ -28,6 +28,8 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 - [Historical ShotQuality Safe Crossfit](./HISTORICAL_SHOT_QUALITY_SAFE_CROSSFIT.md)
 - [Shot-Clock Estimation](./SHOT_CLOCK_ESTIMATION.md)
 - [rZTOV: Mix-Adjusted Turnovers](./RZTOV.md)
+- [rZTOV Explorer](./rztov-explorer.html)
+- [Scoring at 20 Playground](./scoring-at-20-playground.html)
 - [Possession Start Report](./POSSESSION_START_REPORT.md)
 - [Career Teammate Summary](./CAREER_TEAMMATE_SUMMARY.md)
 - [DARKO Teammate Help and The Help Index](./DARKO_TEAMMATE_HELP.md)

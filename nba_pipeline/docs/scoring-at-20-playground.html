@@ -1,0 +1,2140 @@
+<div id="scoring20-lab" data-view="simple" data-breakdown="impact" data-table-mode="rates" data-scenario="actual">
+  <style>
+    #scoring20-lab {
+      color-scheme: light;
+      --s20-bg: #f4f0e7;
+      --s20-panel: #fffdf7;
+      --s20-ink: #171815;
+      --s20-muted: #68695f;
+      --s20-rule: #cbc7ba;
+      --s20-accent: #b9df24;
+      --s20-accent-ink: #15180a;
+      --s20-negative: #d85e3d;
+      --s20-rts: #2878b8;
+      --s20-role: #7a57c7;
+      --s20-volume: #d18a16;
+      --s20-tov: #1a9570;
+      --s20-good-wash: rgba(26, 149, 112, .09);
+      --s20-bad-wash: rgba(216, 94, 61, .08);
+      width: 100%;
+      box-sizing: border-box;
+      padding: 22px;
+      background: var(--s20-bg);
+      color: var(--s20-ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      border: 1px solid var(--s20-rule);
+      border-radius: 18px;
+    }
+    #scoring20-lab * { box-sizing: border-box; }
+    #scoring20-lab .s20-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab .s20-kicker {
+      margin: 0 0 4px;
+      color: var(--s20-muted);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    #scoring20-lab h2 {
+      margin: 0;
+      max-width: 680px;
+      font-size: clamp(25px, 4.2vw, 44px);
+      line-height: .98;
+      letter-spacing: -.045em;
+    }
+    #scoring20-lab .s20-total {
+      flex: 0 0 auto;
+      text-align: right;
+    }
+    #scoring20-lab .s20-head-stats {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+    #scoring20-lab .s20-total-label {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--s20-muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    #scoring20-lab .s20-total-value {
+      display: inline-block;
+      min-width: 120px;
+      padding: 5px 9px 6px;
+      background: var(--s20-accent);
+      color: var(--s20-accent-ink);
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 850;
+      line-height: 1;
+      letter-spacing: -.04em;
+      font-variant-numeric: tabular-nums;
+    }
+    #scoring20-lab .s20-impact-value {
+      background: var(--s20-panel);
+      color: var(--s20-ink);
+      box-shadow: inset 0 0 0 1px var(--s20-rule);
+    }
+    #scoring20-lab .s20-total-detail {
+      display: block;
+      margin-top: 4px;
+      color: var(--s20-muted);
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    #scoring20-lab .s20-top-switches {
+      display: flex;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 16px;
+    }
+    #scoring20-lab .s20-view-switch,
+    #scoring20-lab .s20-scenario-switch {
+      display: inline-grid;
+      grid-template-columns: repeat(2, minmax(118px, 1fr));
+      gap: 3px;
+      padding: 3px;
+      background: color-mix(in srgb, var(--s20-rule) 52%, transparent);
+      border: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab .s20-view-button,
+    #scoring20-lab .s20-scenario-button {
+      min-height: 34px;
+      padding: 7px 13px;
+      border: 0;
+      background: transparent;
+      color: var(--s20-muted);
+      -webkit-text-fill-color: currentColor;
+      font: 800 12px/1 ui-sans-serif, system-ui, sans-serif;
+      cursor: pointer;
+    }
+    #scoring20-lab .s20-view-button[aria-pressed="true"],
+    #scoring20-lab .s20-scenario-button[aria-pressed="true"] {
+      background: var(--s20-panel);
+      color: var(--s20-ink);
+      box-shadow: 0 1px 4px color-mix(in srgb, var(--s20-ink) 10%, transparent);
+    }
+    #scoring20-lab .s20-breakdown-switch,
+    #scoring20-lab .s20-table-switch {
+      display: inline-grid;
+      grid-template-columns: repeat(2, auto);
+      justify-self: start;
+      gap: 2px;
+      padding: 2px;
+      background: color-mix(in srgb, var(--s20-rule) 42%, transparent);
+      border: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab .s20-breakdown-button,
+    #scoring20-lab .s20-table-mode-button {
+      min-height: 29px;
+      padding: 6px 10px;
+      border: 0;
+      background: transparent;
+      color: var(--s20-muted);
+      -webkit-text-fill-color: currentColor;
+      font: 500 11px/1 ui-sans-serif, system-ui, sans-serif;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #scoring20-lab .s20-breakdown-button[aria-pressed="true"],
+    #scoring20-lab .s20-table-mode-button[aria-pressed="true"] {
+      background: var(--s20-panel);
+      color: var(--s20-ink);
+    }
+    #scoring20-lab .s20-scenario-note {
+      flex: 1 1 280px;
+      align-self: center;
+      margin: 0;
+      color: var(--s20-muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    #scoring20-lab .s20-main {
+      display: grid;
+      grid-template-columns: minmax(250px, .72fr) minmax(430px, 1.28fr);
+      gap: 24px;
+      padding: 22px 0 20px;
+    }
+    #scoring20-lab .s20-controls {
+      display: grid;
+      align-content: start;
+      gap: 0;
+      padding: 3px 18px;
+      background: var(--s20-panel);
+      border: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab .s20-control {
+      min-width: 0;
+      padding: 17px 0 16px;
+    }
+    #scoring20-lab .s20-control + .s20-control {
+      border-top: 1px solid color-mix(in srgb, var(--s20-rule) 72%, transparent);
+    }
+    #scoring20-lab .s20-control[data-control="tsa"] { order: 1; }
+    #scoring20-lab .s20-control[data-control="rts"] { order: 2; }
+    #scoring20-lab .s20-control[data-control="role"] { order: 3; }
+    #scoring20-lab .s20-control[data-control="rstov"] { order: 4; }
+    #scoring20-lab .s20-control-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      justify-content: stretch;
+      align-items: baseline;
+      gap: 5px 12px;
+      margin-bottom: 10px;
+    }
+    #scoring20-lab .s20-control-head label {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -.01em;
+    }
+    #scoring20-lab .s20-control-head output {
+      font-size: 15px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    #scoring20-lab .s20-hint {
+      margin-top: 5px;
+      color: var(--s20-muted);
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.35;
+    }
+    #scoring20-lab .s20-marginal {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 3px 8px;
+      margin-top: 9px;
+      padding-left: 9px;
+      border-left: 2px solid color-mix(in srgb, var(--s20-accent) 70%, var(--s20-rule));
+      color: var(--s20-muted);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: 1.3;
+      text-transform: none;
+    }
+    #scoring20-lab .s20-marginal strong {
+      color: var(--s20-ink);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0;
+      font-variant-numeric: tabular-nums;
+      text-transform: none;
+      white-space: nowrap;
+    }
+    #scoring20-lab input[type="range"] {
+      width: 100%;
+      accent-color: var(--s20-accent);
+      cursor: ew-resize;
+    }
+    #scoring20-lab .s20-decomp {
+      min-width: 0;
+      display: grid;
+      align-content: start;
+      gap: 16px;
+    }
+    #scoring20-lab .s20-decomp .s20-breakdown-switch,
+    #scoring20-lab .s20-simple-decomp .s20-breakdown-switch { margin-bottom: -2px; }
+    #scoring20-lab .s20-decomp-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid var(--s20-rule);
+      color: var(--s20-muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    #scoring20-lab .s20-component-list { display: grid; gap: 10px; }
+    #scoring20-lab .s20-component-row {
+      display: grid;
+      grid-template-columns: minmax(132px, .62fr) 72px minmax(260px, 2.38fr);
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    #scoring20-lab .s20-component-meta {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    #scoring20-lab .s20-component-meta strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.1;
+    }
+    #scoring20-lab .s20-component-meta small {
+      display: block;
+      margin-top: 3px;
+      color: var(--s20-muted);
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    #scoring20-lab .s20-component-track {
+      grid-column: 3;
+      grid-row: 1;
+      position: relative;
+      height: 26px;
+      background: color-mix(in srgb, var(--s20-rule) 22%, transparent);
+      overflow: hidden;
+    }
+    #scoring20-lab .s20-component-track::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+      background: var(--s20-rule);
+    }
+    #scoring20-lab .s20-component-bar {
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      left: 50%;
+      z-index: 1;
+      min-width: 1px;
+      transition: left 180ms ease, right 180ms ease, width 180ms ease, background 180ms ease;
+    }
+    #scoring20-lab .s20-component-bar.negative {
+      left: auto;
+      right: 50%;
+      background: var(--s20-negative) !important;
+    }
+    #scoring20-lab .s20-component-value {
+      grid-column: 2;
+      grid-row: 1;
+      color: var(--s20-ink);
+      font-size: 15px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    #scoring20-lab .s20-simple-decomp {
+      min-width: 0;
+      display: grid;
+      align-content: start;
+      gap: 18px;
+    }
+    #scoring20-lab .s20-simple-decomp[hidden],
+    #scoring20-lab .s20-decomp[hidden] { display: none; }
+    #scoring20-lab .s20-simple-card {
+      padding: 15px;
+      background: var(--s20-panel);
+      border: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab .s20-simple-card-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 13px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab .s20-simple-card-head strong {
+      font-size: 13px;
+      font-weight: 850;
+    }
+    #scoring20-lab .s20-simple-card-head span {
+      color: var(--s20-muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    #scoring20-lab .s20-impact-list { display: grid; gap: 13px; }
+    #scoring20-lab .s20-impact-row {
+      display: grid;
+      grid-template-columns: minmax(130px, .9fr) 76px minmax(170px, 1.5fr);
+      align-items: center;
+      gap: 10px;
+    }
+    #scoring20-lab .s20-impact-label strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.12;
+    }
+    #scoring20-lab .s20-impact-label small {
+      display: block;
+      margin-top: 3px;
+      color: var(--s20-muted);
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    #scoring20-lab .s20-impact-number {
+      color: var(--s20-ink);
+      font-size: 16px;
+      font-weight: 870;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    #scoring20-lab .s20-impact-track,
+    #scoring20-lab .s20-combined-track {
+      position: relative;
+      height: 30px;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--s20-rule) 22%, transparent);
+    }
+    #scoring20-lab .s20-impact-track::after,
+    #scoring20-lab .s20-combined-track::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      z-index: 3;
+      width: 1px;
+      background: var(--s20-rule);
+    }
+    #scoring20-lab .s20-impact-bar {
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      left: 50%;
+      min-width: 1px;
+      transition: left 180ms ease, right 180ms ease, width 180ms ease;
+    }
+    #scoring20-lab .s20-impact-bar.negative { left: auto; right: 50%; }
+    #scoring20-lab .s20-combined-row {
+      display: grid;
+      grid-template-columns: minmax(130px, .9fr) 76px minmax(170px, 1.5fr);
+      align-items: center;
+      gap: 10px;
+    }
+    #scoring20-lab .s20-combined-segment {
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      z-index: 2;
+      min-width: 1px;
+      transition: left 180ms ease, width 180ms ease;
+    }
+    #scoring20-lab .s20-impact-legend {
+      display: flex;
+      justify-content: flex-end;
+      gap: 14px;
+      margin-top: 9px;
+      color: var(--s20-muted);
+      font-size: 10px;
+      font-weight: 720;
+    }
+    #scoring20-lab .s20-legend-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 5px;
+      border-radius: 50%;
+    }
+    #scoring20-lab .s20-subtotals {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 2px;
+      padding-top: 12px;
+      border-top: 2px solid var(--s20-rule);
+    }
+    #scoring20-lab .s20-subtotal {
+      text-align: left;
+      color: var(--s20-muted);
+      font-size: 11px;
+      font-weight: 680;
+    }
+    #scoring20-lab .s20-subtotal strong {
+      display: block;
+      margin-top: 2px;
+      color: var(--s20-ink);
+      font-size: 12px;
+    }
+    #scoring20-lab .s20-subtotal output {
+      margin-left: 5px;
+      font-size: 15px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+    }
+    #scoring20-lab .s20-table-wrap {
+      width: 100%;
+      max-width: 100%;
+      max-height: 440px;
+      overflow: auto;
+      contain: inline-size paint;
+      border-top: 1px solid var(--s20-rule);
+      border-bottom: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab .s20-table-tools {
+      display: flex;
+      align-items: end;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 12px 0;
+    }
+    #scoring20-lab .s20-table-switch-wrap {
+      display: grid;
+      gap: 4px;
+      color: var(--s20-muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    #scoring20-lab .s20-filter {
+      display: grid;
+      gap: 4px;
+      color: var(--s20-muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    #scoring20-lab .s20-filter:first-child { flex: 1 1 280px; }
+    #scoring20-lab .s20-filter input,
+    #scoring20-lab .s20-filter select {
+      min-height: 36px;
+      padding: 7px 9px;
+      color: var(--s20-ink);
+      background: var(--s20-panel);
+      border: 1px solid var(--s20-rule);
+      border-radius: 0;
+      font: 650 13px/1.2 ui-sans-serif, system-ui, sans-serif;
+      text-transform: none;
+    }
+    #scoring20-lab .s20-team-filter { min-width: 96px; }
+    #scoring20-lab .s20-filter-toggle,
+    #scoring20-lab .s20-filter-apply,
+    #scoring20-lab .s20-filter-clear,
+    #scoring20-lab .s20-filter-chip {
+      min-height: 36px;
+      padding: 7px 10px;
+      color: var(--s20-ink);
+      -webkit-text-fill-color: var(--s20-ink);
+      background: var(--s20-panel);
+      border: 1px solid var(--s20-rule);
+      border-radius: 0;
+      font: 700 12px/1.2 ui-sans-serif, system-ui, sans-serif;
+      cursor: pointer;
+    }
+    #scoring20-lab .s20-filter-toggle[aria-expanded="true"],
+    #scoring20-lab .s20-filter-apply {
+      background: var(--s20-accent);
+      color: var(--s20-accent-ink);
+      -webkit-text-fill-color: var(--s20-accent-ink);
+      border-color: var(--s20-accent);
+    }
+    #scoring20-lab .s20-filter-toggle-count:empty { display: none; }
+    #scoring20-lab .s20-value-filters {
+      display: grid;
+      grid-template-columns: minmax(170px, 1.4fr) minmax(105px, .7fr) minmax(105px, .7fr) auto auto;
+      align-items: end;
+      gap: 8px;
+      padding: 0 0 12px;
+      border-bottom: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab .s20-value-filters[hidden] { display: none; }
+    #scoring20-lab .s20-active-filters {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      min-height: 20px;
+      color: var(--s20-muted);
+      font-size: 11px;
+    }
+    #scoring20-lab .s20-filter-chip {
+      min-height: 28px;
+      padding: 4px 8px;
+      font-weight: 650;
+    }
+    #scoring20-lab .s20-count {
+      margin-left: auto;
+      padding-bottom: 8px;
+      color: var(--s20-muted);
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    #scoring20-lab table {
+      width: 100%;
+      min-width: 940px;
+      border-collapse: collapse;
+      color: var(--s20-ink);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    #scoring20-lab[data-table-mode="rates"] table { min-width: 980px; }
+    #scoring20-lab[data-table-mode="plus"] table { min-width: 1320px; }
+    #scoring20-lab[data-table-mode="rates"] [data-table-column="plus"] { display: none; }
+    #scoring20-lab th {
+      position: sticky;
+      top: 27px;
+      z-index: 3;
+      padding: 8px 7px;
+      background: var(--s20-bg);
+      color: var(--s20-muted);
+      border-bottom: 1px solid var(--s20-rule);
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    #scoring20-lab thead .s20-group-row th {
+      top: 0;
+      z-index: 4;
+      height: 27px;
+      padding: 5px 8px 4px;
+      color: color-mix(in srgb, var(--s20-muted) 88%, var(--s20-ink));
+      background: color-mix(in srgb, var(--s20-panel) 84%, var(--s20-bg));
+      border-bottom-color: color-mix(in srgb, var(--s20-rule) 72%, transparent);
+      text-align: left;
+      font-size: 9px;
+      letter-spacing: .12em;
+    }
+    #scoring20-lab .s20-group-start {
+      border-left: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab th:first-child { text-align: center; }
+    #scoring20-lab td:first-child { text-align: left; }
+    #scoring20-lab .s20-sort {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 28px;
+      padding: 0;
+      color: inherit;
+      background: transparent;
+      border: 0;
+      font: inherit;
+      letter-spacing: inherit;
+      text-align: inherit;
+      text-transform: inherit;
+      cursor: pointer;
+      white-space: normal;
+    }
+    #scoring20-lab .s20-th-label {
+      display: grid;
+      justify-items: center;
+      line-height: 1.12;
+      white-space: nowrap;
+    }
+    #scoring20-lab .s20-sort-indicator {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      width: 8px;
+      transform: translateY(-50%);
+    }
+    #scoring20-lab td {
+      padding: 9px;
+      color: var(--s20-ink);
+      -webkit-text-fill-color: var(--s20-ink);
+      border-bottom: 1px solid color-mix(in srgb, var(--s20-rule) 58%, transparent);
+      text-align: center;
+    }
+    #scoring20-lab tbody tr { cursor: pointer; }
+    #scoring20-lab tbody tr:hover { background: color-mix(in srgb, var(--s20-accent) 12%, transparent); }
+    #scoring20-lab tbody tr[aria-selected="true"] {
+      background: color-mix(in srgb, var(--s20-accent) 24%, transparent);
+      box-shadow: inset 4px 0 0 var(--s20-accent);
+    }
+    #scoring20-lab .s20-player {
+      max-width: 220px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+    #scoring20-lab .s20-player-button {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--s20-ink);
+      -webkit-text-fill-color: var(--s20-ink);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    #scoring20-lab .s20-rank {
+      display: inline-block;
+      width: 25px;
+      color: var(--s20-muted);
+      -webkit-text-fill-color: var(--s20-muted);
+      font-weight: 600;
+    }
+    #scoring20-lab .s20-table-total { font-weight: 850; }
+    #scoring20-lab .s20-table-sensitivity { font-weight: 500; }
+    #scoring20-lab .s20-value-good {
+      color: var(--s20-tov);
+      -webkit-text-fill-color: var(--s20-tov);
+      font-weight: 800;
+    }
+    #scoring20-lab .s20-value-bad {
+      color: var(--s20-negative);
+      -webkit-text-fill-color: var(--s20-negative);
+      font-weight: 760;
+    }
+    #scoring20-lab .s20-scatter {
+      margin-top: 24px;
+      padding-top: 22px;
+      border-top: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab .s20-scatter-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 12px;
+    }
+    #scoring20-lab .s20-scatter-title {
+      margin: 0 0 3px;
+      font-size: 20px;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+    }
+    #scoring20-lab .s20-scatter-subtitle {
+      margin: 0;
+      color: var(--s20-muted);
+      font-size: 11px;
+    }
+    #scoring20-lab .s20-scatter-controls {
+      display: flex;
+      align-items: end;
+      gap: 10px;
+    }
+    #scoring20-lab .s20-scatter-field {
+      display: grid;
+      gap: 4px;
+      color: var(--s20-muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    #scoring20-lab .s20-scatter-field select {
+      min-width: 160px;
+      min-height: 34px;
+      padding: 6px 28px 6px 8px;
+      color: var(--s20-ink);
+      background: var(--s20-panel);
+      border: 1px solid var(--s20-rule);
+      border-radius: 0;
+      font: 650 12px/1.2 ui-sans-serif, system-ui, sans-serif;
+      text-transform: none;
+    }
+    #scoring20-lab .s20-scatter-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+      color: var(--s20-muted);
+      font-size: 11px;
+    }
+    #scoring20-lab .s20-scatter-meta strong { color: var(--s20-ink); }
+    #scoring20-lab .s20-scatter-wrap { position: relative; width: 100%; min-height: 430px; }
+    #scoring20-lab .s20-scatter-svg { display: block; width: 100%; min-height: 430px; overflow: visible; }
+    #scoring20-lab .s20-scatter-svg text { font-family: ui-sans-serif, system-ui, sans-serif; }
+    #scoring20-lab .s20-scatter-svg .s20-scatter-point { cursor: pointer; }
+    #scoring20-lab .s20-scatter-tooltip {
+      position: fixed;
+      z-index: 30;
+      min-width: 190px;
+      max-width: min(280px, calc(100vw - 20px));
+      padding: 9px 11px;
+      color: var(--s20-ink);
+      background: var(--s20-panel);
+      border: 1px solid var(--s20-rule);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+      font-size: 11px;
+      line-height: 1.45;
+      pointer-events: none;
+    }
+    #scoring20-lab .s20-scatter-tooltip strong { display: block; margin-bottom: 2px; font-size: 12px; }
+    #scoring20-lab .s20-scatter-tooltip[hidden] { display: none; }
+    @media (prefers-color-scheme: dark) {
+      #scoring20-lab {
+        color-scheme: dark;
+        --s20-bg: #151615;
+        --s20-panel: #1d1f1d;
+        --s20-ink: #f3f1e9;
+        --s20-muted: #aaa99f;
+        --s20-rule: #3a3d38;
+        --s20-accent: #c9f04a;
+        --s20-negative: #ff8061;
+        --s20-rts: #65b7f3;
+        --s20-role: #b99bf3;
+        --s20-volume: #f0ad3c;
+        --s20-tov: #4fd0a4;
+        --s20-good-wash: rgba(79, 208, 164, .09);
+        --s20-bad-wash: rgba(255, 128, 97, .09);
+      }
+    }
+    @media (max-width: 760px) {
+      #scoring20-lab { padding: 16px; border-radius: 14px; }
+      #scoring20-lab .s20-head { align-items: flex-start; }
+      #scoring20-lab .s20-total-value { min-width: 96px; }
+      #scoring20-lab .s20-main { grid-template-columns: 1fr; }
+      #scoring20-lab .s20-component-row { grid-template-columns: 105px 58px minmax(120px, 1fr); gap: 8px; }
+      #scoring20-lab .s20-impact-row,
+      #scoring20-lab .s20-combined-row { grid-template-columns: 112px 64px minmax(120px, 1fr); gap: 8px; }
+      #scoring20-lab .s20-subtotals { grid-template-columns: 1fr; }
+      #scoring20-lab .s20-table-tools { align-items: stretch; flex-wrap: wrap; }
+      #scoring20-lab .s20-filter:first-child { flex-basis: 100%; }
+      #scoring20-lab .s20-table-switch-wrap { flex: 1 1 auto; }
+      #scoring20-lab .s20-count { margin-left: 0; }
+      #scoring20-lab .s20-value-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      #scoring20-lab .s20-filter-apply,
+      #scoring20-lab .s20-filter-clear { width: 100%; }
+      #scoring20-lab .s20-scatter-head { align-items: stretch; flex-direction: column; }
+      #scoring20-lab .s20-scatter-controls { width: 100%; }
+      #scoring20-lab .s20-scatter-field { flex: 1 1 0; }
+      #scoring20-lab .s20-scatter-field select { width: 100%; min-width: 0; }
+    }
+    @media (max-width: 430px) {
+      #scoring20-lab .s20-head { display: grid; }
+      #scoring20-lab .s20-total { text-align: left; }
+      #scoring20-lab .s20-head-stats { justify-content: space-between; }
+      #scoring20-lab .s20-view-switch { width: 100%; }
+      #scoring20-lab .s20-scenario-switch { width: 100%; }
+      #scoring20-lab .s20-simple-card { padding: 12px; }
+      #scoring20-lab .s20-impact-row,
+      #scoring20-lab .s20-combined-row { grid-template-columns: 92px 58px minmax(100px, 1fr); gap: 7px; }
+      #scoring20-lab .s20-impact-label small { display: none; }
+      #scoring20-lab .s20-scatter-controls { display: grid; grid-template-columns: 1fr; }
+      #scoring20-lab .s20-scatter-meta { display: grid; }
+      #scoring20-lab .s20-value-filters { grid-template-columns: 1fr; }
+      #scoring20-lab .s20-active-filters { grid-column: 1; }
+    }
+  </style>
+
+  <header class="s20-head">
+    <div>
+      <p class="s20-kicker" id="s20-kicker">2026 regular season &middot; 407 players &middot; league true shooting is 57.83%</p>
+      <h2 id="s20-player-name">Shai Gilgeous-Alexander</h2>
+    </div>
+    <div class="s20-head-stats" aria-live="polite">
+      <div class="s20-total">
+        <span class="s20-total-label" id="s20-total-label">Scoring efficiency @20</span>
+        <span class="s20-total-value" id="s20-total">150</span>
+        <span class="s20-total-detail" id="s20-multiple">1.50&times; league &middot; +49.6%</span>
+      </div>
+      <div class="s20-total">
+        <span class="s20-total-label">Impact</span>
+        <span class="s20-total-value s20-impact-value" id="s20-impact">+9.83</span>
+        <span class="s20-total-detail">points per 100</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="s20-top-switches">
+    <div class="s20-view-switch" role="group" aria-label="Explanation level">
+      <button class="s20-view-button" type="button" data-view-button="simple" aria-pressed="true">Plain English</button>
+      <button class="s20-view-button" type="button" data-view-button="model" aria-pressed="false">Model terms</button>
+    </div>
+    <div class="s20-scenario-switch" role="group" aria-label="Actual or predictive inputs">
+      <button class="s20-scenario-button" type="button" data-scenario-button="actual" aria-pressed="true">2026 actual</button>
+      <button class="s20-scenario-button" type="button" data-scenario-button="predictive" aria-pressed="false">EPM predictive</button>
+    </div>
+    <p class="s20-scenario-note" id="s20-scenario-note">Completed-season shooting and volume. The impact model uses the fitted unconstrained Points + difficulty points + TSA coefficients.</p>
+  </div>
+
+  <div class="s20-main">
+    <section class="s20-controls" aria-label="Scoring value controls">
+      <div class="s20-control" data-control="tsa">
+        <div class="s20-control-head"><label for="s20-tsa" id="s20-tsa-label">TSA / 100</label><output id="s20-tsa-out">33.35</output></div>
+        <input id="s20-tsa" type="range" min="5" max="45" step="0.001" value="33.346">
+        <small class="s20-hint" id="s20-tsa-hint">True-shot attempts per 100 possessions</small>
+        <div class="s20-marginal"><span id="s20-tsa-marginal-label">+1 TSA / 100</span><strong id="s20-tsa-marginal">changes impact by +0.33 points / 100</strong></div>
+      </div>
+      <div class="s20-control" data-control="rts">
+        <div class="s20-control-head"><label for="s20-rts" id="s20-rts-label">True shooting efficiency</label><output id="s20-rts-out">66.47% (+8.64 vs. league)</output></div>
+        <input id="s20-rts" type="range" min="-20" max="20" step="0.001" value="8.636">
+        <small class="s20-hint" id="s20-rts-hint">Points per shot, including free throws</small>
+        <div class="s20-marginal"><span id="s20-rts-marginal-label">+1 point of true shooting</span><strong id="s20-rts-marginal">changes impact by +0.53 points / 100</strong></div>
+      </div>
+      <div class="s20-control" data-control="role">
+        <div class="s20-control-head"><label for="s20-role" id="s20-role-label">Play Type Difficulty</label><output id="s20-role-out">+2.66 TS points</output></div>
+        <input id="s20-role" type="range" min="-8" max="8" step="0.001" value="2.657">
+        <small class="s20-hint" id="s20-role-hint">How much harder the player's shot mix is than average</small>
+        <div class="s20-marginal"><span id="s20-role-marginal-label">+1 point of difficulty</span><strong id="s20-role-marginal">changes impact by +0.53 points / 100</strong></div>
+      </div>
+      <div class="s20-control" data-control="rstov">
+        <div class="s20-control-head"><label for="s20-rstov" id="s20-rstov-label">Scoring Turnover vs Expected</label><output id="s20-rstov-out">−7.94%</output></div>
+        <input id="s20-rstov" type="range" min="-12" max="24" step="0.001" value="-7.940">
+        <small class="s20-hint" id="s20-rstov-hint">Scoring-turnover rate relative to expected; lower is better</small>
+        <div class="s20-marginal"><span id="s20-rstov-marginal-label">1 percentage point fewer turnovers</span><strong id="s20-rstov-marginal">changes impact by +0.36 points / 100</strong></div>
+      </div>
+    </section>
+
+    <section class="s20-simple-decomp" id="s20-simple-decomp" aria-label="Plain-English scoring impact views">
+      <div class="s20-breakdown-switch" role="group" aria-label="Contribution scale">
+        <button class="s20-breakdown-button" type="button" data-breakdown-button="scoring" aria-pressed="false">Scoring+ contribution</button>
+        <button class="s20-breakdown-button" type="button" data-breakdown-button="impact" aria-pressed="true">Impact contribution</button>
+      </div>
+      <div class="s20-simple-card">
+        <div class="s20-simple-card-head"><strong id="s20-simple-title">Where the impact comes from</strong><span id="s20-simple-scale">Two effects &middot; &plusmn;12 points per 100</span></div>
+        <div class="s20-impact-list">
+          <div class="s20-impact-row" data-impact-key="shootingImpact">
+            <div class="s20-impact-label"><strong id="s20-simple-shooting-label">Shooting efficiency impact</strong><small id="s20-simple-shooting-hint">Role-adjusted efficiency &times; shot volume</small></div>
+            <output class="s20-impact-number" id="s20-shooting-impact">+6.95</output>
+            <div class="s20-impact-track"><div class="s20-impact-bar"></div></div>
+          </div>
+          <div class="s20-impact-row" data-impact-key="turnoverImpact">
+            <div class="s20-impact-label"><strong id="s20-simple-turnover-label">Turnover efficiency impact</strong><small id="s20-simple-turnover-hint">Scoring turnovers avoided &times; scoring volume</small></div>
+            <output class="s20-impact-number" id="s20-turnover-impact">+2.88</output>
+            <div class="s20-impact-track"><div class="s20-impact-bar"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="s20-simple-card">
+        <div class="s20-simple-card-head"><strong>The same result, combined</strong><span id="s20-combined-caption">Segments add to total scoring impact</span></div>
+        <div class="s20-combined-row">
+          <div class="s20-impact-label"><strong id="s20-combined-label">Total scoring impact</strong><small id="s20-combined-hint">Points added per 100 possessions</small></div>
+          <output class="s20-impact-number" id="s20-combined-impact">+9.83</output>
+          <div class="s20-combined-track" id="s20-combined-track">
+            <div class="s20-combined-segment" data-segment="shooting"></div>
+            <div class="s20-combined-segment" data-segment="turnover"></div>
+          </div>
+        </div>
+        <div class="s20-impact-legend">
+          <span><i class="s20-legend-dot" style="background:var(--s20-rts)"></i>Shooting</span>
+          <span><i class="s20-legend-dot" style="background:var(--s20-tov)"></i>Turnovers</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="s20-decomp" id="s20-model-decomp" aria-label="Live signed component contributions" hidden>
+      <div class="s20-breakdown-switch" role="group" aria-label="Contribution scale">
+        <button class="s20-breakdown-button" type="button" data-breakdown-button="scoring" aria-pressed="false">Scoring+ contribution</button>
+        <button class="s20-breakdown-button" type="button" data-breakdown-button="impact" aria-pressed="true">Impact contribution</button>
+      </div>
+      <div class="s20-decomp-title"><span id="s20-model-title">Contribution to scoring impact</span><span id="s20-model-scale">Common scale &middot; &plusmn;10 points / 100</span></div>
+      <div class="s20-component-list">
+        <div class="s20-component-row" data-key="volume">
+          <div class="s20-component-meta"><strong data-component-name>Shot volume value</strong><small data-component-hint>Actual attempts versus 20</small></div>
+          <div class="s20-component-track"><div class="s20-component-bar"></div></div>
+          <output class="s20-component-value">+17.65</output>
+        </div>
+        <div class="s20-component-row" data-key="rts">
+          <div class="s20-component-meta"><strong data-component-name>rTS value</strong><small data-component-hint>At the 20-attempt baseline</small></div>
+          <div class="s20-component-track"><div class="s20-component-bar"></div></div>
+          <output class="s20-component-value">+14.93</output>
+        </div>
+        <div class="s20-component-row" data-key="role">
+          <div class="s20-component-meta"><strong data-component-name>Role value</strong><small data-component-hint>At the 20-attempt baseline</small></div>
+          <div class="s20-component-track"><div class="s20-component-bar"></div></div>
+          <output class="s20-component-value">+4.59</output>
+        </div>
+        <div class="s20-component-row" data-key="rstovValue">
+          <div class="s20-component-meta"><strong data-component-name>TOV rate value</strong><small data-component-hint>At the 20-attempt baseline</small></div>
+          <div class="s20-component-track"><div class="s20-component-bar"></div></div>
+          <output class="s20-component-value">+7.46</output>
+        </div>
+        <div class="s20-component-row" data-key="tovVolume">
+          <div class="s20-component-meta"><strong data-component-name>TOV volume value</strong><small data-component-hint>Actual attempts versus 20</small></div>
+          <div class="s20-component-track"><div class="s20-component-bar"></div></div>
+          <output class="s20-component-value">+4.98</output>
+        </div>
+      </div>
+      <div class="s20-subtotals" id="s20-model-subtotals"></div>
+    </section>
+  </div>
+
+  <div class="s20-table-tools" aria-label="Player table controls">
+    <label class="s20-filter"><span>Filter players</span><input id="s20-search" type="search" placeholder="Type a player name" autocomplete="off"></label>
+    <label class="s20-filter s20-team-filter"><span>Team</span><select id="s20-team"><option value="">All teams</option></select></label>
+    <label class="s20-filter"><span>Minimum off. possessions</span><select id="s20-min-poss"><option value="500">500</option><option value="1000">1,000</option><option value="2000">2,000</option><option value="3000">3,000</option></select></label>
+    <div class="s20-table-switch-wrap"><span>Table columns</span><div class="s20-table-switch" role="group" aria-label="Table columns">
+      <button class="s20-table-mode-button" type="button" data-table-mode-button="rates" aria-pressed="true">Rates</button>
+      <button class="s20-table-mode-button" type="button" data-table-mode-button="plus" aria-pressed="false">+ contributions</button>
+    </div></div>
+    <button class="s20-filter-toggle" id="s20-filter-toggle" type="button" aria-expanded="false" aria-controls="s20-value-filters">Value filters <span class="s20-filter-toggle-count" id="s20-filter-toggle-count"></span></button>
+    <div class="s20-count" id="s20-count" aria-live="polite">407 players</div>
+  </div>
+  <div class="s20-value-filters" id="s20-value-filters" hidden>
+    <label class="s20-filter"><span>Metric</span><select id="s20-filter-metric"></select></label>
+    <label class="s20-filter"><span id="s20-filter-min-label">Minimum</span><input id="s20-filter-min" type="number" step="any" inputmode="decimal" placeholder="No minimum"></label>
+    <label class="s20-filter"><span id="s20-filter-max-label">Maximum</span><input id="s20-filter-max" type="number" step="any" inputmode="decimal" placeholder="No maximum"></label>
+    <button class="s20-filter-apply" id="s20-filter-apply" type="button">Apply filter</button>
+    <button class="s20-filter-clear" id="s20-filter-clear" type="button">Clear all</button>
+    <div class="s20-active-filters" id="s20-active-filters" aria-live="polite">No value filters applied</div>
+  </div>
+  <div class="s20-table-wrap">
+    <table aria-label="2026 Scoring plus at 20 leaders">
+      <thead>
+      <tr class="s20-group-row">
+        <th colspan="2">Player</th>
+        <th colspan="4" class="s20-group-start">Impact</th>
+        <th colspan="4" class="s20-group-start">Scoring profile</th>
+        <th colspan="6" class="s20-group-start" data-table-column="plus">Scoring+ contribution</th>
+      </tr>
+      <tr>
+        <th data-key="name"><button class="s20-sort" type="button" data-sort="name"><span class="s20-th-label"><span>Player</span><span>name</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="teamAbbr"><button class="s20-sort" type="button" data-sort="teamAbbr"><span class="s20-th-label"><span>Team</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="shootingImpact" class="s20-group-start"><button class="s20-sort" type="button" data-sort="shootingImpact"><span class="s20-th-label"><span>Shooting</span><span>impact</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="turnoverImpact"><button class="s20-sort" type="button" data-sort="turnoverImpact"><span class="s20-th-label"><span>Turnover</span><span>impact</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="impact"><button class="s20-sort" type="button" data-sort="impact"><span class="s20-th-label"><span>Total</span><span>impact</span></span><span class="s20-sort-indicator">&darr;</span></button></th>
+        <th data-key="marginalTsa"><button class="s20-sort" type="button" data-sort="marginalTsa"><span class="s20-th-label"><span>Scoring impact</span><span>/ extra TSA</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="tsa" class="s20-group-start"><button class="s20-sort" type="button" data-sort="tsa"><span class="s20-th-label" id="s20-tsa-table-label"><span>TSA</span><span>/ 100</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="ts"><button class="s20-sort" type="button" data-sort="ts"><span class="s20-th-label" id="s20-rts-table-label"><span>TS</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="role"><button class="s20-sort" type="button" data-sort="role"><span class="s20-th-label"><span>Play Type</span><span>Difficulty</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="stovVsExpected"><button class="s20-sort" type="button" data-sort="stovVsExpected"><span class="s20-th-label"><span>Scoring Turnover</span><span>vs Expected</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="rtsValue" class="s20-group-start" data-table-column="plus"><button class="s20-sort" type="button" data-sort="rtsValue"><span class="s20-th-label"><span>rTS+</span><span>value</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="roleValue" data-table-column="plus"><button class="s20-sort" type="button" data-sort="roleValue"><span class="s20-th-label"><span>Role+</span><span>value</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="volume" data-table-column="plus"><button class="s20-sort" type="button" data-sort="volume"><span class="s20-th-label"><span>Shot volume+</span><span>value</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="rstovValue" data-table-column="plus"><button class="s20-sort" type="button" data-sort="rstovValue"><span class="s20-th-label"><span>TOV rate+</span><span>value</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="tovVolume" data-table-column="plus"><button class="s20-sort" type="button" data-sort="tovVolume"><span class="s20-th-label"><span>TOV volume+</span><span>value</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="zts20" data-table-column="plus"><button class="s20-sort" type="button" data-sort="zts20"><span class="s20-th-label"><span>Shooting+</span><span>@20</span></span><span class="s20-sort-indicator"></span></button></th>
+      </tr></thead>
+      <tbody id="s20-table-body"></tbody>
+    </table>
+  </div>
+
+  <section class="s20-scatter" aria-labelledby="s20-scatter-title">
+    <div class="s20-scatter-head">
+      <div>
+        <h3 class="s20-scatter-title" id="s20-scatter-title">Player scoring landscape</h3>
+        <p class="s20-scatter-subtitle">Every dot is a player in the filtered table. Hover to inspect; click to load the player.</p>
+      </div>
+      <div class="s20-scatter-controls" aria-label="Scatter plot axes">
+        <label class="s20-scatter-field">Horizontal axis
+          <select id="s20-scatter-x">
+            <option value="tsa">Shot volume</option>
+            <option value="ua">Unassisted attempt share</option>
+            <option value="rts">True shooting vs. league</option>
+            <option value="role">Play Type Difficulty</option>
+            <option value="stovVsExpected">Scoring Turnover vs Expected</option>
+            <option value="marginalTsa">Value of one more TSA</option>
+            <option value="shootingImpact">Shooting impact</option>
+            <option value="turnoverImpact">Turnover impact</option>
+          </select>
+        </label>
+        <label class="s20-scatter-field">Vertical axis
+          <select id="s20-scatter-y">
+            <option value="impact">Total impact</option>
+            <option value="shootingImpact">Shooting impact</option>
+            <option value="turnoverImpact">Turnover impact</option>
+            <option value="tsa">Shot volume</option>
+            <option value="ua">Unassisted attempt share</option>
+            <option value="rts">True shooting vs. league</option>
+            <option value="role">Play Type Difficulty</option>
+            <option value="stovVsExpected">Scoring Turnover vs Expected</option>
+            <option value="marginalTsa">Value of one more TSA</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="s20-scatter-meta"><span id="s20-scatter-count">407 players &middot; area = possessions</span><strong id="s20-scatter-selected">Shai Gilgeous-Alexander</strong></div>
+    <div class="s20-scatter-wrap" id="s20-scatter-wrap">
+      <svg class="s20-scatter-svg" id="s20-scatter-svg" role="img" aria-labelledby="s20-scatter-svg-title s20-scatter-svg-desc">
+        <title id="s20-scatter-svg-title">Player scoring landscape</title>
+        <desc id="s20-scatter-svg-desc">Interactive comparison of filtered NBA players. Bubble area represents offensive possessions; color shows whether the vertical-axis value is above or below its reference.</desc>
+      </svg>
+      <div class="s20-scatter-tooltip" id="s20-scatter-tooltip" role="tooltip" hidden></div>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const root = document.getElementById('scoring20-lab');
+      const fitIntercept = -1.838150642094;
+      const fitPoints = 0.768031710981;
+      const fitDifficultyPoints = 0.933917864175;
+      const fitTsa = -0.795771232517;
+      const leagueTS = 57.83414932680538;
+      const possessionValue = 1.0870974065375798;
+      const players = [
+        {name:"AJ Green", poss:4609, rts:4.7521, role:1.2647, tsa:13.8425, rstov:-2.7646},
+        {name:"AJ Johnson", poss:940, rts:-16.5970, role:0.4898, tsa:20.6383, rstov:1.2306},
+        {name:"Aaron Gordon", poss:2056, rts:4.2128, role:-1.0546, tsa:22.8113, rstov:3.3091},
+        {name:"Aaron Holiday", poss:1562, rts:0.1584, role:1.1759, tsa:17.2215, rstov:-0.7311},
+        {name:"Aaron Nesmith", poss:2808, rts:-2.4648, role:0.4632, tsa:19.7650, rstov:0.1901},
+        {name:"Aaron Wiggins", poss:2925, rts:-4.2377, role:0.3835, tsa:19.6658, rstov:0.3807},
+        {name:"Ace Bailey", poss:4241, rts:-4.5903, role:0.6535, tsa:22.2669, rstov:0.1822},
+        {name:"Adem Bona", poss:2555, rts:4.9396, role:-4.7987, tsa:10.7241, rstov:-15.0682},
+        {name:"Ajay Mitchell", poss:3082, rts:0.6251, role:1.8542, tsa:21.9776, rstov:4.3650},
+        {name:"Al Horford", poss:1997, rts:-2.5961, role:-1.1337, tsa:16.8449, rstov:-2.5826},
+        {name:"Alex Caruso", poss:2129, rts:-4.2957, role:-0.3967, tsa:15.2654, rstov:-0.6183},
+        {name:"Alex Sarr", poss:2755, rts:-3.5226, role:-2.0335, tsa:26.0980, rstov:-1.3777},
+        {name:"Alperen Sengun", poss:4788, rts:-0.8800, role:-0.8642, tsa:26.9484, rstov:-0.8070},
+        {name:"Amen Thompson", poss:5880, rts:1.6465, role:-1.9880, tsa:20.6293, rstov:-0.5561},
+        {name:"Amir Coffey", poss:965, rts:2.2465, role:0.7193, tsa:12.8497, rstov:3.7405},
+        {name:"Andre Drummond", poss:2510, rts:-4.1008, role:-3.4203, tsa:14.9402, rstov:-7.0606},
+        {name:"Andre Jackson Jr.", poss:825, rts:-15.6700, role:-0.2267, tsa:16.2424, rstov:-1.8748},
+        {name:"Andrew Nembhard", poss:3728, rts:-1.6704, role:2.5735, tsa:22.9345, rstov:1.5965},
+        {name:"Andrew Wiggins", poss:4422, rts:0.8078, role:-0.0971, tsa:20.1493, rstov:0.5130},
+        {name:"Anfernee Simons", poss:2736, rts:-0.1532, role:2.7755, tsa:24.7442, rstov:4.1720},
+        {name:"Anthony Black", poss:3927, rts:-2.8284, role:-0.4268, tsa:22.1798, rstov:1.0897},
+        {name:"Anthony Davis", poss:1296, rts:-2.8205, role:-1.3732, tsa:28.6656, rstov:0.0117},
+        {name:"Anthony Edwards", poss:4462, rts:3.6831, role:2.5316, tsa:31.7571, rstov:4.5182},
+        {name:"Anthony Gill", poss:2011, rts:10.7556, role:-3.1264, tsa:11.6360, rstov:-2.4634},
+        {name:"Ariel Hukporti", poss:987, rts:3.7448, role:-0.2267, tsa:9.6251, rstov:-21.4179},
+        {name:"Asa Newell", poss:1063, rts:5.2214, role:-3.0462, tsa:16.9332, rstov:-5.7741},
+        {name:"Ausar Thompson", poss:3859, rts:-3.5420, role:-3.1032, tsa:17.2065, rstov:-2.1591},
+        {name:"Austin Reaves", poss:3613, rts:6.2777, role:2.5088, tsa:25.2422, rstov:2.5652},
+        {name:"Ayo Dosunmu", poss:3955, rts:5.3329, role:-0.5556, tsa:20.2781, rstov:1.2090},
+        {name:"Bam Adebayo", poss:5024, rts:-2.9993, role:-0.9147, tsa:26.5127, rstov:1.2461},
+        {name:"Baylor Scheierman", poss:2799, rts:3.4627, role:0.4224, tsa:12.3973, rstov:-3.1696},
+        {name:"Ben Saraf", poss:1876, rts:-9.4376, role:1.8645, tsa:18.2836, rstov:-5.7069},
+        {name:"Ben Sheppard", poss:2931, rts:-1.9763, role:-0.7611, tsa:13.9202, rstov:0.2228},
+        {name:"Bennedict Mathurin", poss:3342, rts:-0.4708, role:0.4668, tsa:24.6260, rstov:0.7630},
+        {name:"Bilal Coulibaly", poss:3139, rts:-5.0000, role:0.1030, tsa:19.7834, rstov:1.1170},
+        {name:"Blake Wesley", poss:766, rts:-6.3656, role:0.7507, tsa:18.6684, rstov:-0.1280},
+        {name:"Bobby Portis", poss:3248, rts:0.7684, role:-0.6224, tsa:24.0148, rstov:0.1675},
+        {name:"Bogdan Bogdanovi\u0107", poss:886, rts:-5.7000, role:2.2469, tsa:18.5102, rstov:1.1895},
+        {name:"Bones Hyland", poss:2468, rts:2.1261, role:1.7912, tsa:20.4778, rstov:0.7146},
+        {name:"Branden Carlson", poss:1000, rts:3.2770, role:-3.1470, tsa:19.9193, rstov:-2.3998},
+        {name:"Brandin Podziemski", poss:4805, rts:0.3281, role:1.3794, tsa:20.2706, rstov:1.2705},
+        {name:"Brandon Ingram", poss:5290, rts:-0.6624, role:1.5011, tsa:27.0699, rstov:1.5068},
+        {name:"Brandon Miller", poss:3983, rts:-0.3430, role:1.6965, tsa:28.7593, rstov:1.0263},
+        {name:"Brandon Williams", poss:3147, rts:-0.9467, role:1.6302, tsa:23.9911, rstov:4.3146},
+        {name:"Brice Sensabaugh", poss:3768, rts:1.3130, role:0.3423, tsa:25.0187, rstov:1.4645},
+        {name:"Bronny James", poss:745, rts:-6.1392, role:-0.2267, tsa:15.8389, rstov:3.0646},
+        {name:"Brook Lopez", poss:3252, rts:-2.4146, role:-0.6740, tsa:17.5892, rstov:-2.8993},
+        {name:"Brooks Barnhizer", poss:705, rts:-12.5008, role:-0.2267, tsa:10.6383, rstov:-5.8240},
+        {name:"Bruce Brown", poss:4060, rts:-1.6923, role:-1.7004, tsa:14.4059, rstov:-1.5258},
+        {name:"Bryce McGowens", poss:1855, rts:2.9544, role:-0.0976, tsa:15.0404, rstov:3.1447},
+        {name:"Bub Carrington", poss:4822, rts:-2.2076, role:1.9794, tsa:16.2173, rstov:2.2390},
+        {name:"Buddy Hield", poss:1723, rts:-1.0013, role:-0.1148, tsa:22.2233, rstov:-1.0896},
+        {name:"CJ McCollum", poss:4777, rts:-0.9752, role:1.9895, tsa:26.2344, rstov:5.2005},
+        {name:"Cade Cunningham", poss:4486, rts:-1.7106, role:2.0490, tsa:29.9599, rstov:4.5375},
+        {name:"Caleb Love", poss:2124, rts:-8.3800, role:1.8365, tsa:24.1525, rstov:2.5372},
+        {name:"Caleb Martin", poss:1808, rts:-5.7699, role:-0.5173, tsa:12.0575, rstov:-2.6738},
+        {name:"Cam Christie", poss:945, rts:-9.6860, role:-0.2267, tsa:17.1429, rstov:-1.1389},
+        {name:"Cam Spencer", poss:3556, rts:6.9831, role:2.3858, tsa:16.9291, rstov:3.5963},
+        {name:"Cam Thomas", poss:1735, rts:-4.8398, role:2.6350, tsa:30.6052, rstov:3.4874},
+        {name:"Cam Whitmore", poss:758, rts:-4.5192, role:-1.5806, tsa:24.1985, rstov:1.4930},
+        {name:"Cameron Johnson", poss:3414, rts:5.1869, role:-0.4280, tsa:15.3193, rstov:0.2864},
+        {name:"Caris LeVert", poss:2367, rts:-6.1480, role:0.8508, tsa:18.0397, rstov:0.0614},
+        {name:"Carter Bryant", poss:1663, rts:-5.1840, role:-1.4380, tsa:17.0174, rstov:-2.3870},
+        {name:"Cason Wallace", poss:4244, rts:-4.2627, role:0.3659, tsa:14.5146, rstov:1.2358},
+        {name:"Cedric Coward", poss:3377, rts:0.6777, role:-0.0595, tsa:21.2911, rstov:-2.2312},
+        {name:"Chaz Lanier", poss:537, rts:-13.8781, role:-0.2267, tsa:16.9460, rstov:2.6665},
+        {name:"Chet Holmgren", poss:4117, rts:6.9953, role:-1.5700, tsa:22.0792, rstov:-3.3162},
+        {name:"Christian Braun", poss:2908, rts:2.9049, role:-3.3061, tsa:14.8900, rstov:-1.3780},
+        {name:"Christian Koloko", poss:752, rts:-12.7724, role:-4.7939, tsa:10.7713, rstov:-15.3927},
+        {name:"Clint Capela", poss:1842, rts:-4.4251, role:-4.5027, tsa:14.3322, rstov:-5.1694},
+        {name:"Cody Williams", poss:3504, rts:-5.6849, role:-1.4652, tsa:16.2356, rstov:-2.2659},
+        {name:"Cole Anthony", poss:1074, rts:-9.4870, role:2.9502, tsa:22.5326, rstov:-0.2664},
+        {name:"Collin Gillespie", poss:4624, rts:-0.3513, role:2.1707, tsa:18.9014, rstov:0.8500},
+        {name:"Collin Murray-Boyles", poss:2508, rts:4.0584, role:-4.7375, tsa:15.7198, rstov:-5.3362},
+        {name:"Collin Sexton", poss:3384, rts:3.6011, role:1.1798, tsa:25.1182, rstov:-0.7129},
+        {name:"Cooper Flagg", poss:4917, rts:-3.0019, role:1.4427, tsa:27.7328, rstov:2.0980},
+        {name:"Corey Kispert", poss:2287, rts:3.5053, role:0.5218, tsa:18.9331, rstov:0.2390},
+        {name:"Craig Porter Jr.", poss:2373, rts:-5.7689, role:0.4724, tsa:11.6308, rstov:2.2396},
+        {name:"D'Angelo Russell", poss:1051, rts:-7.2188, role:2.0761, tsa:24.7383, rstov:4.8218},
+        {name:"Daeqwon Plowden", poss:1736, rts:0.0783, role:-0.7164, tsa:17.1083, rstov:-1.1369},
+        {name:"Dalen Terry", poss:1167, rts:-4.8221, role:-0.7604, tsa:14.2245, rstov:-0.0485},
+        {name:"Dalton Knecht", poss:1116, rts:-1.1177, role:1.3595, tsa:18.0108, rstov:-1.0532},
+        {name:"Daniel Gafford", poss:2507, rts:9.8661, role:-4.5924, tsa:15.7251, rstov:-5.1817},
+        {name:"Daniss Jenkins", poss:3005, rts:-5.7625, role:1.5170, tsa:21.3644, rstov:1.8017},
+        {name:"Danny Wolf", poss:2367, rts:-6.2081, role:0.0943, tsa:21.1524, rstov:-0.1809},
+        {name:"Darius Garland", poss:2803, rts:0.2264, role:2.4089, tsa:26.4803, rstov:3.6597},
+        {name:"Davion Mitchell", poss:4268, rts:-0.0603, role:1.6696, tsa:13.2615, rstov:2.1929},
+        {name:"Day'Ron Sharpe", poss:2330, rts:5.6953, role:-3.7690, tsa:18.9712, rstov:-12.0464},
+        {name:"De'Aaron Fox", poss:4691, rts:-0.2176, role:1.3647, tsa:24.6856, rstov:3.7610},
+        {name:"De'Andre Hunter", poss:2492, rts:-3.3129, role:0.4658, tsa:22.6324, rstov:0.4884},
+        {name:"DeMar DeRozan", poss:4975, rts:1.4455, role:2.4181, tsa:24.0520, rstov:6.1945},
+        {name:"Dean Wade", poss:2708, rts:0.1320, role:-2.0283, tsa:10.8936, rstov:-3.0420},
+        {name:"Deandre Ayton", poss:3996, rts:9.6095, role:-5.0765, tsa:16.6416, rstov:-6.9458},
+        {name:"Deni Avdija", poss:4621, rts:1.9850, role:1.5505, tsa:28.7167, rstov:0.5298},
+        {name:"Dennis Schr\u00f6der", poss:3464, rts:-5.4280, role:3.0228, tsa:21.2831, rstov:2.9274},
+        {name:"Derik Queen", poss:4268, rts:-3.4139, role:-0.8384, tsa:20.4077, rstov:-3.2805},
+        {name:"Derrick Jones Jr.", poss:2736, rts:3.0354, role:-2.4284, tsa:15.1316, rstov:-0.9541},
+        {name:"Derrick White", poss:5176, rts:-4.8668, role:2.6401, tsa:23.1970, rstov:4.0100},
+        {name:"Desmond Bane", poss:5740, rts:2.5763, role:1.1323, tsa:23.3449, rstov:2.2784},
+        {name:"Devin Booker", poss:4452, rts:0.6230, role:2.1486, tsa:31.8285, rstov:3.5671},
+        {name:"Devin Carter", poss:1435, rts:-6.9332, role:0.4800, tsa:23.2056, rstov:2.4958},
+        {name:"Devin Vassell", poss:4249, rts:-0.5207, role:0.5814, tsa:18.9221, rstov:2.2681},
+        {name:"Dillon Brooks", poss:3500, rts:-4.0283, role:1.8488, tsa:30.0286, rstov:3.8491},
+        {name:"Domantas Sabonis", poss:1182, rts:1.1855, role:-3.0572, tsa:21.5736, rstov:-9.9838},
+        {name:"Dominick Barlow", poss:3493, rts:2.1879, role:-3.6291, tsa:12.9974, rstov:-2.6103},
+        {name:"Donovan Clingan", poss:4351, rts:2.5018, role:-3.5919, tsa:17.7890, rstov:-4.3265},
+        {name:"Donovan Mitchell", poss:4905, rts:3.4182, role:1.6913, tsa:32.2324, rstov:5.2620},
+        {name:"Donte DiVincenzo", poss:5212, rts:-1.0040, role:1.4997, tsa:16.8266, rstov:0.4294},
+        {name:"Doug McDermott", poss:906, rts:-0.4915, role:1.4427, tsa:15.7837, rstov:0.3910},
+        {name:"Drake Powell", poss:2637, rts:-5.9974, role:1.2676, tsa:14.8654, rstov:-1.1491},
+        {name:"Draymond Green", poss:3845, rts:-3.9589, role:-0.9112, tsa:13.7581, rstov:-5.5897},
+        {name:"Drew Eubanks", poss:1140, rts:2.6631, role:-5.1291, tsa:15.8772, rstov:-8.5044},
+        {name:"Dru Smith", poss:2460, rts:-4.6363, role:-0.3072, tsa:15.0000, rstov:-0.8370},
+        {name:"Duncan Robinson", poss:4391, rts:5.3956, role:0.5715, tsa:16.8527, rstov:0.9017},
+        {name:"Duop Reath", poss:545, rts:4.0080, role:-0.2267, tsa:13.9450, rstov:-2.3803},
+        {name:"Dwight Powell", poss:1911, rts:11.2448, role:-5.6522, tsa:8.0974, rstov:-15.4344},
+        {name:"Dylan Cardwell", poss:1850, rts:0.4992, role:-6.3837, tsa:11.0270, rstov:-10.9702},
+        {name:"Dylan Harper", poss:3211, rts:-0.2562, role:0.4684, tsa:21.9869, rstov:1.1537},
+        {name:"Dyson Daniels", poss:5304, rts:-3.4259, role:-2.4088, tsa:15.6109, rstov:-0.2038},
+        {name:"E.J. Liddell", poss:706, rts:2.0839, role:-1.9463, tsa:17.2805, rstov:-2.4044},
+        {name:"Egor D\u00ebmin", poss:2650, rts:-1.8174, role:1.5470, tsa:18.0000, rstov:-1.3339},
+        {name:"Elijah Harkless", poss:1159, rts:-10.9920, role:0.2691, tsa:16.3934, rstov:-1.2817},
+        {name:"Evan Mobley", poss:4278, rts:1.9430, role:-1.9636, tsa:23.0715, rstov:-1.7713},
+        {name:"Franz Wagner", poss:2169, rts:0.5076, role:-0.0363, tsa:27.5242, rstov:3.2595},
+        {name:"GG Jackson", poss:2457, rts:1.3038, role:-0.0975, tsa:23.7892, rstov:-1.4183},
+        {name:"Gabe Vincent", poss:1822, rts:-6.6786, role:2.2226, tsa:12.5754, rstov:0.8892},
+        {name:"Gary Harris", poss:1318, rts:1.9789, role:0.4163, tsa:8.1184, rstov:-5.8689},
+        {name:"Gary Payton II", poss:2323, rts:5.4760, role:-4.4057, tsa:18.5966, rstov:-3.4025},
+        {name:"Gary Trent Jr.", poss:2794, rts:-4.3992, role:1.2387, tsa:17.6092, rstov:2.1973},
+        {name:"Giannis Antetokounmpo", poss:2123, rts:7.8405, role:-1.7437, tsa:35.6588, rstov:-1.7517},
+        {name:"Goga Bitadze", poss:2006, rts:12.1285, role:-5.5503, tsa:13.3599, rstov:-6.9293},
+        {name:"Gradey Dick", poss:2231, rts:-4.2086, role:-1.2362, tsa:19.0589, rstov:0.3683},
+        {name:"Grayson Allen", poss:2973, rts:-1.3213, role:2.3589, tsa:24.7898, rstov:3.4584},
+        {name:"Guerschon Yabusele", poss:2110, rts:-3.7762, role:-1.3381, tsa:17.4537, rstov:-1.8390},
+        {name:"Gui Santos", poss:2836, rts:3.2422, role:-1.5470, tsa:18.0183, rstov:-3.3680},
+        {name:"Harrison Barnes", poss:4119, rts:2.8156, role:0.2571, tsa:15.3193, rstov:1.0191},
+        {name:"Herbert Jones", poss:3285, rts:-8.8223, role:0.2834, tsa:15.4033, rstov:0.0311},
+        {name:"Hugo Gonz\u00e1lez", poss:2123, rts:-1.8264, role:-1.6711, tsa:12.1526, rstov:-5.5141},
+        {name:"Immanuel Quickley", poss:4545, rts:-0.0094, role:0.4236, tsa:21.8482, rstov:4.0761},
+        {name:"Isaac Okoro", poss:3568, rts:-0.3538, role:-1.6641, tsa:14.2377, rstov:-0.2558},
+        {name:"Isaiah Collier", poss:3224, rts:-1.3481, role:0.8774, tsa:18.8896, rstov:0.0560},
+        {name:"Isaiah Hartenstein", poss:2336, rts:5.5090, role:-6.0503, tsa:14.5976, rstov:-9.5408},
+        {name:"Isaiah Jackson", poss:1875, rts:7.3067, role:-4.5787, tsa:15.1467, rstov:-10.8599},
+        {name:"Isaiah Joe", poss:3108, rts:8.1287, role:0.2010, tsa:19.1024, rstov:0.5925},
+        {name:"Isaiah Livers", poss:713, rts:-11.3124, role:-0.2267, tsa:9.6774, rstov:-2.3020},
+        {name:"Isaiah Stewart", poss:2694, rts:5.3180, role:-3.3797, tsa:17.0750, rstov:-7.0543},
+        {name:"Ivica Zubac", poss:2898, rts:4.6197, role:-3.8516, tsa:18.7026, rstov:-5.6105},
+        {name:"Ja Morant", poss:1228, rts:-6.0427, role:2.1080, tsa:30.4560, rstov:5.4936},
+        {name:"Ja'Kobe Walter", poss:3001, rts:3.2268, role:-1.2457, tsa:14.7617, rstov:-1.3380},
+        {name:"Jabari Smith Jr.", poss:5377, rts:-0.9421, role:-0.4171, tsa:19.8119, rstov:-0.9476},
+        {name:"Jabari Walker", poss:1580, rts:-1.2768, role:-2.8238, tsa:15.6022, rstov:-6.4743},
+        {name:"Jaden Hardy", poss:1887, rts:-1.4411, role:1.6519, tsa:24.5363, rstov:1.3787},
+        {name:"Jaden McDaniels", poss:4837, rts:3.1828, role:-0.3345, tsa:18.2965, rstov:0.2875},
+        {name:"Jae'Sean Tate", poss:783, rts:-0.7545, role:-0.2267, tsa:14.4317, rstov:-3.4595},
+        {name:"Jaime Jaquez Jr.", poss:4557, rts:-0.6174, role:-0.5524, tsa:22.0759, rstov:0.6697},
+        {name:"Jake LaRavia", poss:4217, rts:-0.9085, role:-1.4099, tsa:14.3458, rstov:-2.8877},
+        {name:"Jakob Poeltl", poss:2348, rts:11.9959, role:-6.6704, tsa:15.0341, rstov:-6.9646},
+        {name:"Jalen Brunson", poss:5243, rts:0.4212, role:2.5491, tsa:31.3752, rstov:7.4500},
+        {name:"Jalen Duren", poss:4075, rts:11.0648, role:-3.2418, tsa:24.4710, rstov:-2.7230},
+        {name:"Jalen Green", poss:1691, rts:-6.2915, role:2.8685, tsa:32.5843, rstov:2.0081},
+        {name:"Jalen Johnson", poss:5390, rts:0.2320, role:0.1087, tsa:25.8071, rstov:1.0167},
+        {name:"Jalen Pickett", poss:1615, rts:-3.4408, role:1.2594, tsa:14.7988, rstov:-0.5457},
+        {name:"Jalen Smith", poss:2305, rts:3.3649, role:-2.2629, tsa:19.2232, rstov:-4.5575},
+        {name:"Jalen Suggs", poss:3360, rts:-1.7826, role:1.1085, tsa:20.8036, rstov:-0.3811},
+        {name:"Jalen Wilson", poss:1714, rts:-4.4074, role:1.2088, tsa:18.7281, rstov:0.3742},
+        {name:"Jamal Murray", poss:5446, rts:4.2917, role:2.3991, tsa:27.7337, rstov:6.9335},
+        {name:"Jamal Shead", poss:3781, rts:-8.8953, role:1.6175, tsa:14.7051, rstov:1.9470},
+        {name:"James Harden", poss:4929, rts:3.6974, role:3.5335, tsa:27.0237, rstov:5.1038},
+        {name:"Jamir Watkins", poss:2163, rts:-2.9088, role:-1.2063, tsa:15.6634, rstov:-0.7486},
+        {name:"Jamison Battle", poss:1062, rts:6.1659, role:-0.2267, tsa:14.1243, rstov:-5.2154},
+        {name:"Jarace Walker", poss:4139, rts:-3.7655, role:0.3634, tsa:19.7705, rstov:-1.8235},
+        {name:"Jared McCain", poss:2416, rts:-2.9129, role:1.3268, tsa:22.0490, rstov:1.1159},
+        {name:"Jaren Jackson Jr.", poss:3050, rts:-0.0798, role:0.0262, tsa:26.4726, rstov:-1.8489},
+        {name:"Jarred Vanderbilt", poss:2296, rts:-3.9016, role:-2.9389, tsa:11.6289, rstov:-9.1603},
+        {name:"Jarrett Allen", poss:3180, rts:8.2181, role:-5.3330, tsa:20.5566, rstov:-3.8129},
+        {name:"Jase Richardson", poss:1201, rts:-0.1047, role:1.0204, tsa:17.2356, rstov:3.2807},
+        {name:"Javon Small", poss:1754, rts:3.5323, role:0.9678, tsa:18.3580, rstov:2.8622},
+        {name:"Javonte Green", poss:3004, rts:2.9564, role:-2.0987, tsa:15.5792, rstov:0.7752},
+        {name:"Jaxson Hayes", poss:2467, rts:17.9280, role:-6.2941, tsa:13.2955, rstov:-3.8729},
+        {name:"Jay Huff", poss:3595, rts:2.1199, role:-1.2892, tsa:18.1641, rstov:-3.4765},
+        {name:"Jaylen Brown", poss:4905, rts:-0.4571, role:1.8070, tsa:36.0652, rstov:1.0825},
+        {name:"Jaylen Clark", poss:1841, rts:-4.0694, role:-0.7709, tsa:13.8512, rstov:-0.6858},
+        {name:"Jaylen Wells", poss:3775, rts:-1.7173, role:-0.1168, tsa:20.5212, rstov:1.4295},
+        {name:"Jaylin Williams", poss:2659, rts:1.9873, role:-0.8622, tsa:14.7424, rstov:-7.1671},
+        {name:"Jaylon Tyson", poss:3677, rts:3.2303, role:-1.2049, tsa:19.6035, rstov:-1.3055},
+        {name:"Jerami Grant", poss:3599, rts:3.0918, role:0.8274, tsa:24.2925, rstov:-0.2356},
+        {name:"Jeremiah Fears", poss:4439, rts:-5.4015, role:0.6046, tsa:25.2065, rstov:3.2276},
+        {name:"Jeremiah Robinson-Earl", poss:756, rts:-10.6379, role:-0.8594, tsa:14.1534, rstov:-2.5662},
+        {name:"Jeremy Sochan", poss:950, rts:-1.4961, role:-3.0168, tsa:14.9474, rstov:-6.2964},
+        {name:"Jericho Sims", poss:2599, rts:19.4807, role:-5.7120, tsa:8.3109, rstov:-21.7383},
+        {name:"Jett Howard", poss:1420, rts:-1.8267, role:0.6606, tsa:18.8732, rstov:2.9391},
+        {name:"Jevon Carter", poss:1787, rts:-4.1949, role:1.2182, tsa:17.6833, rstov:1.4569},
+        {name:"Jimmy Butler III", poss:2439, rts:6.6710, role:-0.7816, tsa:24.0262, rstov:3.4775},
+        {name:"Joan Beringer", poss:667, rts:10.5869, role:-0.2267, tsa:17.0915, rstov:-5.6139},
+        {name:"Jock Landale", poss:3116, rts:1.2119, role:-3.0127, tsa:19.5122, rstov:-2.8051},
+        {name:"Joel Embiid", poss:2481, rts:2.2248, role:-0.5733, tsa:34.1798, rstov:0.4441},
+        {name:"John Collins", poss:3759, rts:6.9853, role:-1.8217, tsa:19.1540, rstov:-4.0276},
+        {name:"John Konchar", poss:2388, rts:-0.9534, role:-0.7834, tsa:9.1290, rstov:-2.4390},
+        {name:"Johnny Furphy", poss:1326, rts:-2.9561, role:-2.6532, tsa:12.3680, rstov:-7.2321},
+        {name:"Jonas Valan\u010di\u016bnas", poss:1721, rts:4.7486, role:-2.6524, tsa:26.4487, rstov:-5.2971},
+        {name:"Jonathan Isaac", poss:1061, rts:-8.9290, role:-2.7910, tsa:12.9123, rstov:-8.7352},
+        {name:"Jonathan Kuminga", poss:1729, rts:-2.1090, role:-0.5749, tsa:22.7299, rstov:-0.9393},
+        {name:"Jonathan Mogbo", poss:512, rts:3.1659, role:-0.2267, tsa:9.7656, rstov:-8.3374},
+        {name:"Jordan Clarkson", poss:2576, rts:-2.8607, role:-0.4946, tsa:21.9332, rstov:0.8956},
+        {name:"Jordan Goodwin", poss:3165, rts:-5.2217, role:0.2834, tsa:18.2622, rstov:0.2373},
+        {name:"Jordan Hawkins", poss:1459, rts:-9.8491, role:1.7663, tsa:18.3687, rstov:-0.6939},
+        {name:"Jordan McLaughlin", poss:579, rts:-3.5659, role:-0.2267, tsa:14.1623, rstov:1.3252},
+        {name:"Jordan Miller", poss:2646, rts:4.1990, role:0.0682, tsa:18.2162, rstov:0.5264},
+        {name:"Jordan Poole", poss:1982, rts:-4.8567, role:2.0798, tsa:24.5711, rstov:1.5640},
+        {name:"Jordan Walsh", poss:2336, rts:4.9245, role:-1.8227, tsa:12.4144, rstov:-3.2955},
+        {name:"Jose Alvarado", poss:2770, rts:-3.5179, role:1.4367, tsa:17.5452, rstov:1.8211},
+        {name:"Josh Giddey", poss:3693, rts:-1.9345, role:1.4013, tsa:22.1229, rstov:-0.1026},
+        {name:"Josh Hart", poss:4033, rts:3.6565, role:-0.5463, tsa:15.9683, rstov:-2.1991},
+        {name:"Josh Minott", poss:1664, rts:7.8698, role:-0.5181, tsa:16.6466, rstov:-3.8839},
+        {name:"Josh Okogie", poss:2641, rts:-3.6930, role:-1.6072, tsa:12.3438, rstov:-2.7625},
+        {name:"Jrue Holiday", poss:3291, rts:-0.8528, role:1.7391, tsa:23.0910, rstov:2.2308},
+        {name:"Julian Champagnie", poss:4734, rts:3.5110, role:-0.5224, tsa:15.5471, rstov:-0.8809},
+        {name:"Julian Phillips", poss:911, rts:-4.3990, role:-0.2267, tsa:14.3798, rstov:-2.1675},
+        {name:"Julian Strawther", poss:1774, rts:1.1659, role:0.7393, tsa:19.7294, rstov:0.5071},
+        {name:"Julius Randle", poss:5458, rts:0.7654, role:0.4390, tsa:26.0544, rstov:0.9330},
+        {name:"Justin Champagnie", poss:2908, rts:1.1579, role:-2.3943, tsa:17.9077, rstov:0.5331},
+        {name:"Justin Edwards", poss:2057, rts:-0.5641, role:0.1838, tsa:16.3831, rstov:-0.9564},
+        {name:"Jusuf Nurki\u0107", poss:2328, rts:-3.1887, role:-3.3545, tsa:17.5687, rstov:-7.6247},
+        {name:"KJ Simpson", poss:527, rts:-15.3108, role:2.4903, tsa:22.8448, rstov:-2.1379},
+        {name:"Karl-Anthony Towns", poss:4711, rts:4.2257, role:-1.1453, tsa:25.5572, rstov:-4.9949},
+        {name:"Karlo Matkovi\u0107", poss:1880, rts:11.7311, role:-3.1038, tsa:13.4574, rstov:-5.8367},
+        {name:"Kawhi Leonard", poss:4158, rts:5.3544, role:1.4377, tsa:34.4190, rstov:4.5759},
+        {name:"Keaton Wallace", poss:1093, rts:-6.1023, role:2.3705, tsa:16.3769, rstov:0.9332},
+        {name:"Kel'el Ware", poss:3651, rts:3.6543, role:-3.3412, tsa:18.9537, rstov:-2.0466},
+        {name:"Keldon Johnson", poss:3980, rts:3.3776, role:-0.6000, tsa:22.7241, rstov:2.0219},
+        {name:"Kelly Olynyk", poss:737, rts:-0.5066, role:-0.2267, tsa:15.7395, rstov:-7.9090},
+        {name:"Kelly Oubre Jr.", poss:3237, rts:0.2981, role:0.0450, tsa:18.6901, rstov:-0.2512},
+        {name:"Kentavious Caldwell-Pope", poss:2250, rts:-4.8317, role:1.0601, tsa:17.9111, rstov:-0.3570},
+        {name:"Keon Ellis", poss:3022, rts:0.1369, role:0.0036, tsa:13.6995, rstov:-0.7828},
+        {name:"Keshad Johnson", poss:618, rts:-0.2070, role:-0.2267, tsa:19.0939, rstov:0.4041},
+        {name:"Kevin Durant", poss:5727, rts:6.0306, role:1.8273, tsa:27.5302, rstov:2.1303},
+        {name:"Kevin Huerter", poss:3256, rts:-2.4581, role:-0.6352, tsa:20.9024, rstov:1.2839},
+        {name:"Kevin Love", poss:1305, rts:-0.6913, role:-1.3836, tsa:16.6284, rstov:-3.1112},
+        {name:"Kevin Porter Jr.", poss:2559, rts:-0.9495, role:2.7426, tsa:22.7042, rstov:1.4876},
+        {name:"Kevon Looney", poss:645, rts:-12.4495, role:-3.4514, tsa:10.0775, rstov:-9.7179},
+        {name:"Keyonte George", poss:3787, rts:3.1379, role:1.8990, tsa:27.4663, rstov:0.6510},
+        {name:"Khaman Maluach", poss:816, rts:0.0825, role:-0.2267, tsa:14.7059, rstov:-14.6509},
+        {name:"Khris Middleton", poss:3047, rts:-4.4560, role:1.5891, tsa:19.8083, rstov:1.3185},
+        {name:"Klay Thompson", poss:3228, rts:-3.9176, role:1.2903, tsa:23.0173, rstov:0.9958},
+        {name:"Kobe Brown", poss:1954, rts:1.3940, role:0.4694, tsa:15.2508, rstov:-2.2050},
+        {name:"Kobe Sanders", poss:2740, rts:1.9964, role:0.5411, tsa:15.3092, rstov:-3.9924},
+        {name:"Kon Knueppel", poss:5206, rts:5.5925, role:0.6526, tsa:22.6469, rstov:-0.8830},
+        {name:"Kris Dunn", poss:4454, rts:0.2909, role:-0.6275, tsa:11.4953, rstov:-3.4501},
+        {name:"Kris Murray", poss:2771, rts:-2.8508, role:-2.0568, tsa:10.8625, rstov:-3.4439},
+        {name:"Kristaps Porzi\u0146\u0123is", poss:1605, rts:-0.0733, role:-0.7737, tsa:28.6604, rstov:2.2881},
+        {name:"Kyle Anderson", poss:1805, rts:-0.5066, role:-1.5384, tsa:14.3970, rstov:-1.6937},
+        {name:"Kyle Filipowski", poss:3822, rts:0.5324, role:-1.7681, tsa:19.7017, rstov:-2.9601},
+        {name:"Kyle Kuzma", poss:3689, rts:0.4992, role:-1.2273, tsa:20.8187, rstov:-3.1639},
+        {name:"Kyshawn George", poss:2937, rts:-1.8784, role:1.5698, tsa:21.5526, rstov:-0.9708},
+        {name:"LaMelo Ball", poss:4127, rts:-3.3804, role:3.0783, tsa:31.9360, rstov:3.0145},
+        {name:"Landry Shamet", poss:2365, rts:2.2924, role:0.2863, tsa:16.7019, rstov:2.2114},
+        {name:"Larry Nance Jr.", poss:931, rts:-7.4495, role:-3.7447, tsa:13.9635, rstov:-5.8684},
+        {name:"Lauri Markkanen", poss:3079, rts:3.0968, role:-0.8321, tsa:29.9579, rstov:1.2632},
+        {name:"Leonard Miller", poss:1555, rts:5.9468, role:-0.4145, tsa:18.1994, rstov:-4.5366},
+        {name:"Liam McNeeley", poss:729, rts:0.0606, role:-0.5354, tsa:15.6379, rstov:-2.0498},
+        {name:"Lindy Waters III", poss:580, rts:-4.9128, role:-0.2267, tsa:15.3448, rstov:1.7641},
+        {name:"Lonzo Ball", poss:1566, rts:-14.8234, role:0.7893, tsa:11.8774, rstov:-5.0428},
+        {name:"Luguentz Dort", poss:3781, rts:-5.3751, role:0.4068, tsa:14.5446, rstov:-1.0893},
+        {name:"Luka Don\u010di\u0107", poss:4747, rts:3.7767, role:2.6260, tsa:36.4862, rstov:6.4597},
+        {name:"Luka Garza", poss:2215, rts:10.7619, role:-3.5005, tsa:18.5795, rstov:-5.8079},
+        {name:"Luke Kennard", poss:3474, rts:10.8354, role:0.0418, tsa:13.4139, rstov:0.3622},
+        {name:"Luke Kornet", poss:2958, rts:9.6431, role:-5.7110, tsa:11.1224, rstov:-4.2390},
+        {name:"Malaki Branham", poss:570, rts:1.4251, role:-0.2267, tsa:18.9474, rstov:-1.7421},
+        {name:"Malik Monk", poss:2839, rts:-1.1380, role:1.6574, tsa:23.8816, rstov:5.2916},
+        {name:"Marcus Smart", poss:3610, rts:-3.4169, role:0.7518, tsa:14.7368, rstov:-0.3641},
+        {name:"Mark Williams", poss:2916, rts:10.6590, role:-5.3405, tsa:17.5240, rstov:-6.5206},
+        {name:"Marvin Bagley III", poss:2520, rts:8.0272, role:0.3031, tsa:18.8889, rstov:-3.6352},
+        {name:"Matas Buzelis", poss:4765, rts:0.7426, role:-0.4475, tsa:22.4134, rstov:-2.7145},
+        {name:"Matisse Thybulle", poss:1005, rts:1.7549, role:-0.2003, tsa:14.5274, rstov:-2.9128},
+        {name:"Max Christie", poss:4708, rts:1.9493, role:0.5028, tsa:16.6737, rstov:-0.4520},
+        {name:"Maxi Kleber", poss:947, rts:-7.8341, role:-2.4068, tsa:9.0813, rstov:-8.9534},
+        {name:"Maxime Raynaud", poss:4067, rts:3.8549, role:-4.4159, tsa:18.3428, rstov:-4.8881},
+        {name:"Micah Peavy", poss:1896, rts:-12.3480, role:-2.1486, tsa:15.1899, rstov:1.6970},
+        {name:"Michael Porter Jr.", poss:3393, rts:2.2623, role:0.4201, tsa:30.5629, rstov:-0.1285},
+        {name:"Mikal Bridges", poss:5403, rts:1.0392, role:-0.7891, tsa:18.5638, rstov:1.8205},
+        {name:"Mike Conley", poss:2073, rts:-6.8215, role:1.8562, tsa:11.4327, rstov:0.5901},
+        {name:"Miles Bridges", poss:4815, rts:-1.0494, role:0.5980, tsa:24.0291, rstov:3.9184},
+        {name:"Miles McBride", poss:2163, rts:0.0668, role:1.4386, tsa:19.6024, rstov:2.2338},
+        {name:"Mitchell Robinson", poss:2319, rts:9.8949, role:-4.5718, tsa:10.8856, rstov:-10.4806},
+        {name:"Mohamed Diawara", poss:1244, rts:-2.9234, role:-0.2267, tsa:18.0064, rstov:-1.9726},
+        {name:"Moses Moody", poss:3210, rts:2.4654, role:0.6478, tsa:18.7227, rstov:0.3674},
+        {name:"Mouhamed Gueye", poss:2411, rts:-3.7202, role:-2.8836, tsa:13.1066, rstov:-2.5234},
+        {name:"Moussa Cisse", poss:1116, rts:-2.2786, role:-4.5092, tsa:13.7097, rstov:-14.2532},
+        {name:"Moussa Diabat\u00e9", poss:3757, rts:6.6277, role:-5.3037, tsa:11.8712, rstov:-8.3098},
+        {name:"Myles Turner", poss:3938, rts:0.5913, role:-0.8769, tsa:18.3850, rstov:-4.2538},
+        {name:"Myron Gardner", poss:888, rts:2.9867, role:-0.2267, tsa:15.0901, rstov:-2.0189},
+        {name:"Nae'Qwan Tomlin", poss:2069, rts:-3.3152, role:-3.2837, tsa:16.5781, rstov:-0.5700},
+        {name:"Naji Marshall", poss:4634, rts:1.4718, role:-0.3695, tsa:20.5222, rstov:2.4125},
+        {name:"Naz Reid", poss:4227, rts:-1.2144, role:0.0855, tsa:21.8358, rstov:-0.7119},
+        {name:"Neemias Queta", poss:3740, rts:9.2939, role:-5.3649, tsa:15.4545, rstov:-6.4758},
+        {name:"Nic Claxton", poss:3854, rts:1.4631, role:-2.7056, tsa:17.7218, rstov:-2.6447},
+        {name:"Nick Richards", poss:1455, rts:-2.1256, role:-4.1798, tsa:16.9759, rstov:-11.8643},
+        {name:"Nick Smith Jr.", poss:764, rts:-2.4449, role:2.3767, tsa:21.8586, rstov:3.3224},
+        {name:"Nickeil Alexander-Walker", poss:5558, rts:3.2551, role:0.5877, tsa:23.7855, rstov:2.5763},
+        {name:"Nicolas Batum", poss:2599, rts:2.4539, role:0.7378, tsa:9.3497, rstov:-4.9456},
+        {name:"Nikola Joki\u0107", poss:4787, rts:8.9242, role:-0.6934, tsa:28.3603, rstov:0.0474},
+        {name:"Nikola Jovi\u0107", poss:1771, rts:-9.9233, role:-1.2928, tsa:20.2710, rstov:-4.0684},
+        {name:"Nikola Vu\u010devi\u0107", poss:3789, rts:-0.5981, role:-2.2792, tsa:23.5859, rstov:0.0432},
+        {name:"Nique Clifford", poss:3857, rts:-7.5845, role:0.3085, tsa:17.2286, rstov:-0.7840},
+        {name:"Noah Clowney", poss:3578, rts:-2.8137, role:0.7395, tsa:20.4863, rstov:-2.8812},
+        {name:"Noah Penda", poss:1538, rts:-7.1645, role:0.0941, tsa:14.5644, rstov:-4.0841},
+        {name:"Nolan Traore", poss:2484, rts:-10.0372, role:1.8939, tsa:21.0145, rstov:-2.2405},
+        {name:"Norman Powell", poss:3716, rts:3.7867, role:0.7991, tsa:27.3950, rstov:1.7146},
+        {name:"OG Anunoby", poss:4508, rts:3.9820, role:-0.4170, tsa:20.0661, rstov:-1.2089},
+        {name:"Obi Toppin", poss:896, rts:5.8645, role:-0.7787, tsa:24.4420, rstov:-0.8051},
+        {name:"Ochai Agbaji", poss:1970, rts:-5.6341, role:-2.5286, tsa:15.2284, rstov:0.1678},
+        {name:"Olivier-Maxence Prosper", poss:2083, rts:8.5819, role:-2.1863, tsa:19.1551, rstov:-1.7894},
+        {name:"Onyeka Okongwu", poss:4900, rts:1.2912, role:-1.9814, tsa:19.5025, rstov:-4.7849},
+        {name:"Oso Ighodaro", poss:3609, rts:5.9880, role:-4.5754, tsa:11.5267, rstov:-9.4858},
+        {name:"Ousmane Dieng", poss:2228, rts:-6.2791, role:2.4135, tsa:18.7612, rstov:0.1305},
+        {name:"P.J. Washington", poss:3663, rts:-3.9430, role:-1.5200, tsa:20.0655, rstov:-0.8649},
+        {name:"Paolo Banchero", poss:5180, rts:-1.4737, role:0.8006, tsa:27.4262, rstov:0.6868},
+        {name:"Pascal Siakam", poss:4314, rts:-1.5718, role:0.4016, tsa:30.8606, rstov:2.1104},
+        {name:"Pat Connaughton", poss:576, rts:0.6765, role:-0.2267, tsa:16.3194, rstov:-0.6486},
+        {name:"Pat Spencer", poss:2483, rts:-6.3190, role:1.4886, tsa:18.6065, rstov:2.7138},
+        {name:"Patrick Williams", poss:3170, rts:-8.5177, role:-0.0653, tsa:16.1514, rstov:-2.6988},
+        {name:"Paul Reed", poss:1848, rts:6.9473, role:-4.2160, tsa:21.0498, rstov:-4.5608},
+        {name:"Payton Pritchard", poss:5025, rts:0.4672, role:2.4993, tsa:22.8458, rstov:3.6020},
+        {name:"Pelle Larsson", poss:3977, rts:2.6802, role:-1.2560, tsa:16.6206, rstov:0.5881},
+        {name:"Pete Nance", poss:1460, rts:5.9849, role:-1.6779, tsa:13.6301, rstov:-2.2890},
+        {name:"Peyton Watson", poss:3255, rts:1.3113, role:-1.0972, tsa:20.4916, rstov:-0.8615},
+        {name:"Precious Achiuwa", poss:3559, rts:-2.0766, role:-2.0314, tsa:18.5445, rstov:-1.9003},
+        {name:"Quentin Grimes", poss:4570, rts:0.5537, role:0.6947, tsa:18.7309, rstov:-0.8092},
+        {name:"Quenton Jackson", poss:1923, rts:1.1132, role:-0.1742, tsa:19.7608, rstov:-0.1145},
+        {name:"Quinten Post", poss:2391, rts:-1.9518, role:-1.3864, tsa:19.1970, rstov:-4.3840},
+        {name:"RJ Barrett", poss:3547, rts:0.6323, role:-0.9049, tsa:26.4731, rstov:3.4088},
+        {name:"Rasheer Fleming", poss:1322, rts:-6.5410, role:-1.5662, tsa:17.5492, rstov:-3.2233},
+        {name:"Rayan Rupert", poss:2240, rts:-9.0768, role:0.0309, tsa:15.0893, rstov:-3.1420},
+        {name:"Reed Sheppard", poss:4349, rts:-1.3815, role:1.9778, tsa:22.5569, rstov:3.7352},
+        {name:"Rob Dillingham", poss:2088, rts:-10.8227, role:2.2097, tsa:20.8333, rstov:2.6216},
+        {name:"Robert Williams III", poss:2104, rts:13.8265, role:-5.4838, tsa:13.1654, rstov:-8.3318},
+        {name:"Ron Harper Jr.", poss:615, rts:-2.9234, role:0.3689, tsa:18.2114, rstov:-0.9235},
+        {name:"Ronald Holland II", poss:3190, rts:-5.1159, role:-1.3374, tsa:19.0282, rstov:-4.4973},
+        {name:"Royce O'Neale", poss:4548, rts:1.6830, role:0.3643, tsa:14.1161, rstov:-2.7179},
+        {name:"Rudy Gobert", poss:4929, rts:7.9595, role:-5.4874, tsa:12.7815, rstov:-9.2333},
+        {name:"Rui Hachimura", poss:3979, rts:4.0706, role:-0.1890, tsa:15.8331, rstov:1.7898},
+        {name:"Russell Westbrook", poss:3882, rts:-5.1769, role:1.6995, tsa:23.7506, rstov:1.5758},
+        {name:"Ryan Dunn", poss:2677, rts:-4.8394, role:-1.6877, tsa:14.3444, rstov:-4.8041},
+        {name:"Ryan Kalkbrenner", poss:3042, rts:18.1134, role:-6.6261, tsa:11.3213, rstov:-12.6223},
+        {name:"Ryan Nembhard", poss:2422, rts:-8.7005, role:2.5674, tsa:16.6804, rstov:1.0953},
+        {name:"Ryan Rollins", poss:4828, rts:0.2806, role:2.2823, tsa:22.8183, rstov:1.8040},
+        {name:"Saddiq Bey", poss:4683, rts:-0.1060, role:0.1605, tsa:23.4301, rstov:4.2439},
+        {name:"Sam Hauser", poss:3837, rts:1.1314, role:0.3076, tsa:16.3170, rstov:-0.3142},
+        {name:"Sam Merrill", poss:2870, rts:6.8338, role:0.0228, tsa:17.8397, rstov:0.8518},
+        {name:"Sandro Mamukelashvili", poss:3602, rts:6.0428, role:-2.3518, tsa:19.4059, rstov:-0.1414},
+        {name:"Santi Aldama", poss:2537, rts:0.1620, role:-1.5937, tsa:20.4572, rstov:0.3514},
+        {name:"Scottie Barnes", poss:5511, rts:-0.1203, role:-0.7939, tsa:22.7001, rstov:1.3057},
+        {name:"Shaedon Sharpe", poss:3123, rts:-3.0607, role:1.4476, tsa:30.4331, rstov:2.0370},
+        {name:"Shai Gilgeous-Alexander", poss:4739, rts:8.6361, role:2.6572, tsa:33.3461, rstov:7.9399},
+        {name:"Sharife Cooper", poss:1472, rts:3.3791, role:2.3236, tsa:18.4783, rstov:0.5123},
+        {name:"Sidy Cissoko", poss:2968, rts:-6.6009, role:-0.9699, tsa:12.5674, rstov:-7.3234},
+        {name:"Simone Fontecchio", poss:2508, rts:0.7203, role:-0.6429, tsa:20.2266, rstov:-0.8546},
+        {name:"Sion James", poss:3662, rts:-4.7016, role:0.2726, tsa:11.3326, rstov:-5.0601},
+        {name:"Spencer Jones", poss:2854, rts:3.4899, role:-2.7005, tsa:10.0561, rstov:-5.3936},
+        {name:"Stephen Curry", poss:2819, rts:6.3335, role:1.5884, tsa:31.3232, rstov:2.2166},
+        {name:"Stephon Castle", poss:4251, rts:-0.4663, role:0.4478, tsa:23.1841, rstov:-1.2457},
+        {name:"Steven Adams", poss:1459, rts:-5.5995, role:-4.9404, tsa:12.2687, rstov:-10.0183},
+        {name:"Svi Mykhailiuk", poss:2441, rts:5.0345, role:0.0706, tsa:15.2806, rstov:-1.5486},
+        {name:"T.J. McConnell", poss:2021, rts:-1.0160, role:2.2629, tsa:22.8600, rstov:4.9674},
+        {name:"Taelon Peter", poss:1049, rts:-5.7000, role:0.9805, tsa:15.6339, rstov:-0.3652},
+        {name:"Tari Eason", poss:3096, rts:-6.1867, role:-0.7290, tsa:19.6059, rstov:-1.7147},
+        {name:"Taurean Prince", poss:1239, rts:4.0829, role:1.3905, tsa:15.5771, rstov:0.6274},
+        {name:"Taylor Hendricks", poss:2331, rts:-0.5043, role:-1.3188, tsa:16.3878, rstov:-3.3804},
+        {name:"Terance Mann", poss:3064, rts:-1.5223, role:-0.1301, tsa:13.1854, rstov:-0.5342},
+        {name:"Terrence Shannon Jr.", poss:1114, rts:0.9463, role:1.2783, tsa:18.4022, rstov:3.7825},
+        {name:"Thomas Bryant", poss:1519, rts:4.8777, role:-3.0215, tsa:19.7534, rstov:-2.7235},
+        {name:"Tidjane Sala\u00fcn", poss:1150, rts:4.5254, role:-1.3374, tsa:15.4783, rstov:-5.5405},
+        {name:"Tim Hardaway Jr.", poss:4394, rts:4.8054, role:0.6338, tsa:19.5721, rstov:2.4377},
+        {name:"Tobias Harris", poss:3605, rts:-0.2230, role:-0.1413, tsa:19.9723, rstov:1.5048},
+        {name:"Tony Bradley", poss:927, rts:1.2899, role:-4.7928, tsa:14.8255, rstov:-5.1238},
+        {name:"Toumani Camara", poss:5714, rts:-0.1217, role:-1.0109, tsa:16.6783, rstov:-0.8514},
+        {name:"Trae Young", poss:852, rts:3.8788, role:2.6004, tsa:25.7588, rstov:7.5786},
+        {name:"Trayce Jackson-Davis", poss:1018, rts:-0.1908, role:-6.9133, tsa:17.5478, rstov:-5.4469},
+        {name:"Tre Johnson", poss:3087, rts:-4.6079, role:1.7368, tsa:22.1898, rstov:0.7711},
+        {name:"Tre Jones", poss:3791, rts:5.5270, role:0.9314, tsa:19.0780, rstov:2.8037},
+        {name:"Tre Mann", poss:1324, rts:-11.9164, role:3.1744, tsa:23.8671, rstov:0.3124},
+        {name:"Trendon Watford", poss:1805, rts:-0.3591, role:-0.8173, tsa:16.8472, rstov:-4.8891},
+        {name:"Trey Murphy III", poss:4881, rts:3.3505, role:0.1828, tsa:23.5338, rstov:1.9950},
+        {name:"Tristan Vukcevic", poss:1432, rts:2.3025, role:-1.6507, tsa:26.1743, rstov:-4.8378},
+        {name:"Tristan da Silva", poss:3909, rts:-0.4887, role:-0.7615, tsa:16.9609, rstov:1.1427},
+        {name:"Tyler Kolek", poss:1476, rts:-4.5268, role:2.7730, tsa:17.4119, rstov:2.5954},
+        {name:"Tyrese Martin", poss:1535, rts:-7.6258, role:1.1594, tsa:18.9328, rstov:-0.7077},
+        {name:"Tyrese Maxey", poss:5500, rts:0.6988, role:1.5963, tsa:30.3636, rstov:5.6918},
+        {name:"Tyrese Proctor", poss:1108, rts:-2.5496, role:1.9097, tsa:22.2022, rstov:2.2847},
+        {name:"Tyson Etienne", poss:788, rts:0.7284, role:1.2753, tsa:20.3046, rstov:-1.7494},
+        {name:"Tyus Jones", poss:2021, rts:-13.2153, role:1.7706, tsa:11.0341, rstov:3.2669},
+        {name:"VJ Edgecombe", poss:5398, rts:-3.8035, role:0.9744, tsa:20.6507, rstov:1.8846},
+        {name:"Victor Wembanyama", poss:3888, rts:4.3394, role:-0.8613, tsa:32.8961, rstov:-1.7463},
+        {name:"Vince Williams Jr.", poss:1689, rts:-10.3421, role:0.9703, tsa:18.6501, rstov:-2.7555},
+        {name:"V\u00edt Krej\u010d\u00ed", poss:2921, rts:3.3240, role:0.9035, tsa:15.3714, rstov:-0.5209},
+        {name:"Walter Clayton Jr.", poss:2971, rts:-5.7330, role:1.7709, tsa:17.3006, rstov:-0.7229},
+        {name:"Wendell Carter Jr.", poss:4756, rts:3.4690, role:-3.3580, tsa:15.9818, rstov:-6.1213},
+        {name:"Will Richard", poss:2856, rts:1.8135, role:-1.8839, tsa:12.9202, rstov:-5.6616},
+        {name:"Will Riley", poss:3430, rts:-2.8052, role:0.7393, tsa:20.8753, rstov:1.3344},
+        {name:"Yang Hansen", poss:627, rts:-16.5298, role:-0.2267, tsa:18.3413, rstov:-20.7783},
+        {name:"Yanic Konan Niederh\u00e4user", poss:844, rts:9.8582, role:-4.1481, tsa:15.4028, rstov:-8.3814},
+        {name:"Yves Missi", poss:2665, rts:-2.0649, role:-4.2344, tsa:12.6829, rstov:-6.2156},
+        {name:"Zaccharie Risacher", poss:3218, rts:-1.9979, role:-1.9221, tsa:17.8372, rstov:-1.7058},
+        {name:"Zach LaVine", poss:2522, rts:3.3462, role:0.8982, tsa:24.1872, rstov:1.9543},
+        {name:"Zeke Nnaji", poss:1247, rts:-2.2786, role:-3.1538, tsa:13.7129, rstov:-7.5813},
+        {name:"Ziaire Williams", poss:2620, rts:0.3087, role:-0.6479, tsa:18.7023, rstov:-0.7404},
+        {name:"Zion Williamson", poss:3883, rts:6.6852, role:-0.1968, tsa:26.2180, rstov:2.0009}
+      ];
+      const epmPredictions = [[1631260,60.5444,15.3662,1.8149,16.1647],[1642358,49.3646,17.4906,3.3075,18.9459],[203932,59.9935,17.3916,6.5337,20.2664],[1628988,56.52,15.2503,2.0759,16.1637],[1630174,57.8974,17.7993,3.57,19.37],[1630598,56.0211,17.8488,2.2726,18.8488],[1642846,53.9978,23.4392,2.5865,24.5773],[1641737,64.0205,9.5252,4.7481,11.6144],[1642349,58.2322,19.5161,4.6675,21.5698],[201143,56.2113,16.6951,1.1747,17.2119],[1627936,57.5985,14.9527,2.7762,16.1742],[1642259,52.7277,24.3814,5.1051,26.6276],[1630578,56.7296,22.0285,7.27,25.2273],[1641708,60.3846,17.6701,7.3509,20.9045],[1629599,58.7234,12.6434,2.9348,13.9347],[203083,52.6455,12.1875,3.5667,13.7568],[1641748,51.7045,13.4097,2.0713,14.3211],[1629614,57.8064,18.5743,5.8735,21.1586],[203952,56.0773,17.218,4.0871,19.0163],[1629014,56.6132,23.3782,2.4637,24.4622],[1641710,54.553,17.714,5.8841,20.303],[203076,56.7025,24.9352,6.8147,27.9337],[1630162,58.9604,25.1467,8.7954,29.0167],[1630264,62.4004,10.9421,3.0571,12.2872],[1630574,60.3852,8.6044,3.9734,10.3527],[1642854,56.7443,15.4051,2.71,16.5975],[1641709,55.7027,12.4066,4.2523,14.2776],[1630559,63.1572,19.9751,9.0571,23.9603],[1630245,59.8786,18.5281,3.4576,20.0494],[1628389,56.8891,22.0085,9.0727,26.0005],[1631248,57.844,14.0785,1.3485,14.6718],[1642879,53.2926,17.2284,4.8015,19.3411],[1641767,56.3782,13.4714,1.7482,14.2406],[1631097,60.1832,18.9885,10.5275,23.6206],[1641731,53.3396,21.1296,5.6419,23.612],[1631104,51.8449,14.6355,5.0227,16.8455],[1626171,55.4112,24.6968,2.2866,25.7029],[203992,56.4917,17.0863,2.3712,18.1296],[1630538,56.0009,19.3592,3.5124,20.9047],[1642382,57.5322,18.0217,2.5809,19.1573],[1641764,58.0739,19.0848,6.2901,21.8524],[1627742,57.1803,21.454,6.9796,24.5251],[1641706,57.244,24.5065,4.8932,26.6595],[1630314,60.4635,18.1395,9.7553,22.4318],[1641729,59.029,24.2737,5.3305,26.6191],[1642355,52.2214,15.2508,1.6493,15.9765],[201572,57.0487,16.6181,2.3849,17.6674],[1642964,52.3519,10.5198,1.6234,11.2341],[1628971,55.471,14.1036,3.2481,15.5328],[1631121,57.8587,12.9726,4.7894,15.08],[1642267,53.0738,17.613,2.7066,18.8039],[1627741,56.8539,19.3705,1.8431,20.1815],[203468,55.514,24.3553,4.9215,26.5208],[1630595,56.7314,25.6097,8.5274,29.3618],[1631126,51.4248,23.4046,2.2802,24.4079],[1628997,53.5359,11.5641,3.3944,13.0576],[1642353,55.2458,14.4445,4.5368,16.4407],[1642285,60.7978,14.9867,3.5141,16.5329],[1630560,56.8635,24.9247,8.991,28.8807],[1641715,54.7897,21.9058,4.2822,23.7899],[1629661,60.8034,14.7053,3.2355,16.1289],[1627747,52.9539,16.353,3.0495,17.6948],[1642868,52.7124,13.8097,2.3761,14.8552],[1641717,55.9057,13.5847,1.9287,14.4333],[1642907,58.3588,20.6357,5.0653,22.8644],[1642404,51.5314,16.6204,1.5129,17.2861],[1631096,63.7103,16.7094,6.5083,19.5731],[1631128,62.1587,12.5409,3.7093,14.173],[1631132,54.2826,10.3426,2.1191,11.275],[203991,56.4736,12.688,3.9095,14.4081],[1642262,53.9991,17.7313,4.0585,19.517],[1630175,51.9283,20.744,3.0678,22.0939],[1631221,56.4173,16.0044,1.7507,16.7747],[1642867,62.8513,14.9683,5.1053,17.2146],[1629012,59.7627,21.2838,6.7927,24.2726],[1642843,55.7814,28.8262,8.042,32.3647],[1630557,60.0643,18.081,3.7687,19.7392],[1641854,54.4927,10.8595,1.9253,11.7067],[1626156,55.1411,21.0439,4.6959,23.1101],[1631342,56.9885,17.2028,2.6372,18.3632],[1631207,50.823,13.9085,2.7508,15.1188],[1642261,56.9367,17.3524,2.2949,18.3622],[1629655,67.9952,13.8833,6.7562,16.8561],[1642450,53.0374,19.5025,5.0391,21.7197],[1642874,53.7641,18.4546,5.0155,20.6614],[1629636,57.5788,24.8195,4.023,26.5897],[1630558,55.4907,13.5889,1.5839,14.2858],[1630549,60.5238,16.4513,5.6196,18.924],[1628368,55.7373,21.2736,4.9204,23.4385],[1629631,57.6514,19.7743,5.2505,22.0845],[201942,58.2955,21.6739,8.9099,25.5942],[1629731,55.4455,9.1909,0.845,9.5627],[1629028,62.1988,15.423,3.6666,17.0363],[1630166,60.7848,22.8647,12.7358,28.4684],[203471,54.0597,14.8422,5.0615,17.0693],[1642852,56.7558,16.4738,6.4527,19.313],[1627884,59.1798,13.0307,3.0102,14.3552],[1628401,57.9151,15.3381,3.3209,16.7993],[1630217,60.8454,21.4148,6.2511,24.1653],[1626164,61.2539,24.105,11.1117,28.9941],[1642269,54.1817,19.4876,6.1256,22.1828],[1630170,56.0348,15.3416,2.9998,16.6615],[1628415,54.1302,26.8945,5.3237,29.2369],[1627734,62.1135,18.4557,5.8163,21.0149],[1631230,60.2331,10.3459,3.9466,12.0824],[1642270,56.9484,17.8836,4.5343,19.8787],[1628378,58.9778,26.9816,7.7513,30.3922],[1628978,55.1009,16.5138,1.7905,17.3016],[203926,58.1157,15.8865,0.7258,16.2058],[1642962,54.6232,14.6353,3.0251,15.9663],[203110,52.6851,10.7194,2.1502,11.6654],[1629234,61.9892,14.1251,4.4591,16.0872],[1630696,56.677,12.3953,3.772,14.055],[1629130,58.6693,15.1503,2.4518,16.2291],[1641871,56.2072,15.1471,1.9442,16.0026],[203939,68.3124,5.9595,5.0827,8.1958],[1642928,58.6299,10.3843,2.6174,11.5359],[1642844,58.6827,17.5337,4.9065,19.6926],[1630700,55.0159,14.4852,2.5718,15.6168],[1630604,57.8122,15.0769,3.2586,16.5107],[1642856,53.8384,15.8619,2.9461,17.1582],[1641989,53.5916,14.0268,4.6457,16.0709],[1630596,59.8145,17.7191,6.9887,20.7942],[1630532,58.6589,23.2154,7.8602,26.6738],[1641713,57.0478,22.4835,6.1954,25.2095],[1629216,53.3391,12.0835,1.2457,12.6316],[203914,55.081,8.9633,0.6733,9.2595],[1627780,63.974,17.0335,1.8813,17.8612],[1629018,55.9547,20.0736,2.0251,20.9646],[203507,63.3409,26.9636,15.7198,33.8803],[1629048,65.7525,11.0473,4.7146,13.1218],[1641711,55.4283,17.8961,3.8625,19.5956],[1628960,60.7462,22.0063,5.6085,24.474],[1627824,57.3713,14.8408,3.5902,16.4205],[1630611,60.893,17.3775,4.4111,19.3184],[203084,59.3572,12.6682,3.3114,14.1252],[1630529,55.0073,15.5281,1.927,16.376],[1642864,53.7488,11.682,1.3607,12.2807],[1630193,56.9138,18.8349,4.2931,20.7239],[1630171,58.2736,13.0152,3.3174,14.4748],[1642268,55.7341,20.4427,6.7397,23.4082],[1628392,62.6929,13.3944,4.0144,15.1607],[1630543,63.7054,12.3232,5.4249,14.7102],[1630198,61.1143,18.2283,3.0265,19.5599],[1630587,54.2021,9.8569,1.5791,10.5517],[1630191,61.2979,13.1186,4.7112,15.1915],[1627826,61.6975,17.3445,4.5929,19.3653],[1629630,56.2709,25.2133,8.7567,29.0662],[1642266,56.3642,14.7488,3.2064,16.1596],[1631095,56.5853,19.2028,4.7186,21.279],[1631133,55.68,14.136,4.3792,16.0629],[1630702,54.544,23.0072,3.8238,24.6897],[1630183,58.3823,20.5116,3.8785,22.2181],[1630256,55.0718,12.7955,2.3267,13.8193],[1631170,56.324,21.4313,4.1833,23.272],[1631222,57.1053,11.2288,3.4065,12.7277],[1627751,64.4417,13.6284,3.8689,15.3307],[1628973,57.9011,25.4046,8.0963,28.967],[1631105,66.5891,15.8864,8.7874,19.7528],[1630224,54.0158,27.7727,5.4303,30.162],[1630552,57.9065,21.7568,6.7921,24.7453],[1629618,53.7164,14.1745,1.257,14.7275],[1630188,59.2859,16.7692,3.9347,18.5005],[1630591,54.5948,17.8691,2.9946,19.1867],[1630592,54.3932,16.2656,5.17,18.5404],[1627750,59.8938,24.3047,7.347,27.5374],[1642347,51.1214,13.0196,2.6515,14.1863],[201935,58.8291,19.028,8.5703,22.799],[1642364,55.3783,14.738,3.8511,16.4324],[1642419,56.7613,13.969,1.0163,14.4162],[1641716,54.7749,18.4776,4.4919,20.454],[1642272,54.7329,22.2428,2.9152,23.5255],[1628991,56.4064,25.5155,6.4504,28.3537],[1629020,54.2544,11.8531,2.373,12.8972],[1628386,67.072,14.5778,8.9636,18.5217],[1642859,55.4859,15.0328,3.5641,16.601],[1642914,57.6512,15.6079,4.559,17.6139],[1629750,57.1746,13.7789,3.555,15.3431],[1629637,70.7235,10.3675,6.2619,13.1228],[1630643,62.4102,17.6187,2.6889,18.8018],[1627759,58.1515,28.1632,10.6579,32.8527],[1641740,55.0803,12.6175,3.0726,13.9695],[1642377,56.3666,19.3117,4.4627,21.2752],[1631119,57.1777,13.1082,2.8647,14.3686],[1642281,56.2485,18.1362,3.3808,19.6237],[203924,57.5735,19.2306,7.0917,22.351],[1642847,53.7603,23.9453,6.0094,26.5894],[1630526,55.1175,13.5487,2.2615,14.5438],[1631110,54.3085,14.0682,3.6102,15.6567],[1630579,71.3834,7.9245,2.8429,9.1754],[1641724,54.3763,17.0872,2.2853,18.0928],[1628975,52.8782,15.9453,0.7667,16.2826],[202710,61.0265,19.5279,10.574,24.1804],[1642866,62.4374,14.3723,5.9474,16.9891],[1629111,57.0406,16.6188,3.5942,18.2003],[203954,60.6319,27.3627,12.893,33.0357],[1628381,61.9066,18.7516,4.4051,20.6898],[1629723,59.3819,8.6739,1.7703,9.4529],[1642277,53.7755,11.2674,2.7568,12.4803],[202685,62.3086,21.1637,6.4382,23.9965],[1628371,56.1988,10.4856,4.6847,12.5468],[1630228,56.5839,20.1075,7.2738,23.308],[1642367,54.694,10.9849,2.3207,12.006],[203903,54.5992,17.7091,4.1692,19.5436],[1630692,51.7298,15.8522,1.9099,16.6926],[1641722,51.2427,17.2325,2.2632,18.2284],[1629162,53.6639,11.8158,1.5824,12.512],[1641757,61.4012,14.3985,5.8869,16.9888],[1629673,57.0755,22.0239,5.2321,24.3261],[1641775,57.2623,11.4773,2.476,12.5667],[1630631,52.4744,17.755,1.7866,18.5411],[1630581,56.0848,17.6943,5.1959,19.9805],[1628404,56.326,15.6099,2.9521,16.9088],[1631169,59.6198,16.813,3.8164,18.4922],[1629006,52.0707,11.401,2.9324,12.6913],[201950,56.1531,21.1318,2.9906,22.4476],[1630577,58.3513,14.2714,2.5002,15.3715],[1641763,55.4202,13.3463,2.7875,14.5727],[1631124,56.2567,18.0999,3.3721,19.5836],[203944,57.9615,20.6508,8.5278,24.4031],[1630551,59.9738,17.031,3.3856,18.5207],[1642348,54.7467,15.8419,2.1224,16.7757],[203994,55.0359,16.3065,4.8139,18.4246],[1642354,49.4314,17.3891,2.7921,18.6176],[1626157,62.4337,17.8666,7.7453,21.2746],[1631255,63.0043,13.2243,2.3491,14.2579],[202695,61.8735,29.0268,9.1808,33.0663],[1630811,52.5936,16.5293,1.4601,17.1717],[1642276,59.116,18.3132,2.4783,19.4036],[1629640,56.9906,20.5097,4.8856,22.6594],[203482,60.1575,13.9107,5.1626,16.1822],[1626162,55.6045,15.5435,4.0247,17.3143],[203484,57.0799,16.557,2.9319,17.847],[1631165,59.8345,11.6064,2.2904,12.6142],[1642352,58.2676,15.1674,3.884,16.8764],[201142,62.454,22.0946,7.997,25.6133],[1628989,56.86,16.7787,1.4766,17.4284],[201567,56.2,15.8904,3.5502,17.4525],[1629645,56.3083,19.4835,5.7159,21.9984],[1626172,52.4209,9.9414,2.678,11.1197],[1641718,58.5441,24.5553,9.6438,28.7986],[1642863,58.1636,12.7649,3.2579,14.1984],[203114,56.7936,18.0252,4.2108,19.878],[202691,55.6463,22.2429,1.4884,22.8978],[1641738,56.9277,13.5136,2.2788,14.5163],[1642920,57.3764,15.5232,2.7073,16.7145],[1642851,60.0433,21.2593,4.527,23.2512],[1627739,55.0328,9.7972,1.5199,10.466],[1631200,53.3445,9.8985,2.2676,10.8962],[204001,59.7626,22.7731,8.6436,26.5763],[203937,54.4052,11.2758,3.33,12.741],[1642271,59.0273,20.3119,5.6718,22.8075],[1628398,55.1385,18.7319,4.4601,20.6944],[1642273,53.7522,22.3724,4.6307,24.4099],[1630163,55.3876,31.0669,4.4555,33.0273],[1629013,56.2364,13.7861,2.422,14.8518],[1626204,56.1731,13.1023,1.4461,13.7386],[1628374,61.0659,25.8986,7.7245,29.2974],[1631159,60.785,16.9235,3.531,18.4772],[1642862,56.6903,13.1154,4.8591,15.2534],[1630322,52.9318,15.5979,0.5321,15.832],[1628366,53.3253,11.3184,1.3782,11.9249],[1629652,53.2036,13.4229,1.4133,14.0447],[1629029,59.3696,31.33,11.8515,36.5447],[1630568,63.7126,17.5846,5.5701,20.0355],[1628379,62.1357,13.1209,2.4655,14.2057],[1628436,66.398,9.655,3.2906,11.1029],[1631103,55.8307,17.3815,3.8114,19.0585],[1628370,56.4506,21.9175,3.7155,23.5523],[203935,55.2124,14.1303,4.4995,16.1101],[1631109,65.637,15.1791,5.4602,17.5816],[1628963,59.5496,17.1162,5.0477,19.3372],[1641824,58.0598,21.6418,5.2157,23.9367],[1629680,54.4807,12.7544,1.9263,13.6019],[1631108,58.9545,15.0449,3.3569,16.522],[1628467,56.2925,7.5848,2.0839,8.5017],[1642875,61.4769,17.8308,4.9158,19.9938],[1642877,50.1,13.8928,1.1981,14.42],[1629008,60.5009,27.95,6.2407,30.6959],[1628969,58.1167,15.8166,2.0176,16.7044],[201144,55.4969,11.1668,1.7762,11.9483],[1628970,57.4997,20.3145,4.7337,22.3973],[1630540,53.7739,17.3015,2.0859,18.2193],[1629011,61.326,9.7593,5.7619,12.2945],[1642885,53.203,15.8733,2.089,16.7925],[1630541,57.6608,18.4738,3.7382,20.1186],[1631243,54.1892,11.8044,2.737,13.0087],[1630619,58.5337,10.2416,6.5224,13.1115],[1631217,63.431,9.196,3.9024,10.9131],[1626167,58.7581,16.3949,4.521,18.3841],[1642066,55.9013,13.3515,2.7781,14.5739],[1641772,57.1702,14.525,2.861,15.7838],[1630230,59.4908,20.5698,6.3851,23.3793],[1629675,56.7175,18.706,3.0889,20.0651],[1629674,66.5781,13.2875,4.7885,15.3944],[1629651,58.7942,15.6729,5.2438,17.9802],[1630208,61.9579,13.9258,6.0293,16.5787],[1641733,52.517,21.1907,2.0404,22.0885],[1629638,58.8349,19.2899,4.9039,21.4476],[201587,55.2392,9.3836,0.3404,9.5334],[203999,64.7984,23.258,9.0122,27.2234],[1631107,55.0719,17.9994,4.9218,20.165],[202696,56.165,18.9735,2.1594,19.9236],[1642363,50.825,17.5192,2.8276,18.7634],[1641730,55.6836,18.0642,5.9269,20.6721],[1642869,52.9981,12.5551,2.9093,13.8352],[1642849,50.397,21.8578,4.2242,23.7164],[1626181,60.8959,23.0611,7.8381,26.5099],[1628384,60.6887,16.5508,5.692,19.0553],[1630167,62.3087,20.8359,4.3119,22.7331],[1630534,55.7428,15.9465,1.9513,16.8051],[1641765,58.4018,18.1493,5.4514,20.5479],[1630168,60.6264,14.4707,4.2496,16.3406],[1642345,61.4807,10.485,3.4323,11.9952],[1631172,52.7402,19.3301,2.2766,20.3318],[1629023,55.0647,16.7801,4.6382,18.8209],[1631094,56.2315,24.1861,12.0975,29.509],[1627783,56.6412,27.4238,8.1304,31.0012],[1626192,56.9869,14.4844,2.3259,15.5078],[1630311,52.422,17.8447,2.0894,18.7641],[1630172,53.7357,14.5308,2.5422,15.6494],[1630194,62.9313,18.6347,5.4491,21.0322],[1630202,59.3245,21.0416,2.4014,22.0982],[1641796,60.961,15.1192,6.2674,17.8769],[1631250,53.5899,13.1101,1.0059,13.5527],[1631212,56.581,21.2569,5.9462,23.8732],[1630173,55.4615,18.9936,3.762,20.6488],[1629656,59.3986,15.042,4.8362,17.1699],[1631245,57.5127,16.8332,5.2266,19.1329],[1642366,56.5527,18.249,1.8956,19.0831],[1629628,56.1692,23.5202,7.9255,27.0075],[1642853,51.57,15.759,2.6275,16.9151],[1641712,50.8302,15.4617,2.8777,16.7279],[1642263,53.3161,21.7056,1.8474,22.5185],[1642265,49.9343,19.0376,2.4264,20.1052],[1629057,68.2375,12.3746,2.5759,13.5081],[1631199,55.4044,17.672,1.1655,18.1848],[1641842,55.6303,16.2392,4.7606,18.3339],[1626220,55.979,12.5545,1.2824,13.1188],[203497,61.9967,10.2176,5.6235,12.692],[1629060,58.6505,16.5755,1.8542,17.3914],[201566,50.8262,21.4602,4.7949,23.57],[1642346,51.8851,12.501,1.739,13.2662],[1641750,71.4539,9.7419,3.7837,11.4067],[1642948,49.8598,15.8656,1.6213,16.5789],[1631157,57.6523,22.9235,3.7162,24.5587],[1630180,57.1989,22.2765,6.3258,25.0598],[1630573,59.6105,15.0625,0.6628,15.3541],[1630241,60.1018,15.1622,2.7037,16.3519],[1630572,60.5426,16.7267,4.2763,18.6082],[1630583,57.2283,17.6365,4.2026,19.4857],[1630567,57.6841,19.882,6.536,22.7578],[1631101,55.5224,25.483,5.6512,27.9695],[1628983,63.6601,26.2076,12.4882,31.7024],[1630536,56.9414,16.7147,3.8893,18.426],[1631321,53.1612,10.8884,2.9552,12.1887],[1631323,57.3991,17.9674,3.6301,19.5646],[1642883,53.0898,12.3579,2.3416,13.3882],[1642461,58.2987,8.9276,1.7501,9.6976],[201939,62.2009,26.319,7.0243,29.4097],[1642264,56.9025,17.7471,8.9812,21.6988],[203500,54.753,9.4957,5.3576,11.8531],[1629004,56.9925,17.3116,1.4849,17.9649],[204456,56.0051,20.7448,1.7302,21.5061],[1643007,51.9849,14.7604,1.7533,15.5319],[1631106,54.0267,17.5981,2.7611,18.813],[1627752,56.1971,15.69,0.6285,15.9665],[1641707,55.9082,16.3047,2.8322,17.5509],[1629611,58.0381,12.2612,2.4291,13.33],[1630545,56.7029,17.4764,5.3341,19.8233],[1628418,60.6153,17.2172,3.702,18.8461],[1642275,53.3619,13.8594,3.5767,15.4331],[203501,57.658,16.3826,4.9498,18.5605],[202699,57.0756,21.0613,4.8661,23.2024],[1628396,59.5122,12.0326,3.7336,13.6754],[1641739,55.9102,15.0148,2.3598,16.0531],[1629027,59.1811,20.6971,9.8969,25.0517],[1631218,59.5624,12.0455,6.3898,14.857],[1642848,53.284,22.8688,2.9721,24.1766],[1630200,62.0299,18.3568,5.875,20.9418],[1630544,51.51,22.5635,2.3281,23.5878],[1630570,59.3882,15.1537,4.9584,17.3354],[1630530,61.198,21.0475,5.0313,23.2613],[1641774,58.9152,22.8693,6.9455,25.9253],[1641783,56.9717,14.731,2.903,16.0083],[1642278,52.297,16.4842,1.6411,17.2062],[1631213,52.3027,16.7262,1.6967,17.4728],[1630178,58.4369,23.5624,6.7022,26.5114],[1642878,55.7384,18.9922,4.0954,20.7942],[1630623,54.0715,17.2359,3.5145,18.7823],[1626145,54.0796,11.9091,0.5845,12.1663],[1642845,54.4275,17.7795,3.5762,19.3531],[1641705,61.2327,24.6227,10.7115,29.3357],[1631246,53.4063,16.988,2.7322,18.1901],[1630249,58.5786,14.6883,1.7048,15.4384],[1642383,54.7768,16.3098,4.1908,18.1537],[1628976,61.9243,11.4596,5.9835,14.0923],[1642954,58.5766,10.8465,1.5977,11.5495],[1642860,56.1158,19.9792,5.6914,22.4834],[1642905,54.2068,15.4193,4.5555,17.4238],[1642949,64.4667,11.6546,6.2893,14.4219],[1642274,56.449,11.3172,4.2576,13.1906],[1642258,54.5131,16.0655,3.1547,17.4536],[203897,59.9954,21.8802,5.2507,24.1905],[1630192,58.8555,11.991,3.6715,13.6065],[1630533,57.0914,17.3394,5.4535,19.7389],[1629627,63.7723,18.5033,11.051,23.3657]];
+      const teamAbbrs = ["MIL","MEM","DEN","FA","IND","ATL","UTA","PHI","OKC","GSW","OKC","WAS","HOU","HOU","FA","NYK","MIL","IND","MIA","PHI","ORL","WAS","MIN","FA","PHI","ATL","DET","LAL","MIN","MIA","BOS","BKN","IND","LAC","WAS","FA","MIA","HOU","MIN","OKC","GSW","LAC","CHA","FA","UTA","LAL","LAC","OKC","FA","NOP","WAS","ATL","ATL","DET","PHI","DAL","LAC","MEM","FA","WAS","DEN","MIL","SAS","OKC","MEM","DET","OKC","DEN","ATL","HOU","UTA","FA","PHX","TOR","LAL","DAL","ATL","CLE","MEM","SAC","PHI","LAL","DAL","DET","BKN","LAC","MIA","BKN","SAS","SAC","FA","PHI","WAS","POR","CLE","NOP","LAC","BOS","ORL","PHX","ATL","SAS","PHX","SAC","PHI","POR","CLE","MIN","FA","BKN","GSW","FA","MIA","DET","FA","FA","SAC","SAS","ATL","FA","BKN","UTA","CLE","ORL","MEM","FA","DET","GSW","MIL","MIA","ORL","LAC","CHA","CHI","GSW","SAS","NOP","BOS","TOR","CHI","UTA","OKC","LAC","DET","PHX","MEM","IND","POR","TOR","HOU","PHI","LAL","MIN","FA","MIL","LAL","TOR","NYK","DET","PHX","ATL","DEN","CHI","ORL","FA","DEN","TOR","CLE","WAS","TOR","IND","OKC","UTA","LAL","CLE","ORL","MEM","DET","UTA","IND","PHI","MIN","MEM","OKC","CLE","MEM","NOP","FA","POR","MIL","FA","ORL","GSW","MIN","ATL","PHI","DET","UTA","IND","FA","FA","FA","SAC","NYK","PHX","NOP","SAS","LAC","NOP","BOS","NYK","CHI","NYK","BKN","UTA","POR","SAS","FA","DEN","BKN","WAS","PHI","UTA","DEN","NYK","NOP","TOR","ATL","MIL","SAS","FA","IND","PHI","BKN","FA","HOU","DET","FA","MIL","LAL","UTA","PHX","WAS","DAL","IND","LAC","CHA","LAC","MEM","GSW","TOR","UTA","MIL","WAS","MIN","NYK","IND","UTA","CHI","CHA","FA","FA","ATL","LAL","BOS","PHX","SAS","FA","SAC","HOU","PHX","DEN","CHI","LAL","DAL","FA","SAC","NOP","BKN","NYK","BOS","PHX","NYK","BOS","NYK","GSW","ATL","DAL","CHA","MIL","MIA","CLE","DAL","CHA","BOS","CHI","FA","FA","ATL","FA","DEN","MIA","ORL","SAC","BKN","ORL","BKN","CHI","NYK","IND","FA","MEM","ATL","PHX","MIL","DAL","ORL","IND","CHA","PHX","CHI","DET","BOS","MIA","MIL","DEN","SAC","LAL","IND","MEM","TOR","PHX","PHI","HOU","CHI","POR","BOS","DET","CHA","MIN","LAC","FA","PHX","CHA","ATL","MIL","NOP","BOS","CLE","LAL","DAL","TOR","POR","OKC","WAS","POR","MIA","CHA","DEN","GSW","SAS","HOU","UTA","IND","IND","HOU","DET","MEM","BKN","MIN","CLE","CHA","MIA","SAS","FA","POR","WAS","TOR","WAS","CHI","CHA","FA","NOP","WAS","ORL","NYK","PHI","PHI","CLE","BKN","DEN","PHI","SAS","FA","POR","MEM","ORL","GSW","WAS","POR","LAC","NOP","DAL","SAC","DEN","LAL","NOP"];
+      const uaShares = [13.2176,57.8477,36.4467,36.3017,36.4547,40.9369,29.6156,15.3633,64.4762,10.2405,21.9993,29.5714,53.1882,46.0019,43.5679,7.2976,28.3597,68.9342,40.5919,58.4114,50.1853,35.1366,71.6822,23.8345,5.8389,12.9766,40.8049,68.1311,48.2018,34.5223,20.3576,58.9912,22.8104,56.0904,41.611,53.9288,20.908,51.2128,45.8343,0,44.5805,56.5026,46.0775,72.6401,42.1572,56.4149,20.833,27.0287,32.1925,48.7372,60.1764,23.6156,63.1885,73.8959,47.7533,42.0724,42.5788,52.4688,74.2841,47.8359,24.8717,51.8493,15.7412,38.6784,37.6096,14.4099,27.6321,17.481,0.0503,6.9207,33.7835,67.5472,44.9395,7.5693,59.4514,66.6231,25.8722,57.2468,64.4455,15.053,39.9423,27.075,16.7728,62.7076,33.2325,66.3914,59.7465,21.7079,65.2954,38.9716,67.2087,5.8017,4.5151,60.6131,65.4482,51.3453,20.5365,54.4886,54.7155,71.3219,52.9413,27.8354,62.2664,20.9606,25.8096,0.3215,68.4952,25.2027,4.3024,46.6687,8.8726,11.6618,44.8845,16.3505,10.5368,9.0677,1.1026,57.7852,42.9809,26.0337,34.7335,42.9789,31.8718,56.4776,47.8174,30.7659,29.0049,8.9431,34.0812,54.3838,7.9421,25.0789,48.3688,15.4944,28.4968,32.1832,33.603,17.4398,48.413,29.5785,73.7485,3.5165,13.7264,17.8735,15.9932,16.797,22.924,79.1126,12.3747,24.7914,12.5977,46.5138,52.7792,34.2607,58.6212,26.8478,0,76.7667,24.9795,65.7174,49.1106,44.2808,5.2395,50.5945,41.0126,70.0193,44.9884,79.0547,22.6415,9.3359,39.1923,48.9433,47.4518,11.5544,11.2306,50.5435,60.025,8.3188,2.9617,7.8154,72.6453,32.6636,31.1639,0,22.3667,44.5778,62.7329,11.3522,10.2519,6.6833,32.1858,33.3169,47.8983,9.0079,5.9954,41.656,24.6921,11.5687,24.3709,24.7174,11.2483,44.7487,14.7078,43.97,27.9301,36.4701,43.142,55.3977,51.1493,18.9686,46.7664,56.1809,42.873,20.4668,19.6355,63.3062,5.6813,13.3616,38.4424,56.0578,17.5996,34.5012,11.1391,58.0943,30.4189,1.2824,63.7253,50.5695,2.8043,37.9447,25.4322,40.5077,44.3318,25.9949,19.829,58.1939,24.345,2.8889,74.4246,6.2477,59.0418,2.0877,53.3644,19.0672,28.1456,32.8724,33.7977,35.9931,22.4786,27.1765,59.063,27.7295,32.9634,55.5008,59.2959,24.2707,1.5494,26.1908,17.5528,30.5823,17.9916,19.4414,19.01,74.5195,7.3097,32.9878,2.8689,54.2856,56.7322,33.5357,4.9283,19.3163,34.1648,27.4756,38.7903,4.7661,6.8227,32.7696,29.4339,29.9011,38.1705,46.5292,41.0619,2.9547,22.0735,21.4594,7.0761,8.7292,12.4965,11.016,25.8686,15.4996,55.28,32.8057,6.2553,38.0386,8.698,59.6438,46.0727,0,37.3381,26.6484,13.935,45.927,31.5435,33.7431,58.6781,52.0488,29.9783,15.4364,20.0861,25.6534,15.5538,20.233,55.6718,34.4398,60.7947,55.2361,15.8181,57.0933,38.7607,19.2696,57.8246,41.3213,5.6285,36.5135,28.4046,45.5217,52.121,6.4069,43.2402,8.637,38.2257,48.0815,64.245,0,17.8551,30.3067,15.5891,5.0025,30.8485,49.9797,13.3696,2.3561,64.3931,65.9919,45.6743,4.9296,17.3609,14.136,20.2232,44.4687,66.0311,84.1909,67.6205,20.9727,16.1799,27.3608,4.264,47.8745,57.4928,8.0697,26.3886,75.9101,11.7392,25.5869,24.8801,19.4219,44.0188,55.8695,0.4129,14.4725,23.5679,41.5356,17.1608,22.8612,76.0106,7.02,50.4018,62.9687,63.0769,54.2625,38.2638,16.409,28.0699,58.2891,30.5751,68.3997,48.9332,29.491,39.3812,50.6998,29.2681,38.5553,16.0503,58.3721,11.0068,9.96,49.9229,null,13.9614,22.172,20.2054,55.2146,7.1676,29.5359,60.315];
+      players.forEach((player, index) => {
+        const [playerId, predictedTs, predictedFga, predictedFta, predictedTsa] = epmPredictions[index];
+        Object.assign(player, {playerId, predictedTs, predictedFga, predictedFta, predictedTsa, ua: uaShares[index], teamAbbr: teamAbbrs[index]});
+      });
+      const filterMetricLabels = {
+        shootingImpact: 'Shooting impact',
+        turnoverImpact: 'Turnover impact',
+        impact: 'Total impact',
+        marginalTsa: 'Scoring impact / extra TSA',
+        tsa: 'TSA / 100',
+        ts: 'TS',
+        role: 'Play Type Difficulty',
+        stovVsExpected: 'Scoring Turnover vs Expected',
+        rtsValue: 'rTS+ value',
+        roleValue: 'Role+ value',
+        volume: 'Shot volume+ value',
+        rstovValue: 'TOV rate+ value',
+        tovVolume: 'TOV volume+ value',
+        zts20: 'Shooting+ @20'
+      };
+      const valueFilters = {};
+      const teamSelect = root.querySelector('#s20-team');
+      [...new Set(teamAbbrs)].sort().forEach(team => teamSelect.add(new Option(team, team)));
+      const filterMetricSelect = root.querySelector('#s20-filter-metric');
+      Object.entries(filterMetricLabels).forEach(([key, label]) => filterMetricSelect.add(new Option(label, key)));
+      const updateFilterDirection = () => {
+        const lowerIsBetter = filterMetricSelect.value === 'stovVsExpected';
+        root.querySelector('#s20-filter-min-label').textContent = lowerIsBetter ? 'Best / lower bound' : 'Minimum';
+        root.querySelector('#s20-filter-max-label').textContent = lowerIsBetter ? 'Worst / upper bound' : 'Maximum';
+      };
+      updateFilterDirection();
+      const controls = {
+        rts: root.querySelector('#s20-rts'),
+        role: root.querySelector('#s20-role'),
+        tsa: root.querySelector('#s20-tsa'),
+        rstov: root.querySelector('#s20-rstov')
+      };
+      const outputs = {
+        rts: root.querySelector('#s20-rts-out'),
+        role: root.querySelector('#s20-role-out'),
+        tsa: root.querySelector('#s20-tsa-out'),
+        rstov: root.querySelector('#s20-rstov-out')
+      };
+      const bubbleColors = {
+        rts: 'var(--s20-rts)',
+        role: 'var(--s20-role)',
+        volume: 'var(--s20-volume)',
+        rstovValue: 'var(--s20-tov)',
+        tovVolume: 'color-mix(in srgb, var(--s20-tov) 68%, var(--s20-role))'
+      };
+      let selected = players.findIndex(p => p.name === 'Shai Gilgeous-Alexander');
+      let sortKey = 'impact';
+      let sortDirection = 'desc';
+      let activeView = 'simple';
+      let activeBreakdown = 'impact';
+      let tableMode = 'rates';
+      let activeScenario = 'actual';
+
+      const signed = value => `${value >= 0 ? '+' : '\u2212'}${Math.abs(value).toFixed(2)}`;
+      const signed1 = value => `${value >= 0 ? '+' : '\u2212'}${Math.abs(value).toFixed(1)}`;
+      const percent = value => `${value >= 0 ? '+' : '\u2212'}${Math.abs(value).toFixed(2)}%`;
+      const percent1 = value => `${value >= 0 ? '+' : '\u2212'}${Math.abs(value).toFixed(1)}%`;
+      const searchText = value => value.toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const scenarioPlayer = p => activeScenario === 'predictive'
+        ? {...p, rts: p.predictedTs - leagueTS, tsa: p.predictedTsa, ts: p.predictedTs}
+        : {...p, ts: leagueTS + p.rts};
+      const calculate = p => {
+        const indexScale = 100 / leagueTS;
+        const impactUnit = fitPoints * 2 * 20 / 100;
+        const pointsPerTsaImpact = fitPoints * 2 * (leagueTS + p.rts) / 100
+          + fitDifficultyPoints * 2 * p.role / 100 + fitTsa;
+        const baseImpact = fitIntercept + fitPoints * 2 * 20 * leagueTS / 100 + fitTsa * 20;
+        const rtsImpact = fitPoints * 2 * 20 * p.rts / 100;
+        const roleImpact = fitDifficultyPoints * 2 * 20 * p.role / 100;
+        const shotVolumeImpact = (p.tsa - 20) * pointsPerTsaImpact;
+        const rstovImpact = possessionValue * p.rstov * 20 / 100;
+        const tovVolumeImpact = possessionValue * p.rstov * (p.tsa - 20) / 100;
+        const shootingImpact = baseImpact + rtsImpact + roleImpact + shotVolumeImpact;
+        const turnoverImpact = rstovImpact + tovVolumeImpact;
+        const impact = shootingImpact + turnoverImpact;
+        const toIndex = value => value / impactUnit * indexScale;
+        const rtsValue = toIndex(rtsImpact);
+        const roleValue = toIndex(roleImpact);
+        const volume = toIndex(shotVolumeImpact);
+        const rstovValue = toIndex(rstovImpact);
+        const tovVolume = toIndex(tovVolumeImpact);
+        const stov = rstovValue + tovVolume;
+        const zts20 = 100 + rtsValue + roleValue + volume;
+        const totalVolume = volume + tovVolume;
+        const total = zts20 + stov;
+        const marginalRts = fitPoints * 2 * p.tsa / 100;
+        const marginalRole = fitDifficultyPoints * 2 * p.tsa / 100;
+        const marginalTsa = pointsPerTsaImpact + possessionValue * p.rstov / 100;
+        const marginalRsTov = possessionValue * p.tsa / 100;
+        const ts = p.ts ?? leagueTS + p.rts;
+        const stovVsExpected = -p.rstov;
+        return {...p, ts, stovVsExpected, rtsValue, roleValue, volume, rstovValue, tovVolume, stov, zts20, totalVolume, total, baseImpact, rtsImpact, roleImpact, shotVolumeImpact, rstovImpact, tovVolumeImpact, shootingImpact, turnoverImpact, impact, marginalRts, marginalRole, marginalTsa, marginalRsTov};
+      };
+
+      const filteredCalculatedPlayers = () => {
+        const query = searchText(root.querySelector('#s20-search').value.trim());
+        const team = teamSelect.value;
+        const minPoss = Number(root.querySelector('#s20-min-poss').value);
+        return players.map((p, sourceIndex) => ({...calculate(scenarioPlayer(p)), sourceIndex}))
+          .filter(d => {
+            if (d.poss < minPoss || !searchText(d.name).includes(query)) return false;
+            if (team && d.teamAbbr !== team) return false;
+            return Object.entries(valueFilters).every(([key, bounds]) => {
+              const value = d[key];
+              return Number.isFinite(value)
+                && (bounds.min === null || value >= bounds.min)
+                && (bounds.max === null || value <= bounds.max);
+            });
+          });
+      };
+
+      const scatterMetrics = {
+        tsa: {label: () => activeScenario === 'predictive' ? 'Predicted shot volume' : 'Shot volume', unit: 'TSA / 100', format: v => v.toFixed(1), reference: null},
+        ua: {label: () => activeScenario === 'predictive' ? 'Observed unassisted attempt share' : 'Unassisted attempt share', unit: '% of TSA \u00b7 putbacks assisted', format: v => `${v.toFixed(1)}%`, reference: null},
+        rts: {label: () => activeScenario === 'predictive' ? 'Predicted TS vs. league' : 'True shooting vs. league', unit: 'rTS points', format: v => `${signed(v)}%`, reference: 0, upper: 'above league', lower: 'below league'},
+        role: {label: () => 'Play Type Difficulty', unit: 'rTS points', format: v => `${signed(v)}%`, reference: 0, upper: 'harder shot mix', lower: 'easier shot mix'},
+        stovVsExpected: {label: () => 'Scoring Turnover vs Expected', unit: 'percentage points', format: v => `${signed(v)}%`, reference: 0, upper: 'more than expected', lower: 'fewer than expected', lowerIsBetter: true},
+        marginalTsa: {label: () => 'Value of one more TSA', unit: 'points / 100', format: signed, reference: 0, upper: 'adds value', lower: 'costs value'},
+        shootingImpact: {label: () => 'Shooting impact', unit: 'points / 100', format: signed, reference: 0, upper: 'positive impact', lower: 'negative impact'},
+        turnoverImpact: {label: () => 'Turnover impact', unit: 'points / 100', format: signed, reference: 0, upper: 'positive impact', lower: 'negative impact'},
+        impact: {label: () => 'Total impact', unit: 'points / 100', format: signed, reference: 0, upper: 'positive impact', lower: 'negative impact'},
+        total: {label: () => 'Scoring+ @20', unit: 'league = 100', format: v => v.toFixed(1), reference: 100, upper: 'above league', lower: 'below league'}
+      };
+
+      const drawScatter = () => {
+        const svg = root.querySelector('#s20-scatter-svg');
+        const wrap = root.querySelector('#s20-scatter-wrap');
+        const tooltip = root.querySelector('#s20-scatter-tooltip');
+        const xKey = root.querySelector('#s20-scatter-x').value;
+        const yKey = root.querySelector('#s20-scatter-y').value;
+        const xMetric = scatterMetrics[xKey];
+        const yMetric = scatterMetrics[yKey];
+        const filteredData = filteredCalculatedPlayers();
+        const data = filteredData.filter(d => Number.isFinite(d[xKey]) && Number.isFinite(d[yKey]));
+        const selectedRow = data.find(d => d.sourceIndex === selected);
+        if (selectedRow) {
+          const custom = calculate({...scenarioPlayer(players[selected]),
+            rts: Number(controls.rts.value), role: Number(controls.role.value),
+            tsa: Number(controls.tsa.value), rstov: -Number(controls.rstov.value)
+          });
+          Object.assign(selectedRow, custom, {sourceIndex: selected});
+        }
+
+        const plottedCount = data.length === filteredData.length ? `${data.length}` : `${data.length} of ${filteredData.length}`;
+        const colorNote = Number.isFinite(yMetric.reference) ? ' \u00b7 color = above/below reference' : '';
+        root.querySelector('#s20-scatter-count').textContent = `${plottedCount} player${data.length === 1 ? '' : 's'} \u00b7 area = possessions${colorNote}`;
+        root.querySelector('#s20-scatter-selected').textContent = selectedRow
+          ? `${selectedRow.name} \u00b7 ${xMetric.format(selectedRow[xKey])} \u00d7 ${yMetric.format(selectedRow[yKey])}`
+          : filteredData.some(d => d.sourceIndex === selected)
+            ? 'Selected player has no data for this axis'
+            : 'Selected player is outside the current filter';
+
+        const width = Math.max(280, Math.round(wrap.clientWidth));
+        const height = width < 520 ? 410 : 470;
+        const margin = {left: width < 430 ? 60 : 72, right: 18, top: 18, bottom: 58};
+        const plotLeft = margin.left;
+        const plotRight = width - margin.right;
+        const plotTop = margin.top;
+        const plotBottom = height - margin.bottom;
+        svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        svg.setAttribute('height', String(height));
+        tooltip.hidden = true;
+
+        const escapeText = value => String(value).replace(/[&<>\"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[char]));
+        if (!data.length) {
+          svg.innerHTML = `<title>Player scoring landscape</title><desc>No players match the current filters.</desc>` +
+            `<rect x="${plotLeft}" y="${plotTop}" width="${plotRight - plotLeft}" height="${plotBottom - plotTop}" fill="transparent" stroke="var(--s20-rule)"/>` +
+            `<text x="${width / 2}" y="${height / 2}" text-anchor="middle" fill="var(--s20-muted)" font-size="12">No players match the current filters.</text>`;
+          return;
+        }
+
+        const paddedDomain = (values, reference = null) => {
+          let lo = Math.min(...values);
+          let hi = Math.max(...values);
+          if (Number.isFinite(reference)) {
+            lo = Math.min(lo, reference);
+            hi = Math.max(hi, reference);
+          }
+          const span = hi - lo || Math.max(Math.abs(lo), 1);
+          return [lo - span * .065, hi + span * .065];
+        };
+        const niceStep = (span, target) => {
+          const raw = Math.max(span / target, Number.EPSILON);
+          const power = Math.pow(10, Math.floor(Math.log10(raw)));
+          const scaled = raw / power;
+          const nice = scaled >= 5 ? 5 : scaled >= 2 ? 2 : 1;
+          return nice * power;
+        };
+        const ticksFor = (domain, target) => {
+          const step = niceStep(domain[1] - domain[0], target);
+          const ticks = [];
+          for (let value = Math.ceil(domain[0] / step) * step; value <= domain[1] + step * .001; value += step) {
+            ticks.push(Math.abs(value) < step * 1e-8 ? 0 : value);
+          }
+          return {step, ticks};
+        };
+        const tickLabel = (value, step) => {
+          const decimals = step >= 1 ? 0 : Math.min(2, Math.ceil(-Math.log10(step)));
+          const absolute = Math.abs(value).toFixed(decimals);
+          return value < 0 ? `\u2212${absolute}` : absolute;
+        };
+
+        const xDomain = paddedDomain(data.map(d => d[xKey]));
+        const yDomain = paddedDomain(data.map(d => d[yKey]), yMetric.reference);
+        const X = value => plotLeft + (value - xDomain[0]) / (xDomain[1] - xDomain[0]) * (plotRight - plotLeft);
+        const Y = value => plotTop + (yDomain[1] - value) / (yDomain[1] - yDomain[0]) * (plotBottom - plotTop);
+        const xTicks = ticksFor(xDomain, width < 430 ? 4 : width < 760 ? 5 : 7);
+        const yTicks = ticksFor(yDomain, width < 430 ? 5 : 6);
+        const maxPoss = Math.max(...data.map(d => Number(d.poss) || 0), 1);
+        const radius = d => Math.max(2.8, Math.sqrt((Number(d.poss) || 0) / maxPoss) * (width < 520 ? 8 : 10));
+        const reference = yMetric.reference;
+        const hasReference = Number.isFinite(reference) && reference > yDomain[0] && reference < yDomain[1];
+        const refY = hasReference ? Y(reference) : null;
+
+        let markup = '<title>Player scoring landscape</title>' +
+          `<desc>${escapeText(`${plottedCount} players. ${xMetric.label()} on the horizontal axis and ${yMetric.label()} on the vertical axis. Bubble area represents offensive possessions.`)}</desc>`;
+        if (hasReference) {
+          markup += `<rect x="${plotLeft}" y="${plotTop}" width="${plotRight - plotLeft}" height="${Math.max(0, refY - plotTop).toFixed(1)}" fill="var(--s20-good-wash)"/>`;
+          markup += `<rect x="${plotLeft}" y="${refY.toFixed(1)}" width="${plotRight - plotLeft}" height="${Math.max(0, plotBottom - refY).toFixed(1)}" fill="var(--s20-bad-wash)"/>`;
+        }
+        markup += `<rect data-chart-frame x="${plotLeft}" y="${plotTop}" width="${plotRight - plotLeft}" height="${plotBottom - plotTop}" fill="transparent" stroke="var(--s20-rule)"/>`;
+
+        yTicks.ticks.forEach(value => {
+          const y = Y(value);
+          const isReference = hasReference && Math.abs(value - reference) < yTicks.step * .001;
+          markup += `<line x1="${plotLeft}" x2="${plotRight}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${isReference ? 'var(--s20-muted)' : 'var(--s20-rule)'}" stroke-width="${isReference ? 1.35 : .7}"/>`;
+          markup += `<text x="${plotLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="var(--s20-muted)" font-size="11" font-family="ui-monospace,Menlo,monospace">${tickLabel(value, yTicks.step)}</text>`;
+        });
+        if (hasReference && !yTicks.ticks.some(value => Math.abs(value - reference) < yTicks.step * .001)) {
+          markup += `<line x1="${plotLeft}" x2="${plotRight}" y1="${refY.toFixed(1)}" y2="${refY.toFixed(1)}" stroke="var(--s20-muted)" stroke-width="1.35"/>`;
+          markup += `<text x="${plotLeft - 8}" y="${(refY + 4).toFixed(1)}" text-anchor="end" fill="var(--s20-ink)" font-size="11" font-family="ui-monospace,Menlo,monospace">${tickLabel(reference, yTicks.step)}</text>`;
+        }
+        xTicks.ticks.forEach(value => {
+          const x = X(value);
+          markup += `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${plotBottom}" y2="${plotBottom + 5}" stroke="var(--s20-rule)"/>`;
+          markup += `<text x="${x.toFixed(1)}" y="${plotBottom + 20}" text-anchor="middle" fill="var(--s20-muted)" font-size="11" font-family="ui-monospace,Menlo,monospace">${tickLabel(value, xTicks.step)}</text>`;
+        });
+        markup += `<text class="axis-title" data-axis="x" x="${((plotLeft + plotRight) / 2).toFixed(1)}" y="${height - 9}" text-anchor="middle" fill="var(--s20-ink)" font-size="12">${escapeText(`${xMetric.label()} \u00b7 ${xMetric.unit}`)}</text>`;
+        markup += `<text class="axis-title" data-axis="y" transform="translate(15 ${((plotTop + plotBottom) / 2).toFixed(1)}) rotate(-90)" text-anchor="middle" fill="var(--s20-ink)" font-size="12">${escapeText(`${yMetric.label()} \u00b7 ${yMetric.unit}`)}</text>`;
+        if (hasReference) {
+          markup += `<text x="${plotRight - 7}" y="${plotTop + 14}" text-anchor="end" fill="${yMetric.lowerIsBetter ? 'var(--s20-negative)' : 'var(--s20-tov)'}" font-size="11">${escapeText(yMetric.upper)} \u2191</text>`;
+          markup += `<text x="${plotRight - 7}" y="${plotBottom - 8}" text-anchor="end" fill="${yMetric.lowerIsBetter ? 'var(--s20-tov)' : 'var(--s20-negative)'}" font-size="11">${escapeText(yMetric.lower)} \u2193</text>`;
+        }
+
+        const ordered = data.filter(d => d.sourceIndex !== selected).sort((a, b) => (Number(b.poss) || 0) - (Number(a.poss) || 0));
+        if (selectedRow) ordered.push(selectedRow);
+        ordered.forEach(d => {
+          const isSelected = d.sourceIndex === selected;
+          const value = d[yKey];
+          const favorable = yMetric.lowerIsBetter ? value <= reference : value >= reference;
+          const color = hasReference ? (favorable ? 'var(--s20-tov)' : 'var(--s20-negative)') : 'var(--s20-rts)';
+          const r = radius(d) + (isSelected ? 2 : 0);
+          markup += `<circle class="s20-scatter-point${isSelected ? ' is-selected' : ''}" data-source-index="${d.sourceIndex}" cx="${X(d[xKey]).toFixed(1)}" cy="${Y(d[yKey]).toFixed(1)}" r="${r.toFixed(1)}" fill="${color}" fill-opacity="${isSelected ? .94 : .43}" stroke="${isSelected ? 'var(--s20-ink)' : color}" stroke-width="${isSelected ? 2.2 : .8}" aria-label="${escapeText(`${d.name}: ${xMetric.label()} ${xMetric.format(d[xKey])}; ${yMetric.label()} ${yMetric.format(d[yKey])}`)}"/>`;
+        });
+        if (selectedRow) {
+          const px = X(selectedRow[xKey]);
+          const py = Y(selectedRow[yKey]);
+          const r = radius(selectedRow) + 2;
+          const placeLeft = px > plotLeft + (plotRight - plotLeft) * .62;
+          const labelX = px + (placeLeft ? -r - 7 : r + 7);
+          markup += `<text x="${labelX.toFixed(1)}" y="${(py + 4).toFixed(1)}" text-anchor="${placeLeft ? 'end' : 'start'}" fill="var(--s20-ink)" font-size="12" font-weight="700" paint-order="stroke" stroke="var(--s20-bg)" stroke-width="4">${escapeText(selectedRow.name)}</text>`;
+        }
+        svg.innerHTML = markup;
+
+        const hideTip = () => { tooltip.hidden = true; };
+        const showTip = (d, event) => {
+          const impactLine = xKey === 'impact' || yKey === 'impact' ? '' : `<br>Total impact: ${signed(d.impact)} pts / 100`;
+          tooltip.innerHTML = `<strong>${escapeText(d.name)} \u00b7 ${escapeText(d.teamAbbr || 'FA')}</strong>` +
+            `${escapeText(xMetric.label())}: ${escapeText(xMetric.format(d[xKey]))}<br>` +
+            `${escapeText(yMetric.label())}: ${escapeText(yMetric.format(d[yKey]))}<br>` +
+            `${Math.round(d.poss).toLocaleString()} offensive possessions${impactLine}`;
+          tooltip.hidden = false;
+          const box = tooltip.getBoundingClientRect();
+          tooltip.style.left = `${Math.max(8, Math.min(window.innerWidth - box.width - 8, event.clientX + 14))}px`;
+          tooltip.style.top = `${Math.max(8, Math.min(window.innerHeight - box.height - 8, event.clientY + 14))}px`;
+        };
+        svg.querySelectorAll('.s20-scatter-point').forEach(circle => {
+          const d = data.find(row => row.sourceIndex === Number(circle.dataset.sourceIndex));
+          circle.addEventListener('pointerenter', event => showTip(d, event));
+          circle.addEventListener('pointermove', event => showTip(d, event));
+          circle.addEventListener('pointerleave', hideTip);
+          circle.addEventListener('click', () => selectPlayer(d.sourceIndex));
+        });
+      };
+
+      const renderActiveFilters = () => {
+        const entries = Object.entries(valueFilters);
+        const active = root.querySelector('#s20-active-filters');
+        root.querySelector('#s20-filter-toggle-count').textContent = entries.length ? `(${entries.length})` : '';
+        if (!entries.length) {
+          active.textContent = 'No value filters applied';
+          return;
+        }
+        active.innerHTML = entries.map(([key, bounds]) => {
+          const range = bounds.min !== null && bounds.max !== null
+            ? `${bounds.min} to ${bounds.max}`
+            : bounds.min !== null ? `at least ${bounds.min}` : `at most ${bounds.max}`;
+          return `<button class="s20-filter-chip" type="button" data-remove-filter="${key}" aria-label="Remove ${filterMetricLabels[key]} filter">${filterMetricLabels[key]}: ${range} \u00d7</button>`;
+        }).join('');
+        active.querySelectorAll('[data-remove-filter]').forEach(button => {
+          button.addEventListener('click', () => {
+            delete valueFilters[button.dataset.removeFilter];
+            renderActiveFilters();
+            renderTable();
+          });
+        });
+      };
+
+      const applyValueFilter = () => {
+        const key = filterMetricSelect.value;
+        const minInput = root.querySelector('#s20-filter-min');
+        const maxInput = root.querySelector('#s20-filter-max');
+        let min = minInput.value === '' ? null : Number(minInput.value);
+        let max = maxInput.value === '' ? null : Number(maxInput.value);
+        if (min !== null && max !== null && min > max) [min, max] = [max, min];
+        if (min === null && max === null) delete valueFilters[key];
+        else valueFilters[key] = {min, max};
+        minInput.value = '';
+        maxInput.value = '';
+        renderActiveFilters();
+        renderTable();
+      };
+
+      const renderTable = () => {
+        const body = root.querySelector('#s20-table-body');
+        const direction = sortDirection === 'asc' ? 1 : -1;
+        const ranked = filteredCalculatedPlayers()
+          .sort((a, b) => {
+            let comparison;
+            if (sortKey === 'name' || sortKey === 'teamAbbr') comparison = a[sortKey].localeCompare(b[sortKey]);
+            else {
+              const aMissing = !Number.isFinite(a[sortKey]);
+              const bMissing = !Number.isFinite(b[sortKey]);
+              if (aMissing !== bMissing) return aMissing ? 1 : -1;
+              comparison = aMissing ? 0 : a[sortKey] - b[sortKey];
+            }
+            return direction * (comparison || a.name.localeCompare(b.name));
+          });
+        const filterCount = Object.keys(valueFilters).length;
+        root.querySelector('#s20-count').textContent = `${ranked.length} player${ranked.length === 1 ? '' : 's'}${filterCount ? ` \u00b7 ${filterCount} value filter${filterCount === 1 ? '' : 's'}` : ''}`;
+        root.querySelectorAll('th[data-key]').forEach(th => {
+          const active = th.dataset.key === sortKey;
+          th.setAttribute('aria-sort', active ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none');
+          th.querySelector('.s20-sort-indicator').textContent = active ? (sortDirection === 'asc' ? '\u2191' : '\u2193') : '';
+        });
+        const impactClass = value => value > .004 ? 's20-value-good' : value < -.004 ? 's20-value-bad' : '';
+        body.innerHTML = ranked.map((d, rank) => {
+          return `<tr data-index="${d.sourceIndex}" aria-selected="${d.sourceIndex === selected}">
+            <td class="s20-player"><button type="button" class="s20-player-button"><span class="s20-rank">${rank + 1}</span>${d.name}</button></td>
+            <td>${d.teamAbbr}</td>
+            <td class="s20-group-start ${impactClass(d.shootingImpact)}">${signed1(d.shootingImpact)}</td>
+            <td class="${impactClass(d.turnoverImpact)}">${signed1(d.turnoverImpact)}</td>
+            <td class="s20-table-total ${impactClass(d.impact)}">${signed1(d.impact)}</td>
+            <td class="s20-table-sensitivity ${impactClass(d.marginalTsa)}">${signed(d.marginalTsa)}</td>
+            <td class="s20-group-start">${d.tsa.toFixed(1)}</td>
+            <td>${d.ts.toFixed(1)}%</td>
+            <td>${percent1(d.role)}</td>
+            <td>${percent1(d.stovVsExpected)}</td>
+            <td class="s20-group-start" data-table-column="plus">${signed1(d.rtsValue)}</td>
+            <td data-table-column="plus">${signed1(d.roleValue)}</td><td data-table-column="plus">${signed1(d.volume)}</td><td data-table-column="plus">${signed1(d.rstovValue)}</td>
+            <td data-table-column="plus">${signed1(d.tovVolume)}</td><td data-table-column="plus">${d.zts20.toFixed(1)}</td></tr>`;
+        }).join('');
+        body.querySelectorAll('tr').forEach(row => {
+          const choose = () => selectPlayer(Number(row.dataset.index));
+          row.addEventListener('click', choose);
+        });
+        drawScatter();
+      };
+
+      const updateComponent = (key, value, scale) => {
+        const row = root.querySelector(`[data-key="${key}"]`);
+        const bar = row.querySelector('.s20-component-bar');
+        const label = row.querySelector('.s20-component-value');
+        bar.style.width = `${Math.min(50, Math.abs(value) / scale * 50)}%`;
+        bar.style.background = bubbleColors[key];
+        bar.classList.toggle('negative', value < 0);
+        label.textContent = signed(value);
+      };
+
+      const updateImpactBar = (key, value, color, scale) => {
+        const row = root.querySelector(`[data-impact-key="${key}"]`);
+        const bar = row.querySelector('.s20-impact-bar');
+        row.querySelector('.s20-impact-number').textContent = signed(value);
+        bar.style.width = `${Math.min(50, Math.abs(value) / scale * 50)}%`;
+        bar.style.background = value < 0 ? 'var(--s20-negative)' : color;
+        bar.classList.toggle('negative', value < 0);
+      };
+
+      const updateCombinedBar = (parts, total, scale) => {
+        const elements = [
+          {element: root.querySelector('[data-segment="shooting"]'), value: parts[0], color: 'var(--s20-rts)'},
+          {element: root.querySelector('[data-segment="turnover"]'), value: parts[1], color: 'var(--s20-tov)'}
+        ];
+        let positiveEdge = 50;
+        let negativeEdge = 50;
+        elements.forEach(part => {
+          const rawWidth = Math.abs(part.value) / scale * 50;
+          const available = part.value >= 0 ? 100 - positiveEdge : negativeEdge;
+          const width = Math.max(0, Math.min(available, rawWidth));
+          if (part.value >= 0) {
+            part.element.style.left = `${positiveEdge}%`;
+            positiveEdge += width;
+          } else {
+            negativeEdge -= width;
+            part.element.style.left = `${negativeEdge}%`;
+          }
+          part.element.style.width = `${width}%`;
+          part.element.style.background = part.color;
+          part.element.style.opacity = part.value < 0 ? '.72' : '1';
+        });
+        root.querySelector('#s20-combined-impact').textContent = signed(total);
+      };
+
+      const modelLabels = {
+        scoring: {
+          rts: ['rTS+', 'Raw efficiency'], role: ['Role+', 'Playtype difficulty'],
+          volume: ['Shot volume+', 'Fitted TSA contribution'], rstovValue: ['\u2212rsTOV+', 'Rate at 20 TSA'],
+          tovVolume: ['TOV volume+', 'Actual load vs 20']
+        },
+        impact: {
+          volume: ['TSA impact', 'Scoring volume versus 20 TSA'],
+          rts: ['TS impact', 'True shooting relative to league at 20 TSA'],
+          role: ['Play Type Difficulty impact', 'Shot-mix difficulty at 20 TSA'],
+          rstovValue: ['Scoring Turnover impact', 'Turnovers versus expected at 20 TSA'],
+          tovVolume: ['Scoring Turnover volume adjustment', 'Turnover effect above or below 20 TSA']
+        }
+      };
+
+      const updateModelBreakdown = d => {
+        const scoring = activeBreakdown === 'scoring';
+        const values = scoring
+          ? {rts: d.rtsValue, role: d.roleValue, volume: d.volume, rstovValue: d.rstovValue, tovVolume: d.tovVolume}
+          : {rts: d.rtsImpact, role: d.roleImpact, volume: d.shotVolumeImpact, rstovValue: d.rstovImpact, tovVolume: d.tovVolumeImpact};
+        const scale = scoring ? 25 : 10;
+        root.querySelector('#s20-model-title').textContent = scoring ? 'Contribution to Scoring+ @20' : 'Contribution to scoring impact';
+        root.querySelector('#s20-model-scale').textContent = scoring ? 'Common scale \u00b7 \u00b125 index points' : 'Common scale \u00b7 \u00b110 points / 100';
+        Object.entries(values).forEach(([key, value]) => {
+          const row = root.querySelector(`[data-key="${key}"]`);
+          row.querySelector('[data-component-name]').textContent = modelLabels[activeBreakdown][key][0];
+          row.querySelector('[data-component-hint]').textContent = modelLabels[activeBreakdown][key][1];
+          updateComponent(key, value, scale);
+        });
+        root.querySelector('#s20-model-subtotals').innerHTML = scoring
+          ? `<div class="s20-subtotal">100 + fitted rTS+ + Role+ + Shot volume+<strong>Shooting+ @20 <output>${d.zts20.toFixed(2)}</output></strong></div>
+             <div class="s20-subtotal">\u2212rsTOV+ + TOV volume+<strong>sTOV+ contribution <output>${signed(d.stov)}</output></strong></div>
+             <div class="s20-subtotal">Shot volume+ + TOV volume+<strong>Total volume+ <output>${signed(d.totalVolume)}</output></strong></div>`
+          : `<div class="s20-subtotal">Unconstrained fit \u00b7 baseline ${signed(d.baseImpact)}<strong>Shooting impact <output>${signed(d.shootingImpact)}</output></strong></div>
+             <div class="s20-subtotal">TOV rate + TOV volume<strong>Turnover impact <output>${signed(d.turnoverImpact)}</output></strong></div>
+             <div class="s20-subtotal">Five terms + model baseline<strong>Total impact <output>${signed(d.impact)}</output></strong></div>`;
+      };
+
+      const updateSimpleBreakdown = d => {
+        const scoring = activeBreakdown === 'scoring';
+        const shooting = scoring ? d.rtsValue + d.roleValue + d.volume : d.shootingImpact;
+        const turnover = scoring ? d.stov : d.turnoverImpact;
+        const total = scoring ? d.total - 100 : d.impact;
+        const scale = scoring ? 50 : 12;
+        root.querySelector('#s20-simple-title').textContent = scoring ? 'Where Scoring+ comes from' : 'Where the impact comes from';
+        root.querySelector('#s20-simple-scale').textContent = scoring ? 'Two effects \u00b7 \u00b150 index points' : 'Two effects \u00b7 \u00b112 points per 100';
+        root.querySelector('#s20-simple-shooting-label').textContent = scoring ? 'Shooting contribution' : 'Shooting efficiency impact';
+        root.querySelector('#s20-simple-turnover-label').textContent = scoring ? 'Turnover contribution' : 'Turnover efficiency impact';
+        root.querySelector('#s20-combined-caption').textContent = scoring ? 'Segments add to Scoring+ above league' : 'Segments add to total scoring impact';
+        root.querySelector('#s20-combined-label').textContent = scoring ? 'Scoring+ above league' : 'Total scoring impact';
+        root.querySelector('#s20-combined-hint').textContent = scoring ? 'Index points above or below 100' : 'Points added per 100 possessions';
+        updateImpactBar('shootingImpact', shooting, 'var(--s20-rts)', scale);
+        updateImpactBar('turnoverImpact', turnover, 'var(--s20-tov)', scale);
+        updateCombinedBar([shooting, turnover], total, scale);
+      };
+
+      const update = () => {
+        const p = {...scenarioPlayer(players[selected]),
+          rts: Number(controls.rts.value), role: Number(controls.role.value),
+          tsa: Number(controls.tsa.value), rstov: -Number(controls.rstov.value)
+        };
+        const d = calculate(p);
+        outputs.rts.textContent = activeView === 'simple'
+          ? `${(leagueTS + p.rts).toFixed(2)}% (${signed(p.rts)} vs. league)`
+          : signed(p.rts);
+        outputs.role.textContent = activeView === 'simple' ? `${signed(p.role)} TS points` : signed(p.role);
+        outputs.tsa.textContent = p.tsa.toFixed(2);
+        outputs.rstov.textContent = percent(-p.rstov);
+        root.querySelector('#s20-rts-marginal').textContent = `changes impact by ${signed(d.marginalRts)} points / 100`;
+        root.querySelector('#s20-role-marginal').textContent = `changes impact by ${signed(d.marginalRole)} points / 100`;
+        root.querySelector('#s20-tsa-marginal').textContent = `changes impact by ${signed(d.marginalTsa)} points / 100`;
+        root.querySelector('#s20-rstov-marginal').textContent = `changes impact by ${signed(d.marginalRsTov)} points / 100`;
+        root.querySelector('#s20-total').textContent = d.total.toFixed(0);
+        root.querySelector('#s20-multiple').textContent = `${(d.total / 100).toFixed(2)}\u00d7 league \u00b7 ${signed(d.total - 100)}%`;
+        root.querySelector('#s20-impact').textContent = signed(d.impact);
+        if (activeScenario === 'predictive') {
+          root.querySelector('#s20-tsa-hint').textContent = `EPM forecast: ${p.predictedFga.toFixed(2)} FGA + 0.44 \u00d7 ${p.predictedFta.toFixed(2)} FTA per 100`;
+        }
+        updateModelBreakdown(d);
+        updateSimpleBreakdown(d);
+        drawScatter();
+      };
+
+      const viewCopy = {
+        simple: {
+          kicker: '2026 regular season \u00b7 407 players \u00b7 league true shooting is 57.83%',
+          totalLabel: 'Scoring efficiency @20', tsaLabel: 'TSA / 100',
+          rtsLabel: 'True Shooting', roleLabel: 'Play Type Difficulty', rstovLabel: 'Scoring Turnover vs Expected',
+          rtsHint: 'Points per shot, including free throws', roleHint: "How much harder the player's shot mix is than average",
+          tsaHint: 'True-shot attempts per 100 possessions', rstovHint: 'Scoring-turnover rate relative to expected; lower is better',
+          rtsMarginal: '+1 point of true shooting', roleMarginal: '+1 point of difficulty',
+          tsaMarginal: '+1 TSA / 100', rstovMarginal: '1 percentage point fewer turnovers',
+          tsaHeader: 'TSA / 100', rstovHeader: 'Scoring Turnover vs Expected'
+        },
+        model: {
+          kicker: '2026 regular season \u00b7 407-player common sample \u00b7 league TS 57.83% \u00b7 league = 100',
+          totalLabel: 'Scoring+ @20', tsaLabel: 'TSA / 100', rtsLabel: 'Relative TS', roleLabel: 'Play Type Difficulty', rstovLabel: 'Scoring Turnover vs Expected',
+          rtsHint: 'True shooting relative to league average', roleHint: 'Shot-mix difficulty; harder scoring jobs are positive',
+          tsaHint: 'True-shot attempts per 100; 20 is the comparison level', rstovHint: 'Scoring-turnover rate relative to expected; lower is better',
+          rtsMarginal: '+1 rTS point', roleMarginal: '+1 role point',
+          tsaMarginal: '+1 TSA / 100', rstovMarginal: '1 percentage point fewer turnovers',
+          tsaHeader: 'TSA / 100', rstovHeader: 'Scoring Turnover vs Expected'
+        }
+      };
+
+      const setView = view => {
+        activeView = view;
+        root.dataset.view = view;
+        const copy = viewCopy[view];
+        root.querySelectorAll('[data-view-button]').forEach(button => {
+          button.setAttribute('aria-pressed', String(button.dataset.viewButton === view));
+        });
+        root.querySelector('#s20-simple-decomp').hidden = view !== 'simple';
+        root.querySelector('#s20-model-decomp').hidden = view !== 'model';
+        const predictive = activeScenario === 'predictive';
+        root.querySelector('#s20-kicker').textContent = predictive
+          ? 'EPM predictive \u00b7 forecast through May 30 \u00b7 407 players \u00b7 league true shooting is 57.83%'
+          : copy.kicker;
+        root.querySelector('#s20-total-label').textContent = copy.totalLabel;
+        ['rts', 'role', 'tsa', 'rstov'].forEach(key => {
+          root.querySelector(`#s20-${key}-label`).textContent = copy[`${key}Label`];
+          root.querySelector(`#s20-${key}-hint`).textContent = copy[`${key}Hint`];
+          root.querySelector(`#s20-${key}-marginal-label`).textContent = copy[`${key}Marginal`];
+        });
+        if (predictive) {
+          root.querySelector('#s20-rts-label').textContent = 'Predictive TS';
+          root.querySelector('#s20-rts-hint').textContent = 'EPM forecast points per shot, including free throws';
+          root.querySelector('#s20-tsa-label').textContent = 'Predictive TSA / 100';
+        }
+        sortKey = 'impact';
+        sortDirection = 'desc';
+        update();
+        renderTable();
+      };
+
+      const setScenario = scenario => {
+        activeScenario = scenario;
+        root.dataset.scenario = scenario;
+        const predictive = scenario === 'predictive';
+        root.querySelectorAll('[data-scenario-button]').forEach(button => {
+          button.setAttribute('aria-pressed', String(button.dataset.scenarioButton === scenario));
+        });
+        root.querySelector('#s20-scenario-note').textContent = predictive
+          ? 'EPM forecast requested June 1 (effective through May 30). Predicted true shooting and shot volume replace actual inputs; observed UA%, role difficulty, and scoring-turnover rate stay fixed.'
+          : 'Completed-season shooting and volume. The impact model uses the fitted unconstrained Points + difficulty points + TSA coefficients.';
+        root.querySelector('#s20-rts-table-label').innerHTML = predictive
+          ? '<span>Predictive</span><span>TS</span>'
+          : '<span>TS</span>';
+        root.querySelector('#s20-tsa-table-label').innerHTML = predictive
+          ? '<span>Predictive TSA</span><span>/ 100</span>'
+          : '<span>TSA</span><span>/ 100</span>';
+        setView(activeView);
+        selectPlayer(selected);
+      };
+
+      const setBreakdown = breakdown => {
+        activeBreakdown = breakdown;
+        root.dataset.breakdown = breakdown;
+        root.querySelectorAll('[data-breakdown-button]').forEach(button => {
+          button.setAttribute('aria-pressed', String(button.dataset.breakdownButton === breakdown));
+        });
+        update();
+      };
+
+      const setTableMode = mode => {
+        tableMode = mode;
+        root.dataset.tableMode = mode;
+        root.querySelectorAll('[data-table-mode-button]').forEach(button => {
+          button.setAttribute('aria-pressed', String(button.dataset.tableModeButton === mode));
+        });
+        sortKey = 'impact';
+        sortDirection = 'desc';
+        renderTable();
+      };
+
+      const selectPlayer = index => {
+        selected = index;
+        const p = scenarioPlayer(players[index]);
+        root.querySelector('#s20-player-name').textContent = `${p.name} \u00b7 ${p.teamAbbr}`;
+        Object.keys(controls).forEach(key => {
+          controls[key].value = key === 'rstov' ? -p.rstov : p[key];
+        });
+        root.querySelectorAll('#s20-table-body tr').forEach(row => {
+          row.setAttribute('aria-selected', String(Number(row.dataset.index) === selected));
+        });
+        update();
+      };
+
+      Object.values(controls).forEach(control => control.addEventListener('input', update));
+      root.querySelector('#s20-search').addEventListener('input', renderTable);
+      teamSelect.addEventListener('change', renderTable);
+      root.querySelector('#s20-min-poss').addEventListener('change', renderTable);
+      root.querySelector('#s20-filter-toggle').addEventListener('click', event => {
+        const expanded = event.currentTarget.getAttribute('aria-expanded') === 'true';
+        event.currentTarget.setAttribute('aria-expanded', String(!expanded));
+        root.querySelector('#s20-value-filters').hidden = expanded;
+      });
+      root.querySelector('#s20-filter-apply').addEventListener('click', applyValueFilter);
+      filterMetricSelect.addEventListener('change', updateFilterDirection);
+      root.querySelector('#s20-filter-clear').addEventListener('click', () => {
+        Object.keys(valueFilters).forEach(key => delete valueFilters[key]);
+        renderActiveFilters();
+        renderTable();
+      });
+      [root.querySelector('#s20-filter-min'), root.querySelector('#s20-filter-max')].forEach(input => {
+        input.addEventListener('keydown', event => {
+          if (event.key === 'Enter') applyValueFilter();
+        });
+      });
+      root.querySelectorAll('[data-view-button]').forEach(button => {
+        button.addEventListener('click', () => setView(button.dataset.viewButton));
+      });
+      root.querySelectorAll('[data-scenario-button]').forEach(button => {
+        button.addEventListener('click', () => setScenario(button.dataset.scenarioButton));
+      });
+      root.querySelectorAll('[data-breakdown-button]').forEach(button => {
+        button.addEventListener('click', () => setBreakdown(button.dataset.breakdownButton));
+      });
+      root.querySelectorAll('[data-table-mode-button]').forEach(button => {
+        button.addEventListener('click', () => setTableMode(button.dataset.tableModeButton));
+      });
+      root.querySelector('#s20-scatter-x').addEventListener('change', drawScatter);
+      root.querySelector('#s20-scatter-y').addEventListener('change', drawScatter);
+      root.querySelectorAll('[data-sort]').forEach(button => {
+        button.addEventListener('click', () => {
+          const nextKey = button.dataset.sort;
+          if (sortKey === nextKey) sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+          else {
+            sortKey = nextKey;
+            sortDirection = nextKey === 'name' || nextKey === 'teamAbbr' ? 'asc' : 'desc';
+          }
+          renderTable();
+        });
+      });
+      setView('simple');
+      setBreakdown('impact');
+      setTableMode('rates');
+      setScenario('actual');
+      renderActiveFilters();
+      root._scatterResizeObserver = new ResizeObserver(entries => {
+        const nextWidth = Math.round(entries[0].contentRect.width);
+        if (nextWidth !== root._scatterWidth) {
+          root._scatterWidth = nextWidth;
+          drawScatter();
+        }
+      });
+      root._scatterResizeObserver.observe(root.querySelector('#s20-scatter-wrap'));
+      window.addEventListener('resize', drawScatter);
+    })();
+  </script>
+</div>
