@@ -469,11 +469,12 @@
       font-variant-numeric: tabular-nums;
     }
     #scoring20-lab .s20-table-wrap {
-      width: 100%;
+      width: fit-content;
       max-width: 100%;
       max-height: 440px;
       overflow: auto;
-      contain: inline-size paint;
+      overscroll-behavior-inline: contain;
+      scrollbar-gutter: stable;
       border-top: 1px solid var(--s20-rule);
       border-bottom: 1px solid var(--s20-rule);
     }
@@ -570,21 +571,21 @@
       white-space: nowrap;
     }
     #scoring20-lab table {
-      width: 100%;
-      min-width: 940px;
-      border-collapse: collapse;
+      width: max-content;
+      border-collapse: separate;
+      border-spacing: 0;
       color: var(--s20-ink);
-      font-size: 12px;
+      font-size: 11.5px;
       font-variant-numeric: tabular-nums;
     }
-    #scoring20-lab[data-table-mode="rates"] table { min-width: 980px; }
-    #scoring20-lab[data-table-mode="plus"] table { min-width: 1320px; }
+    #scoring20-lab[data-table-mode="rates"] table { min-width: 0; }
+    #scoring20-lab[data-table-mode="plus"] table { min-width: 0; }
     #scoring20-lab[data-table-mode="rates"] [data-table-column="plus"] { display: none; }
     #scoring20-lab th {
       position: sticky;
       top: 27px;
       z-index: 3;
-      padding: 8px 7px;
+      padding: 7px 6px;
       background: var(--s20-bg);
       color: var(--s20-muted);
       border-bottom: 1px solid var(--s20-rule);
@@ -607,6 +608,24 @@
     }
     #scoring20-lab .s20-group-start {
       border-left: 1px solid var(--s20-rule);
+    }
+    #scoring20-lab thead tr:not(.s20-group-row) th:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 7;
+      min-width: 188px;
+      max-width: 188px;
+      background: var(--s20-bg);
+      box-shadow: 1px 0 0 var(--s20-rule);
+    }
+    #scoring20-lab .s20-group-row th:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 8;
+      min-width: 188px;
+      max-width: 188px;
+      background: color-mix(in srgb, var(--s20-panel) 84%, var(--s20-bg));
+      box-shadow: 1px 0 0 var(--s20-rule);
     }
     #scoring20-lab th:first-child { text-align: center; }
     #scoring20-lab td:first-child { text-align: left; }
@@ -635,24 +654,36 @@
       white-space: nowrap;
     }
     #scoring20-lab .s20-sort-indicator {
-      position: absolute;
-      right: 0;
-      top: 50%;
-      width: 8px;
-      transform: translateY(-50%);
+      display: none;
     }
     #scoring20-lab td {
-      padding: 9px;
+      padding: 7px 8px;
       color: var(--s20-ink);
       -webkit-text-fill-color: var(--s20-ink);
       border-bottom: 1px solid color-mix(in srgb, var(--s20-rule) 58%, transparent);
       text-align: center;
     }
+    #scoring20-lab tbody td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      min-width: 188px;
+      max-width: 188px;
+      background: var(--s20-bg);
+      box-shadow: 1px 0 0 var(--s20-rule);
+    }
     #scoring20-lab tbody tr { cursor: pointer; }
     #scoring20-lab tbody tr:hover { background: color-mix(in srgb, var(--s20-accent) 12%, transparent); }
+    #scoring20-lab tbody tr:hover td:first-child {
+      background: color-mix(in srgb, var(--s20-accent) 12%, var(--s20-bg));
+    }
     #scoring20-lab tbody tr[aria-selected="true"] {
       background: color-mix(in srgb, var(--s20-accent) 24%, transparent);
       box-shadow: inset 4px 0 0 var(--s20-accent);
+    }
+    #scoring20-lab tbody tr[aria-selected="true"] td:first-child {
+      background: color-mix(in srgb, var(--s20-accent) 24%, var(--s20-bg));
+      box-shadow: inset 4px 0 0 var(--s20-accent), 1px 0 0 var(--s20-rule);
     }
     #scoring20-lab .s20-player {
       max-width: 220px;
@@ -678,6 +709,19 @@
     }
     #scoring20-lab .s20-table-total { font-weight: 850; }
     #scoring20-lab .s20-table-sensitivity { font-weight: 500; }
+    #scoring20-lab .s20-primary-metric {
+      background: color-mix(in srgb, var(--s20-accent) 10%, var(--s20-bg));
+      border-left: 1px solid color-mix(in srgb, var(--s20-accent) 45%, var(--s20-rule));
+      border-right: 1px solid color-mix(in srgb, var(--s20-accent) 45%, var(--s20-rule));
+      font-weight: 850;
+    }
+    #scoring20-lab th.s20-primary-metric {
+      color: var(--s20-ink);
+      box-shadow: inset 0 2px 0 var(--s20-accent);
+    }
+    #scoring20-lab tbody tr[aria-selected="true"] td.s20-primary-metric {
+      background: color-mix(in srgb, var(--s20-accent) 30%, var(--s20-bg));
+    }
     #scoring20-lab .s20-value-good {
       color: var(--s20-tov);
       -webkit-text-fill-color: var(--s20-tov);
@@ -796,6 +840,19 @@
       #scoring20-lab .s20-filter:first-child { flex-basis: 100%; }
       #scoring20-lab .s20-table-switch-wrap { flex: 1 1 auto; }
       #scoring20-lab .s20-count { margin-left: 0; }
+      #scoring20-lab .s20-player-button {
+        display: block;
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #scoring20-lab thead tr:not(.s20-group-row) th:first-child,
+      #scoring20-lab .s20-group-row th:first-child,
+      #scoring20-lab tbody td:first-child {
+        min-width: 156px;
+        max-width: 156px;
+      }
       #scoring20-lab .s20-value-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       #scoring20-lab .s20-filter-apply,
       #scoring20-lab .s20-filter-clear { width: 100%; }
@@ -805,6 +862,7 @@
       #scoring20-lab .s20-scatter-field select { width: 100%; min-width: 0; }
     }
     @media (max-width: 430px) {
+      #scoring20-lab { padding: 10px; border-radius: 10px; }
       #scoring20-lab .s20-head { display: grid; }
       #scoring20-lab .s20-total { text-align: left; }
       #scoring20-lab .s20-head-stats { justify-content: space-between; }
@@ -818,6 +876,33 @@
       #scoring20-lab .s20-scatter-meta { display: grid; }
       #scoring20-lab .s20-value-filters { grid-template-columns: 1fr; }
       #scoring20-lab .s20-active-filters { grid-column: 1; }
+      #scoring20-lab .s20-table-tools {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 9px;
+      }
+      #scoring20-lab .s20-table-tools > :first-child,
+      #scoring20-lab .s20-table-switch-wrap { grid-column: 1 / -1; }
+      #scoring20-lab .s20-table-tools .s20-filter,
+      #scoring20-lab .s20-table-switch-wrap { min-width: 0; }
+      #scoring20-lab .s20-filter input,
+      #scoring20-lab .s20-filter select { width: 100%; min-width: 0; }
+      #scoring20-lab .s20-filter-toggle { width: 100%; }
+      #scoring20-lab .s20-count { align-self: end; justify-self: end; padding: 0 0 8px; }
+      #scoring20-lab .s20-table-wrap { max-height: 390px; }
+      #scoring20-lab table { font-size: 11px; }
+      #scoring20-lab th { padding: 6px 5px; font-size: 9px; }
+      #scoring20-lab td { padding: 7px 6px; }
+      #scoring20-lab thead tr:not(.s20-group-row) th:first-child,
+      #scoring20-lab .s20-group-row th:first-child,
+      #scoring20-lab tbody td:first-child {
+        min-width: 142px;
+        max-width: 142px;
+      }
+      #scoring20-lab .s20-rank { width: 19px; }
+      #scoring20-lab .s20-player-button {
+        max-width: 128px;
+      }
     }
   </style>
 
@@ -833,7 +918,7 @@
         <span class="s20-total-detail" id="s20-multiple">1.50&times; league &middot; +49.6%</span>
       </div>
       <div class="s20-total">
-        <span class="s20-total-label">Impact</span>
+        <span class="s20-total-label">Scoring impact</span>
         <span class="s20-total-value s20-impact-value" id="s20-impact">+9.83</span>
         <span class="s20-total-detail">points per 100</span>
       </div>
@@ -873,7 +958,7 @@
         <div class="s20-marginal"><span id="s20-role-marginal-label">+1 point of difficulty</span><strong id="s20-role-marginal">changes impact by +0.53 points / 100</strong></div>
       </div>
       <div class="s20-control" data-control="rstov">
-        <div class="s20-control-head"><label for="s20-rstov" id="s20-rstov-label">Scoring Turnover vs Expected</label><output id="s20-rstov-out">−7.94%</output></div>
+        <div class="s20-control-head"><label for="s20-rstov" id="s20-rstov-label">Scoring TOV% vs Expected</label><output id="s20-rstov-out">−7.94%</output></div>
         <input id="s20-rstov" type="range" min="-12" max="24" step="0.001" value="-7.940">
         <small class="s20-hint" id="s20-rstov-hint">Scoring-turnover rate relative to expected; lower is better</small>
         <div class="s20-marginal"><span id="s20-rstov-marginal-label">1 percentage point fewer turnovers</span><strong id="s20-rstov-marginal">changes impact by +0.36 points / 100</strong></div>
@@ -977,7 +1062,8 @@
     <table aria-label="2026 Scoring plus at 20 leaders">
       <thead>
       <tr class="s20-group-row">
-        <th colspan="2">Player</th>
+        <th>Player</th>
+        <th aria-hidden="true"></th>
         <th colspan="4" class="s20-group-start">Impact</th>
         <th colspan="4" class="s20-group-start">Scoring profile</th>
         <th colspan="6" class="s20-group-start" data-table-column="plus">Scoring+ contribution</th>
@@ -987,12 +1073,12 @@
         <th data-key="teamAbbr"><button class="s20-sort" type="button" data-sort="teamAbbr"><span class="s20-th-label"><span>Team</span></span><span class="s20-sort-indicator"></span></button></th>
         <th data-key="shootingImpact" class="s20-group-start"><button class="s20-sort" type="button" data-sort="shootingImpact"><span class="s20-th-label"><span>Shooting</span><span>impact</span></span><span class="s20-sort-indicator"></span></button></th>
         <th data-key="turnoverImpact"><button class="s20-sort" type="button" data-sort="turnoverImpact"><span class="s20-th-label"><span>Turnover</span><span>impact</span></span><span class="s20-sort-indicator"></span></button></th>
-        <th data-key="impact"><button class="s20-sort" type="button" data-sort="impact"><span class="s20-th-label"><span>Total</span><span>impact</span></span><span class="s20-sort-indicator">&darr;</span></button></th>
-        <th data-key="marginalTsa"><button class="s20-sort" type="button" data-sort="marginalTsa"><span class="s20-th-label"><span>Scoring impact</span><span>/ extra TSA</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="impact" class="s20-primary-metric"><button class="s20-sort" type="button" data-sort="impact"><span class="s20-th-label"><span>Scoring</span><span>impact</span></span><span class="s20-sort-indicator">&darr;</span></button></th>
+        <th data-key="marginalTsa"><button class="s20-sort" type="button" data-sort="marginalTsa"><span class="s20-th-label"><span>+1 TSA</span><span>impact</span></span><span class="s20-sort-indicator"></span></button></th>
         <th data-key="tsa" class="s20-group-start"><button class="s20-sort" type="button" data-sort="tsa"><span class="s20-th-label" id="s20-tsa-table-label"><span>TSA</span><span>/ 100</span></span><span class="s20-sort-indicator"></span></button></th>
         <th data-key="ts"><button class="s20-sort" type="button" data-sort="ts"><span class="s20-th-label" id="s20-rts-table-label"><span>TS</span></span><span class="s20-sort-indicator"></span></button></th>
         <th data-key="role"><button class="s20-sort" type="button" data-sort="role"><span class="s20-th-label"><span>Play Type</span><span>Difficulty</span></span><span class="s20-sort-indicator"></span></button></th>
-        <th data-key="stovVsExpected"><button class="s20-sort" type="button" data-sort="stovVsExpected"><span class="s20-th-label"><span>Scoring Turnover</span><span>vs Expected</span></span><span class="s20-sort-indicator"></span></button></th>
+        <th data-key="stovVsExpected"><button class="s20-sort" type="button" data-sort="stovVsExpected"><span class="s20-th-label"><span>Scoring TOV%</span><span>vs Expected</span></span><span class="s20-sort-indicator"></span></button></th>
         <th data-key="rtsValue" class="s20-group-start" data-table-column="plus"><button class="s20-sort" type="button" data-sort="rtsValue"><span class="s20-th-label"><span>rTS+</span><span>value</span></span><span class="s20-sort-indicator"></span></button></th>
         <th data-key="roleValue" data-table-column="plus"><button class="s20-sort" type="button" data-sort="roleValue"><span class="s20-th-label"><span>Role+</span><span>value</span></span><span class="s20-sort-indicator"></span></button></th>
         <th data-key="volume" data-table-column="plus"><button class="s20-sort" type="button" data-sort="volume"><span class="s20-th-label"><span>Shot volume+</span><span>value</span></span><span class="s20-sort-indicator"></span></button></th>
@@ -1017,7 +1103,7 @@
             <option value="ua">Unassisted attempt share</option>
             <option value="rts">True shooting vs. league</option>
             <option value="role">Play Type Difficulty</option>
-            <option value="stovVsExpected">Scoring Turnover vs Expected</option>
+            <option value="stovVsExpected">Scoring TOV% vs Expected</option>
             <option value="marginalTsa">Value of one more TSA</option>
             <option value="shootingImpact">Shooting impact</option>
             <option value="turnoverImpact">Turnover impact</option>
@@ -1025,14 +1111,14 @@
         </label>
         <label class="s20-scatter-field">Vertical axis
           <select id="s20-scatter-y">
-            <option value="impact">Total impact</option>
+            <option value="impact">Scoring impact</option>
             <option value="shootingImpact">Shooting impact</option>
             <option value="turnoverImpact">Turnover impact</option>
             <option value="tsa">Shot volume</option>
             <option value="ua">Unassisted attempt share</option>
             <option value="rts">True shooting vs. league</option>
             <option value="role">Play Type Difficulty</option>
-            <option value="stovVsExpected">Scoring Turnover vs Expected</option>
+            <option value="stovVsExpected">Scoring TOV% vs Expected</option>
             <option value="marginalTsa">Value of one more TSA</option>
           </select>
         </label>
@@ -1476,12 +1562,12 @@
       const filterMetricLabels = {
         shootingImpact: 'Shooting impact',
         turnoverImpact: 'Turnover impact',
-        impact: 'Total impact',
-        marginalTsa: 'Scoring impact / extra TSA',
+        impact: 'Scoring impact',
+        marginalTsa: '+1 TSA impact',
         tsa: 'TSA / 100',
         ts: 'TS',
         role: 'Play Type Difficulty',
-        stovVsExpected: 'Scoring Turnover vs Expected',
+        stovVsExpected: 'Scoring TOV% vs Expected',
         rtsValue: 'rTS+ value',
         roleValue: 'Role+ value',
         volume: 'Shot volume+ value',
@@ -1590,11 +1676,11 @@
         ua: {label: () => activeScenario === 'predictive' ? 'Observed unassisted attempt share' : 'Unassisted attempt share', unit: '% of TSA \u00b7 putbacks assisted', format: v => `${v.toFixed(1)}%`, reference: null},
         rts: {label: () => activeScenario === 'predictive' ? 'Predicted TS vs. league' : 'True shooting vs. league', unit: 'rTS points', format: v => `${signed(v)}%`, reference: 0, upper: 'above league', lower: 'below league'},
         role: {label: () => 'Play Type Difficulty', unit: 'rTS points', format: v => `${signed(v)}%`, reference: 0, upper: 'harder shot mix', lower: 'easier shot mix'},
-        stovVsExpected: {label: () => 'Scoring Turnover vs Expected', unit: 'percentage points', format: v => `${signed(v)}%`, reference: 0, upper: 'more than expected', lower: 'fewer than expected', lowerIsBetter: true},
+        stovVsExpected: {label: () => 'Scoring TOV% vs Expected', unit: 'percentage points', format: v => `${signed(v)}%`, reference: 0, upper: 'more than expected', lower: 'fewer than expected', lowerIsBetter: true},
         marginalTsa: {label: () => 'Value of one more TSA', unit: 'points / 100', format: signed, reference: 0, upper: 'adds value', lower: 'costs value'},
         shootingImpact: {label: () => 'Shooting impact', unit: 'points / 100', format: signed, reference: 0, upper: 'positive impact', lower: 'negative impact'},
         turnoverImpact: {label: () => 'Turnover impact', unit: 'points / 100', format: signed, reference: 0, upper: 'positive impact', lower: 'negative impact'},
-        impact: {label: () => 'Total impact', unit: 'points / 100', format: signed, reference: 0, upper: 'positive impact', lower: 'negative impact'},
+        impact: {label: () => 'Scoring impact', unit: 'points / 100', format: signed, reference: 0, upper: 'positive impact', lower: 'negative impact'},
         total: {label: () => 'Scoring+ @20', unit: 'league = 100', format: v => v.toFixed(1), reference: 100, upper: 'above league', lower: 'below league'}
       };
 
@@ -1740,7 +1826,7 @@
 
         const hideTip = () => { tooltip.hidden = true; };
         const showTip = (d, event) => {
-          const impactLine = xKey === 'impact' || yKey === 'impact' ? '' : `<br>Total impact: ${signed(d.impact)} pts / 100`;
+          const impactLine = xKey === 'impact' || yKey === 'impact' ? '' : `<br>Scoring impact: ${signed(d.impact)} pts / 100`;
           tooltip.innerHTML = `<strong>${escapeText(d.name)} \u00b7 ${escapeText(d.teamAbbr || 'FA')}</strong>` +
             `${escapeText(xMetric.label())}: ${escapeText(xMetric.format(d[xKey]))}<br>` +
             `${escapeText(yMetric.label())}: ${escapeText(yMetric.format(d[yKey]))}<br>` +
@@ -1826,7 +1912,7 @@
             <td>${d.teamAbbr}</td>
             <td class="s20-group-start ${impactClass(d.shootingImpact)}">${signed1(d.shootingImpact)}</td>
             <td class="${impactClass(d.turnoverImpact)}">${signed1(d.turnoverImpact)}</td>
-            <td class="s20-table-total ${impactClass(d.impact)}">${signed1(d.impact)}</td>
+            <td class="s20-table-total s20-primary-metric ${impactClass(d.impact)}">${signed1(d.impact)}</td>
             <td class="s20-table-sensitivity ${impactClass(d.marginalTsa)}">${signed(d.marginalTsa)}</td>
             <td class="s20-group-start">${d.tsa.toFixed(1)}</td>
             <td>${d.ts.toFixed(1)}%</td>
@@ -1922,7 +2008,7 @@
              <div class="s20-subtotal">Shot volume+ + TOV volume+<strong>Total volume+ <output>${signed(d.totalVolume)}</output></strong></div>`
           : `<div class="s20-subtotal">Unconstrained fit \u00b7 baseline ${signed(d.baseImpact)}<strong>Shooting impact <output>${signed(d.shootingImpact)}</output></strong></div>
              <div class="s20-subtotal">TOV rate + TOV volume<strong>Turnover impact <output>${signed(d.turnoverImpact)}</output></strong></div>
-             <div class="s20-subtotal">Five terms + model baseline<strong>Total impact <output>${signed(d.impact)}</output></strong></div>`;
+             <div class="s20-subtotal">Five terms + model baseline<strong>Scoring impact <output>${signed(d.impact)}</output></strong></div>`;
       };
 
       const updateSimpleBreakdown = d => {
@@ -1974,21 +2060,21 @@
         simple: {
           kicker: '2026 regular season \u00b7 407 players \u00b7 league true shooting is 57.83%',
           totalLabel: 'Scoring efficiency @20', tsaLabel: 'TSA / 100',
-          rtsLabel: 'True Shooting', roleLabel: 'Play Type Difficulty', rstovLabel: 'Scoring Turnover vs Expected',
+          rtsLabel: 'True Shooting', roleLabel: 'Play Type Difficulty', rstovLabel: 'Scoring TOV% vs Expected',
           rtsHint: 'Points per shot, including free throws', roleHint: "How much harder the player's shot mix is than average",
           tsaHint: 'True-shot attempts per 100 possessions', rstovHint: 'Scoring-turnover rate relative to expected; lower is better',
           rtsMarginal: '+1 point of true shooting', roleMarginal: '+1 point of difficulty',
           tsaMarginal: '+1 TSA / 100', rstovMarginal: '1 percentage point fewer turnovers',
-          tsaHeader: 'TSA / 100', rstovHeader: 'Scoring Turnover vs Expected'
+          tsaHeader: 'TSA / 100', rstovHeader: 'Scoring TOV% vs Expected'
         },
         model: {
           kicker: '2026 regular season \u00b7 407-player common sample \u00b7 league TS 57.83% \u00b7 league = 100',
-          totalLabel: 'Scoring+ @20', tsaLabel: 'TSA / 100', rtsLabel: 'Relative TS', roleLabel: 'Play Type Difficulty', rstovLabel: 'Scoring Turnover vs Expected',
+          totalLabel: 'Scoring+ @20', tsaLabel: 'TSA / 100', rtsLabel: 'Relative TS', roleLabel: 'Play Type Difficulty', rstovLabel: 'Scoring TOV% vs Expected',
           rtsHint: 'True shooting relative to league average', roleHint: 'Shot-mix difficulty; harder scoring jobs are positive',
           tsaHint: 'True-shot attempts per 100; 20 is the comparison level', rstovHint: 'Scoring-turnover rate relative to expected; lower is better',
           rtsMarginal: '+1 rTS point', roleMarginal: '+1 role point',
           tsaMarginal: '+1 TSA / 100', rstovMarginal: '1 percentage point fewer turnovers',
-          tsaHeader: 'TSA / 100', rstovHeader: 'Scoring Turnover vs Expected'
+          tsaHeader: 'TSA / 100', rstovHeader: 'Scoring TOV% vs Expected'
         }
       };
 
