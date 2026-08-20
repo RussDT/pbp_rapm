@@ -27,9 +27,9 @@ Outputs (default `wnba_test/Results/current/publish/`):
   this file directly, the same way `/wnba/galaxy` fetches its JSON; it is a
   mutable pointer file, so it must not be cached immutably.
 
-`--stage-databallr PATH` copies the drop-in file and the rack payload into
-`PATH/public/` and `PATH/new next js migration/public/` when those folders
-exist. It never commits or deploys anything.
+`--stage-databallr PATH` copies the drop-in file, season history, and rack
+payload into `PATH/public/` and `PATH/new next js migration/public/` when those
+folders exist. It never commits or deploys anything.
 """
 
 from __future__ import annotations
@@ -430,7 +430,11 @@ def main() -> int:
 
     staged: list[str] = []
     if args.stage_databallr is not None:
-        stage_paths = [publish_path] + ([rack_payload_path] if rack_payload_path else [])
+        stage_paths = (
+            [publish_path]
+            + ([history_path] if history_path else [])
+            + ([rack_payload_path] if rack_payload_path else [])
+        )
         staged = stage_databallr(stage_paths, args.stage_databallr)
 
     source_summary = {}
@@ -472,9 +476,9 @@ def main() -> int:
         "staged_databallr_files": staged,
         "top_10": top_rows(publish),
         "databallr_checklist": [
-            "Copy publish_csv and rack_payload_json into databallr/public/ and 'new next js migration/public/' (or use --stage-databallr).",
-            "Point backend/app/routes/supabase/wnba.py WNBA_RAPM_CSV and the WNBA_RAPM_CSV_URL default at the new basename.",
-            "Bump the Flask cache key prefix (wnba_rapm_v2 -> v3) or wait out the 3600s cache after deploy.",
+            "Copy publish_csv, history_csv, and rack_payload_json into databallr/public/ and 'new next js migration/public/' (or use --stage-databallr).",
+            "Keep backend/app/routes/supabase/wnba.py current and history constants pointed at the staged basenames.",
+            "Bump the versioned Flask cache key prefix or wait out the 3600s cache after a source-contract change.",
             "Relabel the headline WNBA 'RAPM' metric strings to 'VPM' on the surfaces that read /wnba_rapm.",
             "Deploy frontend (serves public/ CSV) before or with the backend so the URL fallback resolves.",
         ],

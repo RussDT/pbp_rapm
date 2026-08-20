@@ -125,11 +125,13 @@ The script refuses to run unless `latest_manifest.json` reports
   each player's 2022-2026 box + VPM rows) built from the same box cache and
   history file the standalone rack reader uses. `--skip-rack-payload` omits it.
 
-`--stage-databallr <root>` copies the current CSV **and the rack payload** into
-databallr `public/` and `new next js migration/public/`. It never commits or
-deploys. The databallr
-route constant, URL fallback (`https://databallr.com/wnba_vpm_boxprior_current.csv`),
-Flask cache key `wnba_rapm_v3`, and the VPM labels were switched on
+`--stage-databallr <root>` copies the current CSV, the season-history CSV,
+**and the rack payload** into databallr `public/` and
+`new next js migration/public/`. It never commits or deploys. Databallr's
+season-aware `/wnba/stats` request reads the history artifact when `season` is
+explicit; callers that omit `season` retain the one-row-per-current-player
+contract. The databallr route constants, URL fallbacks, versioned Flask cache
+key, and the VPM labels were switched on
 August 18, 2026; the old
 `wnba_weighted_factors_alt3_efg_value_21_26_all_td700_a1750_4000.csv` stays in
 databallr `public/` only as the RAPM Galaxy / RAPM Twins source.
