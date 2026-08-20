@@ -3,215 +3,43 @@
 This file is short-term session memory only.
 Durable operating rules belong in root `AGENTS.md` and `CLAUDE.md`.
 
-## 2026-08-11 — v5 netcont-feat VPM challenger: documented null
+## 2026-08-19 — WNBA VPM rack player profile (databallr modules on our data)
 
-- vpm harness gained a third prior feature source `epm_box_tracking`
-  (`build_epm_box_tracking_panel`): EPM `p_*` natives + 4 derived interactions,
-  latest fully-completed-season `boxscore.csv` + name-crosswalked tracking CSVs,
-  a two-season possession-weighted blend with a >50%-coverage guard, and
-  `dumb_pf_dec` — HL550-decayed strictly pre-cut non-shooting foul rate from
-  repo-owned `v5_events/foul_events.parquet`, shrunk with K=20 pseudo-games
-  (replaces vendor `DumbPenaltyFouls_100`, empty 2024-25+; registered
-  deviation, ground-truth panel r=0.96). Recipes can declare
-  `fallback_features`: rows missing base features get a separately fit
-  fallback model, rows missing both are dropped and counted in the manifest —
-  no silent NaN/fallback emission. Incumbent EPM-only recipes reproduce v4
-  netcont priors to max |diff| = 0.0.
-- `research_harness_v5_netcont_feat.json`: 14 recipes (9 upgraded, 3
-  incumbents, new d_three_freq/d_ft), `forward_target_source_subdir` reuses the
-  9 v4 net forward-target parquets, ridge_alpha 0 everywhere (harness-lane
-  protocol; lab alpha conventions are non-transferable). All recipes beat
-  their incumbents in label space on all validation cuts.
-- Solve level is a NULL: netcontfeat x2 vs netcont x2 `-21.28e-6`
-  `[-60.34,+18.78]`, 1/4 cuts, `P(<=0)=0.861`; vs gross epm12_x2 `-2.85e-6`
-  (neutral). Both scales still clear no-prior (+155.38/+132.01e-6, 4/4) — the
-  enrichment consumed the netcont repricing edge without adding to it.
-  Second straight lesson (after own-lag) that label-space prior wins do not
-  transfer to summed solve-level forward gains. netcont x2 stays the leading
-  research base; spent tiles and 2026-11-01 untouched.
-- Provenance fix shipped: `vpm/scripts/cross_experiment_bootstrap.py` is the
-  committed cross-lane bootstrap (asserts identical possession universes via
-  per-cluster row counts + actual-value fingerprints); it exactly reproduces
-  the recorded v4 netcont-vs-EPM12 `+18.43e-6`. 37/37 harness tests pass
-  (also fixed a stale monkeypatch in the target-source-manifest test).
-- Docs: vpm `RESEARCH_HARNESS.md` v5 section, `NET_CONTINUATION_DECOMP.md`
-  follow-up note, root `CLAUDE.md` netcont bullet updated with the null.
+- Ask: "show me how this could look in our wnba vpm rack ... get organized", with four databallr screenshots (shot profile, two career logs, a full player page with PG/P36/P75/P100/TOT and Role & Playstyle). Replaced the old mock-data "table studies" block in `wnba_test/wnba_vpm_rack_template.html` with a real, selection-linked player profile: head (season / RS-PS / rate-mode + four-group stat strip with data-driven percentile tints), shot profile (FT/RIM/MID/3P volume+efficiency diverging bars), role & playstyle, and a career log. `build_wnba_vpm_rack.py` gained `build_profile()` (`--box-dir`, `--history`, `--no-profile` replaces `--no-studies`), which reads the pbpstats `YYYY[ps]_pbp.csv` cache and the published history CSV into a compact `keys`/`lg`/`rows` payload. 226 of 226 board players covered; page is 569KB; all 148 rows clicked with zero JS errors; lane tests 32 passed.
+- Provenance first: our own box cache reproduces the databallr card nearly exactly (A'ja FTA/100 12.2 (+7.0), rim 6.5 at 73.7%, mid 17.1 at 46.7%, TS 62.1 vs their 62.0; McBride rim rate 20.3, VPM +3.1), so the modules ship on real data. Their league volume baseline is exactly `100 * sum(attempts) / sum(player OffPoss)` = team attempts per 100 / 5 (I first divided by five twice and briefly mis-concluded the definitions differed).
+- Only **Rim Rate** reproduced from the box; Usage, On-Ball, Self-Created, Shot Quality, Scoring TOV and Stops/100 did not match any box formula, so Role & Playstyle was rebuilt from repo-owned definitions and labelled as such rather than guessing a proprietary spec. Same reason the efficiency-vs-league column is `TS+`, not `rTS` (their RTS is role-adjusted; our `rTS` belongs to the `zTS = rTS + playtype_diff` chain) and not `RTS`.
+- Gotcha worth keeping: per-zone bar axes make bars **incomparable** — FT looked longer than MID despite a smaller gap. `kindAxis()` now shares one axis across all volume rows and another across all efficiency rows, spanned by the 5th-95th percentile of the league gap with clamping, so a three-attempt 0% mid-range season cannot set the scale. Career-line TS+ is possession-weighted per season against that season's own league. The VPM column is tooltipped with the solve it came from (2022-2025 RS+PS on the regular-season row, 2026 RS to date, no playoff-only solve), and the career log spans 2022-2026 only because the box cache starts in 2022 — stated in the UI, not just the doc.
+- Docs: `nba_pipeline/docs/WNBA_DAILY_UPDATE.md` profile section (modules, inputs, 200/60-possession percentile pools, `TS+` naming, VPM/coverage caveats, `--no-profile`).
 
-## 2026-08-10 — RTSS-augmented WNBA board (development, 2025)
+## 2026-08-19 — WNBA playtype / shot-role difficulty from PBP descriptions
 
-- New `wnba_test/build_wnba_rtss_augmented_board.py`: solves the 2025 board
-  twice through the frozen live objective (`5000/40000`, prior scale `1.5`),
-  box-only vs box+RTSS corrections, and reports per-player deltas. Hard fence
-  `MAX_DEVELOPMENT_YEAR = 2025`; the 2026 confirmation season is untouched.
-- Candidate lanes read at runtime from v2 `best_by_component.csv`, filtered to
-  additively-mappable prefixes with one correction per (parent, side). Drops
-  `ALT_TOV_VALUE` / `ALT_BADPASS_TOV_VALUE` (no defensible parent) and the
-  `ALT_FT_FREQ`/def child in favor of the `ALT_FT`/def parent. 13 applied.
-- Gotcha worth remembering: `build_clean_weighted_factors` also solves
-  `RAPM` and the derived display children, and takes their priors from the
-  same dict. Correcting only the nine additive components leaves those stale —
-  `off`/`def`/`net_rapm` came back byte-identical between arms and the display
-  residual blew out to `5.28`. Fix is to correct the fitted twelve and re-run
-  `_derive_additive_priors`; residual back to `0.0000`.
-- Result: net correlation `0.971`, mean absolute net move `0.53`, mean rank
-  shift `7.6`. Concentrated on defense as hoped — def correlation `0.874`,
-  def spread `0.863 -> 1.094` (+27% separation).
-- `--forward-check` (rate 2024, score 2025) says RTSS does NOT help:
-  `+9.9e-6` MSE, CI `[-120.4, +153.6] e-6`. Corrections fit on 2023 alone
-  there, so it is the weakest form of the test, but it is the only
-  development-safe forward fold available. No promotion.
-- Carry-forward mode added (`--year 2026 --rtss-feature-year 2025`): the fence
-  is on RTSS consumption, not board year, so a 2026 board is buildable
-  without touching the holdout mirror; `--forward-check` refused there.
-  Script also refuses outright if the feature file was rebuilt with
-  `--include-confirmation-season`. Box-only arm reproduces the live
-  `wnba_current_metrics.csv` to `max |diff| = 0.0` — good isolation check.
-  2026 result: net corr `0.969`, def corr `0.845`, def spread `0.779 ->
-  `0.941` (+21%), mean rank shift `6.1`. Same defensive signature as 2025.
-- Confirmation still BLOCKED, and the earlier "101 RTSS games unsynced" note
-  was wrong: those 101 are unplayed. Mirror is 229 ENDED / 229 covered / 0
-  missing markings; RTSS trails the CDN by 13 played games. Real blocker is
-  just that 2026 RS is 242/330.
-- Docs: `WNBA_RTSS_PRIOR_RESEARCH.md` gained "RTSS-augmented board, 2025"
-  and "Carry-forward 2026 board" sections.
+- Question: the WNBA has no Synergy feed, so it has no `playtype_diff` and no `zTS` analogue. Answer: the frozen six-family NBA PBP taxonomy ports verbatim — WNBA descriptions carry the same action vocabulary (`driving`, `pullup`, `step back`, `cutting`, `putback`, `finger roll`). New `wnba_test/build_wnba_playtype_difficulty.py` reads `nba_pipeline/external/gabriel_wnba/pbp_data/` directly (no lineup processing needed: shooter + description + shot value only), prices families from the prior completed RS, and emits player-season difficulty in TS points. Doc: `WNBA_PLAYTYPE_DIFFICULTY.md`; tests: `test_wnba_playtype_difficulty.py` (11 passing).
+- The one required WNBA change is **season centering**. WNBA scorers kept adding descriptors: `CUT_2` share `0.001` (2013) -> `0.066` (2026), `OTHER_2` `0.41` -> `0.04`, `driving` token `6.9%` -> `22.7%`. Under the NBA's prior-season league reference that pure labeling drift reads as up to `3` TS points of league-wide difficulty (`+0.64` in 2013 vs `-3.07` in 2018). `playtype_diff` now subtracts the feature season's own FGA-weighted mean — a per-season constant, so no rank or spread changes. `playtype_diff_prior_league` keeps the NBA-exact convention. Pre-2018 rows are flagged `descriptor_regime = sparse_descriptions` and are unusable (`cutting` is literally absent before 2016).
+- External validation without a player crosswalk: `shots.pbpId` joins to the PBP event number, giving 100,201 RTSS shots over 739 games (91.9% of RTSS shots, 100% two/three agreement). Tracking confirms the labels having never seen a description — `SELF_CREATED_3` is 94.2% off-dribble at 3.79 dribbles, `OTHER_3` is 94.9% catch-and-shoot at 0.14, `OTHER_RIM_2` is the one mixed bucket (23.8% putbacks). After recalibrating `qSQ` within season x zone, family values correlate `0.99`; player-seasons correlate Pearson `0.760` / Spearman `0.751` (n=318). The residual is what descriptions physically cannot see — Angel Reese reads `-2.55` (easy) on PBP and `+2.55` (hard) on tracking because of contest.
+- **Raw `qSQ` is not on the WNBA points scale for threes**: mean `qSQ` `49.3`-`49.7` vs actual 3P% `33.7`-`34.7` in all of 2023/2024/2025 (a stable `+15` gap), while twos sit within `2.4`. Ranking is weaker there too (2025 decile calibration slope `0.956` on twos vs `0.704` on threes, with a compressed three-point decile range). This sharpens the known `qSP-qSQ` three-point level-shift note: the level problem is in `qSQ` itself, not only in the difference.
+- Scale, not just rank: weighted regression of next-season TS on next-season role gives slope `-0.814 [-0.995,-0.638]` over 426 pairs (feature seasons 2019-2024, player-clustered bootstrap). **Add `0.81 x playtype_diff` to `rTS`, not `1.0x`.**
+- The NBA's exact spec (substitute difficulty-adjusted efficiency for raw) *loses* to the box baseline, `+0.269` RMSE, 6/6 seasons, `p(improves)=0.000`. Not a defect — the cancellation mechanism, and the numbers pin it: role persistence `rho=0.757`, TS carry-over `lambda=0.397`, price `beta=0.814`, so the predicted current-role slope `beta(lambda-rho) = -0.293` matches the measured `-0.386 [-0.606,-0.184]`. Role persists about twice as strongly as shooting efficiency, so a hard diet mostly predicts *another* hard diet and drags raw future TS down more than the skill adjustment lifts it. Carrying difficulty as its own regressor is `-0.060` RMSE (CI crosses zero, 4/6); pairing it with next-season role is `-0.136` (CI excludes zero, 6/6) but uses forecast-time-unavailable information.
+- Do not over-read the near-zero correlation with annual no-prior oTS RAPM components (`0.15`/`0.03`/`0.01` for 2023-2025): annual WNBA component RAPM at a 500-possession floor is far too noisy to discriminate at this effect size. It is neither support nor refutation.
+- The `0.81` shortfall is the **descriptor proxy's**, not the WNBA's. Ran the identical calibration on NBA data (12 transitions 2014-2026, rebuilt from raw PBP with the frozen classifier imported from `analyze_pbp_playtype_difficulty_ots.py`): Synergy `playtype_diff` fits `-1.044 [-1.211,-0.875]`, so production `zTS`'s imposed `1.0` is correct; the PBP proxy fits `-0.861 [-0.959,-0.755]` on those same 592 rows and `-0.767 [-0.818,-0.712]` over all 3,858. The two correlate `0.915` and still disagree on scale, and the per-transition estimate is weaker than `1.0` in 12/12 seasons (CI excludes `-1.0` in 9/12). Hazard recorded in the doc: `PBP_PLAYTYPE_DIFFICULTY_OTS.md` proposes the proxy as the Synergy replacement, and dropping it into the `zTS` formula at the inherited `1.0` would over-scale by 15-25% and propagate through the volume step to published `SV/100` at slope `0.800618`.
+- Display column added: `playtype_diff_scaled = 0.81 x playtype_diff` closes `rTS + playtype_diff_scaled = rTS_role` with no read-time arithmetic, with `role_display_coefficient` in `manifest.json`. **`playtype_diff` stays raw in the build** — only 1 of the 3 consumers wants the coefficient (forecasting must carry the raw regressor, priors fit their own weight, and the NBA columns are unscaled, so pre-scaling would break the NBA->WNBA hierarchical prior lane). Same reason `rTS_role` is not called `zTS`. Tests now 13 passing.
+- Status: development only. Feature seasons 2019-2024 / targets 2020-2025 are spent; **2026 is untouched** and is the confirmation season. Do not re-tune `0.81` on 2026.
 
-## 2026-08-10 — WNBA predictive program executed end to end (Phase 0/1/2-prep + Kalman)
+## 2026-08-18 — Rolling net DECOMP and quarterly TD550 history
 
-- Plan of record `docs/WNBA_BETTING_PROGRAM.md` adopted; game-day lane shares
-  `wnba_test/wnba_gameday_common.py` (paths, tricodes, hash-chained JSONL logs;
-  `canonical_json` sanitizes numpy and rejects NaN). Built + tested (32/32,
-  offline): `build_wnba_game_logs.py` (1311 finals / 31,765 player rows,
-  Eastern game dates, cached non-finals refetched each run — 1022200029 is
-  permanently non-final at the CDN, skipped by design), `project_wnba_minutes.py`
-  (EWMA HL 1.5 tuned on 2025 only; beats both baselines 2025 and 2026),
-  `calibrate_wnba_forecast_sigma.py` (HCA 2.0003, sigma 12.6648 normal_std;
-  2026 replay RMSE 13.2768 ≈ DARKO-NPI 13.118), emit/capture/score with a
-  strict `emitted_at < tipoff` + `espn_state=='pre'` fence, reachable PENDING,
-  CRPS-vs-realized beside close-CLV. First live emission 2026-08-11 slate:
-  3 forecasts + 3 DraftKings snapshots, chains verified; model disagrees with
-  the market on WAS@LVA (model WAS by 4, market LVA -7.5) — watch the log.
-- `build_wnba_kalman_box.py`: DARKO-style per-stat Kalman panel, DE-tuned on
-  ≤2025 (seed 20260810), 2026 frozen holdout; all 14 stats beat trailing-10 on
-  dev AND holdout. Props-lane input only; doc `docs/WNBA_KALMAN_BOX.md`.
-- One-shot RTSS confirmation: prereg amended (design review, pre-outcome) to a
-  strictly forward primary — solve 2025 around each prior arm (corrections fit
-  2023-2024 only), score 2026 possessions; in-sample 2026 nowcast demoted to
-  secondary descriptive. Harness `run_wnba_rtss_confirmation.py --check`
-  correctly BLOCKED (242/330 finals, 101 RTSS games unsynced — needs
-  `aws login`). Defense-alpha grid extension on dev folds retained 40000
-  (monotonic degradation through 160000). Phase 3 preregs frozen (props,
-  cold-start). Next: conditional-sigma CRPS kill test → Phase 1.5 simulator.
+- Built an isolated 1997-2026 net-continuation lane: 60 RS/PS parquet pairs (7,157,906 rows, all row identities below `7e-14`), 312 component solves, and 26 complete rolling five-season ALL/RB/SE net-DECOMP tables using alphas 2000/4000. The net outputs do not overwrite the canonical gross public DECOMP.
+- Built 100 pure TD550 ALL/RB/SE RAPM snapshots: four actual-game-count checkpoints for each trailing-six-season window from 1997-2002 through 2021-2026. The manifest has player counts and every result/RB/season-effect artifact was checked. Production playoff handling remains separate RS/PS season effects; the rejected `--ps-prior` lane was not used.
 
-## 2026-08-10 — Net-continuation VPM forward test (v4 netcont) run end to end
+## 2026-08-18 — WNBA VPM refreshed and staged for databallr
 
-- `build_vpm_target_swap.py --net-lane` (+ `--rapm-source-dir`) is the net EV swap:
-  `net_EV = ev_pts + kappa_z*(1-p_make)`, common gross+net identity gate so both
-  trees swap identical rows, SC parquets rewritten to `SC_NET_CONT`, kappa recovered
-  per file (agreement 1.0), machine-precision closures on all 22 files 2016-2026.
-  Source lane is the isolated `processed_netcont_lane/` rebuild (row-aligned with
-  canonical FC/SC/RAPM); swap output `results/vpm_target_swap_netcont/`.
-- vpm harness now supports `data.component_tree: "net"` plus `target_swap_subdir` /
-  `processed_source_subdir` / `target_source_manifest` overrides, all defaulting to
-  gross (v3 lane regression-verified unchanged). Experiment
-  `research_harness_v4_netcont.json`: gross-mapped frozen alphas on the ten net
-  components, 12 EPM `p_*` recipes retargeted, forward labels + priors refit on net
-  targets (9 cuts), evaluated at the 4 dev cuts.
-- Results (4,000-rep paired game-clustered bootstraps): netcont_x2 vs net ev_noprior
-  `+176.65e-6 [95.31,260.61]`, 4/4 cuts, all promotion gates pass. Cross-experiment
-  on the proven elementwise-identical possession universe: netcont_x2 vs gross
-  epm12_x2 `+18.43e-6 [2.19,36.01]`, 3/4 cuts, `P(<=0)=0.014`; net ev_noprior vs
-  gross ev_noprior neutral (`-5.21e-6`, CI straddles 0); netcont_x1 loses (`-35.55`).
-  Read: repricing alone doesn't change summed no-prior prediction; the gain is priors
-  mapping onto correctly priced components. Development evidence only — accepted
-  boundary unchanged until untouched 2026-27. Docs: `NET_CONTINUATION_DECOMP.md`,
-  vpm `RESEARCH_HARNESS.md`; receipt `bootstrap_cross_vs_gross_epm12.json`.
+- Ran `update_wnba_metrics.py --as-of 2026-08-18` (24 new games → 266, 226 players, 148 qualified at 1000+ possessions, 225/1 box-prior sources, max identity gap 0.002) and wrote the new operator script `wnba_test/prepare_wnba_vpm_publish.py`. It emits `wnba_test/Results/current/publish/wnba_vpm_boxprior_current.csv` (61 legacy alt3 EFG-value columns + prior/delta/box audit + `team`/`season`/`qualified`/`as_of`; one row per player, `Latest_Year = season`, identities re-checked), the non-drop-in `wnba_vpm_boxprior_history_2022_2026.csv` (887 rows), and `publish_manifest.json`; `--stage-databallr` copied the CSV into both databallr public folders.
+- Databallr edits (uncommitted, not deployed): `backend/app/routes/supabase/wnba.py` now reads `wnba_vpm_boxprior_current.csv` (URL fallback `https://databallr.com/wnba_vpm_boxprior_current.csv`, cache key `wnba_rapm_v3`), the Next `src/lib/api/wnba.ts` constant matches, headline labels read VPM / O-VPM / D-VPM across `wnbaAdvanced.ts`, `WNBAHome`, `WNBADashboard`, `WNBAStatsTable`, `WNBAPlayerProfile`, and `fresh_docs/WNBA.md` documents the new source. `tsc -b` passes; `validate_wnba_backend.py` passes with the backend venv; `validate-wnba-overhaul.mjs` fails only on the pre-existing `StatSection as StatDisplay` snippet check that already failed on HEAD. Galaxy/Twins keep the old time-decay file.
+- Mock: `wnba_test/build_wnba_vpm_rack.py` + `wnba_test/wnba_vpm_rack_template.html` render the published CSV into `wnba_test/Results/current/publish/wnba_vpm_rack.html` (dark modular-rack style: leaderboard, player knobs, factor bars, eFG zone EQ, prior→lineup chain, team mixer). Per Russ's review the factor charts show four bars per side (eFG / FT / TOV / 2nd chance, exact `*ALT_EFG_VALUE` etc.) and each value sits inside the chart on the empty side of the zero line (left of zero for positive bars, right of zero for negative). Gotcha fixed there: a `.top` highlight class collided with the page-header `.top` rule and inflated the first row — renamed `.lead`. Later in the session: added a Rack / Arena / NBA RAPM theme switch (databallr palette tokens verbatim from `DuelLobbyCards.css`; SVG knobs and canvases read tokens at draw time; `data-rack-theme` attribute, not `data-theme`, because the artifact host stamps the latter), embedded Ballr Sans as base64 `@font-face` for the databallr themes (`--fonts-dir` / `--no-fonts`; the Rack theme keeps the system UI stack, `.kv` uses SF Mono), and a clearly labelled mock "table studies" section below the rack (databallr profile tables — season box table + Current / Career & peak impact tables — with rank-percentile tints via `--accent-rgb` / `--cool-rgb`, sortable headers, per-36/75/100 modes, LED stat rail; `--no-studies` strips it). Browser-pane gotcha: after `resize_window` the pane tab reports `visibilityState: hidden` and screenshots of scrolled regions come back black/stale — reset to the `desktop` preset, resize to a viewport tall enough to hold the whole page, then `navigate` and screenshot once.
+- Lesson: databallr's WNBA consumers assume one row per player id, so publish the current-season board only and keep multi-season history for a future season-aware endpoint.
+- Production cutover (Aug 19, on Russ's "wire the single season vpm into databallr production" ask): pushed databallr `main` `ba567e73` with both CSVs, the `/wnba_rapm` route switch, the Next reader constant, and `fresh_docs/WNBA.md`; Netlify auto-deployed the byte-identical CSV, then `eb deploy production-py312` shipped `wnba-vpm-ba567e73` from a clean worktree (`backend/.ebignore` makes the EB CLI zip the working directory, so another session's untracked files would otherwise ship). Labels followed in `2cfd9471`. `tsc -b` passes; the validator's VPM CSV data checks pass (226 rows, `Latest_Year` 2026, overlap) and only the pre-existing `StatSection as StatDisplay` snippet check fails — absent on HEAD too.
+- The site still rendered the old time-decay numbers after all of that, and the cause was cache, not data: **Flask-Caching ignores `key_prefix` whenever `query_string=True`** (key = `request.path` + MD5 of sorted args), so the deliberate `wnba_rapm_v2` -> `_v3` bump retired nothing and 26 pre-cutover entries kept serving per query string. The tell was that a plain `?limit=5000` returned the new 226-row board while the exact `?limit=5000&fields=...` URL `WNBAStatsTable` requests returned the old 243-row one — same route, same source constant, different cache key. Fixed in `2cfd9471` with `versioned_query_cache_key()` in `backend/app/routes/supabase/cache.py` (callable `key_prefix`, version baked into the key); 59 other repo routes still pair `query_string=True` with a `key_prefix` and share the latent bug. Two gotchas for next time: `backend/.env` `REDIS_URL` is the **production** Redis, so local dev shares (and can fix) the production cache, and `POST /api/cache/clear/supabase` fails there because the provider rejects `KEYS` — SCAN-delete `databallr:/api/supabase/wnba_rapm*` instead. The browser's own `max-age=3600` copy is a second, per-URL layer that a hard reload clears.
 
-## 2026-08-10 — rZTOV promoted to a per-season stat; explorer rewired
+## 2026-08-18 — rZTOV daily lane: why the fresh EPM snapshot tied, and the half-blend default
 
-- `scripts/build_rztov_explorer.py` is now the whole lane (panel, putbacks, per-window
-  fits, per-season scoring, explorer JSON, both result CSVs). The scratchpad prototype
-  `build_rztov_seasons.py` is superseded. Methodology doc: `docs/RZTOV.md`.
-- Switched the fit target from the point-valued `alt_*_tov_value` solves to the
-  count-basis `tov_{lo}_{hi}_rs_se_a1500_1500` solve, one per trailing window. A count
-  target gives kappa a known physical `-1.00`; fitted `0.75`-`0.91` is ridge solve
-  recovery, and break-evens are `x/y` ratios so uniform shrinkage cancels out of them
-  entirely. The `0.73 pts/turnover` figure stays labeled indicative — the two solves
-  are not shrunk identically.
-- Break-evens drift for real across the era (2014-18 → 2022-26 window: self
-  `13.49→15.80`, ast `6.48→5.05`, pass `11.02→9.26`), and the drift **survives**
-  consistent putback treatment. The earlier version only had putbacks for 2022-26 and
-  silently `fillna(0)`'d 2014-21, which confounded the finding; putback counts are now
-  built in-script for all seasons and cached to `results/rztov_putbacks.csv`.
-- Two season adjustments: per-window refit, then re-center each season's **excess**
-  (not the ratio — centering the ratio reintroduces a Jensen artifact) on its own
-  possession-weighted mean. Centres are small, max `|0.11|`/100.
-- Multi-season boards are possession-weighted roll-ups of separately priced season
-  rows, verified in-browser to 2e-15. Ledger closure also 2e-15 once the season
-  calibration row was signed `+centre` (it raises allowance, so it raises saved).
-- Validation 2022-26 `n=568`: excess `-0.784` vs TOV-value RAPM (raw TOV/100 `-0.071`,
-  per-attempt `-0.419`), yoy `+0.811` (n=2,934), R2w ladder `0.001 / 0.330 / 0.723`
-  against unrestricted `0.743`. Per-season qualified sd `2.88`-`3.38`.
-- The per-self-created-attempt rate is roughly flat across creation load
-  (`6.4%` at 3-6 → `6.0%` at 20+), so the explorer's curve panel argues *one rate per
-  area, not one rate overall* rather than the old (wrong, mix-intercept-dropped)
-  "heavy creators turn it over less" framing.
-- Ledger restructured to two **measured** lanes: shot attempts (`v_self + v_ast` vs
-  `sc_100`) and potential assists (`v_potast` vs `bp_100`). The old cross-sectional
-  `alloc_*` split of `sc_100` across the two attempt rows is gone — it priced assisted
-  above self-created in every window and forced the two displayed `TOV%` cells to a
-  league constant `1.4215`. Merging removes the fabrication instead of re-basing it; the
-  attempt mix now shows up only where it is real, inside the blended break-even. Self /
-  assisted survive as driver rows on the same columns, muted: exact volume, allowance and
-  break-even, with `TOV` / `TOV%` starred because they re-split the lane by **within-player
-  marginal risk** (`7.7%` vs `2.8%`, adjacent-season deltas) instead of the discarded
-  cross-sectional weights. Drivers close to the lane at `8.9e-16` and their play shares sum
-  to `100%` on every row.
-- Denominator moved from involvement to **plays** = `involve + act`, i.e. the boxscore
-  TOV% shape `TOV / (FGA + 0.44 FTA + TOV)` extended to passing. Allowance and excess are
-  counts, so nothing was refit; only the divisor moved. Verified `delta * plays = saved`
-  at `4.4e-16` and full ledger closure at `1.2e-15` on all 6,088 rows. yoy `+0.811` ->
-  `+0.812`; qualified sd `2.63` on the 22-26 board.
-- Publishing constraints for this lane: never name the tracking vendor in output;
-  screen/pick data cannot be published, so offensive fouls stay inside the scoring
-  turnover bucket and there is no screener area. Built page is checked ASCII-only and
-  greps clean for both.
-
-## How To Use
-
-1. Read the latest entries at session start.
-2. Append one short entry at session end.
-3. When a lesson becomes durable, move it into `AGENTS.md` / `CLAUDE.md`.
-4. Keep only the latest 5 entries in this file.
-
-Never store secrets, tokens, or credentials here.
-
-## Session Log Template
-
-```md
-### 2026-08-09 — Merged remixed PR #31
-- Task: Merge `RussDT/remixed` PR #31 and deploy the backend only if required.
-- Outcome: Merged verification-only scripts, tests, and docs as `3277c154`; no backend runtime deployment was required.
-
-### 2026-08-09 — Turnover risk and TSx2 by shot clock
-- Task: Describe where turnovers occur, how turnover risk changes as a possession survives, how actual points per true-shooting attempt changes, and how much total possession value remains after including rebound continuation.
-- Fix applied: Added an exploratory endpoint/hazard/shot-value builder over 2024-2026 RS+PS, split 24-second starts from 14-second resets, mapped ordinary FTs to the same-clock foul or and-one FGA, included unmatched offensive fouls, and kept raw versus shot-calibrated clock estimates as a sensitivity range. Mapped initial 24-second cycles to canonical processed possession terminals and emitted a quarter-second evaluation grid for first-chance, second-chance, and total remaining value.
-- Prevention rule added: Do not treat the FGA-trained clock calibrator as turnover-event ground truth; separate turnover volume from conditional hazard, show the final four seconds with and without shot-clock violations, and treat the TSx2 and possession-value curves as descriptive state selection rather than a pure causal waiting effect. A quarter-second evaluation grid is a smooth model surface, not quarter-second observed timing; use the raw whole-second curve when the calibrated tail becomes sparse below four seconds.
-- Outcome: 886,202 endpoints and 111,224 turnovers; on 24-second starts conditional turnover incidence rises from roughly 1.7-2.2% early to 10.7-12.8% late, while calibrated TSx2 falls monotonically from 1.433 to 0.876 (raw 1.468 to 0.992). The FT join covers 99.61% of ordinary attempts. Across 755,570 uniquely mapped initial cycles, calibrated total remaining value falls from 1.160 points at 24 seconds to 1.007 at 4 seconds; second chance contributes roughly 0.15-0.17 points and exact row closure holds.
-
-### 2026-08-10 — WNBA RTSS defensive features and alpha-edge resolution
-- Task: Refresh the live WNBA board, add the missing RTSS defensive features (offensive fouls drawn, zone-split allowed shot quality, closest-defender dFGA), and resolve the alpha grid edges.
-- Fix applied: Read the previously unused `fouls` table (offensive fouls drawn and charges drawn are defensive credits via `fouledId`), split `def_mid3_qsq_epv` into MID and THREE, and added closest-defender dFGA volume/points-allowed/allowed-FG%/contest-mix by zone — 29 new features, 75 -> 105. Wired them into defensive CV arms only. Added `extend_wnba_offense_alpha_grid.py` mirroring the defense extension.
-- Prevention rule added: The RTSS feature builder fences the confirmation season by default; `--include-confirmation-season` requires an explicit `--output` so the fenced development surface is never overwritten. A one-sided alpha grid cannot close an edge — sweep both directions before claiming an interior optimum.
-- Outcome: Defensive CV improved on 9 of 12 sides (THREE finishing +0.06% -> -4.92%, RIM frequency -0.73% -> -4.58%, defensive TOV value +0.03% -> -1.51% on 3/3 folds); pooled 15/24 -> 17/24. Both alphas confirmed interior: offense `5000` beats `4000` by 2.85e-6 and `6000` by 3.56e-6; defense `40000` already held. Live board refreshed to 2026-08-10 (242 games, 224 players, exact additive closure); A'ja Wilson leads at 7.57 net.
-
-### 2026-08-10 — Shot-clock difficulty and clock-adjusted TS
-- Task: Convert inferred shot-clock context into a player TS adjustment and test whether it helps oTS regressions.
-- Fix applied: Added game-held-out isotonic TSx2 pricing by season and 24/14-second reset family, exact raw TS + clock difficulty = adjusted TS aggregation, a raw-clock primary surface, a calibrated-floor-4 sensitivity, and same-window plus season-forward ridge comparisons. Ordinary FT attempts inherit the foul/and-one clock and shooter; 41 conflicting FT-shooter anchors are excluded from player attribution.
-- Prevention rule added: Clock adjustment is context, not pure shooting talent or causal grenade burden. Keep raw timing primary, never present quarter-second or sub-four calibrated precision as observed, and require fresh-season evidence before admitting the feature to oTS/VPM priors.
-- Outcome: On 508 same-window players, adjusted TS-added improves RMSE by 0.0148 but its interval crosses zero. On the two season-forward transitions (746 player-seasons), raw adjusted TS-added improves future annual oTS RMSE from 1.5648 to 1.5349. The zTS ablation confirms playtype burden is the stronger layer: zTS alone reaches 1.5352, and clock on top reaches 1.5295, only -0.0057 incremental with CI [-0.0143, +0.0025]. A literal 2022-2026 pure-RS `Points + TSA` backfill gives only `+0.0075 R^2` from volume-scaled clock difficulty (`+0.0055` repeated-fold OOF), versus about `+0.091` from current playtype difficulty; clock adds zero after playtype. Exported current creation/shooting/early-offense/transition role numbers; keep clock diagnostic until a fresh forward test.
-
-### 2026-08-11 — PBP-only playtype difficulty forward test
-- Task: Measure how much broad own-shooter playtype difficulty can be recovered from ordinary PBP and compare it directly with Synergy on future oTS.
-- Fix applied: Added a six-bucket outcome-invariant classifier, prior-season category pricing, strict expanding chronological evaluation, exact-common candidate rows, a shared baseline-selected ridge alpha, and paired player-cluster uncertainty.
-- Prevention rule added: Keep this own-shooter prior separate from lineup `PLAYTYPE_PROXY_PTS`; do not use makes, misses, points, or made-only assist tags in category assignment, and do not promote from already examined 2025-2026 targets.
-- Outcome: PBP and Synergy difficulty correlate `0.908`, but PBP wins: future-oTS RMSE falls from `1.5303` to `1.4966` versus `1.5135` for Synergy on 735 player-seasons. Adding Synergy after PBP worsens RMSE. Freeze for untouched 2026-27 confirmation and a later summed-possession gate.
+- Question (operator pushback on the 2026-08-16 within-season result): if the in-season EPM snapshot ties the season-start one, "you are telling me their expected turnovers numbers are weird." Answered with `research_predictive_ztov_daily.py evaluate --diagnose` over the same eight seasons / forty windows (base candidates reproduce exactly): the fresh snapshot *is* informative — its movement predicts the season-start-prior solve's forward errors (slope `+0.26 [+0.20,+0.32]`, vs `+0.57` for the static annual map and `-0.07` for the full swap) — but at full weight it is double counted against the live possession rows (`corr(Δprior, plain live-solve movement)` `+0.39`, rising to `0.54` in the largest-movement quintile, and the movers are regulars, not fringe). Because the ridge is linear in the prior, the MSE-optimal weight on the swap is exactly measurable: `γ = 0.50 [0.36,0.64]` pooled (dev 0.55, frozen 0.34), so full use and no use tie by construction; the pre-specified half blend beats the season-start prior in 8/8 seasons and 5/5 windows (`-3.2e-6 [-5.0,-1.4]`, ~20% of the prior's in-season gain). Stale-prior scale/alpha are locally optimal (1.5×, α1500, α6000 all worse), so the tie was not an α artefact.
+- Board change: in season, `board` now centres the refreshed solve on `0.5·season-start + 0.5·latest-with-carry-forward` (`--fresh-weight`, 0 = W1, 1 = W2), with `off_pz_stale`/`off_pz_fresh`, `prior_pz_stale`/`prior_pz_fresh`, `prior_start` side columns and `prior_rule`/`fresh_weight` in the manifest; the offseason board is byte-identical to before. In-season check as of 2026-03-01: linearity `off_pz = 0.5(stale+fresh)` gap 1.5e-14, `corr(stale, fresh)` 0.981.
+- Prevention rule: a null on a full-weight swap is not "no information" when the candidate overlaps the training rows — measure γ (or the residual slope) before concluding; and the half weight is a dev-fold quantity, never to be re-tuned on 2026-27. New gitignored artifacts: `results/tov_predictive_ztov_daily_{eval,windows}_diag.csv`, `..._diag.csv`, `..._diag_players.csv`. Docs: `TOV_PRIOR_RAPM.md` (diagnose subsection, board semantics, pre-registered read), README bullet, root rule wording.

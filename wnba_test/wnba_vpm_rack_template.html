@@ -1,0 +1,1137 @@
+<meta charset="utf-8">
+<title>WNBA VPM Rack</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* The fonts placeholder below is replaced by build_wnba_vpm_rack.py with data-URI
+     @font-face rules for Ballr Sans (databallr's brand face) when the font files are
+     available; otherwise it is emptied and the databallr themes fall back to DM Sans /
+     the system stack. */
+  __FONTS__
+  :root{
+    --bg:#0a0a0b;
+    --panel:#131315;
+    --panel-2:#18181b;
+    --panel-3:#1e1e22;
+    --border:#27272c;
+    --border-2:#34343a;
+    --text:#f3f3f4;
+    --muted:#8d8d95;
+    --dim:#5a5a62;
+    --accent:#ff7b1c;
+    --accent-2:#ffa25c;
+    --accent-dim:rgba(255,123,28,.16);
+    --line:#ececee;
+    --line-dim:#3b3b42;
+    --neg-text:#c9c9cf;
+    --accent-rgb:255,123,28;
+    --cool-rgb:122,150,196;
+    --radius:14px;
+    --font:ui-sans-serif,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  /* Theme swaps. Every colour on the page — CSS, SVG knobs, and the two canvases —
+     resolves through the tokens above, so a theme is a token block and nothing else.
+     Arena = databallr's default games palette (DuelLobbyCards.css: shell 221 34% 14%,
+     card 224 36% 18%, gold primary 43 100% 68%). NBA RAPM = the legacy nbarapm.com
+     port (background 0 0% 10.2%, stepped charcoal cards, RAPM green 118 60% 61%).
+     `data-rack-theme` is used rather than `data-theme` so the artifact host's own
+     light/dark stamp never collides with it. */
+  :root[data-rack-theme="arena"]{
+    --bg:#182031;
+    --panel:#1d2740;
+    --panel-2:#232c43;
+    --panel-3:#37425d;
+    --border:#364364;
+    --border-2:#3c4967;
+    --text:#fafafa;
+    --muted:#b3bac6;
+    --dim:#636d83;
+    --accent:#ffd15c;
+    --accent-2:#ffdf8f;
+    --accent-dim:rgba(255,209,92,.16);
+    --line:#e2e4e9;
+    --line-dim:#445274;
+    --neg-text:#c9ced9;
+    --accent-rgb:255,209,92;
+    --cool-rgb:67,199,244;
+    --radius:16px;
+    --font:"Ballr Sans","DM Sans",ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  :root[data-rack-theme="nbarapm"]{
+    --bg:#1a1a1a;
+    --panel:#212225;
+    --panel-2:#2a2c30;
+    --panel-3:#34373c;
+    --border:#35383d;
+    --border-2:#474b51;
+    --text:#eceef0;
+    --muted:#a8aeb6;
+    --dim:#6c747f;
+    --accent:#65d761;
+    --accent-2:#97e495;
+    --accent-dim:rgba(101,215,97,.16);
+    --line:#dde0e3;
+    --line-dim:#4c5057;
+    --neg-text:#c7ccd1;
+    --accent-rgb:101,215,97;
+    --cool-rgb:61,179,255;
+    --radius:10px;
+    --font:"Ballr Sans","DM Sans",ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{background:var(--bg)}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.35;padding:16px 16px 40px;-webkit-font-smoothing:antialiased}
+  button,input{font:inherit;color:inherit}
+  svg text{font-family:var(--font)}
+  button{background:none;border:0;padding:0;cursor:pointer}
+  button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* top bar */
+  .top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 6px 16px}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+  .brand .sub{color:var(--muted);font-size:12px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+  .chip{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid var(--border);border-radius:999px;background:var(--panel);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+  .chip b{color:var(--text);font-weight:600}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .dot.off{background:var(--dim);box-shadow:none}
+  .theme-sw{display:inline-flex;align-items:center;gap:8px}
+  .theme-sw .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+  .theme-sw .seg button{padding:5px 10px}
+  html,body,.mod,.chip,.seg,.search,.row,.node,.strip{transition:background-color .18s ease,border-color .18s ease,color .18s ease}
+
+  /* rack grid */
+  .rack{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;align-items:stretch}
+  .mod{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;position:relative}
+  .mod-h{display:flex;align-items:center;gap:9px;min-height:22px}
+  .mod-h .name{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .mod-h .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .params{display:grid;gap:12px 14px}
+  .param{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .param .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .param .v{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .param.on .v{color:var(--accent)}
+  .param .v.neg{color:var(--neg-text)}
+  .param.on .v.neg{color:var(--accent-2)}
+  .param .v small{font-size:10px;font-weight:500;color:var(--muted);margin-left:3px}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--panel-2)}
+  .seg button{padding:4px 9px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .seg button+button{border-left:1px solid var(--border)}
+  .seg button.on{color:var(--accent);background:var(--accent-dim)}
+  .toggle{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .toggle .sw{width:24px;height:13px;border-radius:999px;background:var(--panel-3);border:1px solid var(--border-2);position:relative;transition:background .15s}
+  .toggle .sw::after{content:"";position:absolute;top:1px;left:1px;width:9px;height:9px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
+  .toggle.on .sw{background:var(--accent-dim);border-color:var(--accent)}
+  .toggle.on .sw::after{transform:translateX(11px);background:var(--accent)}
+  .search{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:5px 9px;font-size:11.5px;color:var(--text);width:140px;min-width:0}
+  .search::placeholder{color:var(--dim)}
+
+  /* leaderboard */
+  .m-board{grid-column:span 4;grid-row:span 3}
+  .board-head,.row{display:grid;grid-template-columns:26px minmax(0,1fr) 34px minmax(60px,1.1fr) 50px;gap:8px;align-items:center}
+  .board-head{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);padding:0 8px 6px;border-bottom:1px solid var(--border)}
+  .board-head span:last-child,.row .val{text-align:right}
+  .list{flex:1 1 0;min-height:260px;height:0;overflow-y:auto;overscroll-behavior:contain;margin:0 -8px;padding:0 2px 0 0;scrollbar-width:thin;scrollbar-color:var(--border-2) transparent}
+  .row{width:100%;text-align:left;padding:6px 8px;border-radius:8px;color:var(--text);position:relative}
+  .row:hover{background:var(--panel-2)}
+  .row.on{background:var(--panel-3)}
+  .row.on::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:2px;border-radius:2px;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .row .rk{font-size:10.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .row.on .rk{color:var(--accent)}
+  .row .nm{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .tm{font-size:10px;letter-spacing:.08em;color:var(--muted)}
+  .row .val{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+  .row.on .val{color:var(--accent)}
+  .row.unq .val{color:var(--muted);font-weight:500}
+  .row.unq .sbar i{opacity:.4}
+  .sbar{position:relative;height:10px}
+  .sbar::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line-dim)}
+  .sbar i{position:absolute;top:3.5px;height:3px;border-radius:2px;background:var(--line);opacity:.85}
+  .row.on .sbar i{background:var(--accent);opacity:1;box-shadow:0 0 6px var(--accent-dim)}
+  .board-foot{font-size:10px;color:var(--dim);letter-spacing:.06em;display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border)}
+
+  /* player module */
+  .m-player{grid-column:span 4}
+  .who{display:flex;align-items:flex-start;gap:14px}
+  .who .big{font-size:34px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1;color:var(--accent)}
+  .who .big.neg{color:var(--accent-2)}
+  .who .id{min-width:0}
+  .who .nm{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .who .meta{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+  .knobs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .knob{display:flex;align-items:center;gap:10px}
+  .knob svg{flex:0 0 auto;width:66px;height:66px}
+  .knob .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .knob .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+  .knob .h{font-size:9.5px;color:var(--dim);margin-top:2px}
+
+  /* distribution */
+  .m-dist{grid-column:span 4}
+  canvas{display:block;width:100%;height:96px}
+  .legend{display:flex;gap:14px;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);flex-wrap:wrap}
+  .legend i{display:inline-block;width:10px;height:2px;background:var(--line);vertical-align:middle;margin-right:5px;border-radius:2px}
+  .legend i.acc{background:var(--accent)}
+  .legend i.dim{background:var(--line-dim)}
+
+  /* factor bars */
+  .m-off,.m-def{grid-column:span 4}
+  .fbars{display:grid;gap:6px}
+  .fb{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;align-items:center}
+  .fb .k{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  /* value lives inside the chart, on the empty side of the zero line:
+     positive -> just left of zero, negative -> just right of zero */
+  .fb .sbar{height:18px}
+  .fb .sbar i{top:7.5px}
+  .fb .v{position:absolute;top:0;line-height:18px;font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text)}
+  .fb .v.pos{right:50%;padding-right:7px}
+  .fb .v.neg{left:50%;padding-left:7px;color:var(--neg-text)}
+  .fb.lead .v{color:var(--accent)}
+  .fb.lead .sbar i{background:var(--accent);opacity:1}
+  .fb.total{padding-top:6px;border-top:1px solid var(--border)}
+  .fb.total .k{color:var(--text)}
+  .fb.total .sbar i{height:5px;top:6.5px}
+  .axis{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);font-variant-numeric:tabular-nums;padding:0 0 0 88px}
+
+  /* zones (EQ) */
+  .m-zones{grid-column:span 4}
+  .eq{display:grid;grid-template-columns:34px repeat(3,minmax(0,1fr));gap:6px 10px;align-items:end}
+  .eq .lbl{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);align-self:center}
+  .eq .band{height:64px;position:relative;border-left:1px solid var(--border);border-right:1px solid var(--border);border-radius:4px}
+  .eq .band::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line-dim)}
+  .eq .band i{position:absolute;width:7px;border-radius:2px;background:var(--line);left:calc(50% - 10px)}
+  .eq .band i.fg{left:calc(50% + 3px);opacity:.45}
+  .eq .band i.up{bottom:50%}
+  .eq .band i.dn{top:50%}
+  .eq .band em{position:absolute;bottom:2px;left:4px;font-style:normal;font-size:9px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .eq .band em.r{left:auto;right:4px}
+  .eq .hd{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);text-align:center}
+  .eq .hd b{display:block;color:var(--text);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:0;text-transform:none;margin-bottom:2px}
+
+  /* prior chain (compressor) */
+  .m-prior{grid-column:span 4}
+  .chain{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;position:relative}
+  .chain::before{content:"";position:absolute;left:8%;right:8%;top:8px;height:1px;background:var(--line-dim)}
+  .node{position:relative;padding-top:20px}
+  .node::before{content:"";position:absolute;left:0;top:4px;width:9px;height:9px;border-radius:50%;background:var(--panel);border:1.5px solid var(--line)}
+  .node.acc::before{background:var(--accent);border-color:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .node .k{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .node .v{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+  .node.acc .v{color:var(--accent)}
+  .node .h{font-size:9.5px;color:var(--dim);margin-top:2px}
+  .gain{position:relative;height:38px;border-radius:8px;background:var(--panel-2);border:1px solid var(--border);overflow:hidden}
+  .gain canvas{height:36px}
+  .srcline{display:flex;gap:8px;align-items:center;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .srcline .tag{padding:2px 7px;border-radius:6px;border:1px solid var(--border-2);color:var(--text);letter-spacing:.06em}
+  .srcline .tag.warn{border-color:var(--accent);color:var(--accent)}
+
+  /* mixer */
+  .m-mixer{grid-column:span 8}
+  .strips{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:4px}
+  .strip{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 2px 8px;border-radius:8px;position:relative}
+  .strip:hover{background:var(--panel-2)}
+  .strip.on{background:var(--panel-3)}
+  .strip .tm{font-size:9.5px;letter-spacing:.1em;color:var(--muted);font-weight:600}
+  .strip.on .tm{color:var(--accent)}
+  .strip .fader{position:relative;width:16px;height:96px}
+  .strip .fader::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--line-dim);border-radius:2px}
+  .strip .fader::after{content:"";position:absolute;left:2px;right:2px;top:50%;height:1px;background:var(--border-2)}
+  .strip .fader i{position:absolute;left:0;right:0;height:4px;border-radius:2px;background:var(--line);box-shadow:0 1px 0 rgba(0,0,0,.6)}
+  .strip.on .fader i{background:var(--accent);box-shadow:0 0 8px var(--accent-dim)}
+  .strip .fader b{position:absolute;left:50%;width:2px;margin-left:-1px;background:var(--line);opacity:.35}
+  .strip.on .fader b{background:var(--accent);opacity:.6}
+  .strip .v{font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums}
+  .strip .n{font-size:8.5px;color:var(--dim)}
+  .mixer-foot{font-size:10px;color:var(--dim);letter-spacing:.04em}
+
+  /* notes */
+  .m-notes{grid-column:span 4}
+  .notes p{margin:0;color:var(--muted);font-size:11.5px;line-height:1.5}
+  .notes p+p{margin-top:8px}
+  .notes b{color:var(--text);font-weight:600}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .kv b{color:var(--text);font-weight:600;font-family:var(--mono);font-size:10.5px}
+
+  /* ---- player profile: databallr's profile modules re-set in the rack idiom, on real board data ---- */
+  .divider{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:28px 6px 12px;padding-top:18px;border-top:1px dashed var(--border-2)}
+  .divider .name{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .divider .sub{color:var(--dim);font-size:11px}
+  .chip.warn{color:var(--accent);border-color:rgba(var(--accent-rgb),.45)}
+  .m-prof{grid-column:span 12;padding-bottom:0;gap:10px}
+  .prof{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .prof .nm{font-size:24px;font-weight:700;letter-spacing:.01em;line-height:1}
+  .prof .meta{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .prof .meta b{color:var(--text);font-weight:600}
+  .prof .ranks{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .prof .rk{display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:0 12px;border-left:1px solid var(--border)}
+  .prof .rk .k{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+  .prof .rk .v{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .tabs{display:flex;gap:2px;flex-wrap:wrap;border-top:1px solid var(--border);margin:0 -16px;padding:0 8px}
+  .tabs button{padding:10px 12px 9px;font-size:11.5px;letter-spacing:.04em;color:var(--muted);border-bottom:2px solid transparent}
+  .tabs button:hover{color:var(--text)}
+  .tabs button.on{color:var(--text);border-bottom-color:var(--accent)}
+  .tabs button[disabled]{color:var(--dim);cursor:default}
+  .tabs button[disabled]:hover{color:var(--dim)}
+  .subrow{grid-column:span 12;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 4px}
+  .subrow .h{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .seg button[disabled]{color:var(--dim);cursor:default}
+  .m-seasons{grid-column:span 12}
+  .m-imp{grid-column:span 6}
+  .m-imp .lede{margin:0;color:var(--muted);font-size:11.5px}
+  .tblwrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--panel-2)}
+  table.tbl{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tbl th,.tbl td{padding:7px 9px;text-align:right}
+  .tbl th:first-child,.tbl td:first-child{text-align:left;padding-left:12px}
+  .tbl th.l,.tbl td.l{text-align:left}
+  .tbl th.c,.tbl td.c{text-align:center}
+  .tbl thead .grp th{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:600;text-align:center;padding:9px 9px 3px;border-bottom:1px solid var(--border)}
+  .tbl thead .grp th.blank{border-bottom-color:transparent}
+  .tbl thead .grp th.grpl{border-left:1px solid var(--border)}
+  .tbl thead .col th{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;padding-top:6px;padding-bottom:7px;border-bottom:1px solid var(--border-2)}
+  .tbl thead .col th.sort{cursor:pointer;text-decoration:underline dotted var(--border-2);text-underline-offset:4px;user-select:none}
+  .tbl thead .col th.sort:hover{color:var(--text)}
+  .tbl thead .col th.sort.on{color:var(--text);text-decoration-color:var(--accent)}
+  .tbl th.grpl,.tbl td.grpl{border-left:1px solid var(--border)}
+  .tbl tbody td{border-bottom:1px solid var(--border);color:var(--text)}
+  .tbl tbody tr:last-child td{border-bottom:0}
+  .tbl tbody tr.r{cursor:default}
+  .tbl tbody tr.r.click{cursor:pointer}
+  .tbl tbody tr.r:hover td:not(.pc){background:var(--panel-3)}
+  .tbl td.b{font-weight:700}
+  .tbl td.dim{color:var(--dim)}
+  .tbl td.pc{background:var(--pc);box-shadow:inset 0 0 0 1px var(--panel-2);font-weight:600}
+  .tbl .season{display:inline-flex;align-items:center;gap:8px;font-weight:700}
+  .tbl .chev{color:var(--dim);font-size:10px;width:8px;display:inline-block;transition:transform .15s}
+  .tbl tr.open .chev{transform:rotate(90deg);color:var(--accent)}
+  .tbl .tm{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}
+  .tbl .tmdot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--tmc);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+  .tbl .glog{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:2px 7px;background:var(--panel)}
+  .tbl .glog:hover{color:var(--text);border-color:var(--border-2)}
+  .tbl tr.rail td{background:var(--panel);padding:10px 14px 12px;border-bottom:1px solid var(--border-2)}
+  .railwrap{display:flex;gap:18px 22px;flex-wrap:wrap;align-items:flex-end}
+  .railwrap .lab{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);align-self:center;margin-right:4px}
+  .led{display:flex;flex-direction:column;gap:5px}
+  .led .k{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .led .bar{display:flex;gap:2px}
+  .led .bar i{width:7px;height:9px;border-radius:2px;background:var(--panel-3)}
+  .led .bar i.on{background:var(--accent);opacity:.9}
+  .led .bar i.on.cool{background:rgb(var(--cool-rgb));opacity:.75}
+  .led .v{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+  .led .v small{color:var(--dim);font-weight:500;margin-left:3px}
+  .pctlegend{display:flex;align-items:center;gap:9px;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);flex-wrap:wrap}
+  .pctlegend .grad{width:132px;height:9px;border-radius:3px;background:linear-gradient(90deg,rgba(var(--cool-rgb),.8),rgba(var(--cool-rgb),.18) 46%,rgba(var(--accent-rgb),.18) 54%,rgba(var(--accent-rgb),.85))}
+  .foot{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);line-height:1.8}
+  .m-seasons .mod-h .right,.m-imp .mod-h .right{flex-wrap:wrap;justify-content:flex-end}
+
+  /* ---- profile head: stat strip ---- */
+  .m-prof .prof .seg{margin-left:0}
+  .prof .picks{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .selwrap{position:relative;display:inline-flex}
+  select.pick{appearance:none;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;color:var(--text);
+    font:inherit;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:5px 26px 5px 10px;cursor:pointer;font-variant-numeric:tabular-nums}
+  select.pick:hover{border-color:var(--border-2)}
+  .selwrap::after{content:"▾";position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:9px;pointer-events:none}
+  .statstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--border);border-radius:10px;background:var(--panel-2);overflow:hidden}
+  .statgrp{padding:9px 14px 11px;min-width:0}
+  .statgrp+.statgrp{border-left:1px solid var(--border)}
+  .statgrp .gh{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:7px}
+  .statgrp .cells{display:flex;gap:16px;flex-wrap:wrap}
+  .cell{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .cell .k{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .cell .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+  .cell .v.neg{color:var(--neg-text)}
+  .cell .v.good{color:var(--accent)}
+  .cell .tick{height:3px;border-radius:2px;background:var(--panel-3);position:relative;margin-top:3px}
+  .cell .tick i{position:absolute;top:0;bottom:0;border-radius:2px;background:var(--accent);opacity:.85}
+  .cell .tick i.cool{background:rgb(var(--cool-rgb));opacity:.7}
+
+  /* ---- shot profile: diverging volume / efficiency bars against the league slot ---- */
+  .m-shot{grid-column:span 7}
+  .shotgrid{display:flex;flex-direction:column;gap:2px}
+  .zone{display:grid;grid-template-columns:38px 1fr 74px;align-items:center;gap:10px}
+  .zone.head{padding:9px 0 3px}
+  .zone.head .zn{grid-column:2;text-align:center;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+  .zone.head .lg{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);text-align:right}
+  .zone.head .sides{grid-column:2;display:flex;justify-content:space-between;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .zone .rk{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .zone .lgv{font-size:10.5px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .track{position:relative;height:26px;border-radius:6px;background:var(--panel-2);border:1px solid var(--border);overflow:hidden}
+  .track .mid{position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--border-2)}
+  .track .fill{position:absolute;top:3px;bottom:3px;border-radius:4px}
+  .track .fill.vol{background:linear-gradient(90deg,rgba(var(--cool-rgb),.55),rgba(var(--cool-rgb),.95))}
+  .track .fill.eff{background:linear-gradient(90deg,rgba(var(--accent-rgb),.55),rgba(var(--accent-rgb),.95))}
+  .track .fill.lo{opacity:.62}
+  .track .txt{position:absolute;top:50%;transform:translateY(-50%);font-size:11.5px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text);font-weight:600}
+  .track .txt em{font-style:normal;font-weight:600;margin-left:5px}
+  .track .txt em.up{color:var(--accent-2)}
+  .track .txt em.dn{color:var(--muted)}
+
+  /* ---- role rails ---- */
+  .m-role{grid-column:span 5}
+  .rolegrp{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:2px 0 -2px}
+  .roles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 16px}
+  .role{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:6px}
+  .role .k{font-size:10px;letter-spacing:.06em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .role .v{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .role .rail{grid-column:1 / -1;height:4px;border-radius:2px;background:var(--panel-3);position:relative;margin-top:1px}
+  .role .rail i{position:absolute;top:0;bottom:0;left:0;border-radius:2px;background:var(--accent);opacity:.85}
+  .role .rail i.cool{background:rgb(var(--cool-rgb));opacity:.7}
+  .role .rail u{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--line-dim);text-decoration:none}
+
+  .zone .zval{display:none;justify-content:space-between;align-items:baseline;gap:8px;font-size:11.5px;font-variant-numeric:tabular-nums}
+  .zone .zval b{font-weight:700}
+  .zone .zval em{font-style:normal;font-weight:600}
+  .zone .zval em.up{color:var(--accent-2)}
+  .zone .zval em.dn{color:var(--muted)}
+  .zone .zval i{font-style:normal;color:var(--dim);margin-left:auto;font-size:10.5px}
+
+  .m-career{grid-column:span 12}
+  .tbl td.vpm{font-weight:700}
+
+  @media (max-width: 1100px){
+    .m-board{grid-column:span 5}
+    .m-player,.m-dist,.m-off,.m-def,.m-zones,.m-prior{grid-column:span 7}
+    .m-mixer{grid-column:span 12}
+    .m-notes{grid-column:span 12}
+    .m-imp{grid-column:span 12}
+    .m-shot,.m-role{grid-column:span 12}
+    .statstrip{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .statgrp:nth-child(3){border-left:0}
+    .statgrp:nth-child(n+3){border-top:1px solid var(--border)}
+  }
+  @media (max-width: 760px){
+    body{padding:12px 10px 32px}
+    .rack{grid-template-columns:1fr}
+    .m-board,.m-player,.m-dist,.m-off,.m-def,.m-zones,.m-prior,.m-mixer,.m-notes,.m-prof,.subrow,.m-seasons,.m-imp,.m-shot,.m-role,.m-career{grid-column:1 / -1;grid-row:auto}
+    .zone{grid-template-columns:34px minmax(0,1fr);row-gap:3px;margin-bottom:6px}
+    .zone .rk{grid-row:1 / 3;align-self:center}
+    .zone .zval{display:flex}
+    .zone .track{grid-column:2;height:18px}
+    .zone .track .txt{display:none}
+    .zone .lgv{display:none}
+    .zone.head{grid-template-columns:1fr}
+    .zone.head .zn,.zone.head .sides{grid-column:1}
+    .zone.head .lg{display:none}
+    .statstrip{grid-template-columns:1fr}
+    .statgrp+.statgrp{border-left:0;border-top:1px solid var(--border)}
+    .roles{grid-template-columns:1fr}
+    .prof .picks{margin-left:0}
+    .prof .ranks{margin-left:0}
+    .prof .rk:first-child{border-left:0;padding-left:0}
+    .list{height:auto;max-height:420px}
+    .strips{grid-template-columns:repeat(8,minmax(0,1fr))}
+    .chips{margin-left:0}
+    .search{width:120px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important}
+  }
+</style>
+
+<header class="top">
+  <div class="brand">
+    <h1>WNBA VPM</h1>
+    <span class="sub" id="subline">2026 regular season</span>
+  </div>
+  <div class="theme-sw" id="theme-sw" role="group" aria-label="Colour theme">
+    <span class="k">theme</span>
+    <span class="seg">
+      <button type="button" data-theme="rack" class="on" aria-pressed="true" title="Rack — the default dark modular palette">Rack</button>
+      <button type="button" data-theme="arena" aria-pressed="false" title="Arena — databallr's default games palette (deep competitive blue, gold)">Arena</button>
+      <button type="button" data-theme="nbarapm" aria-pressed="false" title="NBA RAPM — the legacy nbarapm palette (charcoal, RAPM green)">NBA RAPM</button>
+    </span>
+  </div>
+  <div class="chips">
+    <span class="chip"><span class="dot"></span>live board <b id="c-asof">—</b></span>
+    <span class="chip"><b id="c-games">—</b> games</span>
+    <span class="chip"><b id="c-players">—</b> players · <b id="c-qual">—</b> qualified</span>
+    <span class="chip"><span class="dot"></span>box-prior lane</span>
+    <span class="chip"><span class="dot off"></span>rtss tracking off</span>
+  </div>
+</header>
+
+<main class="rack">
+
+  <!-- Leaderboard -->
+  <section class="mod m-board" aria-label="Leaderboard">
+    <div class="mod-h">
+      <span class="dot"></span><span class="name">Board</span>
+      <div class="right">
+        <input class="search" id="q" type="search" placeholder="Search player" aria-label="Search player">
+      </div>
+    </div>
+    <div class="mod-h" style="min-height:0">
+      <div class="seg" role="group" aria-label="Sort">
+        <button data-sort="net" class="on">VPM</button><button data-sort="off">Off</button><button data-sort="def">Def</button><button data-sort="poss">Poss</button>
+      </div>
+      <button class="toggle on right" id="qual" aria-pressed="true"><span class="sw"></span>1000+ poss</button>
+    </div>
+    <div class="board-head"><span>#</span><span>Player</span><span>Tm</span><span></span><span id="board-col">VPM</span></div>
+    <div class="list" id="list" role="listbox" aria-label="Players"></div>
+    <div class="board-foot"><span id="board-count">—</span><span id="board-filter">all teams</span></div>
+  </section>
+
+  <!-- Player -->
+  <section class="mod m-player" aria-label="Selected player">
+    <div class="mod-h"><span class="dot"></span><span class="name">Player</span><div class="right"><span class="chip" id="p-rank">—</span></div></div>
+    <div class="who">
+      <div class="big" id="p-net">—</div>
+      <div class="id"><div class="nm" id="p-name">—</div><div class="meta" id="p-meta">—</div></div>
+    </div>
+    <div class="knobs">
+      <div class="knob"><svg viewBox="0 0 76 76" id="k-off" aria-hidden="true"></svg><div><div class="k">Offense</div><div class="v" id="p-off">—</div><div class="h">pts / 100 poss</div></div></div>
+      <div class="knob"><svg viewBox="0 0 76 76" id="k-def" aria-hidden="true"></svg><div><div class="k">Defense</div><div class="v" id="p-def">—</div><div class="h">positive = good</div></div></div>
+    </div>
+    <div class="params" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+      <div class="param"><span class="k">Possessions</span><span class="v" id="p-poss">—</span></div>
+      <div class="param"><span class="k">Off · Def poss</span><span class="v" id="p-split">—</span></div>
+      <div class="param"><span class="k">Status</span><span class="v" id="p-status">—</span></div>
+    </div>
+  </section>
+
+  <!-- Distribution -->
+  <section class="mod m-dist" aria-label="League distribution">
+    <div class="mod-h"><span class="dot"></span><span class="name">Distribution</span><div class="right"><span class="chip" id="d-pct">—</span></div></div>
+    <canvas id="dist" width="600" height="192" role="img" aria-label="Histogram of VPM across players"></canvas>
+    <div class="legend"><span><i></i>players</span><span><i class="acc"></i>selected</span><span><i class="dim"></i>league mean</span><span id="d-scope">1000+ poss</span></div>
+  </section>
+
+  <!-- Offense factors -->
+  <section class="mod m-off" aria-label="Offense factors">
+    <div class="mod-h"><span class="dot"></span><span class="name">Offense</span><div class="right"><span class="chip">Σ = O-VPM</span></div></div>
+    <div class="fbars" id="off-bars"></div>
+    <div class="axis"><span>−5</span><span>0</span><span>+5</span></div>
+  </section>
+
+  <!-- Defense factors -->
+  <section class="mod m-def" aria-label="Defense factors">
+    <div class="mod-h"><span class="dot"></span><span class="name">Defense</span><div class="right"><span class="chip">Σ = D-VPM</span></div></div>
+    <div class="fbars" id="def-bars"></div>
+    <div class="axis"><span>−2.5</span><span>0</span><span>+2.5</span></div>
+  </section>
+
+  <!-- Zones (eFG drill-down) -->
+  <section class="mod m-zones" aria-label="eFG by shot zone">
+    <div class="mod-h"><span class="dot"></span><span class="name">eFG zones</span><div class="right"><span class="legend"><span><i></i>freq</span><span><i style="opacity:.45"></i>fg</span></span></div></div>
+    <div class="eq" id="eq"></div>
+    <div class="legend"><span>rim + mid + three = eFG · freq + fg = zone value · off / def · up = good</span></div>
+  </section>
+
+  <!-- Prior chain -->
+  <section class="mod m-prior" aria-label="Prior and lineup update">
+    <div class="mod-h"><span class="dot"></span><span class="name">Signal chain</span><div class="right"><span class="chip">prior → lineups</span></div></div>
+    <div class="chain" id="chain"></div>
+    <div class="gain"><canvas id="gain" width="600" height="72" aria-hidden="true"></canvas></div>
+    <div class="srcline" id="srcline"></div>
+  </section>
+
+  <!-- Mixer -->
+  <section class="mod m-mixer" aria-label="Team mixer">
+    <div class="mod-h"><span class="dot"></span><span class="name">Team mix</span><div class="right"><span class="chip">lineup-weighted VPM sum · click to filter</span></div></div>
+    <div class="strips" id="strips"></div>
+    <div class="mixer-foot">Each strip is 5 × the possession-weighted mean VPM of the players currently listed on that roster (pts / 100 poss). Traded players carry all their possessions to their current team.</div>
+  </section>
+
+  <!-- Notes -->
+  <section class="mod m-notes" aria-label="About">
+    <div class="mod-h"><span class="dot"></span><span class="name">About</span></div>
+    <div class="notes">
+      <p><b>VPM</b> is databallr's WNBA player impact in points per 100 possessions: a single-season prior-centred ridge over 2026 lineups, where each factor's prior is a public box-score model trained only on 2022–2025. Offense + defense = VPM; defense is positive-good.</p>
+      <p>Offense and defense each split exactly into four factors — <b>eFG</b> (rim + mid + three shot value), <b>FT</b>, <b>TOV</b> (turnover value, positive = fewer / cheaper turnovers), and <b>2nd chance</b>. The eFG zones module is the rim / mid / three drill-down of the eFG bar.</p>
+      <p>This is the <b>box-only lane</b>. No tracking-data priors are used, so missing tracking games do not affect it.</p>
+    </div>
+    <div class="kv" id="kv"></div>
+  </section>
+
+</main>
+
+<!-- profile:start — the selected player's profile. The builder strips this block with --no-profile. -->
+<div class="divider" id="profile">
+  <span class="dot"></span><span class="name">Player profile</span>
+  <span class="chip"><b id="pf-src">—</b></span>
+  <span class="sub">databallr's profile modules — career log, shot profile, role rates — re-set in the rack and wired to the board selection above. Every number is this repo's own WNBA box cache or the published VPM history; nothing is sample data.</span>
+</div>
+<main class="rack" aria-label="Player profile">
+
+  <!-- Head: identity, season / split / rate pickers, stat strip -->
+  <section class="mod m-prof" aria-label="Profile head">
+    <div class="prof">
+      <span class="nm" id="pf-name">—</span>
+      <span class="meta" id="pf-meta">—</span>
+      <span class="picks">
+        <span class="selwrap"><select class="pick" id="pf-season" aria-label="Season"></select></span>
+        <span class="seg" id="pf-split" role="group" aria-label="Season type">
+          <button type="button" data-split="rs" class="on" aria-pressed="true">Regular</button>
+          <button type="button" data-split="ps" aria-pressed="false">Playoffs</button>
+        </span>
+        <span class="seg" id="pf-mode" role="group" aria-label="Rate basis">
+          <button type="button" data-mode="pg" class="on" aria-pressed="true">PG</button>
+          <button type="button" data-mode="p36" aria-pressed="false">P36</button>
+          <button type="button" data-mode="p75" aria-pressed="false">P75</button>
+          <button type="button" data-mode="p100" aria-pressed="false">P100</button>
+          <button type="button" data-mode="tot" aria-pressed="false">TOT</button>
+        </span>
+      </span>
+    </div>
+    <div class="statstrip" id="pf-strip"></div>
+  </section>
+
+  <!-- Shot profile: volume and efficiency against the neutral league slot -->
+  <section class="mod m-shot" aria-label="Shot profile">
+    <div class="mod-h"><span class="dot"></span><span class="name">Shot profile</span><div class="right"><span class="tag" id="pf-shot-tag">—</span></div></div>
+    <div class="shotgrid" id="pf-shot"></div>
+    <div class="foot" id="pf-shot-foot"></div>
+  </section>
+
+  <!-- Role rates -->
+  <section class="mod m-role" aria-label="Role and playstyle">
+    <div class="mod-h"><span class="dot"></span><span class="name">Role &amp; playstyle</span><div class="right"><span class="tag">rail = percentile · tick = median</span></div></div>
+    <div class="rolegrp">Offense</div>
+    <div class="roles" id="pf-role-o"></div>
+    <div class="rolegrp">Defense</div>
+    <div class="roles" id="pf-role-d"></div>
+    <div class="foot" id="pf-role-foot"></div>
+  </section>
+
+  <!-- Career log -->
+  <section class="mod m-career" id="pf-career" aria-label="Career log">
+    <div class="mod-h"><span class="dot"></span><span class="name">Career log</span><div class="right"><span class="tag" id="pf-career-n">—</span></div></div>
+    <div class="tblwrap"><div id="pf-career-tbl"></div></div>
+    <div class="legend">
+      <span class="pctlegend">poor <span class="grad" aria-hidden="true"></span> elite · cell tint = percentile</span>
+      <span class="tag">click a season to load it above</span>
+    </div>
+    <div class="foot" id="pf-career-foot"></div>
+  </section>
+
+</main>
+<!-- profile:end -->
+
+<script id="board-data" type="application/json">__DATA__</script>
+<script>
+(function(){
+  const payload = JSON.parse(document.getElementById('board-data').textContent);
+  const P = payload.players;
+  const META = payload.meta;
+  const PROF = payload.profile || null;
+  const byId = new Map(P.map(p => [p.id, p]));
+
+  const state = { sel: null, sort: 'net', qual: true, team: null, q: '' };
+
+  const $ = id => document.getElementById(id);
+  const fmt = (v, d=2) => (v == null || Number.isNaN(v)) ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
+  const fmtN = v => v == null ? '—' : v.toLocaleString('en-US');
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  // ---- theme: the SVG knobs and both canvases read the live tokens at draw time,
+  //      so switching a theme is a token swap plus one re-render of the selected player.
+  const THEMES = ['rack', 'arena', 'nbarapm'];
+  const THEME_KEY = 'wnba-vpm-rack:theme';
+  const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const paint = () => ({
+    accent: cssVar('--accent'), line: cssVar('--line'), lineDim: cssVar('--line-dim'),
+    muted: cssVar('--muted'), dim: cssVar('--dim'), track: cssVar('--border'),
+    tick: cssVar('--border-2'), face: cssVar('--panel-2'),
+  });
+  function applyTheme(id, rerender){
+    if (!THEMES.includes(id)) id = 'rack';
+    if (id === 'rack') delete document.documentElement.dataset.rackTheme;
+    else document.documentElement.dataset.rackTheme = id;
+    document.querySelectorAll('#theme-sw button').forEach(b => {
+      const on = b.dataset.theme === id;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    try { localStorage.setItem(THEME_KEY, id); } catch (e) {}
+    if (rerender && state.sel != null) select(state.sel);
+  }
+  let savedTheme = 'rack';
+  try { savedTheme = localStorage.getItem(THEME_KEY) || 'rack'; } catch (e) {}
+  applyTheme(savedTheme, false);
+  $('theme-sw').addEventListener('click', e => { const b = e.target.closest('button'); if (b) applyTheme(b.dataset.theme, true); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (state.sel != null) select(state.sel); });
+
+  // ---- header chips
+  $('c-asof').textContent = META.as_of;
+  $('c-games').textContent = fmtN(META.games);
+  $('c-players').textContent = P.length;
+  $('c-qual').textContent = P.filter(p => p.q).length;
+  $('subline').textContent = `2026 regular season · through ${META.as_of_long}`;
+
+  // ---- ranks (VPM, all players and qualified)
+  const sortedAll = [...P].sort((a,b) => b.net - a.net);
+  sortedAll.forEach((p,i) => p.rankAll = i+1);
+  const sortedQ = sortedAll.filter(p => p.q);
+  sortedQ.forEach((p,i) => p.rankQ = i+1);
+
+  // ---- team aggregates
+  const teams = {};
+  P.forEach(p => { const t = teams[p.team] || (teams[p.team] = {tm:p.team, w:0, s:0, n:0}); t.w += p.poss; t.s += p.net * p.poss; t.n += 1; });
+  const teamList = Object.values(teams).map(t => ({...t, val: t.w ? 5 * t.s / t.w : 0})).sort((a,b) => b.val - a.val);
+
+  // ---- leaderboard
+  const sortKey = { net: p => p.net, off: p => p.off, def: p => p.def, poss: p => p.poss };
+  const colLabel = { net: 'VPM', off: 'O-VPM', def: 'D-VPM', poss: 'Poss' };
+  function visible(){
+    const q = state.q.trim().toLowerCase();
+    return P.filter(p => (!state.qual || p.q) && (!state.team || p.team === state.team) && (!q || p.name.toLowerCase().includes(q)))
+            .sort((a,b) => sortKey[state.sort](b) - sortKey[state.sort](a));
+  }
+  function renderBoard(){
+    const rows = visible();
+    const list = $('list');
+    list.innerHTML = '';
+    const scale = state.sort === 'poss' ? 5100 : state.sort === 'def' ? 2.6 : 7.5;
+    const frag = document.createDocumentFragment();
+    rows.forEach((p, i) => {
+      const b = document.createElement('button');
+      b.className = 'row' + (p.id === state.sel ? ' on' : '') + (p.q ? '' : ' unq');
+      b.setAttribute('role','option');
+      b.setAttribute('aria-selected', p.id === state.sel);
+      b.dataset.id = p.id;
+      const v = sortKey[state.sort](p);
+      const w = clamp(Math.abs(v)/scale, 0, 1) * 50;
+      const left = state.sort === 'poss' ? 0 : (v >= 0 ? 50 : 50 - w);
+      const ww = state.sort === 'poss' ? w*2 : w;
+      b.innerHTML = `<span class="rk">${i+1}</span><span class="nm">${p.name}</span><span class="tm">${p.team}</span><span class="sbar"><i style="left:${left}%;width:${ww}%"></i></span><span class="val">${state.sort === 'poss' ? fmtN(v) : fmt(v)}</span>`;
+      frag.appendChild(b);
+    });
+    list.appendChild(frag);
+    $('board-col').textContent = colLabel[state.sort];
+    $('board-count').textContent = `${rows.length} players · sorted by ${colLabel[state.sort]}`;
+    $('board-filter').textContent = state.team ? `${state.team} only` : (state.qual ? '1000+ poss' : 'all players');
+    const on = list.querySelector('.row.on');
+    if (on) on.scrollIntoView({block:'nearest'});
+  }
+  $('list').addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; select(Number(r.dataset.id)); });
+  document.querySelectorAll('.seg [data-sort]').forEach(b => b.addEventListener('click', () => {
+    state.sort = b.dataset.sort; document.querySelectorAll('.seg [data-sort]').forEach(x => x.classList.toggle('on', x === b)); renderBoard();
+  }));
+  $('qual').addEventListener('click', () => { state.qual = !state.qual; $('qual').classList.toggle('on', state.qual); $('qual').setAttribute('aria-pressed', state.qual); renderBoard(); drawDist(); });
+  $('q').addEventListener('input', e => { state.q = e.target.value; renderBoard(); });
+
+  // ---- knobs
+  function knob(svg, v, max){
+    const C = paint();
+    const cx = 38, cy = 38, r = 29;
+    const a = clamp(v/max, -1, 1) * (Math.PI * 0.75); // ±135°
+    const pt = th => [cx + r*Math.sin(th), cy - r*Math.cos(th)];
+    const [x0,y0] = pt(-Math.PI*0.75), [x1,y1] = pt(Math.PI*0.75);
+    const [xe,ye] = pt(a);
+    const [xz,yz] = pt(0);
+    const arc = Math.abs(a) < 0.001 ? '' : `M${xz} ${yz} A${r} ${r} 0 0 ${a>0?1:0} ${xe} ${ye}`;
+    const ticks = [];
+    for (let i=-6;i<=6;i++){ const th = i/6*Math.PI*0.75; const [tx,ty] = pt(th); const [ux,uy] = [cx + (r+5)*Math.sin(th), cy - (r+5)*Math.cos(th)]; ticks.push(`<line x1="${tx.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${ux.toFixed(1)}" y2="${uy.toFixed(1)}" stroke="${i===0?C.muted:C.tick}" stroke-width="1"/>`); }
+    svg.innerHTML = `
+      ${ticks.join('')}
+      <path d="M${x0} ${y0} A${r} ${r} 0 1 1 ${x1} ${y1}" fill="none" stroke="${C.track}" stroke-width="5" stroke-linecap="round"/>
+      <path d="${arc}" fill="none" stroke="${C.line}" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="${xe}" cy="${ye}" r="3.2" fill="${C.accent}" style="filter:drop-shadow(0 0 4px ${C.accent})"/>
+      <circle cx="${cx}" cy="${cy}" r="14" fill="${C.face}" stroke="${C.tick}"/>
+      <text x="${cx}" y="${cy+3.5}" text-anchor="middle" font-size="9" fill="${C.muted}" font-weight="600">${v>=0?'+':'−'}${Math.abs(v).toFixed(1)}</text>`;
+  }
+
+  // ---- signed bar rows: the value sits inside the chart on the empty side of
+  // the zero line (left of zero when the bar extends right, right of zero when
+  // the bar extends left), so it never collides with the bar.
+  function bars(container, rows, scale, totalRow){
+    container.innerHTML = '';
+    let top = null;
+    rows.forEach(r => { if (top == null || Math.abs(r.v) > Math.abs(top.v)) top = r; });
+    const mk = (r, extra) => {
+      const w = clamp(Math.abs(r.v)/scale, 0, 1) * 50;
+      const left = r.v >= 0 ? 50 : 50 - w;
+      const d = document.createElement('div');
+      d.className = 'fb' + (r === top ? ' lead' : '') + (extra ? ' ' + extra : '');
+      d.innerHTML = `<span class="k">${r.k}</span><span class="sbar"><i style="left:${left}%;width:${w}%"></i><b class="v ${r.v<0?'neg':'pos'}">${fmt(r.v)}</b></span>`;
+      container.appendChild(d);
+    };
+    rows.forEach(r => mk(r));
+    if (totalRow) mk(totalRow, 'total');
+  }
+
+  // ---- EQ zones
+  function eq(p){
+    const el = $('eq');
+    const bands = [['Rim','rim'],['Mid','mid'],['Three','three']];
+    const scale = 2.4; // per bar half-height scale
+    let html = `<div></div>` + bands.map(([lb,key]) => {
+      const zo = p['o_'+key+'_f'] + p['o_'+key+'_g'], zd = p['d_'+key+'_f'] + p['d_'+key+'_g'];
+      return `<div class="hd"><b>${fmt(zo)} <span style="color:var(--muted);font-weight:500">/</span> ${fmt(zd)}</b>${lb}</div>`;
+    }).join('');
+    const rowHtml = (side, lbl) => `<div class="lbl">${lbl}</div>` + bands.map(([lb,key]) => {
+      const f = p[side+'_'+key+'_f'], g = p[side+'_'+key+'_g'];
+      const bar = (v, cls) => { const h = clamp(Math.abs(v)/scale,0,1)*50; return `<i class="${cls} ${v>=0?'up':'dn'}" style="height:${h}%"></i>`; };
+      return `<div class="band" title="${lb} ${side==='o'?'offense':'defense'}: freq ${fmt(f,3)}, fg ${fmt(g,3)}">${bar(f,'fq')}${bar(g,'fg')}<em>${fmt(f)}</em><em class="r">${fmt(g)}</em></div>`;
+    }).join('');
+    html += rowHtml('o','Off') + rowHtml('d','Def');
+    el.innerHTML = html;
+  }
+
+  // ---- prior chain
+  function chain(p){
+    const nodes = [
+      {k:'Box prior', v:p.box_net, h:'raw box model'},
+      {k:'Effective prior', v:p.prior_net, h:'×1.5, centred'},
+      {k:'Lineup update', v:p.delta_net, h:'2026 possessions'},
+      {k:'VPM', v:p.net, h:'prior + update', acc:true},
+    ];
+    $('chain').innerHTML = nodes.map(n => `<div class="node ${n.acc?'acc':''}"><div class="k">${n.k}</div><div class="v">${fmt(n.v)}</div><div class="h">${n.h}</div></div>`).join('');
+    const src = p.box_src === 'current_single_season' ? '2026 box' : p.box_src === 'imputed_zero' ? 'no box row · zero prior' : p.box_src;
+    $('srcline').innerHTML = `<span>prior source</span><span class="tag ${p.box_src==='current_single_season'?'':'warn'}">${src}</span><span>update</span><span class="tag">${fmt(p.delta_net)} on ${fmtN(p.poss)} poss</span>`;
+    // gain canvas: prior→net path
+    const C = paint();
+    const c = $('gain'); const ctx = c.getContext('2d'); const W = c.width, H = c.height;
+    ctx.clearRect(0,0,W,H);
+    const yOf = v => H/2 - clamp(v/8,-1,1) * (H/2 - 8);
+    ctx.strokeStyle = C.lineDim; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+    const xs = [W*0.06, W*0.36, W*0.64, W*0.94];
+    const ys = [yOf(p.box_net), yOf(p.prior_net), yOf(p.prior_net), yOf(p.net)];
+    ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath();
+    ctx.moveTo(xs[0], ys[0]); ctx.lineTo(xs[1], ys[1]); ctx.lineTo(xs[2], ys[2]); ctx.lineTo(xs[3], ys[3]); ctx.stroke();
+    ctx.fillStyle = C.accent; ctx.shadowColor = C.accent; ctx.shadowBlur = 8; ctx.beginPath(); ctx.arc(xs[3], ys[3], 4, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = C.muted; [0,1,2].forEach(i => { ctx.beginPath(); ctx.arc(xs[i], ys[i], 2.5, 0, Math.PI*2); ctx.fill(); });
+  }
+
+  // ---- distribution
+  function drawDist(){
+    const C = paint();
+    const c = $('dist'); const ctx = c.getContext('2d'); const W = c.width, H = c.height;
+    ctx.clearRect(0,0,W,H);
+    const pool = state.qual ? P.filter(p => p.q) : P;
+    const lo = -7, hi = 8, step = 0.5, nb = Math.round((hi-lo)/step);
+    const bins = new Array(nb).fill(0);
+    pool.forEach(p => { const i = clamp(Math.floor((p.net - lo)/step), 0, nb-1); bins[i]++; });
+    const mx = Math.max(...bins, 1);
+    const pad = 10, bw = (W - pad*2) / nb;
+    const mean = pool.reduce((s,p) => s + p.net, 0) / (pool.length || 1);
+    const sel = byId.get(state.sel);
+    const selBin = sel ? clamp(Math.floor((sel.net - lo)/step), 0, nb-1) : -1;
+    // baseline
+    ctx.strokeStyle = C.track; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad, H-18.5); ctx.lineTo(W-pad, H-18.5); ctx.stroke();
+    // bars as thin lines
+    for (let i=0;i<nb;i++){
+      const h = bins[i]/mx * (H-34);
+      const x = pad + i*bw + bw/2;
+      ctx.strokeStyle = i === selBin ? C.accent : C.line;
+      ctx.globalAlpha = i === selBin ? 1 : 0.8;
+      ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x, H-20); ctx.lineTo(x, H-20-h); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // mean marker
+    const xm = pad + (mean-lo)/(hi-lo) * (W-pad*2);
+    ctx.strokeStyle = C.lineDim; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(xm, 6); ctx.lineTo(xm, H-16); ctx.stroke(); ctx.setLineDash([]);
+    // selected marker
+    if (sel){
+      const xs = pad + (clamp(sel.net,lo,hi)-lo)/(hi-lo) * (W-pad*2);
+      ctx.strokeStyle = C.accent; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(xs, 4); ctx.lineTo(xs, H-16); ctx.stroke();
+      ctx.fillStyle = C.accent; ctx.shadowColor = C.accent; ctx.shadowBlur = 8; ctx.beginPath(); ctx.arc(xs, 6, 3, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+    }
+    // axis labels
+    ctx.fillStyle = C.dim; ctx.font = '600 10px ' + cssVar('--font'); ctx.textAlign = 'center';
+    [-6,-4,-2,0,2,4,6,8].forEach(v => { const x = pad + (v-lo)/(hi-lo)*(W-pad*2); ctx.fillText((v>0?'+':'')+v, x, H-4); });
+    $('d-scope').textContent = (state.qual ? '1000+ poss' : 'all players') + ` · mean ${fmt(mean)}`;
+    if (sel){
+      const better = pool.filter(p => p.net < sel.net).length;
+      const pct = pool.length ? Math.round(100*better/pool.length) : 0;
+      $('d-pct').textContent = pool.includes(sel) ? `${pct}th pct` : 'not in pool';
+    }
+  }
+
+  // ---- mixer
+  function renderMixer(){
+    const el = $('strips'); el.innerHTML = '';
+    teamList.forEach(t => {
+      const s = document.createElement('button');
+      s.className = 'strip' + (state.team === t.tm ? ' on' : '');
+      s.dataset.team = t.tm;
+      s.title = `${t.tm}: ${fmt(t.val)} lineup-weighted VPM sum over ${t.n} players`;
+      const y = 50 - clamp(t.val/10, -1, 1) * 50; // % from top
+      const top = Math.min(50, y), h = Math.abs(50 - y);
+      s.innerHTML = `<span class="tm">${t.tm}</span><span class="fader"><b style="top:${top}%;height:${h}%"></b><i style="top:calc(${y}% - 2px)"></i></span><span class="v">${fmt(t.val,1)}</span><span class="n">${t.n} pl</span>`;
+      el.appendChild(s);
+    });
+  }
+  $('strips').addEventListener('click', e => { const s = e.target.closest('.strip'); if (!s) return; state.team = state.team === s.dataset.team ? null : s.dataset.team; renderMixer(); renderBoard(); });
+
+  // ---- select
+  let profileFor = null;
+
+  function select(id){
+    state.sel = id; const p = byId.get(id); if (!p) return;
+    document.querySelectorAll('#list .row').forEach(r => { const on = Number(r.dataset.id) === id; r.classList.toggle('on', on); r.setAttribute('aria-selected', on); });
+    $('p-net').textContent = fmt(p.net); $('p-net').classList.toggle('neg', p.net < 0);
+    $('p-name').textContent = p.name;
+    $('p-meta').textContent = `${p.team} · ${p.q ? '#'+p.rankQ+' of '+sortedQ.length+' qualified' : 'below 1000 poss'} · #${p.rankAll} of ${P.length} overall`;
+    $('p-rank').textContent = p.q ? `#${p.rankQ} VPM` : 'unqualified';
+    $('p-off').textContent = fmt(p.off); $('p-def').textContent = fmt(p.def);
+    knob($('k-off'), p.off, 6); knob($('k-def'), p.def, 3);
+    $('p-poss').textContent = fmtN(p.poss);
+    $('p-split').textContent = `${fmtN(p.op)} · ${fmtN(p.dp)}`;
+    $('p-status').textContent = p.q ? 'qualified' : 'small sample';
+    // four exact factors per side: eFG (rim + mid + three shot value) + FT + TOV + 2nd chance = O-VPM / D-VPM.
+    // Axis scales (±5 offense, ±2.5 defense) cover every published factor and total, so no bar is clamped.
+    bars($('off-bars'), [
+      {k:'eFG', v:p.o_efg}, {k:'FT', v:p.o_ft}, {k:'TOV', v:p.o_tov}, {k:'2nd chance', v:p.o_sc},
+    ], 5, {k:'O-VPM', v:p.off});
+    bars($('def-bars'), [
+      {k:'eFG', v:p.d_efg}, {k:'FT', v:p.d_ft}, {k:'TOV', v:p.d_tov}, {k:'2nd chance', v:p.d_sc},
+    ], 2.5, {k:'D-VPM', v:p.def});
+    eq(p); chain(p); drawDist();
+    if (profileFor) profileFor(p);
+  }
+
+  // ---- about kv
+  $('kv').innerHTML = [
+    ['as of', META.as_of], ['games', fmtN(META.games)], ['model', META.model_variant], ['solve', 'off α 5000 · def α 40000 · prior ×1.5'],
+    ['priors', 'box models trained 2022–2025 only'], ['qualified', '≥ 1000 possessions'], ['source', 'wnba_vpm_boxprior_current.csv'],
+  ].map(([k,v]) => `<span>${k}</span><b>${v}</b>`).join('');
+
+
+  // ---- player profile. databallr's profile modules (career log, shot profile, role rates)
+  // re-set in the rack idiom and wired to the board selection. Every number is either this
+  // repo's own WNBA box cache (pbpstats player-season totals — the same input the box priors
+  // read) or the published VPM history, so nothing here is sample data. Percentiles and the
+  // shot-profile axis are computed from the same cache at render time, not hard-coded.
+  if (PROF && $('profile')) profileFor = (function(){
+    const IX = {}; PROF.keys.forEach((k, i) => IX[k] = i);
+    const g = (row, k) => row[IX[k]];
+    const lgOf = (y, st) => PROF.lg[y + '|' + st] || null;
+    const f1 = v => (v == null || !isFinite(v)) ? '—' : v.toFixed(1);
+    const f2 = v => (v == null || !isFinite(v)) ? '—' : v.toFixed(2);
+
+    // One player-season row -> every rate the profile shows. Volume rates are per 100 of the
+    // player's own on-floor possessions on the matching side; per-75/per-100 box rates use the
+    // average of offensive and defensive possessions, the same basis as the EPM game-value lane.
+    function derive(r){
+      const op = g(r,'op') || 0, dp = g(r,'dp') || 0, gp = g(r,'gp') || 0;
+      const fga = g(r,'fga'), fta = g(r,'fta'), tsa = fga + 0.44 * fta;
+      const fg2a = g(r,'rim_a') + g(r,'mid_a'), fg2m = g(r,'rim_m') + g(r,'mid_m');
+      const per = (v, d) => d > 0 ? 100 * v / d : null;
+      const rate = (m, a) => a > 0 ? 100 * m / a : null;
+      return {
+        y: g(r,'y'), st: g(r,'st'), tm: g(r,'tm'), gp, min: g(r,'min'), op, dp,
+        poss: (op + dp) / 2, mpg: gp > 0 ? g(r,'min') / gp : 0,
+        pts: g(r,'pts'), reb: g(r,'reb'), ast: g(r,'ast'), stl: g(r,'stl'), blk: g(r,'blk'), tov: g(r,'tov'),
+        ts: tsa > 0 ? 100 * g(r,'pts') / (2 * tsa) : null,
+        p3: rate(g(r,'tp_m'), g(r,'tp_a')), p2: rate(fg2m, fg2a), ftp: rate(g(r,'ftm'), fta),
+        fta100: per(fta, op), rim_a: per(g(r,'rim_a'), op), mid_a: per(g(r,'mid_a'), op), tp_a: per(g(r,'tp_a'), op),
+        rim_g: rate(g(r,'rim_m'), g(r,'rim_a')), mid_g: rate(g(r,'mid_m'), g(r,'mid_a')), tp_g: rate(g(r,'tp_m'), g(r,'tp_a')),
+        usg: per(fga + 0.44 * fta + g(r,'tov'), op),
+        rim_r: rate(g(r,'rim_a'), fga), tp_r: rate(g(r,'tp_a'), fga), self: rate(g(r,'unast'), g(r,'fgpts')),
+        apts: per(g(r,'apts'), op), lb: per(g(r,'lb'), op), oreb: per(g(r,'oreb'), op), fd: per(g(r,'fd'), op),
+        stops: per(g(r,'dreb') + g(r,'stl') + g(r,'blk'), dp), stl100: per(g(r,'stl'), dp),
+        blk100: per(g(r,'blk'), dp), dreb100: per(g(r,'dreb'), dp),
+        v_off: g(r,'v_off'), v_def: g(r,'v_def'), v_net: g(r,'v_net'), v_poss: g(r,'v_poss'),
+      };
+    }
+    const rts = d => { const L = lgOf(d.y, d.st); return (L && d.ts != null) ? d.ts - L.ts : null; };
+
+    // League pools for percentiles and the shot-profile axis: every player-season in the same
+    // season and split that clears a minimum exposure, so a 40-possession cameo never sets an axis.
+    const poolCache = new Map(), sortCache = new Map();
+    function pool(y, st){
+      const key = y + '|' + st;
+      if (poolCache.has(key)) return poolCache.get(key);
+      const min = st === 'ps' ? 60 : 200, out = [];
+      for (const id in PROF.rows) for (const r of PROF.rows[id]) {
+        if (g(r,'y') === y && g(r,'st') === st && g(r,'op') >= min) out.push(derive(r));
+      }
+      poolCache.set(key, out); return out;
+    }
+    function sortedVals(y, st, m){
+      const key = y + '|' + st + '|' + m;
+      if (sortCache.has(key)) return sortCache.get(key);
+      const v = pool(y, st).map(d => d[m]).filter(x => x != null && isFinite(x)).sort((a, b) => a - b);
+      sortCache.set(key, v); return v;
+    }
+    function pct(y, st, m, v, invert){
+      if (v == null || !isFinite(v)) return null;
+      const a = sortedVals(y, st, m); if (a.length < 8) return null;
+      let lo = 0, hi = a.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (a[mid] < v) lo = mid + 1; else hi = mid; }
+      const p = clamp(Math.round(100 * lo / (a.length - 1)), 1, 99);
+      return invert ? 100 - p : p;
+    }
+    const tint = p => { const d = (p - 50) / 50; const a = Math.min(.55, Math.abs(d) * .55); return `rgba(var(--${d >= 0 ? 'accent' : 'cool'}-rgb),${a.toFixed(3)})`; };
+
+    const pf = { id: null, y: null, st: 'rs', mode: 'pg' };
+    const rowsFor = id => PROF.rows[String(id)] || [];
+    const seasonsFor = (id, st) => rowsFor(id).filter(r => g(r,'st') === st).map(r => g(r,'y')).sort((a, b) => b - a);
+    const findRow = (id, y, st) => rowsFor(id).find(r => g(r,'y') === y && g(r,'st') === st);
+
+    // ---- stat strip
+    const cell = (k, v, p, cls) => `<div class="cell"><span class="k">${k}</span><span class="v${cls || ''}">${v}</span>`
+      + (p == null ? '' : `<span class="tick" title="${p}th percentile"><i class="${p < 50 ? 'cool' : ''}" style="left:${p < 50 ? p : 50}%;width:${Math.max(2, Math.abs(p - 50))}%"></i></span>`) + `</div>`;
+    function renderStrip(d){
+      const k = d.mode === 'tot' ? 1 : d.mode === 'pg' ? 1 / Math.max(d.gp, 1)
+        : d.mode === 'p36' ? 36 / Math.max(d.min, 1) : (d.mode === 'p75' ? 75 : 100) / Math.max(d.poss, 1);
+      const sc = v => d.mode === 'tot' ? fmtN(Math.round(v)) : f1(v);
+      const n = (m, inv) => cell(m.toUpperCase(), sc(d[m] * k), pct(d.y, d.st, m, d[m] / Math.max(d.poss, 1), inv));
+      const r = rts(d);
+      $('pf-strip').innerHTML = [
+        ['Production', [n('pts'), n('reb'), n('ast')]],
+        ['Two-way', [cell('MIN', d.mode === 'tot' ? fmtN(Math.round(d.min)) : f1(d.min / Math.max(d.gp, 1)), null), n('stl'), n('blk'), n('tov', true)]],
+        ['Shooting', [cell('TS%', f1(d.ts), pct(d.y, d.st, 'ts', d.ts)), cell('3P%', f1(d.p3), pct(d.y, d.st, 'p3', d.p3)), cell('2P%', f1(d.p2), pct(d.y, d.st, 'p2', d.p2))]],
+        ['Impact', [
+          cell('TS+', fmt(r, 1), pct(d.y, d.st, 'ts', d.ts), r == null ? '' : r >= 0 ? ' good' : ' neg'),
+          cell('O-VPM', fmt(d.v_off, 1), null), cell('D-VPM', fmt(d.v_def, 1), null),
+          cell('VPM', fmt(d.v_net, 1), null, d.v_net == null ? '' : d.v_net >= 0 ? ' good' : ' neg'),
+        ]],
+      ].map(([h, cells]) => `<div class="statgrp"><div class="gh">${h}</div><div class="cells">${cells.join('')}</div></div>`).join('');
+    }
+
+    // ---- shot profile
+    const ZONES = [
+      { z: 'FT',  vol: ['fta100', 'fta', 'FTA/100'], eff: ['ftp',   'ft',    'FT'] },
+      { z: 'RIM', vol: ['rim_a',  'rim_a', 'FGA/100'], eff: ['rim_g', 'rim_g', 'FG'] },
+      { z: 'MID', vol: ['mid_a',  'mid_a', 'FGA/100'], eff: ['mid_g', 'mid_g', 'FG'] },
+      { z: '3P',  vol: ['tp_a',   'tp_a',  '3PA/100'], eff: ['tp_g',  'tp_g',  'FG'] },
+    ];
+    // One axis per kind, not per zone: volume rows share a scale and efficiency rows share a
+    // scale, so bar length is comparable across FT/RIM/MID/3P the way the module intends. The
+    // span is the 5th-95th percentile of the league gap, which keeps a three-attempt 0% mid-range
+    // season from setting the axis; a bar past the span clamps and the printed value still rules.
+    const axisCache = new Map();
+    function kindAxis(y, st, kind){
+      const key = y + '|' + st + '|' + kind;
+      if (axisCache.has(key)) return axisCache.get(key);
+      const L = lgOf(y, st); let mx = 0;
+      if (L) for (const Z of ZONES) {
+        const [m, lgKey] = kind === 'VOL' ? Z.vol : Z.eff, a = sortedVals(y, st, m);
+        if (!a.length) continue;
+        const q = f => a[clamp(Math.round(f * (a.length - 1)), 0, a.length - 1)];
+        mx = Math.max(mx, Math.abs(q(.05) - L[lgKey]), Math.abs(q(.95) - L[lgKey]));
+      }
+      const out = mx || 1; axisCache.set(key, out); return out;
+    }
+    function bar(d, kind, spec, L){
+      const [m, lgKey, unit] = spec, v = d[m], lv = L ? L[lgKey] : null;
+      if (v == null || lv == null) return `<div class="zone"><span class="rk">${kind}</span><span class="zval"><b>—</b></span><div class="track"><span class="mid"></span><span class="txt" style="left:calc(50% + 10px)">—</span></div><span class="lgv">—</span></div>`;
+      const axis = kindAxis(d.y, d.st, kind);
+      const delta = v - lv, half = clamp(50 * Math.abs(delta) / axis, 0, 50);
+      const up = delta >= 0, isPct = kind === 'EFF';
+      const fillStyle = up ? `left:50%;width:${half}%` : `right:50%;width:${half}%`;
+      const txt = `${f1(v)}${isPct ? '%' : ''} ${unit}${isPct ? '%' : ''} <em class="${up ? 'up' : 'dn'}">(${delta >= 0 ? '+' : '−'}${Math.abs(delta).toFixed(1)}${isPct ? '%' : ''})</em>`;
+      const txtStyle = up ? `right:calc(50% + 10px);text-align:right` : `left:calc(50% + 10px)`;
+      const unitTxt = `${unit}${isPct ? '%' : ''}`;
+      return `<div class="zone"><span class="rk">${kind}</span>`
+        + `<span class="zval"><b>${f1(v)}${isPct ? '%' : ''} ${unitTxt}</b>`
+        + `<em class="${up ? 'up' : 'dn'}">${delta >= 0 ? '+' : '−'}${Math.abs(delta).toFixed(1)}${isPct ? '%' : ''}</em>`
+        + `<i>lg ${f1(lv)}${isPct ? '%' : ''}</i></span>`
+        + `<div class="track" title="${f1(v)} vs league ${f1(lv)}"><span class="mid"></span>`
+        + `<span class="fill ${kind === 'VOL' ? 'vol' : 'eff'}${up ? '' : ' lo'}" style="${fillStyle}"></span>`
+        + `<span class="txt" style="${txtStyle}">${txt}</span></div>`
+        + `<span class="lgv">${f1(lv)}${isPct ? '%' : ''} ${unitTxt}</span></div>`;
+    }
+    function renderShot(d){
+      const L = lgOf(d.y, d.st);
+      $('pf-shot').innerHTML = ZONES.map((Z, i) => {
+        const head = `<div class="zone head">${i === 0 ? '<span class="sides"><span>below avg</span><span>above avg</span></span>' : ''}<span class="zn" style="${i === 0 ? 'grid-row:2' : ''}">${Z.z}</span><span class="lg">league avg</span></div>`;
+        return head + bar(d, 'VOL', Z.vol, L) + bar(d, 'EFF', Z.eff, L);
+      }).join('');
+      $('pf-shot-tag').textContent = `${d.y} ${d.st === 'ps' ? 'playoffs' : 'regular season'}`;
+      $('pf-shot-foot').textContent = 'volume is attempts per 100 of the player’s own on-floor offensive possessions · the league column pools that same ratio over every player, i.e. team attempts per 100 divided by five · bar length is the gap to league on one shared axis per row type — volume rows are comparable to each other, efficiency rows to each other — scaled to the 5th–95th percentile gap that season';
+    }
+
+    // ---- role rates
+    const ROLE_O = [
+      ['usg', 'Usage · plays/100', 0], ['rim_r', 'Rim rate %', 0], ['tp_r', '3PA rate %', 0], ['self', 'Self-created %', 0],
+      ['apts', 'Assist pts/100', 0], ['oreb', 'OReb/100', 0], ['fd', 'Fouls drawn/100', 0], ['lb', 'Lost-ball TOV/100', 1],
+    ];
+    const ROLE_D = [['stops', 'Stops/100', 0], ['stl100', 'Steals/100', 0], ['blk100', 'Blocks/100', 0], ['dreb100', 'DReb/100', 0]];
+    const roleHtml = (d, defs) => defs.map(([m, lab, inv]) => {
+      const p = pct(d.y, d.st, m, d[m], inv);
+      return `<div class="role" title="${p == null ? 'no league pool' : p + 'th percentile'}"><span class="k">${lab}</span><span class="v">${f1(d[m])}</span>`
+        + `<span class="rail">${p == null ? '' : `<i class="${p < 50 ? 'cool' : ''}" style="width:${p}%"></i>`}<u style="left:50%"></u></span></div>`;
+    }).join('');
+    function renderRole(d){
+      $('pf-role-o').innerHTML = roleHtml(d, ROLE_O);
+      $('pf-role-d').innerHTML = roleHtml(d, ROLE_D);
+      $('pf-role-foot').textContent = 'offensive rates are per 100 on-floor offensive possessions, defensive rates per 100 defensive possessions · self-created is the share of made-field-goal points that carried no assist · lost-ball is percentiled so that fewer is better · these are this repo’s box definitions, not a tracking or shot-quality feed';
+    }
+
+    // ---- career log
+    const scaleOf = (d, mode) => mode === 'tot' ? 1 : mode === 'pg' ? 1 / Math.max(d.gp, 1)
+      : mode === 'p36' ? 36 / Math.max(d.min, 1) : (mode === 'p75' ? 75 : 100) / Math.max(d.poss, 1);
+    function careerTable(id){
+      const list = rowsFor(id).filter(r => g(r,'st') === pf.st).map(derive).sort((a, b) => b.y - a.y);
+      if (!list.length) { $('pf-career-tbl').innerHTML = '<p class="lede" style="padding:14px">No rows for this split.</p>'; return; }
+      // career line: pooled totals, rates recomputed from them rather than averaged
+      const S = k => list.reduce((t, d) => t + (d[k] || 0), 0);
+      const tot = { y: 'Career', st: pf.st, tm: '', gp: S('gp'), min: S('min'), op: S('op'), dp: S('dp'), poss: S('poss'),
+        pts: S('pts'), reb: S('reb'), ast: S('ast'), stl: S('stl'), blk: S('blk'), tov: S('tov') };
+      const wsum = k => list.reduce((t, d) => t + (d[k] == null ? 0 : d[k] * d.poss), 0) / Math.max(list.reduce((t, d) => t + (d[k] == null ? 0 : d.poss), 0), 1);
+      tot.ts = wsum('ts'); tot.p3 = wsum('p3'); tot.p2 = wsum('p2');
+      const vRows = list.filter(d => d.v_net != null);
+      const vw = k => vRows.length ? vRows.reduce((t, d) => t + d[k] * d.v_poss, 0) / vRows.reduce((t, d) => t + d.v_poss, 0) : null;
+      tot.v_off = vw('v_off'); tot.v_def = vw('v_def'); tot.v_net = vw('v_net');
+      // career TS+ is possession-weighted across seasons: each season is scored against its own
+      // league TS%, so a shifting league environment never leaks into the career line.
+      const tsRows = list.filter(d => rts(d) != null);
+      tot.tsp = tsRows.length ? tsRows.reduce((t, d) => t + rts(d) * d.poss, 0) / tsRows.reduce((t, d) => t + d.poss, 0) : null;
+
+      const lab = pf.mode === 'tot' ? ['PTS','AST','REB','STL','BLK','TOV'] : pf.mode === 'pg' ? ['PTS','AST','REB','STL','BLK','TOV'] : ['PTS','AST','REB','STL','BLK','TOV'];
+      const num = (d, k) => { const v = d[k] * scaleOf(d, pf.mode); return pf.mode === 'tot' ? fmtN(Math.round(v)) : f1(v); };
+      const pcell = (d, m, v, inv, cls) => { const p = d.y === 'Career' ? null : pct(d.y, d.st, m, d[m], inv);
+        return `<td class="${cls || ''}${p != null ? ' pc' : ''}"${p != null ? ` style="--pc:${tint(p)}" title="${p}th percentile"` : ''}>${v}</td>`; };
+      const row = d => {
+        const career = d.y === 'Career', rc = career ? d.tsp : rts(d);
+        return `<tr class="r${career ? '' : ' click'}${!career && d.y === pf.y ? ' open' : ''}" data-y="${d.y}">`
+          + `<td class="l b">${career ? 'Career' : d.y}</td>`
+          + `<td class="l"><span class="tm">${d.tm || '—'}</span></td>`
+          + `<td>${career ? fmtN(d.gp) : d.gp}</td><td class="dim">${f1(d.min / Math.max(d.gp, 1))}</td>`
+          + `<td class="b grpl">${num(d, 'pts')}</td><td>${num(d, 'ast')}</td><td>${num(d, 'reb')}</td>`
+          + `<td>${num(d, 'stl')}</td><td>${num(d, 'blk')}</td><td>${num(d, 'tov')}</td>`
+          + pcell(d, 'p3', f1(d.p3), 0, 'grpl') + pcell(d, 'ts', f1(d.ts), 0)
+          + pcell(d, 'ts', fmt(rc, 1), 0)
+          + `<td class="grpl dim">${fmt(d.v_off, 2)}</td><td class="dim">${fmt(d.v_def, 2)}</td>`
+          + `<td class="vpm"${d.v_net == null ? '' : ` title="${career ? 'possession-weighted across seasons' : d.y <= 2025 ? d.y + ' RS+PS solve, ' + fmtN(d.v_poss) + ' poss' : d.y + ' regular season to date, ' + fmtN(d.v_poss) + ' poss'}"`}>${d.v_net == null ? '<span class="dim">—</span>' : fmt(d.v_net, 2)}</td></tr>`;
+      };
+      const modeLab = pf.mode === 'pg' ? 'per game' : pf.mode === 'p36' ? 'per 36 min' : pf.mode === 'p75' ? 'per 75 poss' : pf.mode === 'p100' ? 'per 100 poss' : 'totals';
+      $('pf-career-tbl').innerHTML = `<table class="tbl"><thead>
+        <tr class="grp"><th colspan="4" class="blank"></th><th colspan="6" class="grpl">Production · ${modeLab}</th><th colspan="3" class="grpl">Shooting</th><th colspan="3" class="grpl">VPM impact</th></tr>
+        <tr class="col"><th class="l">Season</th><th class="l">Team</th><th>GP</th><th>MPG</th>
+        <th class="grpl">${lab[0]}</th><th>${lab[1]}</th><th>${lab[2]}</th><th>${lab[3]}</th><th>${lab[4]}</th><th>${lab[5]}</th>
+        <th class="grpl">3P%</th><th>TS%</th><th>TS+</th><th class="grpl">Off</th><th>Def</th><th>VPM</th></tr></thead>
+        <tbody>${list.map(row).join('')}${row(tot)}</tbody></table>`;
+      $('pf-career-n').textContent = `${list.length} ${pf.st === 'ps' ? 'playoff' : 'regular'} season${list.length === 1 ? '' : 's'}`;
+      $('pf-career-foot').textContent = 'the career log spans 2022–2026, the reach of this repo’s WNBA box cache — earlier seasons are absent, not zero · TS+ = TS% − league TS% that season, in percentage points — it is not databallr’s role-adjusted RTS, and not this repo’s rTS/zTS chain · per 75 and per 100 use the average of on-floor offensive and defensive possessions · the career line pools totals and recomputes the rates, and its VPM is possession-weighted · 2022–2025 VPM is the RS+PS solve, 2026 is regular season to date';
+    }
+
+    // ---- wiring
+    function render(){
+      const rs = seasonsFor(pf.id, 'rs'), ps = seasonsFor(pf.id, 'ps');
+      const psBtn = $('pf-split').querySelector('[data-split="ps"]');
+      psBtn.disabled = !ps.length; psBtn.title = ps.length ? '' : 'no playoff rows for this player';
+      if (pf.st === 'ps' && !ps.length) pf.st = 'rs';
+      $('pf-split').querySelectorAll('button').forEach(b => { const on = b.dataset.split === pf.st; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+      const seasons = pf.st === 'ps' ? ps : rs;
+      if (!seasons.includes(pf.y)) pf.y = seasons[0];
+      $('pf-season').innerHTML = seasons.map(y => `<option value="${y}"${y === pf.y ? ' selected' : ''}>${y}</option>`).join('');
+      const r = findRow(pf.id, pf.y, pf.st);
+      if (!r) return;
+      const d = derive(r);
+      d.mode = pf.mode;
+      $('pf-name').textContent = byId.get(pf.id) ? byId.get(pf.id).name : '';
+      $('pf-meta').innerHTML = `<b>${d.tm}</b> · ${d.gp} GP · ${fmtN(Math.round(d.min))} min · ${fmtN(Math.round(d.poss))} poss`;
+      $('pf-src').textContent = `${d.y} ${d.st === 'ps' ? 'playoffs' : 'regular season'}`;
+      renderStrip(d); renderShot(d); renderRole(d); careerTable(pf.id);
+    }
+    $('pf-season').addEventListener('change', e => { pf.y = Number(e.target.value); render(); });
+    $('pf-split').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; pf.st = b.dataset.split; render(); });
+    $('pf-mode').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; pf.mode = b.dataset.mode;
+      $('pf-mode').querySelectorAll('button').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); }); render(); });
+    $('pf-career-tbl').addEventListener('click', e => { const tr = e.target.closest('tr.r.click'); if (!tr) return; pf.y = Number(tr.dataset.y); render(); });
+
+    return function(p){
+      if (!rowsFor(p.id).length) { $('pf-name').textContent = p.name; $('pf-meta').textContent = 'no box rows in the 2022–2026 cache'; return; }
+      const changed = pf.id !== p.id; pf.id = p.id; if (changed) pf.y = null;
+      render();
+    };
+  })();
+  renderMixer();
+  renderBoard();
+  select(sortedQ[0].id);
+})();
+</script>
