@@ -182,7 +182,7 @@ def test_salary_share_attachment_never_guesses_another_teams_cost() -> None:
     assert report["covered_player_seasons"] == 1
 
 
-def test_title_lift_over_contract_holds_field_and_workload_fixed() -> None:
+def test_title_lift_over_contract_holds_playoff_placements_and_workload_fixed() -> None:
     training = pd.DataFrame(
         [
             {"season": 2022, "team_id": 1, "team_dpm": -1.0, "won_championship": 0},
@@ -216,12 +216,25 @@ def test_title_lift_over_contract_holds_field_and_workload_fixed() -> None:
         ]
     )
 
-    result = add_title_lift_over_contract(seasons, model)
+    result = add_title_lift_over_contract(seasons, model, training)
 
     assert abs(result.loc[0, "title_lift_over_contract"]) < 1e-12
     assert result.loc[1, "title_lift_over_contract"] > 0
     assert result.loc[2, "title_lift_over_contract"] < 0
     assert result["playoff_workload_share"].tolist() == [0.6, 0.6, 0.6]
+    assert np.allclose(
+        result["neutral_contract_actual_title_probability"],
+        result["era_neutral_hard_carry_title_probability"],
+    )
+    assert np.allclose(
+        result["playoff_field_zero_title_probability"],
+        result["era_neutral_title_probability"],
+    )
+    raw_title_lift = (
+        result["era_neutral_hard_carry_title_probability"]
+        - result["era_neutral_title_probability"]
+    )
+    assert result.loc[1, "title_lift_over_contract"] < raw_title_lift.loc[1]
 
 
 def test_final_team_segment_uses_last_regular_season_game() -> None:
@@ -421,6 +434,18 @@ def test_raw_game_context_recovers_sides_rosters_and_final_score() -> None:
                 "player1_team_abbreviation": "BBB",
                 "home_score": 2,
                 "away_score": 3,
+                **{f"home_player{slot}": slot for slot in range(1, 6)},
+                **{f"away_player{slot}": slot + 5 for slot in range(1, 6)},
+            },
+            {
+                "game_id": "0000000001",
+                "event_num": 3,
+                "home_description": None,
+                "visitor_description": None,
+                "player1_team_id": None,
+                "player1_team_abbreviation": None,
+                "home_score": 0,
+                "away_score": 0,
                 **{f"home_player{slot}": slot for slot in range(1, 6)},
                 **{f"away_player{slot}": slot + 5 for slot in range(1, 6)},
             },

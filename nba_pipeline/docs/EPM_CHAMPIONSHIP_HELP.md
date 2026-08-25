@@ -69,45 +69,41 @@ The exact identity is:
 Individual teammate allocations use the same continuous response multiplier
 and sum exactly to shared-floor plus off-floor teammate lift.
 
-## Comparable hard-carry environment
-
-The reader-facing hard-carry lift removes both actual-team help and
-player-specific opponent-field help. Every player-season is placed into one
-fixed neutral 16-team environment:
-
-- neutral title odds are exactly `1/16 = 6.25%`;
-- the opponent field is 15 equal-strength neutral teams;
-- the target receives only the focal player's normalized title-score increment
-  from the selected EPM title regression.
-
-If `s_i` is that player increment, comparable hard-carry odds are
-`logistic(s_i - log(15))` and hard-carry lift subtracts `1/16`. The same
-environment is used in every season, so a player is not rewarded because his
-actual powerhouse team disappears from the opponent set. A second stored
-diagnostic uses one common field within each season—15 times the mean softmax
-mass of all 16 playoff teams—but the era-neutral version is the public ranking
-measure.
-
-Neither neutral-field hard-carry measure is an additive bucket in the actual
-team equation. The neutral/self/teammate closure above remains the source of
-truth for actual team odds.
-
 ## Title Lift over Contract
 
-The primary player-value measure is now **Title Lift over Contract**. It holds
-the neutral 16-team field and the player's actual playoff workload fixed, then
-changes only the player's impact rate:
+The primary player-value measure is **Title Lift over Contract**, implemented as
+a realized salary-peer roster swap rather than a hand-set Contract EPM hurdle.
+For every focal player-season with salary coverage:
 
-    p_actual   = neutral-field title probability(actual EPM, same workload)
-    p_contract = neutral-field title probability(Contract EPM, same workload)
+1. take every complete historical playoff bracket outside the focal season;
+2. on each of its 16 teams, identify the playoff rotation player with the
+   closest salary-cap share, breaking ties toward the larger playoff workload;
+3. remove that peer's actual EPM contribution and insert the focal player at
+   the peer's actual playoff workload;
+4. propagate the original and swapped teams through that season's actual
+   four-round bracket; and
+5. average `swapped title odds - original roster title odds` across placements.
 
-    Title Lift over Contract = p_actual - p_contract
+There are 351 or 352 placements for a covered row because the focal season is
+excluded and a small number of historical teams lack any salary-covered playoff
+rotation player. This design keeps the purchased roster slot, workload, actual
+teammates, opponent distribution, and bracket together. A star does not receive
+an easier field merely because his real powerhouse team was removed.
 
-Both probabilities use the one full-sample overall-EPM title-score coefficient
-and 15 equal neutral opponents. A 0-EPM player has `1/16` title odds before
-workload scaling. This removes the player's actual teammates, actual team, and
-season opponent field from the contract comparison. Meeting the Contract EPM
-hurdle produces exactly zero; negative values remain negative.
+The public **raw title lift** uses the identical salary-matched placements and
+workloads but compares the focal player's EPM with a 0-EPM insertion. Therefore
+the gap between raw lift and Title Lift over Contract is the title value already
+supplied by the removed salary peer. Actual-context title lift remains a separate
+question on the focal player's real team.
+
+Bracket probabilities are evaluated exactly, not estimated with Monte Carlo
+noise. A fitted playoff game logit prices team EPM difference plus home court;
+each matchup is converted to an exact first-to-four, best-of-seven probability
+under the `2-2-1-1-1` schedule, averaging which team owns home-court advantage.
+Those series probabilities are then propagated through the observed 8-4-2-1
+bracket tree. The one-standard-error leave-one-season-out game-log-loss rule
+selects `C=0.05`, home advantage `0.4783` log odds, and `0.1342` log odds per
+team-EPM point on 2,085 playoff games. Mean season log loss is `0.6177`.
 
 The cost input is annual salary divided by the official NBA salary cap. It is
 called **salary share**, never cap hit. The private crosswalk currently supplies
@@ -117,8 +113,8 @@ row. The current player-season coverage is 4,378 of 4,894 rows (89.46%). Career
 totals sum only covered seasons and publish the covered-season count beside the
 total.
 
-Contract EPM v1 reuses the declared prototype market assumptions from the
-From Impact to Winning reader, expressed as fixed cap shares for cross-era use:
+The earlier Contract EPM v1 curve is retained only as a prototype sensitivity.
+It reuses declared market assumptions from the From Impact to Winning reader:
 
 - replacement EPM: `-2.0` (assumption);
 - replacement salary share: `$2.1M / $154.647M = 1.358%`;
@@ -131,31 +127,37 @@ Thus:
     Contract WAR = (salary share - 1.358%) / 5.497%
     Contract EPM = -2.0 + Contract WAR / 1.4637
 
-A 35% salary share implies about `+2.18 Contract EPM`. These are transparent
-prototype parameters, not a fitted unrestricted-free-agent price curve. The
-production data/licensing and no-leakage market-fit requirements are documented
-in [Title Lift over Contract: data and method](./TITLE_LIFT_OVER_CONTRACT_DATA.md).
+A 35% salary share implies about `+2.18 Contract EPM`. This does not define the
+headline measure and is not shown as the player's salary-peer hurdle. It remains
+a transparent sensitivity pending a signing-date market model. Data/licensing
+and no-leakage requirements are documented in
+[Title Lift over Contract: data and method](./TITLE_LIFT_OVER_CONTRACT_DATA.md).
 
 ## Reader contract
 
 The public player page leads with Title Lift over Contract and shows actual EPM,
-Contract EPM, and salary share for a covered season. The exact team equation is
-retained underneath as neutral rotation + player share of team lift + teammate
-help = actual team odds. This makes its accounting role explicit.
+average realized salary-peer EPM, salary share, and bracket-placement count for
+a covered season. The exact team equation remains underneath as neutral rotation
++ player share of team lift + teammate help = actual team odds. It is team
+accounting and is not the salary-peer counterfactual.
 
-The season-spike panel defaults to Title Lift over Contract and toggles among
-over-contract lift, actual-context lift, hard-carry lift, and teammate help.
-The league comparison is one sortable table with over-contract title lift,
-context title lift, hard-carry title lift, teammate title lift, and team title
-odds visible together. Compact two-line headers keep each counterfactual name
-above the quantity. The older shared-floor DARKO explorer and methodology stay
-collapsed so they do not compete with the title-lift answer.
+The season-spike panel defaults to salary-peer title lift and toggles among that,
+actual-context lift, raw title lift, and teammate help. The league comparison is
+one sortable table with salary-peer title lift, context title lift, raw title
+lift, teammate title lift, and team title odds visible together. Compact
+two-line headers keep each counterfactual name above the quantity.
 
 ## Current validation
 
 The 2002-2026 build contains 25 seasons, 400 playoff team-seasons, 4,894
 player-seasons, and 58,485 focal/teammate season rows. The selected model is
 overall EPM with C=0.2; leave-one-season-out champion log loss is 1.711152.
+The bracket layer reconstructs exactly 375 series—15 in every season—with an
+8-4-2-1 round pattern. LeBron James in 2008-09 has 351 salary-peer placements,
+average peer EPM `+2.55`, swapped title odds `21.09%`, original peer-roster odds
+`6.27%`, and Title Lift over Contract `+14.82` percentage points. The median
+placement's absolute salary-share gap across covered player-seasons is about
+`0.60` cap points; the median 90th-percentile gap is `1.84` cap points.
 
 Validation maxima:
 

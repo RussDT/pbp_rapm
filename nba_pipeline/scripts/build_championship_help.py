@@ -23,11 +23,27 @@ try:
         PlayerRatingHistory,
         lookup_asof_ratings,
     )
+    from nba_pipeline.scripts.playoff_title_simulation import (
+        SALARY_PEER_HURDLE_VERSION,
+        add_salary_peer_title_lift,
+        build_bracket_nodes,
+        build_playoff_series,
+        prepare_playoff_game_model_rows,
+        select_playoff_game_model,
+    )
 except ModuleNotFoundError:  # Direct script execution from the repository root.
     from build_darko_teammate_help import (  # type: ignore[no-redef]
         METRICS,
         PlayerRatingHistory,
         lookup_asof_ratings,
+    )
+    from playoff_title_simulation import (  # type: ignore[no-redef]
+        SALARY_PEER_HURDLE_VERSION,
+        add_salary_peer_title_lift,
+        build_bracket_nodes,
+        build_playoff_series,
+        prepare_playoff_game_model_rows,
+        select_playoff_game_model,
     )
 
 
@@ -204,37 +220,50 @@ def attach_salary_share(
 def add_title_lift_over_contract(
     seasons: pd.DataFrame,
     neutral_title_model: TeamTitleModel,
+    playoff_teams: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Price actual and Contract EPM at identical workload in one fixed field."""
+    """Price actual, zero, and Contract EPM over fixed playoff placements."""
     if neutral_title_model.feature_columns != ("team_dpm",):
         raise ValueError(
             "Title Lift over Contract requires the selected overall-EPM title model"
         )
     output = seasons.copy()
-    score_per_epm = float(
-        neutral_title_model.coefficients[0] / neutral_title_model.scales[0]
-    )
     output["playoff_workload_share"] = (
         pd.to_numeric(output["total_exposures"], errors="coerce")
         / pd.to_numeric(output["team_total_exposures"], errors="coerce").replace(0, np.nan)
     )
     output["contract_epm"] = contract_epm_from_salary_share(output["salary_share"])
     output["epm_over_contract"] = output["own_dpm"] - output["contract_epm"]
-    actual_score = (
-        score_per_epm * output["own_dpm"] * output["playoff_workload_share"]
+    workload = output["playoff_workload_share"].to_numpy(dtype=float)
+    actual_probability = average_playoff_placement_title_probability(
+        neutral_title_model,
+        playoff_teams,
+        output["own_dpm"].to_numpy(dtype=float),
+        workload,
     )
-    contract_score = (
-        score_per_epm * output["contract_epm"] * output["playoff_workload_share"]
+    zero_probability = average_playoff_placement_title_probability(
+        neutral_title_model,
+        playoff_teams,
+        np.zeros(len(output), dtype=float),
+        workload,
     )
-    field_log_odds = np.log(TITLE_FIELD_SIZE - 1)
+    contract_probability = average_playoff_placement_title_probability(
+        neutral_title_model,
+        playoff_teams,
+        output["contract_epm"].to_numpy(dtype=float),
+        workload,
+    )
+    output["playoff_field_actual_title_probability"] = actual_probability
+    output["playoff_field_zero_title_probability"] = zero_probability
+    output["playoff_field_contract_title_probability"] = contract_probability
+    output["era_neutral_hard_carry_title_probability"] = actual_probability
+    output["era_neutral_title_probability"] = zero_probability
     output["neutral_contract_actual_title_probability"] = np.where(
         output["salary_share"].notna(),
-        expit(actual_score - field_log_odds),
+        actual_probability,
         np.nan,
     )
-    output["neutral_contract_hurdle_title_probability"] = expit(
-        contract_score - field_log_odds
-    )
+    output["neutral_contract_hurdle_title_probability"] = contract_probability
     output["title_lift_over_contract"] = (
         output["neutral_contract_actual_title_probability"]
         - output["neutral_contract_hurdle_title_probability"]
@@ -243,6 +272,49 @@ def add_title_lift_over_contract(
         output["salary_share"].notna(), CONTRACT_HURDLE_VERSION, None
     )
     return output
+
+
+def average_playoff_placement_title_probability(
+    model: TeamTitleModel,
+    playoff_teams: pd.DataFrame,
+    player_epm: np.ndarray,
+    workload_share: np.ndarray,
+) -> np.ndarray:
+    """Average title odds over every playoff-team placement and its 15 opponents."""
+    if model.feature_columns != ("team_dpm",):
+        raise ValueError("Playoff placements require the overall-EPM title model")
+    required = {"season", "team_id", "team_dpm"}
+    missing = required.difference(playoff_teams.columns)
+    if missing:
+        raise ValueError(f"Playoff placement teams are missing columns: {sorted(missing)}")
+
+    base_ratings: list[float] = []
+    opponent_log_masses: list[float] = []
+    for _, field in playoff_teams.groupby("season", sort=True):
+        if len(field) < 2:
+            raise ValueError("Each playoff placement field requires at least two teams")
+        scores = model.score(field)
+        ratings = field["team_dpm"].to_numpy(dtype=float)
+        for index, rating in enumerate(ratings):
+            base_ratings.append(float(rating))
+            opponent_log_masses.append(float(logsumexp(np.delete(scores, index))))
+
+    base = np.asarray(base_ratings, dtype=float)
+    opponent_mass = np.asarray(opponent_log_masses, dtype=float)
+    quality = np.asarray(player_epm, dtype=float).reshape(-1, 1)
+    workload = np.asarray(workload_share, dtype=float).reshape(-1, 1)
+    if quality.shape != workload.shape:
+        raise ValueError("Player EPM and workload must have the same shape")
+
+    # Each placement replaces that team's representative one-of-five rotation
+    # slot for the player's observed share of playoff possessions.
+    target_rating = base + (quality - base / 5.0) * workload
+    target_score = (
+        (target_rating - float(model.means[0]))
+        / float(model.scales[0])
+        * float(model.coefficients[0])
+    )
+    return expit(target_score - opponent_mass).mean(axis=1)
 
 
 def load_epm_snapshot_history(
@@ -1016,6 +1088,15 @@ def write_app_championship_data(
         "neutral_contract_hurdle_title_probability",
         "title_lift_over_contract",
         "contract_hurdle_version",
+        "salary_peer_placement_count",
+        "salary_peer_actual_title_probability",
+        "salary_peer_baseline_title_probability",
+        "salary_peer_zero_title_probability",
+        "salary_peer_raw_title_lift",
+        "salary_peer_mean_epm",
+        "salary_peer_mean_workload_share",
+        "salary_peer_median_salary_gap",
+        "salary_peer_p90_salary_gap",
         "normalized_self_title_probability_added",
         "self_replacement_title_probability_added",
         "on_court_teammate_title_probability_added",
@@ -1165,6 +1246,13 @@ def build_game_context(
         scores = group.dropna(subset=["home_score", "away_score"]).sort_values(
             "event_num", kind="mergesort"
         )
+        nonzero_scores = scores.loc[
+            pd.to_numeric(scores["home_score"], errors="coerce").fillna(0)
+            + pd.to_numeric(scores["away_score"], errors="coerce").fillna(0)
+            > 0
+        ]
+        if not nonzero_scores.empty:
+            scores = nonzero_scores
         if scores.empty:
             home_score = away_score = np.nan
         else:
@@ -1945,12 +2033,14 @@ def build_team_season_data(
     pd.DataFrame,
     pd.DataFrame,
     pd.DataFrame,
+    pd.DataFrame,
     list[dict[str, object]],
 ]:
     """Build team strength from pre-postseason EPM and actual playoff rotations."""
     team_frames: list[pd.DataFrame] = []
     roster_frames: list[pd.DataFrame] = []
     pair_frames: list[pd.DataFrame] = []
+    game_frames: list[pd.DataFrame] = []
     champions: list[dict[str, object]] = []
     reports: list[dict[str, object]] = []
     processed_columns = ["game_id", "game_date", *LINEUP_COLS, *OPPONENT_COLS]
@@ -1980,6 +2070,8 @@ def build_team_season_data(
         playoff_games, playoff_assignments = build_game_context(
             playoff_raw, playoff_dates
         )
+        playoff_games.insert(0, "season", int(season))
+        game_frames.append(playoff_games.copy())
         exposures = collapse_processed_team_exposures(
             playoff_possessions, playoff_assignments
         )
@@ -2036,6 +2128,7 @@ def build_team_season_data(
     team_seasons = pd.concat(team_frames, ignore_index=True)
     roster = pd.concat(roster_frames, ignore_index=True)
     pair_exposures = pd.concat(pair_frames, ignore_index=True)
+    playoff_game_frame = pd.concat(game_frames, ignore_index=True)
     champion_frame = pd.DataFrame(champions)
     team_seasons = team_seasons.merge(
         champion_frame[["season", "champion_team_id", "champion_team_abbr"]],
@@ -2049,7 +2142,14 @@ def build_team_season_data(
     invalid = champion_counts[champion_counts.ne(1)]
     if not invalid.empty:
         raise ValueError(f"Champion team missing or duplicated: {invalid.to_dict()}")
-    return team_seasons, roster, pair_exposures, champion_frame, reports
+    return (
+        team_seasons,
+        roster,
+        pair_exposures,
+        champion_frame,
+        playoff_game_frame,
+        reports,
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -2090,10 +2190,17 @@ def main() -> None:
     player_path = args.output_dir / "player_team_seasons.csv"
     pair_path = args.output_dir / "player_teammate_team_seasons.csv"
     champions_path = args.output_dir / "champions.csv"
+    playoff_games_path = args.output_dir / "playoff_games.csv"
     if args.reuse_data:
         missing = [
             str(path)
-            for path in (team_path, roster_path, team_pair_path, champions_path)
+            for path in (
+                team_path,
+                roster_path,
+                team_pair_path,
+                champions_path,
+                playoff_games_path,
+            )
             if not path.exists()
         ]
         if missing:
@@ -2102,6 +2209,7 @@ def main() -> None:
         roster = pd.read_csv(roster_path)
         team_pair_exposures = pd.read_csv(team_pair_path)
         champions = pd.read_csv(champions_path)
+        playoff_games = pd.read_csv(playoff_games_path)
         prior_metadata_path = args.output_dir / "metadata.json"
         if prior_metadata_path.exists():
             prior_metadata = json.loads(prior_metadata_path.read_text())
@@ -2109,7 +2217,14 @@ def main() -> None:
         else:
             reports = []
     else:
-        teams, roster, team_pair_exposures, champions, reports = build_team_season_data(
+        (
+            teams,
+            roster,
+            team_pair_exposures,
+            champions,
+            playoff_games,
+            reports,
+        ) = build_team_season_data(
             args.start_year,
             args.end_year,
             args.processed_dir,
@@ -2127,6 +2242,7 @@ def main() -> None:
     player.to_csv(player_path, index=False)
     pair.to_csv(pair_path, index=False)
     champions.to_csv(champions_path, index=False)
+    playoff_games.to_csv(playoff_games_path, index=False)
     metadata = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "start_season": int(args.start_year),
@@ -2166,7 +2282,33 @@ def main() -> None:
     neutral_title_model = fit_team_title_model(
         sample, str(selected["spec"]), float(selected["c_value"])
     )
-    seasons = add_title_lift_over_contract(seasons, neutral_title_model)
+    seasons = add_title_lift_over_contract(seasons, neutral_title_model, sample)
+    prototype_columns = {
+        "contract_epm": "prototype_contract_epm",
+        "epm_over_contract": "prototype_epm_over_contract",
+        "neutral_contract_actual_title_probability": (
+            "prototype_contract_actual_title_probability"
+        ),
+        "neutral_contract_hurdle_title_probability": (
+            "prototype_contract_hurdle_title_probability"
+        ),
+        "title_lift_over_contract": "prototype_title_lift_over_contract",
+        "contract_hurdle_version": "prototype_contract_hurdle_version",
+    }
+    seasons = seasons.rename(columns=prototype_columns)
+    playoff_game_model_rows = prepare_playoff_game_model_rows(playoff_games, sample)
+    playoff_game_model, series_diagnostics, series_model_report = (
+        select_playoff_game_model(playoff_game_model_rows)
+    )
+    playoff_series = build_playoff_series(playoff_games)
+    bracket_nodes = build_bracket_nodes(playoff_series)
+    seasons = add_salary_peer_title_lift(
+        seasons,
+        seasons,
+        sample,
+        bracket_nodes,
+        playoff_game_model,
+    )
     career, teammate, career_report = build_career_championship_help(seasons, attributed)
     selected["model_team_seasons"] = int(len(sample))
     selected["championship_team_seasons"] = int(sample["won_championship"].sum())
@@ -2176,33 +2318,52 @@ def main() -> None:
         "season-average pre-postseason EPM of the actual playoff rotations"
     )
     selected["hard_carry_comparison_field"] = (
-        "one fixed neutral 16-team environment for every player-season: a 1/16 "
-        "neutral baseline and 15 equal-strength opponents"
+        "salary-matched rotation slots across every other historical playoff season, "
+        "with the focal player inserted at the peer's actual playoff workload and "
+        "advanced through that season's four-round bracket"
     )
     selected["season_common_field"] = (
         "one shared 15-opponent field within each season, using 15 times the "
         "average conditional-softmax mass of all 16 actual playoff teams"
     )
-    selected["probability_unit"] = "team-season conditional softmax"
+    selected["probability_unit"] = (
+        "exact four-round bracket probability from fitted best-of-seven series"
+    )
     selected["rating_timing"] = (
         "latest monthly game-agnostic EPM snapshot on/before postseason start"
     )
     selected["title_lift_over_contract"] = {
-        "label": "Title Lift over Contract",
+        "label": "Title Lift over Salary Peer",
         "cost_unit": "annual salary share, not cap hit",
-        "hurdle_version": CONTRACT_HURDLE_VERSION,
-        "replacement_epm": CONTRACT_REPLACEMENT_EPM,
-        "replacement_salary_share": CONTRACT_REPLACEMENT_SALARY_SHARE,
-        "cap_share_per_war": CONTRACT_CAP_SHARE_PER_WAR,
-        "normalized_season_possessions": CONTRACT_NORMALIZED_SEASON_POSSESSIONS,
-        "wins_per_point": CONTRACT_WINS_PER_POINT,
-        "war_per_epm": CONTRACT_WAR_PER_EPM,
-        "field": "fixed neutral 16-team field with 0 EPM equal to 1-in-16 odds",
-        "workload": "player's actual share of his playoff team's possessions",
-        "status": "declared prototype market-price assumptions; not a fitted UFA curve",
+        "hurdle_version": SALARY_PEER_HURDLE_VERSION,
+        "peer_rule": (
+            "closest salary-cap share on each historical playoff team; ties use the "
+            "larger playoff workload"
+        ),
+        "swap_rule": (
+            "remove the salary peer's actual EPM contribution and insert the focal "
+            "player at that peer's actual playoff workload"
+        ),
+        "field": (
+            "every complete historical 16-team playoff bracket outside the focal season"
+        ),
+        "series_model": series_model_report,
+        "status": "retrospective realized salary-peer comparison",
+        "prototype_contract_epm_sensitivity": {
+            "hurdle_version": CONTRACT_HURDLE_VERSION,
+            "replacement_epm": CONTRACT_REPLACEMENT_EPM,
+            "replacement_salary_share": CONTRACT_REPLACEMENT_SALARY_SHARE,
+            "cap_share_per_war": CONTRACT_CAP_SHARE_PER_WAR,
+            "normalized_season_possessions": CONTRACT_NORMALIZED_SEASON_POSSESSIONS,
+            "wins_per_point": CONTRACT_WINS_PER_POINT,
+            "war_per_epm": CONTRACT_WAR_PER_EPM,
+        },
     }
 
     diagnostics.to_csv(args.output_dir / "model_cv.csv", index=False)
+    series_diagnostics.to_csv(args.output_dir / "series_game_model_cv.csv", index=False)
+    playoff_series.to_csv(args.output_dir / "playoff_series.csv", index=False)
+    bracket_nodes.to_csv(args.output_dir / "playoff_bracket_nodes.csv", index=False)
     oof_predictions.to_csv(args.output_dir / "model_oof_predictions.csv", index=False)
     team_estimates = teams.merge(
         oof_predictions[["season", "team_id", "predicted_probability"]],
