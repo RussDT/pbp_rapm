@@ -4,11 +4,15 @@ import numpy as np
 import pandas as pd
 
 from nba_pipeline.scripts.build_championship_help import (
+    CONTRACT_REPLACEMENT_SALARY_SHARE,
+    add_title_lift_over_contract,
+    attach_salary_share,
     attach_neutral_playoff_baseline,
     attribute_team_probabilities,
     build_player_title_context,
     build_game_context,
     collapse_processed_team_exposures,
+    contract_epm_from_salary_share,
     cross_validated_team_predictions,
     extract_champion_from_games,
     fit_team_title_model,
@@ -103,6 +107,121 @@ def test_neutral_playoff_rotation_is_the_same_season_field_average() -> None:
     assert result["neutral_team_dpm"].tolist() == [4.0, 4.0]
     assert result["neutral_team_o_dpm"].tolist() == [2.75, 2.75]
     assert result["neutral_team_d_dpm"].tolist() == [1.25, 1.25]
+
+
+def test_common_title_field_does_not_remove_the_focal_players_actual_team() -> None:
+    training = pd.DataFrame(
+        [
+            {"season": 2024, "team_id": 1, "team_dpm": 2.0, "won_championship": 0},
+            {"season": 2024, "team_id": 2, "team_dpm": 4.0, "won_championship": 0},
+            {"season": 2024, "team_id": 3, "team_dpm": 6.0, "won_championship": 1},
+            {"season": 2024, "team_id": 4, "team_dpm": 8.0, "won_championship": 0},
+        ]
+    )
+    model = fit_team_title_model(training, spec="overall", c_value=1.0)
+    states = pd.DataFrame(
+        [
+            {"season": 2024, "team_id": 99, "team_dpm": 5.0},
+            {"season": 2024, "team_id": 99, "team_dpm": 7.0},
+        ]
+    )
+
+    shared = model.common_field_target_probabilities(states, training)
+    remove_weak_team = model.target_probabilities(states, training, team_id=1)
+    remove_strong_team = model.target_probabilities(states, training, team_id=4)
+
+    assert shared[1] > shared[0]
+    assert not np.allclose(remove_weak_team, remove_strong_team)
+    assert np.allclose(
+        shared,
+        model.common_field_target_probabilities(states, training.sample(frac=1, random_state=7)),
+    )
+
+
+def test_contract_epm_hurdle_is_monotone_and_anchors_replacement_salary() -> None:
+    shares = np.array([0.01, CONTRACT_REPLACEMENT_SALARY_SHARE, 0.20, 0.35])
+    hurdles = contract_epm_from_salary_share(shares)
+
+    assert np.all(np.diff(hurdles) > 0)
+    assert abs(hurdles[1] - (-2.0)) < 1e-12
+    assert 2.0 < hurdles[-1] < 2.5
+
+
+def test_salary_share_attachment_never_guesses_another_teams_cost() -> None:
+    players = pd.DataFrame(
+        [
+            {"season": 2025, "player_id": 1, "team_abbr": "AAA"},
+            {"season": 2025, "player_id": 2, "team_abbr": "BBB"},
+        ]
+    )
+    salary = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "player_id": 1,
+                "salary_team_abbr": "AAA",
+                "salary": 10.0,
+                "salary_cap": 100.0,
+                "salary_share": 0.10,
+            },
+            {
+                "season": 2025,
+                "player_id": 2,
+                "salary_team_abbr": "CCC",
+                "salary": 40.0,
+                "salary_cap": 100.0,
+                "salary_share": 0.40,
+            },
+        ]
+    )
+
+    result, report = attach_salary_share(players, salary)
+
+    assert result.loc[result["player_id"].eq(1), "salary_share"].item() == 0.10
+    assert pd.isna(result.loc[result["player_id"].eq(2), "salary_share"].item())
+    assert report["covered_player_seasons"] == 1
+
+
+def test_title_lift_over_contract_holds_field_and_workload_fixed() -> None:
+    training = pd.DataFrame(
+        [
+            {"season": 2022, "team_id": 1, "team_dpm": -1.0, "won_championship": 0},
+            {"season": 2022, "team_id": 2, "team_dpm": 1.0, "won_championship": 1},
+            {"season": 2023, "team_id": 3, "team_dpm": -0.5, "won_championship": 0},
+            {"season": 2023, "team_id": 4, "team_dpm": 1.5, "won_championship": 1},
+        ]
+    )
+    model = fit_team_title_model(training, spec="overall", c_value=1.0)
+    hurdle = float(contract_epm_from_salary_share(0.20))
+    seasons = pd.DataFrame(
+        [
+            {
+                "own_dpm": hurdle,
+                "salary_share": 0.20,
+                "total_exposures": 60.0,
+                "team_total_exposures": 100.0,
+            },
+            {
+                "own_dpm": hurdle + 2.0,
+                "salary_share": 0.20,
+                "total_exposures": 60.0,
+                "team_total_exposures": 100.0,
+            },
+            {
+                "own_dpm": hurdle - 2.0,
+                "salary_share": 0.20,
+                "total_exposures": 60.0,
+                "team_total_exposures": 100.0,
+            },
+        ]
+    )
+
+    result = add_title_lift_over_contract(seasons, model)
+
+    assert abs(result.loc[0, "title_lift_over_contract"]) < 1e-12
+    assert result.loc[1, "title_lift_over_contract"] > 0
+    assert result.loc[2, "title_lift_over_contract"] < 0
+    assert result["playoff_workload_share"].tolist() == [0.6, 0.6, 0.6]
 
 
 def test_final_team_segment_uses_last_regular_season_game() -> None:
@@ -800,6 +919,16 @@ def test_team_probability_attribution_holds_focal_fixed_and_reconciles_teammates
     assert (
         seasons["self_context_title_probability"]
         > seasons["neutral_team_title_probability"]
+    ).all()
+    assert seasons["neutral_field_neutral_title_probability"].nunique() == 1
+    assert (
+        seasons["neutral_field_hard_carry_title_probability"]
+        > seasons["neutral_field_neutral_title_probability"]
+    ).all()
+    assert np.allclose(seasons["era_neutral_title_probability"], 1 / 16)
+    assert (
+        seasons["era_neutral_hard_carry_title_probability"]
+        > seasons["era_neutral_title_probability"]
     ).all()
     for player_id, group in attributed.groupby("player_id"):
         target = seasons.loc[
