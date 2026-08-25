@@ -122,9 +122,10 @@ salary coverage, match the focal salary share to the closest
 salary-covered playoff rotation player on each historical playoff team outside
 the focal season. Break exact distance ties toward the peer with more playoff
 workload. Remove that peer's actual team-EPM contribution and add the focal
-player's EPM at the peer's workload. This is a real roster slot: the teammates,
-opponents, workload, and four-round bracket all remain those of the destination
-team and season.
+player's EPM at the peer's workload. The swap uses two realized roles: the
+peer's regular-season workload changes team strength for qualification and
+seeding, while the peer's playoff workload changes series strength. This is a
+real roster slot in the destination team's historical league environment.
 
 ```text
 peer_team_rating = original_team_rating
@@ -134,8 +135,16 @@ swap_team_rating = original_team_rating
                    - peer_EPM  * peer_playoff_workload_share
                    + focal_EPM * peer_playoff_workload_share
 
-placement_lift = P(title | swap_team_rating, historical_bracket)
-                 - P(title | original_team_rating, historical_bracket)
+regular_season_rating_shift = (focal_EPM - peer_EPM)
+                              * peer_regular_season_workload_share
+
+p_swap = sum_seed P(seed | regular_season_rating_shift)
+                  * P(title | swap_team_rating, seed)
+
+p_peer = sum_seed P(seed | 0)
+                  * P(title | original_team_rating, seed)
+
+placement_lift = p_swap - p_peer
 
 Title Lift over Contract = average(placement_lift)
 ```
@@ -154,13 +163,33 @@ team-stint rows in one season, sum them before calculating salary share; use the
 largest salary stint only as a display-team label for a nonplayoff row. This
 prevents traded players from being compared on one partial salary segment.
 
-The bracket engine uses the observed 16-team topology for each season. A
-playoff-game logistic model prices home court and team-EPM difference, then an
-exact dynamic program converts those game odds into a first-to-four series
-probability under a `2-2-1-1-1` schedule. Either team is averaged as the home-
-court owner because seeding is not used as a talent credit. Exact series
-probabilities are propagated through all four rounds; Monte Carlo sampling is
-unnecessary and would add noise to the same expectation.
+The regular-season layer uses the actual historical schedule and full league
+field. A leave-one-season-out-selected game logit turns each matchup's team-EPM
+difference and home court into a win probability. For every destination team
+and rating shift, 2,048 common normal draws use the matching Poisson-binomial
+mean and variance to simulate win totals; the focal team is ranked against all
+teams in its conference. The top eight qualify. The selected model uses 30,064
+games, `C=0.05`, home advantage `0.4067` log odds, and `0.1433` log odds per
+team-EPM point; mean season log loss is `0.5911`.
+
+The playoff layer retains the realized historical 16-team field but re-slots
+the destination team at each simulated seed, shifting the other seven teams in
+record order. A playoff-game logistic model prices home court and team-EPM
+difference, then an exact dynamic program converts those game odds into a
+first-to-four series probability under a `2-2-1-1-1` schedule. The higher seed
+owns home court. Exact series probabilities propagate through the standard
+1-8/4-5 and 2-7/3-6 four-round bracket; only the regular-season seed layer is
+simulated.
+
+This is a schedule-based seed simulation, not a possession-by-possession replay
+of all 30 teams. Win totals use a normal approximation to each schedule's
+Poisson-binomial distribution, standard standings rank replaces historical
+division and play-in tiebreak rules, and the seven non-focal playoff teams in
+each conference remain the realized field. The focal team can miss the top
+eight and receive zero title probability, but a simulated nonplayoff entrant's
+roster is not substituted into the opponent field. These approximations keep
+the salary-placement surface reproducible and computationally tractable and
+must remain visible in reader methodology.
 
 The current series model is selected by the one-standard-error rule on
 leave-one-season-out game log loss. It uses 2,085 playoff games across 25
@@ -224,21 +253,34 @@ At the top end, fit the non-max UFA curve with a censored likelihood or report a
 
 ## Title Lift over Contract calculation
 
-The production calculation averages actual bracket placements:
+The production calculation averages full-season placements:
 
 ```text
-p_swap = title_probability(peer roster with focal EPM, peer workload, actual bracket)
-p_peer = title_probability(original peer roster, actual bracket)
+p_swap = title_probability(peer roster with focal EPM,
+                           peer RS and playoff workloads,
+                           simulated qualification and seed)
+p_peer = title_probability(original peer roster,
+                           simulated qualification and seed)
 
 Title Lift over Contract = average(p_swap - p_peer)
 ```
 
-The subtraction happens after the nonlinear four-round bracket calculation for
-each placement. Do not subtract EPM linearly after title probability has been
-calculated, and do not replace the opponent distribution with 15 equal teams.
+The subtraction happens after both the nonlinear seed mixture and four-round
+bracket calculation for each placement. Do not subtract EPM linearly after
+title probability has been calculated, and do not replace the opponent
+distribution with 15 equal teams.
+
+For auditability, the export retains the former same-bracket result. The exact
+identity is:
+
+```text
+full-season Title Lift over Contract
+  = fixed-bracket playoff lift
+  + seeding and qualification lift
+```
 
 The primary reader metric is **realized salary-peer title lift at the peer's
-actual playoff workload**. A separately labeled signing-date expected-value
+actual regular-season and playoff workloads**. A separately labeled signing-date expected-value
 metric may later include availability and market pricing, but it must not be
 mixed into this retrospective result.
 
@@ -249,9 +291,11 @@ Before publishing 2002-2026 results:
 1. Freeze the salary snapshot, denominator table, ID crosswalk, regime labels, and source hashes.
 2. Report source coverage and unresolved-ID rates by season; no unknown salary becomes zero.
 3. Reconcile the BDL overlap against the historical salary source and explain material salary-versus-cap-hit differences.
-4. Reconstruct 15 series and the 8-4-2-1 bracket pattern in every season.
-5. Validate the game model by leave-one-season-out log loss and test series
-   symmetry, monotonicity, bracket closure, and exact swap-minus-peer identity.
+4. Reconstruct every regular-season schedule plus 15 playoff series and the
+   8-4-2-1 bracket pattern in every season.
+5. Validate both game models by leave-one-season-out log loss; test seed
+   monotonicity, series symmetry, bracket closure, exact swap-minus-peer
+   identity, and exact full-season = fixed-bracket + seeding closure.
 6. Report peer-placement counts and salary-match gaps; do not hide thin max-
    salary matches behind an average peer EPM.
 7. Keep the signing-date market curve labeled prototype until its UFA,

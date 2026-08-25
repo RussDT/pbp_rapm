@@ -76,19 +76,22 @@ a realized salary-peer roster swap rather than a hand-set Contract EPM hurdle.
 For every focal player-season with salary coverage and a frozen pre-playoff EPM
 rating—whether or not the player's own team reached the playoffs:
 
-1. take every complete historical playoff bracket outside the focal season;
+1. take every complete historical league season outside the focal season;
 2. on each of its 16 teams, identify the playoff rotation player with the
    closest salary-cap share, breaking ties toward the larger playoff workload;
-3. remove that peer's actual EPM contribution and insert the focal player at
-   the peer's actual playoff workload;
-4. propagate the original and swapped teams through that season's actual
-   four-round bracket; and
+3. insert the focal player at the peer's actual regular-season workload, then
+   simulate qualification and seed from the full historical schedule and all
+   teams in the destination conference;
+4. remove the peer's playoff EPM contribution, insert the focal player at the
+   peer's actual playoff workload, and propagate each simulated seed through a
+   standard four-round bracket with higher-seed home court; and
 5. average `swapped title odds - original roster title odds` across placements.
 
 There are 368 placements for every covered row: 16 teams in each of the other
-23 postseasons. This design keeps the purchased roster slot, workload, actual
-teammates, opponent distribution, and bracket together. A star does not receive
-an easier field merely because his real powerhouse team was removed.
+23 postseasons. This design keeps the purchased roster slot, both realized
+workloads, historical league environment, opponent distribution, and bracket
+together. A star now receives credit for improving qualification, seed, and
+home court instead of inheriting the removed peer's realized playoff seed.
 
 Actual-team odds, context lift, teammate help, and the additive team equation
 remain playoff-only because they require the player's real postseason rotation.
@@ -103,14 +106,28 @@ the gap between raw lift and Title Lift over Contract is the title value already
 supplied by the removed salary peer. Actual-context title lift remains a separate
 question on the focal player's real team.
 
-Bracket probabilities are evaluated exactly, not estimated with Monte Carlo
-noise. A fitted playoff game logit prices team EPM difference plus home court;
+Regular-season qualification and seed use 2,048 reproducible common-random
+draws from each schedule-implied Poisson-binomial win distribution, using its
+exact mean and variance. A fitted regular-season game logit uses 30,064 games,
+selects `C=0.05`, home advantage `0.4067` log odds, and `0.1433` log odds per
+team-EPM point. The simulated focal team is ranked against every team in its
+conference; missing the top eight produces zero title probability.
+
+Conditional on a seed, bracket probabilities are evaluated exactly rather than
+sampled. A fitted playoff game logit prices team EPM difference plus home court;
 each matchup is converted to an exact first-to-four, best-of-seven probability
-under the `2-2-1-1-1` schedule, averaging which team owns home-court advantage.
-Those series probabilities are then propagated through the observed 8-4-2-1
-bracket tree. The one-standard-error leave-one-season-out game-log-loss rule
+under the `2-2-1-1-1` schedule. The higher seed owns home court; tied seeds in
+the Finals are averaged. Those series probabilities are propagated through the
+standard 1-8/4-5 and 2-7/3-6 bracket. The one-standard-error leave-one-season-out game-log-loss rule
 selects `C=0.05`, home advantage `0.4777` log odds, and `0.1320` log odds per
 team-EPM point on 2,085 playoff games. Mean season log loss is `0.6165`.
+
+The seed simulation is intentionally tractable rather than a 30-team roster
+replay: it approximates schedule win totals from their mean and variance, ranks
+without historical division/play-in tiebreak rules, and retains the seven
+realized non-focal playoff teams while moving the destination team among seeds.
+The destination can miss the top eight and receive zero title odds, but a new
+nonplayoff opponent roster is not inserted into the field.
 
 The cost input is annual salary divided by the official NBA salary cap. It is
 called **salary share**, never cap hit. The private crosswalk currently supplies
@@ -145,8 +162,10 @@ and no-leakage requirements are documented in
 ## Reader contract
 
 The public player page leads with Title Lift over Contract and shows actual EPM,
-average realized salary-peer EPM, salary share, and bracket-placement count for
-a covered season. The exact team equation remains underneath as neutral rotation
+average realized salary-peer EPM, salary share, playoff-only lift, seeding plus
+qualification lift, expected seed, playoff probability, and placement count for
+a covered season. Full-season lift closes exactly as `playoff-only lift + seeding
+and qualification lift`. The exact team equation remains underneath as neutral rotation
 + player share of team lift + teammate help = actual team odds. It is team
 accounting and is not the salary-peer counterfactual.
 
@@ -166,8 +185,11 @@ explicitly labeled season 2020; this repairs its former zero EPM coverage to
 100%.
 The bracket layer reconstructs exactly 375 series—15 in every season—with an
 8-4-2-1 round pattern. LeBron James in 2008-09 has 368 salary-peer placements,
-average peer EPM `+2.49`, swapped title odds `19.88%`, original peer-roster odds
-`6.25%`, and Title Lift over Contract `+13.63` percentage points. The median
+average peer EPM `+2.49`, full-season Title Lift over Contract `+15.08` percentage
+points, split into `+13.63` points of fixed-bracket playoff lift and `+1.45`
+points from qualification/seeding. Across careers, LeBron rises from `1.28` to
+`1.42` titles over salary peers and Stephen Curry from `1.11` to `1.23`; their
+seeding/qualification components are `0.14` and `0.12` titles, respectively. The median
 placement's absolute salary-share gap across covered player-seasons is about
 `0.57` cap points; the median 90th-percentile gap is `1.64` cap points.
 

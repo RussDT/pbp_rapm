@@ -27,8 +27,11 @@ try:
         SALARY_PEER_HURDLE_VERSION,
         add_salary_peer_title_lift,
         build_bracket_nodes,
+        build_playoff_seed_fields,
         build_playoff_series,
+        conference_from_abbreviation,
         prepare_playoff_game_model_rows,
+        regular_season_seed_probabilities,
         select_playoff_game_model,
     )
 except ModuleNotFoundError:  # Direct script execution from the repository root.
@@ -41,8 +44,11 @@ except ModuleNotFoundError:  # Direct script execution from the repository root.
         SALARY_PEER_HURDLE_VERSION,
         add_salary_peer_title_lift,
         build_bracket_nodes,
+        build_playoff_seed_fields,
         build_playoff_series,
+        conference_from_abbreviation,
         prepare_playoff_game_model_rows,
+        regular_season_seed_probabilities,
         select_playoff_game_model,
     )
 
@@ -1000,6 +1006,13 @@ def build_career_championship_help(
     seasons: pd.DataFrame,
     attributed: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, float]]:
+    seasons = seasons.copy()
+    for column in (
+        "salary_peer_fixed_bracket_title_lift",
+        "salary_peer_seeding_title_lift",
+    ):
+        if column not in seasons.columns:
+            seasons[column] = np.nan
     seasons = seasons.sort_values(["player_id", "season"], kind="mergesort")
     context_seasons = (
         seasons.loc[seasons["is_playoff_participant"].fillna(False)].copy()
@@ -1063,6 +1076,14 @@ def build_career_championship_help(
             contract_seasons_covered=("title_lift_over_contract", "count"),
             title_lift_over_contract_championships=(
                 "title_lift_over_contract",
+                lambda values: values.sum(min_count=1),
+            ),
+            salary_peer_fixed_bracket_title_lift_championships=(
+                "salary_peer_fixed_bracket_title_lift",
+                lambda values: values.sum(min_count=1),
+            ),
+            salary_peer_seeding_title_lift_championships=(
+                "salary_peer_seeding_title_lift",
                 lambda values: values.sum(min_count=1),
             ),
             neutral_contract_actual_championships=(
@@ -1198,6 +1219,8 @@ def write_app_championship_data(
         "contract_seasons_covered",
         "contract_coverage_pct",
         "title_lift_over_contract_championships",
+        "salary_peer_fixed_bracket_title_lift_championships",
+        "salary_peer_seeding_title_lift_championships",
         "neutral_contract_actual_championships",
         "neutral_contract_hurdle_championships",
         "normalized_self_championships",
@@ -1236,6 +1259,7 @@ def write_app_championship_data(
         "salary_share",
         "salary_mapping_method",
         "playoff_workload_share",
+        "regular_season_workload_share",
         "contract_epm",
         "epm_over_contract",
         "neutral_contract_actual_title_probability",
@@ -1251,6 +1275,18 @@ def write_app_championship_data(
         "salary_peer_mean_workload_share",
         "salary_peer_median_salary_gap",
         "salary_peer_p90_salary_gap",
+        "salary_peer_actual_playoff_probability",
+        "salary_peer_baseline_playoff_probability",
+        "salary_peer_zero_playoff_probability",
+        "salary_peer_actual_mean_seed",
+        "salary_peer_baseline_mean_seed",
+        "salary_peer_zero_mean_seed",
+        "salary_peer_fixed_bracket_actual_title_probability",
+        "salary_peer_fixed_bracket_baseline_title_probability",
+        "salary_peer_fixed_bracket_zero_title_probability",
+        "salary_peer_fixed_bracket_raw_title_lift",
+        "salary_peer_fixed_bracket_title_lift",
+        "salary_peer_seeding_title_lift",
         "normalized_self_title_probability_added",
         "self_replacement_title_probability_added",
         "on_court_teammate_title_probability_added",
@@ -2308,6 +2344,82 @@ def build_team_season_data(
     )
 
 
+def build_regular_season_environment(
+    start_year: int,
+    end_year: int,
+    processed_dir: Path,
+    raw_dir: Path,
+    epm_history: pd.DataFrame,
+    postseason_starts: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, list[dict[str, object]]]:
+    """Build full-league pre-playoff ratings, roles, schedules, and results."""
+    start_map = postseason_starts.set_index("season")["game_date"]
+    team_frames: list[pd.DataFrame] = []
+    roster_frames: list[pd.DataFrame] = []
+    game_frames: list[pd.DataFrame] = []
+    reports: list[dict[str, object]] = []
+    processed_columns = ["game_id", "game_date", *LINEUP_COLS, *OPPONENT_COLS]
+    for season in range(start_year, end_year + 1):
+        processed_path = season_file(processed_dir, "RAPM", season, playoffs=False)
+        raw_path = season_file(raw_dir, "NBA", season, playoffs=False)
+        missing = [str(path) for path in (processed_path, raw_path) if not path.exists()]
+        if missing:
+            raise FileNotFoundError(f"Missing {season} regular-season inputs: {missing}")
+        possessions = pd.read_parquet(processed_path, columns=processed_columns)
+        if pd.to_datetime(possessions["game_date"], errors="coerce").notna().mean() < 0.999:
+            raise ValueError(f"{processed_path} lacks complete game dates")
+        game_dates = possessions[["game_id", "game_date"]].drop_duplicates("game_id")
+        raw = pd.read_parquet(raw_path, columns=RAW_CONTEXT_COLS)
+        games, assignments = build_game_context(raw, game_dates)
+        games.insert(0, "season", int(season))
+        exposures = collapse_processed_team_exposures(possessions, assignments)
+        try:
+            postseason_start = pd.Timestamp(start_map.loc[int(season)])
+        except KeyError as exc:
+            raise ValueError(f"Missing postseason start for {season}") from exc
+        epm_snapshot = select_epm_snapshot(
+            epm_history, postseason_start, season=int(season)
+        )
+        teams, roster = summarize_retrospective_team_season(
+            exposures, epm_snapshot, season=int(season)
+        )
+        teams["conference"] = teams["team_abbr"].map(
+            lambda abbreviation: conference_from_abbreviation(abbreviation, int(season))
+        )
+        roster["regular_season_workload_share"] = (
+            roster["share_of_team_exposures_pct"] / 100.0
+        )
+        roster["regular_season_contribution_dpm"] = roster["contribution_dpm"]
+        team_frames.append(teams)
+        roster_frames.append(roster)
+        game_frames.append(games)
+        coverage = float(
+            100.0
+            * teams["rated_player_exposures"].sum()
+            / (5.0 * teams["total_exposures"].sum())
+        )
+        reports.append(
+            {
+                "season": int(season),
+                "regular_season_games": int(len(games)),
+                "regular_season_team_exposures": int(exposures["exposures"].sum()),
+                "team_rows": int(len(teams)),
+                "roster_rows": int(len(roster)),
+                "rating_coverage_pct": coverage,
+            }
+        )
+        print(
+            f"{season}: {len(games):,} RS games, {len(teams):,} teams, "
+            f"rating coverage {coverage:.1f}%"
+        )
+    return (
+        pd.concat(team_frames, ignore_index=True),
+        pd.concat(roster_frames, ignore_index=True),
+        pd.concat(game_frames, ignore_index=True),
+        reports,
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--start-year", type=int, default=2002)
@@ -2347,6 +2459,9 @@ def main() -> None:
     pair_path = args.output_dir / "player_teammate_team_seasons.csv"
     champions_path = args.output_dir / "champions.csv"
     playoff_games_path = args.output_dir / "playoff_games.csv"
+    regular_teams_path = args.output_dir / "regular_season_teams.csv"
+    regular_roster_path = args.output_dir / "regular_season_roster.csv"
+    regular_games_path = args.output_dir / "regular_season_games.csv"
     if args.reuse_data:
         missing = [
             str(path)
@@ -2356,6 +2471,9 @@ def main() -> None:
                 team_pair_path,
                 champions_path,
                 playoff_games_path,
+                regular_teams_path,
+                regular_roster_path,
+                regular_games_path,
             )
             if not path.exists()
         ]
@@ -2366,12 +2484,16 @@ def main() -> None:
         team_pair_exposures = pd.read_csv(team_pair_path)
         champions = pd.read_csv(champions_path)
         playoff_games = pd.read_csv(playoff_games_path)
+        regular_teams = pd.read_csv(regular_teams_path)
+        regular_roster = pd.read_csv(regular_roster_path)
+        regular_games = pd.read_csv(regular_games_path)
         prior_metadata_path = args.output_dir / "metadata.json"
         if prior_metadata_path.exists():
             prior_metadata = json.loads(prior_metadata_path.read_text())
             reports = list(prior_metadata.get("seasons", []))
         else:
             reports = []
+        regular_reports = list(prior_metadata.get("regular_seasons", [])) if prior_metadata_path.exists() else []
     else:
         (
             teams,
@@ -2387,6 +2509,24 @@ def main() -> None:
             args.raw_dir,
             epm_history,
         )
+        postseason_starts = (
+            playoff_games.assign(
+                game_date=pd.to_datetime(playoff_games["game_date"], errors="coerce")
+            )
+            .dropna(subset=["game_date"])
+            .groupby("season", as_index=False)["game_date"]
+            .min()
+        )
+        regular_teams, regular_roster, regular_games, regular_reports = (
+            build_regular_season_environment(
+                args.start_year,
+                args.end_year,
+                args.processed_dir,
+                args.raw_dir,
+                epm_history,
+                postseason_starts,
+            )
+        )
     player, pair = build_player_title_context(teams, roster, team_pair_exposures)
     player, playoff_salary_coverage_report = attach_salary_share(player, salary_history)
     team_reconciliation = validate_team_roster_reconciliation(teams, roster)
@@ -2399,6 +2539,9 @@ def main() -> None:
     pair.to_csv(pair_path, index=False)
     champions.to_csv(champions_path, index=False)
     playoff_games.to_csv(playoff_games_path, index=False)
+    regular_teams.to_csv(regular_teams_path, index=False)
+    regular_roster.to_csv(regular_roster_path, index=False)
+    regular_games.to_csv(regular_games_path, index=False)
     metadata = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "start_season": int(args.start_year),
@@ -2419,6 +2562,7 @@ def main() -> None:
         "team_reconciliation": team_reconciliation,
         "player_reconciliation": player_reconciliation,
         "seasons": reports,
+        "regular_seasons": regular_reports,
     }
     (args.output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
     print(f"Wrote data-only championship-help inputs to {args.output_dir}")
@@ -2477,18 +2621,47 @@ def main() -> None:
         rating_snapshots,
         salary_history,
     )
+    regular_roles = regular_roster[
+        [
+            "season",
+            "team_id",
+            "player_id",
+            "regular_season_workload_share",
+            "regular_season_contribution_dpm",
+        ]
+    ].copy()
+    seasons = seasons.merge(
+        regular_roles,
+        on=["season", "team_id", "player_id"],
+        how="left",
+        validate="many_to_one",
+    )
     playoff_game_model_rows = prepare_playoff_game_model_rows(playoff_games, sample)
     playoff_game_model, series_diagnostics, series_model_report = (
         select_playoff_game_model(playoff_game_model_rows)
     )
     playoff_series = build_playoff_series(playoff_games)
     bracket_nodes = build_bracket_nodes(playoff_series)
+    regular_game_model_rows = prepare_playoff_game_model_rows(
+        regular_games, regular_teams
+    )
+    regular_game_model, regular_game_diagnostics, regular_game_model_report = (
+        select_playoff_game_model(regular_game_model_rows)
+    )
+    seed_probabilities = regular_season_seed_probabilities(
+        regular_games,
+        regular_teams,
+        regular_game_model,
+    )
+    playoff_seed_fields = build_playoff_seed_fields(regular_games, sample)
     seasons = add_salary_peer_title_lift(
         seasons,
         seasons.loc[seasons["is_playoff_participant"]],
         sample,
         bracket_nodes,
         playoff_game_model,
+        regular_seed_probabilities=seed_probabilities,
+        playoff_seed_fields=playoff_seed_fields,
     )
     career, teammate, career_report = build_career_championship_help(seasons, attributed)
     selected["model_team_seasons"] = int(len(sample))
@@ -2500,15 +2673,16 @@ def main() -> None:
     )
     selected["hard_carry_comparison_field"] = (
         "salary-matched rotation slots across every other historical playoff season, "
-        "with the focal player inserted at the peer's actual playoff workload and "
-        "advanced through that season's four-round bracket"
+        "with the focal player inserted at the peer's actual regular-season and playoff "
+        "workloads; qualification and seed are simulated before the four-round bracket"
     )
     selected["season_common_field"] = (
         "one shared 15-opponent field within each season, using 15 times the "
         "average conditional-softmax mass of all 16 actual playoff teams"
     )
     selected["probability_unit"] = (
-        "exact four-round bracket probability from fitted best-of-seven series"
+        "schedule-based regular-season qualification/seed simulation followed by exact "
+        "four-round best-of-seven bracket probability"
     )
     selected["rating_timing"] = (
         "latest monthly game-agnostic EPM snapshot on/before postseason start"
@@ -2522,17 +2696,35 @@ def main() -> None:
             "larger playoff workload"
         ),
         "swap_rule": (
-            "remove the salary peer's actual EPM contribution and insert the focal "
-            "player at that peer's actual playoff workload"
+            "remove the salary peer's actual EPM contribution and insert the focal player "
+            "at that peer's actual regular-season workload for seeding and playoff workload "
+            "for series strength"
         ),
         "field": (
-            "every complete historical 16-team playoff bracket outside the focal season"
+            "every complete historical league season outside the focal season; the full "
+            "conference determines qualification and seed, while the realized playoff field "
+            "supplies the other seven opponents"
         ),
         "focal_universe": (
             "every annual-salary-covered player-season with a frozen pre-playoff EPM "
             "rating; actual team context remains playoff-only"
         ),
         "series_model": series_model_report,
+        "regular_season_model": regular_game_model_report,
+        "seeding_model": {
+            "simulation": (
+                "2,048 common-random normal draws from each schedule-implied "
+                "Poisson-binomial win distribution"
+            ),
+            "rating_shift_grid": "-20 to +20 team EPM in 0.5-point steps",
+            "qualification_rule": "top eight simulated win totals in each conference",
+            "playoff_field": (
+                "realized historical playoff field, re-slotted by simulated focal seed; "
+                "other seven teams retain regular-season record order"
+            ),
+            "home_court_rule": "higher seed owns the 2-2-1-1-1 series schedule",
+            "fixed_bracket_component_retained": True,
+        },
         "status": "retrospective realized salary-peer comparison",
         "prototype_contract_epm_sensitivity": {
             "hurdle_version": CONTRACT_HURDLE_VERSION,
@@ -2547,6 +2739,15 @@ def main() -> None:
 
     diagnostics.to_csv(args.output_dir / "model_cv.csv", index=False)
     series_diagnostics.to_csv(args.output_dir / "series_game_model_cv.csv", index=False)
+    regular_game_diagnostics.to_csv(
+        args.output_dir / "regular_season_game_model_cv.csv", index=False
+    )
+    seed_probabilities.to_csv(
+        args.output_dir / "regular_season_seed_probabilities.csv", index=False
+    )
+    playoff_seed_fields.to_csv(
+        args.output_dir / "playoff_seed_fields.csv", index=False
+    )
     playoff_series.to_csv(args.output_dir / "playoff_series.csv", index=False)
     bracket_nodes.to_csv(args.output_dir / "playoff_bracket_nodes.csv", index=False)
     oof_predictions.to_csv(args.output_dir / "model_oof_predictions.csv", index=False)
@@ -2573,18 +2774,19 @@ def main() -> None:
             "salary_peer_universe": salary_peer_universe_report,
             "interpretation": (
                 "Salary-peer and raw title lift cover salary-covered player-seasons whether or not "
-                "the focal player's own team reached the playoffs. For playoff participants, every "
-                "player on a team receives the same normalized team championship odds. Those odds "
-                "split from a common season-average playoff rotation into normalized self lift, "
-                "shared-floor teammate lift, and off-floor lift with exact closure. Playoff-only "
-                "context fields remain missing for nonplayoff seasons. This is not causal ring credit."
+                "the focal player's own team reached the playoffs. Each destination swap first uses "
+                "the peer's regular-season role to simulate qualification and seed, then uses the "
+                "peer's playoff role in the seeded series model. Full-season lift closes exactly to "
+                "fixed-bracket playoff lift plus seeding/qualification lift. Actual-team context and "
+                "teammate fields remain playoff-only. This is not causal ring credit."
             ),
             "retrospective_guard": (
                 "The latest monthly EPM snapshot available before the postseason is frozen for "
-                "each season, then weighted by the lineups that actually played in the playoffs. "
-                "Team rotation shares are normalized, so a longer playoff run does not create "
-                "more team strength. Non-playoff teams have zero title odds; playoff-team odds "
-                "sum to one. These are retrospective allocations, not pregame forecasts."
+                "each season, then weighted separately by the lineups that actually played in the "
+                "regular season and playoffs. The seed layer uses a schedule-based normal "
+                "approximation with 2,048 shared draws and standard conference rank; it does not "
+                "reproduce historical division/play-in tiebreak rules or replace the other seven "
+                "realized playoff teams. These are retrospective comparisons, not pregame forecasts."
             ),
         }
     )

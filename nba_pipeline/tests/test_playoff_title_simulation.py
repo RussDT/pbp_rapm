@@ -9,11 +9,115 @@ from nba_pipeline.scripts.playoff_title_simulation import (
     best_of_seven_win_probability,
     bracket_title_probabilities,
     build_bracket_nodes,
+    build_playoff_seed_fields,
     build_playoff_series,
     fit_playoff_game_model,
+    regular_season_seed_probabilities,
+    seeded_target_title_probability_curve,
     select_salary_peer_slots,
     target_title_probability_curve,
 )
+
+
+def test_regular_season_strength_changes_playoff_odds_and_expected_seed() -> None:
+    teams = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "team_id": team_id,
+                "team_abbr": f"T{team_id}",
+                "conference": "East" if team_id <= 10 else "West",
+                "team_dpm": 0.0,
+            }
+            for team_id in range(1, 21)
+        ]
+    )
+    games = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "home_team_id": home,
+                "away_team_id": away,
+            }
+            for home in range(1, 21)
+            for away in range(1, 21)
+            if home != away
+        ]
+    )
+
+    result = regular_season_seed_probabilities(
+        games,
+        teams,
+        PlayoffGameModel(home_advantage=0.0, epm_coefficient=0.30),
+        rating_shift_grid=np.array([-4.0, 0.0, 4.0]),
+        simulations=4096,
+        seed=17,
+    )
+    target = result[result["team_id"].eq(1)].set_index("rating_shift")
+
+    assert target.loc[4.0, "playoff_probability"] > target.loc[-4.0, "playoff_probability"]
+    assert target.loc[4.0, "conditional_mean_seed"] < target.loc[-4.0, "conditional_mean_seed"]
+
+
+def test_seeded_title_curve_credits_home_court_to_the_higher_seed() -> None:
+    field = pd.DataFrame(
+        [
+            {
+                "team_id": team_id,
+                "conference": "East" if team_id <= 8 else "West",
+                "seed": team_id if team_id <= 8 else team_id - 8,
+            }
+            for team_id in range(1, 17)
+        ]
+    )
+    ratings = pd.Series(0.0, index=field["team_id"])
+    model = PlayoffGameModel(home_advantage=0.40, epm_coefficient=0.12)
+
+    one_seed = seeded_target_title_probability_curve(
+        field, ratings, target_team_id=1, target_ratings=0.0, model=model
+    )
+    eight_seed = seeded_target_title_probability_curve(
+        field, ratings, target_team_id=8, target_ratings=0.0, model=model
+    )
+
+    assert one_seed > eight_seed
+
+
+def test_playoff_seed_field_uses_regular_season_records_within_conference() -> None:
+    teams = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "team_id": team_id,
+                "team_abbr": (
+                    ["ATL", "BOS", "BKN", "CHA", "CHI", "CLE", "DET", "IND"]
+                    + ["DAL", "DEN", "GSW", "HOU", "LAC", "LAL", "MEM", "MIN"]
+                )[team_id - 1],
+                "team_dpm": float(17 - team_id),
+            }
+            for team_id in range(1, 17)
+        ]
+    )
+    game_rows = []
+    for team_id in range(1, 17):
+        wins = 60 - team_id
+        for game_index in range(82):
+            game_rows.append(
+                {
+                    "season": 2025,
+                    "home_team_id": team_id,
+                    "away_team_id": 99,
+                    "home_score": 100.0 if game_index < wins else 90.0,
+                    "away_score": 90.0 if game_index < wins else 100.0,
+                }
+            )
+
+    result = build_playoff_seed_fields(pd.DataFrame(game_rows), teams)
+
+    east = result[result["conference"].eq("East")].sort_values("seed")
+    west = result[result["conference"].eq("West")].sort_values("seed")
+    assert east["team_id"].tolist() == list(range(1, 9))
+    assert west["team_id"].tolist() == list(range(9, 17))
 
 
 def _four_round_series(season: int = 2025) -> pd.DataFrame:
@@ -230,3 +334,88 @@ def test_salary_peer_title_lift_swaps_into_every_historical_playoff_team() -> No
     assert abs(result.loc[0, "salary_peer_baseline_title_probability"] - 1 / 16) < 1e-12
     assert result.loc[0, "salary_peer_actual_title_probability"] > 1 / 16
     assert result.loc[0, "title_lift_over_contract"] > 0
+
+
+def test_salary_peer_title_lift_adds_regular_season_seeding_credit() -> None:
+    nodes = build_bracket_nodes(_four_round_series())
+    teams = pd.DataFrame(
+        [
+            {"season": 2025, "team_id": team_id, "team_dpm": 0.0}
+            for team_id in range(1, 17)
+        ]
+    )
+    peers = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "team_id": team_id,
+                "player_id": 100 + team_id,
+                "salary_share": 0.20,
+                "own_dpm": 0.0,
+                "own_team_contribution_dpm": 0.0,
+                "playoff_workload_share": 0.75,
+                "regular_season_workload_share": 0.75,
+            }
+            for team_id in range(1, 17)
+        ]
+    )
+    focal = pd.DataFrame(
+        [{"season": 2026, "player_id": 999, "own_dpm": 4.0, "salary_share": 0.20}]
+    )
+    seed_rows = []
+    for team_id in range(1, 17):
+        for shift, seed_number, seed_probability in [
+            (-4.0, None, 0.0),
+            (0.0, 8, 0.5),
+            (4.0, 1, 1.0),
+        ]:
+            row = {
+                "season": 2025,
+                "team_id": team_id,
+                "rating_shift": shift,
+                "playoff_probability": seed_probability,
+                "conditional_mean_seed": float(seed_number) if seed_number else np.nan,
+            }
+            for seed in range(1, 9):
+                row[f"seed_{seed}_probability"] = (
+                    seed_probability if seed == seed_number else 0.0
+                )
+            seed_rows.append(row)
+    seed_probabilities = pd.DataFrame(seed_rows)
+    seed_field = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "team_id": team_id,
+                "conference": "East" if team_id <= 8 else "West",
+                "seed": team_id if team_id <= 8 else team_id - 8,
+            }
+            for team_id in range(1, 17)
+        ]
+    )
+    model = PlayoffGameModel(home_advantage=0.40, epm_coefficient=0.12)
+
+    result = add_salary_peer_title_lift(
+        focal,
+        peers,
+        teams,
+        nodes,
+        model,
+        regular_seed_probabilities=seed_probabilities,
+        playoff_seed_fields=seed_field,
+    )
+
+    assert result.loc[0, "salary_peer_actual_playoff_probability"] > result.loc[
+        0, "salary_peer_baseline_playoff_probability"
+    ]
+    assert result.loc[0, "salary_peer_actual_mean_seed"] < result.loc[
+        0, "salary_peer_baseline_mean_seed"
+    ]
+    assert result.loc[0, "title_lift_over_contract"] > result.loc[
+        0, "salary_peer_fixed_bracket_title_lift"
+    ]
+    assert np.isclose(
+        result.loc[0, "title_lift_over_contract"],
+        result.loc[0, "salary_peer_fixed_bracket_title_lift"]
+        + result.loc[0, "salary_peer_seeding_title_lift"],
+    )
