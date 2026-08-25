@@ -9,8 +9,10 @@ from nba_pipeline.scripts.build_championship_help import (
     attach_salary_share,
     attach_neutral_playoff_baseline,
     attribute_team_probabilities,
+    build_salary_peer_focal_seasons,
     build_player_title_context,
     build_game_context,
+    build_career_championship_help,
     collapse_processed_team_exposures,
     contract_epm_from_salary_share,
     cross_validated_team_predictions,
@@ -92,6 +94,29 @@ def test_epm_snapshot_selection_never_backfills_from_the_future(tmp_path) -> Non
 
     with np.testing.assert_raises(ValueError):
         select_epm_snapshot(history, "2025-04-20")
+
+
+def test_epm_snapshot_keeps_explicit_bubble_season_label(tmp_path) -> None:
+    pd.DataFrame(
+        [
+            {
+                "requested_date": "2020-08-01",
+                "date": "2020-08-01",
+                "game_dt": "2020-03-10",
+                "game_optimized": 0,
+                "player_id": 1,
+                "player_name": "One",
+                "oepm": 2.0,
+                "depm": 1.0,
+                "epm": 3.0,
+            }
+        ]
+    ).to_csv(tmp_path / "epm_all_2020-08-01_go0.csv", index=False)
+
+    history, _ = load_epm_snapshot_history(tmp_path)
+    snapshot = select_epm_snapshot(history, "2020-08-17", season=2020)
+
+    assert snapshot.loc[0, "season"] == 2020
 
 
 def test_neutral_playoff_rotation_is_the_same_season_field_average() -> None:
@@ -180,6 +205,157 @@ def test_salary_share_attachment_never_guesses_another_teams_cost() -> None:
     assert result.loc[result["player_id"].eq(1), "salary_share"].item() == 0.10
     assert pd.isna(result.loc[result["player_id"].eq(2), "salary_share"].item())
     assert report["covered_player_seasons"] == 1
+
+
+def test_salary_peer_focal_seasons_include_nonplayoff_players() -> None:
+    playoff_seasons = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "player_id": 1,
+                "player_name": "Playoff Player",
+                "team_id": 100,
+                "team_abbr": "AAA",
+                "own_dpm": 3.0,
+                "title_probability": 0.10,
+            }
+        ]
+    )
+    rating_snapshots = pd.DataFrame(
+        [
+            {"season": 2025, "nba_id": 1, "player_name": "Playoff Player", "dpm": 3.0},
+            {"season": 2025, "nba_id": 2, "player_name": "Nonplayoff Player", "dpm": 0.5},
+        ]
+    )
+    salary_history = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "player_id": 1,
+                "salary_team_abbr": "AAA",
+                "salary": 10.0,
+                "salary_cap": 100.0,
+                "salary_share": 0.10,
+            },
+            {
+                "season": 2025,
+                "player_id": 2,
+                "salary_team_abbr": "BBB",
+                "salary": 15.0,
+                "salary_cap": 100.0,
+                "salary_share": 0.15,
+            },
+            {
+                "season": 2025,
+                "player_id": 2,
+                "salary_team_abbr": "CCC",
+                "salary": 5.0,
+                "salary_cap": 100.0,
+                "salary_share": 0.05,
+            },
+        ]
+    )
+
+    result, report = build_salary_peer_focal_seasons(
+        playoff_seasons,
+        rating_snapshots,
+        salary_history,
+    )
+
+    assert result[["player_id", "is_playoff_participant"]].to_dict("records") == [
+        {"player_id": 1, "is_playoff_participant": True},
+        {"player_id": 2, "is_playoff_participant": False},
+    ]
+    nonplayoff = result.loc[result["player_id"].eq(2)].iloc[0]
+    assert nonplayoff["own_dpm"] == 0.5
+    assert nonplayoff["salary"] == 20.0
+    assert nonplayoff["salary_share"] == 0.20
+    assert nonplayoff["team_abbr"] == "BBB"
+    assert pd.isna(nonplayoff["title_probability"])
+    assert report["salary_peer_focal_player_seasons"] == 2
+    assert report["nonplayoff_salary_peer_player_seasons"] == 1
+
+
+def test_career_salary_peer_totals_include_nonplayoff_seasons() -> None:
+    context_values = {
+        "won_championship": 0.0,
+        "title_probability": 0.10,
+        "neutral_teammate_title_probability": 0.08,
+        "self_context_title_probability": 0.02,
+        "neutral_team_title_probability": 0.05,
+        "neutral_field_neutral_title_probability": 0.04,
+        "neutral_field_hard_carry_title_probability": 0.09,
+        "era_neutral_title_probability": 0.04,
+        "era_neutral_hard_carry_title_probability": 0.09,
+        "normalized_self_title_probability_added": 0.03,
+        "self_replacement_title_probability_added": 0.02,
+        "on_court_teammate_title_probability_added": 0.01,
+        "bench_title_probability_added": 0.01,
+        "teammate_help_championships": 0.02,
+        "help_dpm": 1.0,
+    }
+    seasons = pd.DataFrame(
+        [
+            {
+                "season": 2024,
+                "player_id": 1,
+                "player_name": "One",
+                "is_playoff_participant": True,
+                "title_lift_over_contract": 0.10,
+                "neutral_contract_actual_title_probability": 0.16,
+                "neutral_contract_hurdle_title_probability": 0.06,
+                **context_values,
+            },
+            {
+                "season": 2025,
+                "player_id": 1,
+                "player_name": "One",
+                "is_playoff_participant": False,
+                "title_lift_over_contract": 0.05,
+                "neutral_contract_actual_title_probability": 0.11,
+                "neutral_contract_hurdle_title_probability": 0.06,
+                **{key: np.nan for key in context_values},
+            },
+            {
+                "season": 2025,
+                "player_id": 2,
+                "player_name": "Two",
+                "is_playoff_participant": False,
+                "title_lift_over_contract": 0.02,
+                "neutral_contract_actual_title_probability": 0.08,
+                "neutral_contract_hurdle_title_probability": 0.06,
+                **{key: np.nan for key in context_values},
+            },
+        ]
+    )
+    attributed = pd.DataFrame(
+        [
+            {
+                "player_id": 1,
+                "teammate_id": 9,
+                "player_name": "One",
+                "teammate_name": "Nine",
+                "season": 2024,
+                "shared_exposures": 10.0,
+                "rated_exposures": 10.0,
+                "weighted_dpm": 0.0,
+                "won_championship": 0.0,
+                "championships_added": 0.02,
+            }
+        ]
+    )
+
+    career, _, _ = build_career_championship_help(seasons, attributed)
+
+    one = career.loc[career["player_id"].eq(1)].iloc[0]
+    two = career.loc[career["player_id"].eq(2)].iloc[0]
+    assert one["seasons_modeled"] == 2
+    assert one["playoff_seasons_modeled"] == 1
+    assert np.isclose(one["title_lift_over_contract_championships"], 0.15)
+    assert two["seasons_modeled"] == 1
+    assert two["playoff_seasons_modeled"] == 0
+    assert two["title_lift_over_contract_championships"] == 0.02
+    assert pd.isna(two["expected_championships"])
 
 
 def test_title_lift_over_contract_holds_playoff_placements_and_workload_fixed() -> None:

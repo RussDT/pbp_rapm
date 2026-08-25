@@ -217,6 +217,136 @@ def attach_salary_share(
     return output, report
 
 
+def build_salary_peer_focal_seasons(
+    playoff_seasons: pd.DataFrame,
+    rating_snapshots: pd.DataFrame,
+    salary_history: pd.DataFrame,
+) -> tuple[pd.DataFrame, dict[str, object]]:
+    """Add salary-covered nonplayoff players to the salary-peer focal universe."""
+    rating_required = {"season", "nba_id", "player_name", "dpm"}
+    salary_required = {
+        "season",
+        "player_id",
+        "salary_team_abbr",
+        "salary",
+        "salary_cap",
+    }
+    for label, frame, required in (
+        ("rating snapshots", rating_snapshots, rating_required),
+        ("salary history", salary_history, salary_required),
+    ):
+        missing = required.difference(frame.columns)
+        if missing:
+            raise ValueError(f"Salary-peer {label} are missing columns: {sorted(missing)}")
+
+    salary = salary_history.copy()
+    cap_counts = salary.groupby(["season", "player_id"])["salary_cap"].nunique()
+    if cap_counts.gt(1).any():
+        bad = cap_counts[cap_counts.gt(1)].head().to_dict()
+        raise ValueError(f"Salary cap differs within player-season: {bad}")
+    main_team = (
+        salary.sort_values(
+            ["season", "player_id", "salary", "salary_team_abbr"],
+            ascending=[True, True, False, True],
+            kind="mergesort",
+        )
+        .drop_duplicates(["season", "player_id"], keep="first")
+        [["season", "player_id", "salary_team_abbr"]]
+    )
+    annual_salary = (
+        salary.groupby(["season", "player_id"], as_index=False, sort=False)
+        .agg(salary=("salary", "sum"), salary_cap=("salary_cap", "first"))
+        .merge(main_team, on=["season", "player_id"], how="left", validate="one_to_one")
+    )
+    annual_salary["salary_share"] = annual_salary["salary"] / annual_salary["salary_cap"]
+
+    ratings = rating_snapshots[
+        ["season", "nba_id", "player_name", "dpm"]
+    ].rename(columns={"nba_id": "player_id", "dpm": "own_dpm"})
+    ratings = ratings.sort_values(
+        ["season", "player_id"], kind="mergesort"
+    ).drop_duplicates(["season", "player_id"], keep="last")
+    eligible = ratings.merge(
+        annual_salary,
+        on=["season", "player_id"],
+        how="inner",
+        validate="one_to_one",
+    )
+
+    existing = playoff_seasons.copy()
+    existing["is_playoff_participant"] = True
+    annual_columns = [
+        "season",
+        "player_id",
+        "salary",
+        "salary_cap",
+        "salary_share",
+    ]
+    existing = existing.drop(
+        columns=[column for column in annual_columns[2:] if column in existing.columns]
+    ).merge(
+        annual_salary[annual_columns],
+        on=["season", "player_id"],
+        how="left",
+        validate="one_to_one",
+    )
+    existing["salary_mapping_method"] = np.where(
+        existing["salary_share"].notna(), "annual_player_season_total", None
+    )
+
+    existing_keys = existing[["season", "player_id"]].drop_duplicates()
+    extras = eligible.merge(
+        existing_keys.assign(_playoff=True),
+        on=["season", "player_id"],
+        how="left",
+        validate="one_to_one",
+    )
+    extras = extras.loc[extras["_playoff"].isna()].drop(columns="_playoff")
+    extras["team_id"] = np.nan
+    extras["team_abbr"] = extras.pop("salary_team_abbr")
+    extras["salary_mapping_method"] = "annual_player_season_total"
+    extras["is_playoff_participant"] = False
+    extras["won_championship"] = 0
+    for column in existing.columns:
+        if column not in extras.columns:
+            extras[column] = np.nan
+    extras = extras[existing.columns]
+
+    output_columns = list(existing.columns)
+    output = pd.concat(
+        [
+            existing.dropna(axis=1, how="all"),
+            extras.dropna(axis=1, how="all"),
+        ],
+        ignore_index=True,
+        sort=False,
+    ).reindex(columns=output_columns)
+    output = output.sort_values(["season", "player_id"], kind="mergesort").reset_index(
+        drop=True
+    )
+    coverage_by_season = (
+        output.assign(covered=output["salary_share"].notna())
+        .groupby("season", as_index=False)
+        .agg(player_seasons=("player_id", "size"), covered=("covered", "sum"))
+    )
+    coverage_by_season["coverage_pct"] = (
+        100.0 * coverage_by_season["covered"] / coverage_by_season["player_seasons"]
+    )
+    report: dict[str, object] = {
+        "player_seasons": int(len(output)),
+        "covered_player_seasons": int(output["salary_share"].notna().sum()),
+        "coverage_pct": float(100.0 * output["salary_share"].notna().mean()),
+        "by_season": coverage_by_season.to_dict(orient="records"),
+        "missing_policy": "missing remains missing; no team or player fallback",
+        "salary_peer_focal_player_seasons": int(len(output)),
+        "playoff_player_seasons": int(output["is_playoff_participant"].sum()),
+        "nonplayoff_salary_peer_player_seasons": int(
+            (~output["is_playoff_participant"]).sum()
+        ),
+    }
+    return output, report
+
+
 def add_title_lift_over_contract(
     seasons: pd.DataFrame,
     neutral_title_model: TeamTitleModel,
@@ -374,7 +504,12 @@ def load_epm_snapshot_history(
     return history.reset_index(drop=True), report
 
 
-def select_epm_snapshot(epm_history: pd.DataFrame, as_of_date: str | pd.Timestamp) -> pd.DataFrame:
+def select_epm_snapshot(
+    epm_history: pd.DataFrame,
+    as_of_date: str | pd.Timestamp,
+    *,
+    season: int | None = None,
+) -> pd.DataFrame:
     """Select the latest complete monthly snapshot available on/before a cutoff."""
     cutoff = pd.Timestamp(as_of_date).normalize()
     eligible_dates = epm_history.loc[
@@ -388,7 +523,7 @@ def select_epm_snapshot(epm_history: pd.DataFrame, as_of_date: str | pd.Timestam
         epm_history["snapshot_requested_date"].eq(requested_date)
     ].copy()
     snapshot["season"] = int(
-        cutoff.year + 1 if cutoff.month >= 7 else cutoff.year
+        season if season is not None else cutoff.year + 1 if cutoff.month >= 7 else cutoff.year
     )
     snapshot["date"] = snapshot["provider_effective_date"]
     return snapshot[
@@ -866,13 +1001,24 @@ def build_career_championship_help(
     attributed: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, float]]:
     seasons = seasons.sort_values(["player_id", "season"], kind="mergesort")
-    career = (
-        seasons.groupby(["player_id"], as_index=False, sort=False)
+    context_seasons = (
+        seasons.loc[seasons["is_playoff_participant"].fillna(False)].copy()
+        if "is_playoff_participant" in seasons.columns
+        else seasons.copy()
+    )
+    identity = (
+        seasons.groupby("player_id", as_index=False, sort=False)
         .agg(
             player_name=("player_name", "last"),
             start_season=("season", "min"),
             end_season=("season", "max"),
             seasons_modeled=("season", "nunique"),
+        )
+    )
+    context_career = (
+        context_seasons.groupby(["player_id"], as_index=False, sort=False)
+        .agg(
+            playoff_seasons_modeled=("season", "nunique"),
             actual_championships=("won_championship", "sum"),
             expected_championships=("title_probability", "sum"),
             neutral_expected_championships=("neutral_teammate_title_probability", "sum"),
@@ -907,6 +1053,10 @@ def build_career_championship_help(
             teammate_help_championships=("teammate_help_championships", "sum"),
         )
     )
+    career = identity.merge(
+        context_career, on="player_id", how="left", validate="one_to_one"
+    )
+    career["playoff_seasons_modeled"] = career["playoff_seasons_modeled"].fillna(0).astype(int)
     contract_summary = (
         seasons.groupby("player_id", as_index=False, sort=False)
         .agg(
@@ -929,9 +1079,11 @@ def build_career_championship_help(
     career["contract_coverage_pct"] = (
         100.0 * career["contract_seasons_covered"] / career["seasons_modeled"]
     )
-    peak_index = seasons.groupby("player_id")["teammate_help_championships"].idxmax()
-    peaks = seasons.loc[
-        peak_index,
+    peak_index = context_seasons.groupby("player_id")[
+        "teammate_help_championships"
+    ].idxmax()
+    peaks = context_seasons.loc[
+        peak_index.dropna().astype(int),
         ["player_id", "season", "teammate_help_championships", "help_dpm", "title_probability"],
     ].rename(
         columns={
@@ -1033,6 +1185,7 @@ def write_app_championship_data(
         "start_season",
         "end_season",
         "seasons_modeled",
+        "playoff_seasons_modeled",
         "actual_championships",
         "expected_championships",
         "neutral_expected_championships",
@@ -1064,6 +1217,7 @@ def write_app_championship_data(
         "player_name",
         "team_id",
         "team_abbr",
+        "is_playoff_participant",
         "won_championship",
         "own_dpm",
         "help_dpm",
@@ -2080,7 +2234,9 @@ def build_team_season_data(
         ).min()
         if pd.isna(postseason_start):
             raise ValueError(f"No postseason start date for {season}")
-        epm_snapshot = select_epm_snapshot(epm_history, postseason_start)
+        epm_snapshot = select_epm_snapshot(
+            epm_history, postseason_start, season=season
+        )
         teams, roster = summarize_retrospective_team_season(
             exposures, epm_snapshot, season=season
         )
@@ -2232,7 +2388,7 @@ def main() -> None:
             epm_history,
         )
     player, pair = build_player_title_context(teams, roster, team_pair_exposures)
-    player, salary_coverage_report = attach_salary_share(player, salary_history)
+    player, playoff_salary_coverage_report = attach_salary_share(player, salary_history)
     team_reconciliation = validate_team_roster_reconciliation(teams, roster)
     player_reconciliation = validate_pair_reconciliation(player, pair)
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -2251,6 +2407,7 @@ def main() -> None:
         "roster_seasons": int(len(roster)),
         "team_pair_exposure_rows": int(len(team_pair_exposures)),
         "player_seasons": int(len(player)),
+        "playoff_player_seasons": int(len(player)),
         "pair_seasons": int(len(pair)),
         "rating_source": "Dunks & Threes EPM",
         "epm_snapshot_archive": epm_report,
@@ -2296,6 +2453,30 @@ def main() -> None:
         "contract_hurdle_version": "prototype_contract_hurdle_version",
     }
     seasons = seasons.rename(columns=prototype_columns)
+    postseason_starts = (
+        playoff_games.assign(
+            game_date=pd.to_datetime(playoff_games["game_date"], errors="coerce")
+        )
+        .dropna(subset=["game_date"])
+        .groupby("season", as_index=False)["game_date"]
+        .min()
+    )
+    rating_snapshots = pd.concat(
+        [
+            select_epm_snapshot(
+                epm_history,
+                row.game_date,
+                season=int(row.season),
+            )
+            for row in postseason_starts.itertuples(index=False)
+        ],
+        ignore_index=True,
+    )
+    seasons, salary_peer_universe_report = build_salary_peer_focal_seasons(
+        seasons,
+        rating_snapshots,
+        salary_history,
+    )
     playoff_game_model_rows = prepare_playoff_game_model_rows(playoff_games, sample)
     playoff_game_model, series_diagnostics, series_model_report = (
         select_playoff_game_model(playoff_game_model_rows)
@@ -2304,7 +2485,7 @@ def main() -> None:
     bracket_nodes = build_bracket_nodes(playoff_series)
     seasons = add_salary_peer_title_lift(
         seasons,
-        seasons,
+        seasons.loc[seasons["is_playoff_participant"]],
         sample,
         bracket_nodes,
         playoff_game_model,
@@ -2347,6 +2528,10 @@ def main() -> None:
         "field": (
             "every complete historical 16-team playoff bracket outside the focal season"
         ),
+        "focal_universe": (
+            "every annual-salary-covered player-season with a frozen pre-playoff EPM "
+            "rating; actual team context remains playoff-only"
+        ),
         "series_model": series_model_report,
         "status": "retrospective realized salary-peer comparison",
         "prototype_contract_epm_sensitivity": {
@@ -2378,17 +2563,21 @@ def main() -> None:
     teammate.to_csv(args.output_dir / "career_teammate_estimates.csv", index=False)
     metadata.update(
         {
+            "player_seasons": int(len(seasons)),
             "model": selected,
             "shapley": shapley_report,
             "career_reconciliation": career_report,
             "salary_source": salary_source_report,
-            "salary_coverage": salary_coverage_report,
+            "salary_coverage": salary_peer_universe_report,
+            "playoff_salary_coverage": playoff_salary_coverage_report,
+            "salary_peer_universe": salary_peer_universe_report,
             "interpretation": (
-                "Every player on a team receives the same normalized team championship odds. "
-                "Those playoff-field odds are split from a common season-average playoff rotation "
-                "into the focal player's normalized self lift, shared-floor teammate lift, and "
-                "off-floor lift with exact closure. Off-floor means actual playoff minutes while "
-                "the focal player sat, not a nominal roster label. This is not causal ring credit."
+                "Salary-peer and raw title lift cover salary-covered player-seasons whether or not "
+                "the focal player's own team reached the playoffs. For playoff participants, every "
+                "player on a team receives the same normalized team championship odds. Those odds "
+                "split from a common season-average playoff rotation into normalized self lift, "
+                "shared-floor teammate lift, and off-floor lift with exact closure. Playoff-only "
+                "context fields remain missing for nonplayoff seasons. This is not causal ring credit."
             ),
             "retrospective_guard": (
                 "The latest monthly EPM snapshot available before the postseason is frozen for "

@@ -117,7 +117,8 @@ Do not silently reconstruct cap hit from salary. Incentives, minimum-salary reim
 The production headline does not ask a hand-set curve what EPM a salary should
 buy. It uses the league's realized playoff rosters as the contract hurdle.
 
-For a focal player-season, match the focal salary share to the closest
+For any focal player-season with a frozen pre-playoff EPM rating and annual
+salary coverage, match the focal salary share to the closest
 salary-covered playoff rotation player on each historical playoff team outside
 the focal season. Break exact distance ties toward the peer with more playoff
 workload. Remove that peer's actual team-EPM contribution and add the focal
@@ -143,6 +144,16 @@ The same placements also produce **raw title lift** by replacing `peer_EPM`
 with 0 in the baseline comparison. Thus raw lift and salary-peer lift differ
 only in the value credited to the contract slot.
 
+The focal player's own team does not need to make the playoffs. Nonplayoff
+seasons use the destination salary peer's postseason workload, exactly like
+playoff seasons. Only actual-team context, teammate help, and additive team
+accounting require a focal postseason appearance and remain null otherwise.
+
+Salary rows are annual cash salary, not cap hit. When a player has multiple
+team-stint rows in one season, sum them before calculating salary share; use the
+largest salary stint only as a display-team label for a nonplayoff row. This
+prevents traded players from being compared on one partial salary segment.
+
 The bracket engine uses the observed 16-team topology for each season. A
 playoff-game logistic model prices home court and team-EPM difference, then an
 exact dynamic program converts those game odds into a first-to-four series
@@ -153,9 +164,13 @@ unnecessary and would add noise to the same expectation.
 
 The current series model is selected by the one-standard-error rule on
 leave-one-season-out game log loss. It uses 2,085 playoff games across 25
-seasons and selects `C=0.05`, home advantage `0.4783` log odds, and `0.1342`
+seasons and selects `C=0.05`, home advantage `0.4777` log odds, and `0.1320`
 log odds per team-EPM point. The raw-game parser rejects synthetic trailing
 `0-0` score reset rows before final-score recovery.
+
+The delayed 2020 postseason is passed an explicit season label when selecting
+its August 1 EPM snapshot. Inferring season from the August calendar date would
+incorrectly label it 2021 and erase 2020 rating coverage.
 
 This is a retrospective realized-contract comparison, not a signing-date
 forecast of market value. It uses annual salary share, not cap hit; it does not

@@ -73,7 +73,8 @@ and sum exactly to shared-floor plus off-floor teammate lift.
 
 The primary player-value measure is **Title Lift over Contract**, implemented as
 a realized salary-peer roster swap rather than a hand-set Contract EPM hurdle.
-For every focal player-season with salary coverage:
+For every focal player-season with salary coverage and a frozen pre-playoff EPM
+rating—whether or not the player's own team reached the playoffs:
 
 1. take every complete historical playoff bracket outside the focal season;
 2. on each of its 16 teams, identify the playoff rotation player with the
@@ -84,11 +85,17 @@ For every focal player-season with salary coverage:
    four-round bracket; and
 5. average `swapped title odds - original roster title odds` across placements.
 
-There are 351 or 352 placements for a covered row because the focal season is
-excluded and a small number of historical teams lack any salary-covered playoff
-rotation player. This design keeps the purchased roster slot, workload, actual
+There are 368 placements for every covered row: 16 teams in each of the other
+23 postseasons. This design keeps the purchased roster slot, workload, actual
 teammates, opponent distribution, and bracket together. A star does not receive
 an easier field merely because his real powerhouse team was removed.
+
+Actual-team odds, context lift, teammate help, and the additive team equation
+remain playoff-only because they require the player's real postseason rotation.
+Salary-peer and raw lift do not require that context: they use the destination
+peer's workload. The public export marks `is_playoff_participant` and leaves
+playoff-only fields null for nonplayoff seasons rather than turning missing
+context into zero.
 
 The public **raw title lift** uses the identical salary-matched placements and
 workloads but compares the focal player's EPM with a 0-EPM insertion. Therefore
@@ -102,16 +109,18 @@ each matchup is converted to an exact first-to-four, best-of-seven probability
 under the `2-2-1-1-1` schedule, averaging which team owns home-court advantage.
 Those series probabilities are then propagated through the observed 8-4-2-1
 bracket tree. The one-standard-error leave-one-season-out game-log-loss rule
-selects `C=0.05`, home advantage `0.4783` log odds, and `0.1342` log odds per
-team-EPM point on 2,085 playoff games. Mean season log loss is `0.6177`.
+selects `C=0.05`, home advantage `0.4777` log odds, and `0.1320` log odds per
+team-EPM point on 2,085 playoff games. Mean season log loss is `0.6165`.
 
 The cost input is annual salary divided by the official NBA salary cap. It is
 called **salary share**, never cap hit. The private crosswalk currently supplies
-exact player-team-season salary rows through 2024-25. Missing team matches and
-2025-26 stay missing; they are never zero-filled or guessed from another team's
-row. The current player-season coverage is 4,378 of 4,894 rows (89.46%). Career
-totals sum only covered seasons and publish the covered-season count beside the
-total.
+salary rows through 2024-25. Team-stint salary amounts are summed to one annual
+player-season salary share; the largest salary stint supplies only the display
+team when no playoff context exists. Missing salaries and 2025-26 stay missing;
+they are never zero-filled. The current focal universe is 11,613 player-seasons:
+5,110 playoff-context rows plus 6,503 nonplayoff rows. Salary-peer lift is covered
+for 11,241 rows (96.8%). Career totals sum every covered season and separately
+publish the number with actual playoff context.
 
 The earlier Contract EPM v1 curve is retained only as a prototype sensitivity.
 It reuses declared market assumptions from the From Impact to Winning reader:
@@ -149,20 +158,23 @@ two-line headers keep each counterfactual name above the quantity.
 
 ## Current validation
 
-The 2002-2026 build contains 25 seasons, 400 playoff team-seasons, 4,894
-player-seasons, and 58,485 focal/teammate season rows. The selected model is
-overall EPM with C=0.2; leave-one-season-out champion log loss is 1.711152.
+The 2002-2026 build contains 25 seasons, 400 playoff team-seasons, 5,110
+playoff player-seasons, 11,613 salary-peer focal rows, and 61,227 focal/teammate
+season rows. The selected team-accounting model is overall EPM with C=0.2;
+leave-one-season-out champion log loss is 1.726082. The 2020 bubble cutoff is
+explicitly labeled season 2020; this repairs its former zero EPM coverage to
+100%.
 The bracket layer reconstructs exactly 375 series—15 in every season—with an
-8-4-2-1 round pattern. LeBron James in 2008-09 has 351 salary-peer placements,
-average peer EPM `+2.55`, swapped title odds `21.09%`, original peer-roster odds
-`6.27%`, and Title Lift over Contract `+14.82` percentage points. The median
+8-4-2-1 round pattern. LeBron James in 2008-09 has 368 salary-peer placements,
+average peer EPM `+2.49`, swapped title odds `19.88%`, original peer-roster odds
+`6.25%`, and Title Lift over Contract `+13.63` percentage points. The median
 placement's absolute salary-share gap across covered player-seasons is about
-`0.60` cap points; the median 90th-percentile gap is `1.84` cap points.
+`0.57` cap points; the median 90th-percentile gap is `1.64` cap points.
 
 Validation maxima:
 
 - annual probability-mass gap: 4.44e-16;
-- actual-state reconciliation: 3.33e-16;
+- actual-state reconciliation: 2.22e-16;
 - teammate allocation gap: 2.22e-16;
 - neutral/self/on-floor/off-floor gap: 1.11e-16;
 - team/roster EPM gap: 3.55e-15.
