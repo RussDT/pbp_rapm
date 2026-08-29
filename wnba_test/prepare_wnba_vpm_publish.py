@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Prepare the WNBA VPM (factor-specific box-prior board) for Databallr.
 
-Databallr's `/api/supabase/wnba_rapm` endpoint and every WNBA consumer behind it
-(stats table, hub ticker, dashboard, player profile) read one CSV with the
+Databallr's `/api/supabase/wnba_vpm` endpoint and every WNBA consumer behind it
+(stats table, hub ticker, dashboard, player profile) read the active atomic
+Supabase publication of the
 `weighted_factors_alt3_efg_value` column schema and assume **one row per
 player** keyed by `player_id` with a `Latest_Year` label. This script turns the
 promoted current-season board (`wnba_test/Results/current/wnba_current_metrics.csv`,
-built by `update_wnba_metrics.py`) into that publish shape and validates it.
+built by `update_wnba_metrics.py`) into that publish shape, validates it, and
+optionally publishes both current and historical scopes to Supabase. The legacy
+`/api/supabase/wnba_rapm` route remains an alias during consumer migration.
 
 Outputs (default `wnba_test/Results/current/publish/`):
 
@@ -30,6 +33,10 @@ Outputs (default `wnba_test/Results/current/publish/`):
 `--stage-databallr PATH` copies the drop-in file, season history, and rack
 payload into `PATH/public/` and `PATH/new next js migration/public/` when those
 folders exist. It never commits or deploys anything.
+
+`--upload` stages both CSV scopes in the service-role-only `wnba_vpm_stage`
+table and calls `publish_wnba_vpm`, which validates and atomically promotes the
+complete batch. Readers never observe a partially uploaded board.
 """
 
 from __future__ import annotations
@@ -37,8 +44,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import sys
+import uuid
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -67,7 +76,10 @@ DEFAULT_OUTPUT_DIR = CURRENT_DIR / "publish"
 PUBLISH_BASENAME = "wnba_vpm_boxprior_current.csv"
 HISTORY_BASENAME = "wnba_vpm_boxprior_history_2022_2026.csv"
 RACK_PAYLOAD_BASENAME = "wnba_vpm_rack_payload.json"
-MODEL_VARIANT = "single_season_box_trueprior_v1"
+SUPABASE_STAGE_TABLE = "wnba_vpm_stage"
+SUPABASE_ACTIVE_VIEW = "wnba_vpm"
+SUPABASE_PUBLISH_RPC = "publish_wnba_vpm"
+MODEL_VARIANT = "single_season_box_trueprior_direct_tov_v2"
 QUALIFYING_POSSESSIONS = 1000
 
 # Column order of the legacy Databallr file
@@ -114,6 +126,99 @@ def load_board(board_path: Path) -> pd.DataFrame:
     board = pd.read_csv(board_path, dtype={"player_id": str})
     board["player_id"] = _normalize_id(board["player_id"])
     return board
+
+
+def reallocate_completion_baseline_to_shot_value(frame: pd.DataFrame) -> pd.DataFrame:
+    """Publish direct turnover loss while preserving the exact scoring total.
+
+    The legacy WNBA Alt3 display placed the neutral first-chance completion
+    baseline in ``ALT_TOV_VALUE`` and exposed the direct turnover-loss solve in
+    ``ALT_TOV_LOSS_VALUE`` only as a diagnostic.  That makes the reader-facing
+    TOV label semantically wrong: a player can receive apparent turnover value
+    from a residual baseline model whose box prior includes blocks.
+
+    Move the difference into the midrange/base shot-value child, matching the
+    modern DECOMP convention, and publish the direct turnover-loss solve as
+    TOV.  This is an exact linear reallocation; offense, defense, net, FT,
+    second chance, and every display sum remain unchanged.  The operation is
+    idempotent because a second pass sees ``ALT_TOV_VALUE ==
+    ALT_TOV_LOSS_VALUE``.
+    """
+    out = frame.copy()
+    required = {
+        "off", "def", "net_rapm",
+        "oSC", "dSC", "oALT_FT", "dALT_FT",
+    }
+    for side in ("o", "d"):
+        required.update(
+            {
+                f"{side}ALT_EFG_RIM",
+                f"{side}ALT_EFG_MID_FREQ",
+                f"{side}ALT_EFG_MID_FG",
+                f"{side}ALT_EFG_THREE",
+                f"{side}ALT_TOV_VALUE",
+                f"{side}ALT_TOV_LOSS_VALUE",
+                f"{side}ALT_BADPASS_TOV_VALUE",
+                f"{side}ALT_SCORING_TOV_VALUE",
+            }
+        )
+    missing = sorted(required.difference(out.columns))
+    if missing:
+        raise RuntimeError(
+            f"cannot build direct-TOV WNBA decomposition; missing columns: {missing}"
+        )
+
+    for side, total in (("o", "off"), ("d", "def")):
+        completion = pd.to_numeric(
+            out[f"{side}ALT_TOV_VALUE"], errors="coerce"
+        )
+        direct_tov = pd.to_numeric(
+            out[f"{side}ALT_TOV_LOSS_VALUE"], errors="coerce"
+        )
+        baseline_shift = completion - direct_tov
+        out[f"{side}ALT_EFG_MID_FG"] = (
+            pd.to_numeric(out[f"{side}ALT_EFG_MID_FG"], errors="coerce")
+            + baseline_shift
+        )
+        out[f"{side}ALT_EFG_MID"] = (
+            pd.to_numeric(out[f"{side}ALT_EFG_MID_FREQ"], errors="coerce")
+            + pd.to_numeric(out[f"{side}ALT_EFG_MID_FG"], errors="coerce")
+        )
+        out[f"{side}ALT_EFG_VALUE"] = (
+            pd.to_numeric(out[f"{side}ALT_EFG_RIM"], errors="coerce")
+            + pd.to_numeric(out[f"{side}ALT_EFG_MID"], errors="coerce")
+            + pd.to_numeric(out[f"{side}ALT_EFG_THREE"], errors="coerce")
+        )
+        out[f"{side}ALT_TOV_VALUE"] = direct_tov
+        out[f"{side}ALT_TOV_VALUE_split"] = (
+            pd.to_numeric(
+                out[f"{side}ALT_BADPASS_TOV_VALUE"], errors="coerce"
+            )
+            + pd.to_numeric(
+                out[f"{side}ALT_SCORING_TOV_VALUE"], errors="coerce"
+            )
+        )
+        out[f"{side}FC"] = (
+            out[f"{side}ALT_EFG_VALUE"]
+            + pd.to_numeric(out[f"{side}ALT_FT"], errors="coerce")
+            + out[f"{side}ALT_TOV_VALUE"]
+        )
+        out[f"{side}DISPLAY_SUM"] = (
+            out[f"{side}FC"]
+            + pd.to_numeric(out[f"{side}SC"], errors="coerce")
+        )
+        out[f"{side}RESID"] = (
+            pd.to_numeric(out[total], errors="coerce")
+            - out[f"{side}DISPLAY_SUM"]
+        )
+
+    out["nALT_EFG_VALUE"] = out["oALT_EFG_VALUE"] + out["dALT_EFG_VALUE"]
+    out["nALT_TOV_VALUE"] = out["oALT_TOV_VALUE"] + out["dALT_TOV_VALUE"]
+    out["nDISPLAY_SUM"] = out["oDISPLAY_SUM"] + out["dDISPLAY_SUM"]
+    out["RESID"] = (
+        pd.to_numeric(out["net_rapm"], errors="coerce") - out["nDISPLAY_SUM"]
+    )
+    return out
 
 
 def attach_box_prior_audit(board: pd.DataFrame, priors_path: Path | None) -> pd.DataFrame:
@@ -165,7 +270,7 @@ def build_publish_frame(
     missing = [column for column in LEGACY_COLUMNS if column not in board.columns]
     if missing:
         raise RuntimeError(f"current board is missing legacy publish columns: {missing}")
-    out = board.copy()
+    out = reallocate_completion_baseline_to_shot_value(board)
     if "team" not in out.columns:
         out["team"] = pd.NA
     out["Latest_Year"] = int(season)
@@ -239,6 +344,10 @@ def validate_publish_frame(frame: pd.DataFrame, tolerance: float = 0.0021) -> di
             f"{side}ALT_TOV_LOSS_VALUE",
             [f"{side}ALT_BADPASS_TOV_VALUE", f"{side}ALT_SCORING_TOV_VALUE"],
         )
+        identities[f"{side}published TOV = direct TOV loss"] = (
+            f"{side}ALT_TOV_VALUE",
+            [f"{side}ALT_TOV_LOSS_VALUE"],
+        )
     gaps: dict[str, float] = {}
     for name, (parent, children) in identities.items():
         gap = (numeric[parent] - sum(numeric[child] for child in children)).abs()
@@ -265,6 +374,7 @@ def build_history_frame(
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     history = pd.read_csv(history_path, dtype={"player_id": str})
     history["player_id"] = _normalize_id(history["player_id"])
+    history = reallocate_completion_baseline_to_shot_value(history)
     prior_seasons = history[history["season"].astype(int) < int(season)].copy()
     replaced = int((history["season"].astype(int) == int(season)).sum())
 
@@ -362,6 +472,152 @@ def stage_databallr(paths: list[Path], databallr_root: Path) -> list[str]:
     return staged
 
 
+def _parse_csv_bool(value: Any) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "t", "yes", "y"}
+
+
+def build_supabase_stage_rows(
+    current_path: Path,
+    history_path: Path,
+    batch_id: str,
+) -> list[dict[str, Any]]:
+    """Build indexed Supabase rows while preserving the exact CSV payload.
+
+    Payload values remain strings because the legacy CSV endpoint returned
+    ``csv.DictReader`` rows. Keeping that representation makes the new
+    Supabase-backed endpoint response-compatible with existing consumers.
+    """
+
+    rows: list[dict[str, Any]] = []
+    for scope, path in (("current", current_path), ("history", history_path)):
+        frame = pd.read_csv(path, dtype=str, keep_default_na=False)
+        required = {
+            "season",
+            "season_type",
+            "player_id",
+            "player_name",
+            "net_rapm",
+            "possessions",
+            "qualified",
+        }
+        missing = sorted(required - set(frame.columns))
+        if missing:
+            raise RuntimeError(f"{scope} WNBA VPM CSV is missing columns: {missing}")
+
+        duplicate_count = int(
+            frame.duplicated(["season", "season_type", "player_id"]).sum()
+        )
+        if duplicate_count:
+            raise RuntimeError(
+                f"{scope} WNBA VPM CSV has {duplicate_count} duplicate player-season rows"
+            )
+
+        for source_row_number, payload in enumerate(
+            frame.to_dict(orient="records"), start=1
+        ):
+            rows.append(
+                {
+                    "batch_id": batch_id,
+                    "dataset_scope": scope,
+                    "source_row_number": source_row_number,
+                    "season": int(payload["season"]),
+                    "season_type": payload["season_type"],
+                    "player_id": str(payload["player_id"]),
+                    "player_name": payload["player_name"],
+                    "team": payload.get("team") or None,
+                    "net_rapm": float(payload["net_rapm"]),
+                    "possessions": float(payload["possessions"]),
+                    "qualified": _parse_csv_bool(payload["qualified"]),
+                    "payload": payload,
+                }
+            )
+    return rows
+
+
+def upload_supabase_vpm(
+    current_path: Path,
+    history_path: Path,
+    *,
+    season: int,
+    as_of: str,
+    model_variant: str,
+) -> dict[str, Any]:
+    """Upload and atomically promote one complete WNBA VPM publication."""
+
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv(ROOT / ".env")
+    except ImportError:
+        pass
+
+    from supabase import create_client
+
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not url or not key:
+        raise RuntimeError(
+            "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set to upload"
+        )
+
+    batch_id = str(uuid.uuid4())
+    rows = build_supabase_stage_rows(current_path, history_path, batch_id)
+    current_rows = sum(row["dataset_scope"] == "current" for row in rows)
+    history_rows = sum(row["dataset_scope"] == "history" for row in rows)
+    client = create_client(url, key)
+
+    try:
+        for start in range(0, len(rows), 500):
+            client.table(SUPABASE_STAGE_TABLE).insert(rows[start : start + 500]).execute()
+
+        result = client.rpc(
+            SUPABASE_PUBLISH_RPC,
+            {
+                "p_batch_id": batch_id,
+                "p_current_sha256": sha256_file(current_path),
+                "p_history_sha256": sha256_file(history_path),
+                "p_current_source": str(current_path),
+                "p_history_source": str(history_path),
+                "p_current_season": int(season),
+                "p_as_of": as_of,
+                "p_model_variant": model_variant,
+            },
+        ).execute()
+    except Exception:
+        client.table(SUPABASE_STAGE_TABLE).delete().eq("batch_id", batch_id).execute()
+        raise
+
+    active_current = (
+        client.table(SUPABASE_ACTIVE_VIEW)
+        .select("player_id", count="exact")
+        .eq("dataset_scope", "current")
+        .limit(1)
+        .execute()
+    )
+    active_history = (
+        client.table(SUPABASE_ACTIVE_VIEW)
+        .select("player_id", count="exact")
+        .eq("dataset_scope", "history")
+        .limit(1)
+        .execute()
+    )
+    if active_current.count != current_rows or active_history.count != history_rows:
+        raise RuntimeError(
+            "Supabase WNBA VPM active-row verification failed: "
+            f"expected {current_rows}/{history_rows}, got "
+            f"{active_current.count}/{active_history.count}"
+        )
+
+    return {
+        "table": SUPABASE_ACTIVE_VIEW,
+        "batch_id": batch_id,
+        "current_rows": current_rows,
+        "history_rows": history_rows,
+        "as_of": as_of,
+        "rpc_result": result.data,
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--board", type=Path, default=DEFAULT_BOARD)
@@ -388,6 +644,11 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=None,
         help="Databallr repo root; copies the drop-in CSV into its public folders",
+    )
+    parser.add_argument(
+        "--upload",
+        action="store_true",
+        help="Stage and atomically promote the current/history boards in Supabase",
     )
     return parser.parse_args()
 
@@ -437,6 +698,18 @@ def main() -> int:
         )
         staged = stage_databallr(stage_paths, args.stage_databallr)
 
+    supabase_receipt: dict[str, Any] | None = None
+    if args.upload:
+        if history_path is None:
+            raise RuntimeError("--upload requires the season-history artifact")
+        supabase_receipt = upload_supabase_vpm(
+            publish_path,
+            history_path,
+            season=season,
+            as_of=as_of,
+            model_variant=MODEL_VARIANT,
+        )
+
     source_summary = {}
     for step in manifest.get("steps_run", []) or []:
         if step.get("name") == "fetch_completed_games":
@@ -451,8 +724,14 @@ def main() -> int:
         "season": season,
         "season_type": args.season_type,
         "model_variant": MODEL_VARIANT,
-        "solve": {"off_alpha": 5000, "def_alpha": 40000, "prior_scale": 1.5,
+        "solve": {"off_alpha": 5000, "def_alpha": 40000,
+                  "direct_tov_def_alpha": 10000, "prior_scale": 1.5,
                   "policy": manifest.get("model_policy", "reuse_frozen_pre_2026_selection")},
+        "display_decomposition": {
+            "turnover_value": "direct ALT_TOV_LOSS_VALUE solve",
+            "completion_baseline_reallocated_to": "ALT_EFG_MID_FG",
+            "headline_impact_changed": False,
+        },
         "sources": {
             "board": {"path": str(args.board), "sha256": sha256_file(args.board)},
             "manifest": {"path": str(args.manifest), "status": manifest.get("status")},
@@ -474,13 +753,14 @@ def main() -> int:
             ),
         },
         "staged_databallr_files": staged,
+        "supabase_publication": supabase_receipt,
         "top_10": top_rows(publish),
         "databallr_checklist": [
             "Copy publish_csv, history_csv, and rack_payload_json into databallr/public/ and 'new next js migration/public/' (or use --stage-databallr).",
-            "Keep backend/app/routes/supabase/wnba.py current and history constants pointed at the staged basenames.",
+            "Publish the current/history scopes atomically to Supabase with --upload.",
+            "Keep the canonical Flask endpoint at /api/supabase/wnba_vpm; /wnba_rapm is compatibility-only.",
             "Bump the versioned Flask cache key prefix or wait out the 3600s cache after a source-contract change.",
-            "Relabel the headline WNBA 'RAPM' metric strings to 'VPM' on the surfaces that read /wnba_rapm.",
-            "Deploy frontend (serves public/ CSV) before or with the backend so the URL fallback resolves.",
+            "Keep the static CSV/JSON files staged for the direct /wnba/vpm page and rollback audit.",
         ],
         "consumer_contract": (
             "One row per player, keyed by player_id, Latest_Year = season of the row. "
@@ -497,6 +777,7 @@ def main() -> int:
         "history_csv": str(history_path) if history_path else None,
         "rack_payload_json": str(rack_payload_path) if rack_payload_path else None,
         "staged": staged,
+        "supabase": supabase_receipt,
         "manifest": str(manifest_path),
     }, indent=2))
     return 0

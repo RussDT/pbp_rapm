@@ -41,7 +41,9 @@ The frozen daily lane currently supports the 2026 regular season.
    nonpositive minutes for players with substantial valid possession exposure.
 7. Solves the single-season prior-centered factor board with the frozen
    pre-2026 selection: offense alpha `5000`, defense alpha `40000`, prior scale
-   `1.5`.
+   `1.5`. The direct total/bad-pass/scoring turnover explanation uses the
+   separately selected defense alpha `10000`; this does not alter headline
+   offense, defense, or net VPM.
 8. Validates player uniqueness, finite values, offense/defense/net closure,
    prior and lineup-update closure, the six shot-zone atoms, FT frequency plus
    severity, and turnover-loss children.
@@ -85,12 +87,14 @@ backup. The dated failure manifest records the failed command and retained log.
 
 ## Publishing The Board To databallr (WNBA VPM)
 
-Databallr labels this board **WNBA VPM** and serves it from the legacy
-`/api/supabase/wnba_rapm` route (the route name is preserved for consumer
-compatibility). Prepare the publish files after a complete daily update:
+Databallr labels this board **WNBA VPM**. Its canonical API is
+`/api/supabase/wnba_vpm`; `/api/supabase/wnba_rapm` remains an exact
+compatibility alias. After a complete daily update, prepare the static reader
+artifacts and atomically publish the current board plus history to Supabase:
 
 ```bash
 .venv/bin/python wnba_test/prepare_wnba_vpm_publish.py \
+  --upload \
   --stage-databallr /Users/russ/Documents/Codex/basketball/nba/products/databallr
 ```
 
@@ -98,7 +102,8 @@ The script refuses to run unless `latest_manifest.json` reports
 `status: complete`, re-validates the promoted board, and writes to
 `wnba_test/Results/current/publish/`:
 
-- `wnba_vpm_boxprior_current.csv` — the drop-in databallr file: the 61 legacy
+- `wnba_vpm_boxprior_current.csv` — the source-compatible current-board file:
+  the 61 legacy
   `wnba_weighted_factors_alt3_efg_value_*` columns in their original order
   (headline `off` / `def` / `net_rapm`, zone freq/FG atoms, FT freq/severity,
   point-valued TOV, `SC`/`FC`, display sums and residuals, possessions), then
@@ -110,6 +115,14 @@ The script refuses to run unless `latest_manifest.json` reports
   dashboard (`limit=500`), stats table, and profile join all assume one row
   per player id. Every additive identity is re-checked to the three-decimal
   tolerance (`0.0021`) before writing.
+
+Before writing, the publisher converts the legacy Alt3 display into modern
+possession-stage semantics. Published `oTOV`/`dTOV` use the direct
+`ALT_TOV_LOSS_VALUE` solves; the old completion-minus-direct-TOV difference is
+moved into the midrange/base shot-value child. This exact linear reallocation
+leaves every player's offense, defense, net VPM, FT, second chance, and display
+sum unchanged. The published model variant is
+`single_season_box_trueprior_direct_tov_v2`.
 - `wnba_vpm_boxprior_history_2022_2026.csv` — the 2022-2025 rows from
   `build_wnba_metric_history.py` plus the refreshed current-season rows,
   with per-season ranks. It has multiple rows per player and is **not**
@@ -117,7 +130,8 @@ The script refuses to run unless `latest_manifest.json` reports
   season-aware endpoint only.
 - `publish_manifest.json` — source paths and sha256s, board / publish /
   history validation summaries, top-10, the databallr checklist, and the
-  consumer contract.
+  consumer contract. After `--upload`, `supabase_publication` records the
+  active batch id, checksums, counts, season, as-of date, and model variant.
 
 - `wnba_vpm_rack_payload.json` — the payload databallr's `/wnba/vpm` page
   fetches: board meta, one row per player with the published factor and zone
@@ -125,44 +139,39 @@ The script refuses to run unless `latest_manifest.json` reports
   each player's 2022-2026 box + VPM rows) built from the same box cache and
   history file the standalone rack reader uses. `--skip-rack-payload` omits it.
 
-`--stage-databallr <root>` copies the current CSV, the season-history CSV,
-**and the rack payload** into databallr `public/` and
-`new next js migration/public/`. It never commits or deploys. Databallr's
-season-aware `/wnba/stats` request reads the history artifact when `season` is
-explicit; callers that omit `season` retain the one-row-per-current-player
-contract. The databallr route constants, URL fallbacks, versioned Flask cache
-key, and the VPM labels were switched on
-August 18, 2026; the old
+`--upload` stages rows in the service-role-only `wnba_vpm_stage` table and
+calls `publish_wnba_vpm`. The transaction validates minimum counts and current
+season consistency, copies both scopes into `wnba_vpm_store`, flips the active
+publication pointer, and retains the newest two complete batches for rollback.
+The `wnba_vpm` view exposes only the active batch to the Flask service role;
+anon and authenticated clients have no table or view grants. The current scope
+contains one row per active player; an explicit `season` or `latest_year`
+selects the history scope.
+
+`--stage-databallr <root>` separately copies the current CSV, season-history
+CSV, **and rack payload** into databallr `public/` and
+`new next js migration/public/`. It never commits or deploys. The static files
+remain audit/reader artifacts; Flask no longer falls back to them for VPM.
+The old
 `wnba_weighted_factors_alt3_efg_value_21_26_all_td700_a1750_4000.csv` stays in
 databallr `public/` only as the RAPM Galaxy / RAPM Twins source.
 
-Production cutover order (databallr `main` → Netlify auto-deploys the SPA and
-the `public/` CSV; the Flask API is a manual `eb deploy production-py312` from
-`backend/`): (1) commit and push the CSV plus the route change so Netlify
-publishes `https://databallr.com/wnba_vpm_boxprior_current.csv` — on Elastic
-Beanstalk the bundle is `backend/` only, so the route reads that URL; (2) deploy
-the backend from a clean worktree of the pushed commit (`backend/.ebignore`
-makes the EB CLI zip the working directory, untracked files included); (3) only
-then push the VPM label changes, so "VPM" never sits over the old time-decay
-payload. Browser caches can hold the previous `/wnba_rapm` payload for up to an
-hour (`max-age=3600`). The data + route commit is databallr `ba567e73`
-(August 19, 2026); see `backend/DEPLOYMENT.md` there for the worktree recipe.
+Production order: (1) run the publisher with `--upload`; (2) commit and push
+the staged reader artifacts plus matching Databallr code; (3) deploy the Flask
+backend from a clean worktree of that pushed commit (`backend/.ebignore` makes
+the EB CLI zip the working directory, including untracked files); (4) verify
+the canonical endpoint, its season filter, and the legacy alias. Netlify
+auto-deploys the SPA/static artifacts from Databallr `main`; Elastic Beanstalk
+still requires `eb deploy production-py312` from `backend/`. See Databallr's
+`backend/DEPLOYMENT.md` for the clean-worktree recipe.
 
 Two caches sit in front of that route, and the server one bit on this cutover.
-Flask-Caching ignores `key_prefix` when `query_string=True` — the key is only
-`request.path` plus an MD5 of the sorted args — so the `wnba_rapm_v2` to `_v3`
-bump retired nothing, and 26 entries cached from the old CSV kept being served
-per query string. A plain `?limit=5000` returned the new board while the exact
-`?limit=5000&fields=...` URL the stats table requests returned the old 243-row
-one, which is what "still loading normal RAPM" looked like. databallr `2cfd9471`
-adds `versioned_query_cache_key()` and uses it on `/wnba_rapm`; bump
-`wnba_rapm_vpm_boxprior_v1` if the published CSV's source or schema changes
-again. To invalidate without deploying, SCAN-delete
-`databallr:/api/supabase/wnba_rapm*` — the provider rejects `KEYS`, so
-`POST /api/cache/clear/supabase` errors. `REDIS_URL` in databallr `backend/.env`
-is the production Redis, so a local delete clears production too. The second
-cache is the browser's own `max-age=3600` copy, per URL; a hard reload
-(⌘⇧R) clears it and everyone else self-heals within the hour.
+The route uses `versioned_query_cache_key('wnba_vpm_supabase_v1')`, so the data
+source version participates in every query-string cache key. Bump that version
+if the active view's payload contract changes. To invalidate immediately,
+SCAN-delete both `databallr:/api/supabase/wnba_vpm*` and legacy
+`databallr:/api/supabase/wnba_rapm*` keys; the Redis provider rejects `KEYS`.
+The browser cache remains `max-age=3600` per URL.
 
 This is the box-only lane: no RTSS / Second Spectrum priors are involved, so
 missing tracking games do not affect the published numbers. The RTSS-augmented
@@ -172,8 +181,8 @@ The live reader is databallr `/wnba/vpm` (page `src/pages/WNBAVpm.tsx`,
 renderer `src/pages/WnbaVpm/`, doc `fresh_docs/WNBAVpm.md`). It is a port of the
 rack below, defaulting to the Arena theme, and it reads only
 `public/wnba_vpm_rack_payload.json` — it never queries Flask, so the page and
-the `/api/supabase/wnba_rapm` board always describe the same solve as long as
-both files are staged and committed together. The payload is a mutable pointer
+the `/api/supabase/wnba_vpm` board describe the same solve when the Supabase
+upload and static staging come from the same publisher run. The payload is a mutable pointer
 file: it must keep Netlify's revalidating default and must never be given
 `immutable` cache headers.
 
@@ -252,6 +261,30 @@ the reach of the box cache; earlier seasons are absent, not zero.
   folders, together with the `wnba_vpm_rack_payload.json` (311 KB, 226 players,
   226 profile rows) that backs databallr `/wnba/vpm`; the top of the board is A'ja Wilson `+7.24`, Olivia Miles `+4.93`,
   Jackie Young `+4.56`, Aliyah Boston `+4.44`, Veronica Burton `+3.92`.
+
+## August 24, 2026 Direct-TOV Publication Correction
+
+- Replaced the reader-facing completion/baseline bucket with the existing
+  direct turnover-loss solve and moved its exact complement into shot value.
+- Selected direct-TOV defense alpha `10000` on the 2023->2024 and 2024->2025
+  possession folds; `2025->2026` is report-only. The generic `40000` defense
+  alpha remains frozen for headline VPM and completion closure.
+- A'ja Wilson's published defensive TOV value changes from the misleading
+  `-0.254` completion-prior result to `+0.399`; her defense (`+2.372`) and total
+  VPM (`+7.239`) do not change.
+
+## August 24, 2026 Current-Source Refresh
+
+- source: `266` to `281` completed games (`15` new), latest game id
+  `1022600281`; lineup gate clean;
+- board: `229` players, all with a matched current-season prior, and `153` with
+  at least `1000` possessions;
+- top gross-board values: A'ja Wilson `+7.253`, Olivia Miles `+5.269`, Jackie
+  Young `+4.660`, Aliyah Boston `+4.416`, Kelsey Mitchell `+4.248`, and
+  Veronica Burton `+4.226`;
+- the same refresh rebuilt the new net-continuation companion columns in
+  `FIRST_CHANCE26.csv` and `SECOND_CHANCE_CLEAN26.csv`; it did not publish or
+  promote the isolated net board.
 
 ## July 29, 2026 Run
 
