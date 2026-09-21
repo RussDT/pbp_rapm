@@ -3,32 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="A garden grown in the stars for Lan. I'm sorry, and I love you.">
-<title>A Garden for Lan</title>
+<meta name="description" content="Seven flowers grown among the stars for Lan, one for every day of her week.">
+<title>Lan's Week Among the Stars</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Jost:wght@300;400;500&display=swap">
 <style>
   :root {
-    --space: #070a1f;
-    --space-2: #0e1236;
-    --violet: #5b2a86;
-    --pink: #ff6fb5;
+    --space: #06081c;
+    --pink: #ff7cc1;
     --gold: #ffd98e;
-    --cyan: #7fe3ff;
-    --cream: #f5eff9;
-    --cream-dim: rgba(245, 239, 249, 0.72);
-    --glass: rgba(14, 18, 54, 0.55);
-    --glass-edge: rgba(255, 255, 255, 0.14);
+    --cyan: #8ae9ff;
+    --cream: #f7f2fb;
+    --cream-dim: rgba(247, 242, 251, 0.7);
     --display: "Cormorant Garamond", "Garamond", "Times New Roman", serif;
     --body: "Jost", "Futura", "Avenir Next", "Segoe UI", sans-serif;
     color-scheme: dark;
   }
-  html { height: 100%; scroll-behavior: smooth; }
+  html { height: 100%; }
   body {
     margin: 0;
     min-height: 100%;
-    background: var(--space);
+    background: radial-gradient(120% 80% at 50% 0%, #1a1240 0%, #06081c 60%, #03040f 100%);
     color: var(--cream);
     font-family: var(--body);
     font-weight: 300;
@@ -37,660 +33,778 @@
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
   }
-  #sky {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
-    z-index: 0;
+  #gl {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    display: block; z-index: 0;
   }
-  .page {
+  body.nogl #gl { display: none; }
+
+  .flight { position: relative; z-index: 1; }
+  .stage {
     position: relative;
-    z-index: 1;
-    max-width: 720px;
-    margin: 0 auto;
-    padding-inline: 20px;
-    padding-block: 0 96px;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding-inline: clamp(20px, 6vw, 80px);
+    padding-block: 0;
+    box-sizing: border-box;
   }
-  section { margin-block: 0 8rem; }
 
   /* ---------- hero ---------- */
-  .hero {
-    min-height: 82vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding-block: 12vh 4rem;
-    text-align: center;
-  }
+  .hero { flex-direction: column; justify-content: flex-start; padding-top: clamp(40px, 8vh, 110px); text-align: center; }
   .eyebrow {
-    font-size: 12px;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: var(--cyan);
-    opacity: 0.9;
-    margin: 0 0 1.6rem;
+    font-size: 12px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--cyan); margin: 0 0 1.4rem;
     animation: rise 1.4s ease-out both;
   }
   .name {
     font-family: var(--display);
-    font-weight: 500;
-    font-style: italic;
-    font-size: clamp(88px, 22vw, 180px);
-    line-height: 0.9;
-    margin: 0;
-    letter-spacing: -0.01em;
-    text-wrap: balance;
-    background: linear-gradient(180deg, #fff 0%, var(--gold) 55%, var(--pink) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    filter: drop-shadow(0 0 28px rgba(255, 217, 142, 0.35));
-    animation: rise 1.6s 0.2s cubic-bezier(.2,.8,.2,1) both;
+    font-weight: 500; font-style: italic;
+    font-size: clamp(110px, 26vw, 220px);
+    line-height: 0.86; margin: 0; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #ffffff 0%, var(--gold) 50%, var(--pink) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 32px rgba(255, 217, 142, 0.38));
+    animation: rise 1.8s 0.15s cubic-bezier(.2,.8,.2,1) both;
   }
-  .lines {
+  .tag {
     font-family: var(--display);
-    font-size: clamp(30px, 6vw, 44px);
-    font-weight: 400;
-    line-height: 1.2;
-    margin: 1.8rem 0 0;
-    text-wrap: balance;
+    font-size: clamp(30px, 6.4vw, 50px);
+    font-weight: 400; line-height: 1.15;
+    margin: 1.4rem 0 0; text-wrap: balance;
+    animation: rise 1.6s 0.9s cubic-bezier(.2,.8,.2,1) both;
   }
-  .lines span { display: block; animation: rise 1.4s cubic-bezier(.2,.8,.2,1) both; }
-  .lines span:nth-child(1) { animation-delay: 0.7s; }
-  .lines span:nth-child(2) { animation-delay: 1.3s; color: var(--pink); font-style: italic; }
+  .tag em { font-style: italic; color: var(--pink); }
+  .sub {
+    max-width: 44ch; margin: 1.1rem auto 0; color: var(--cream-dim);
+    animation: rise 1.6s 1.4s ease-out both;
+  }
   .hint {
-    margin-top: 3.5rem;
-    font-size: 12px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--cream-dim);
-    animation: rise 1.4s 2.2s ease-out both;
+    position: absolute; left: 0; right: 0; bottom: 14px;
+    font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--cream-dim); text-align: center;
+    animation: rise 1.4s 2.4s ease-out both;
   }
   .hint::after {
-    content: "";
-    display: block;
-    width: 1px;
-    height: 48px;
-    margin: 14px auto 0;
+    content: ""; display: block; width: 1px; height: 40px; margin: 12px auto 0;
     background: linear-gradient(180deg, var(--cyan), transparent);
     animation: drip 2.4s ease-in-out infinite;
   }
 
-  /* ---------- letter ---------- */
-  .panel {
-    position: relative;
-    background: var(--glass);
-    border: 1px solid var(--glass-edge);
-    border-radius: 28px;
-    padding: clamp(28px, 6vw, 56px);
-    backdrop-filter: blur(18px) saturate(1.2);
-    -webkit-backdrop-filter: blur(18px) saturate(1.2);
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+  /* ---------- days ---------- */
+  .day .txt {
+    max-width: 30rem;
+    opacity: 0.32;
+    transform: translateY(18px);
+    transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1);
   }
-  .panel::before {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(135deg, rgba(127,227,255,.55), transparent 40%, transparent 60%, rgba(255,111,181,.55));
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
+  .day.on .txt { opacity: 1; transform: none; }
+  .day:nth-child(odd) .txt { margin-left: auto; text-align: right; }
+  .day:nth-child(odd) .label { justify-content: flex-end; }
+  .label {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--cream-dim); margin: 0 0 0.8rem;
   }
-  .panel h2 {
-    font-family: var(--display);
-    font-weight: 500;
-    font-size: clamp(34px, 6vw, 48px);
-    line-height: 1.1;
-    margin: 0 0 1.4rem;
-    text-wrap: balance;
+  .label i {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--c);
+    box-shadow: 0 0 16px var(--c), 0 0 4px #fff inset;
   }
-  .panel h2 em { font-style: italic; color: var(--gold); }
-  .panel p { margin: 0 0 1.2rem; max-width: 60ch; color: var(--cream); }
-  .panel p:last-child { margin-bottom: 0; }
-  .panel p.soft { color: var(--cream-dim); }
-  .sig {
-    margin-top: 2rem;
-    font-family: var(--display);
-    font-style: italic;
-    font-size: 26px;
-    color: var(--pink);
+  .day h2 {
+    font-family: var(--display); font-weight: 500;
+    font-size: clamp(56px, 11vw, 104px); line-height: 0.95;
+    margin: 0 0 1rem; letter-spacing: -0.01em; text-wrap: balance;
+    color: #fff;
+    text-shadow: 0 0 40px var(--c);
+  }
+  .day h2 em { font-style: italic; color: var(--c); }
+  .day p { margin: 0; max-width: 30ch; color: var(--cream); font-size: clamp(17px, 2.2vw, 21px); }
+  .day:nth-child(odd) p { margin-left: auto; }
+
+  @media (max-width: 720px) {
+    .stage { align-items: flex-end; padding-bottom: clamp(48px, 10vh, 96px); }
+    .day .txt, .day:nth-child(odd) .txt { margin: 0 auto; text-align: center; }
+    .day:nth-child(odd) .label, .label { justify-content: center; }
+    .day p, .day:nth-child(odd) p { margin: 0 auto; }
   }
 
-  /* ---------- sunshine ---------- */
-  .sun-section { text-align: center; }
-  .sun-section h2 {
-    font-family: var(--display);
-    font-weight: 500;
-    font-size: clamp(34px, 6vw, 52px);
-    line-height: 1.1;
-    margin: 0 0 1rem;
-    text-wrap: balance;
+  /* ---------- finale ---------- */
+  .finale { flex-direction: column; justify-content: center; text-align: center; }
+  .finale .big {
+    font-family: var(--display); font-style: italic; font-weight: 500;
+    font-size: clamp(48px, 10vw, 96px); line-height: 1; margin: 0; text-wrap: balance;
+    background: linear-gradient(180deg, #fff 0%, var(--gold) 55%, var(--pink) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 30px rgba(255, 124, 193, 0.4));
   }
-  .sun-section p { max-width: 52ch; margin: 0 auto 2rem; color: var(--cream-dim); }
-  .sunbtn {
-    --ring: rgba(255, 217, 142, 0.5);
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    font-family: var(--body);
-    font-weight: 500;
-    font-size: 15px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--space);
-    background: linear-gradient(135deg, #fff2c8, var(--gold) 45%, #ffb36b);
-    border: 0;
-    border-radius: 999px;
-    padding: 18px 34px 18px 22px;
-    cursor: pointer;
-    box-shadow: 0 0 0 0 var(--ring), 0 18px 50px rgba(255, 179, 107, 0.35);
-    transition: transform .3s ease, box-shadow .3s ease;
-    animation: pulse 3s ease-in-out infinite;
+  .finale .love {
+    font-family: var(--display); font-size: clamp(30px, 5.6vw, 48px);
+    margin: 1.2rem 0 0; color: #fff;
   }
-  .sunbtn:hover, .sunbtn:focus-visible { transform: translateY(-2px) scale(1.03); outline: none; }
-  .sunbtn:focus-visible { box-shadow: 0 0 0 4px var(--cyan), 0 18px 50px rgba(255, 179, 107, 0.35); }
-  .sunbtn .orb {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #fff, #ffd98e 55%, #ff9a5c);
-    box-shadow: 0 0 18px #ffd98e;
+  .finale .love em { font-style: italic; color: var(--pink); }
+  .finale .tip {
+    margin-top: 2.6rem; font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--cyan);
   }
-  .sun-note {
-    margin-top: 1.6rem;
-    font-family: var(--display);
-    font-style: italic;
-    font-size: 24px;
-    color: var(--gold);
-    min-height: 1.4em;
-    opacity: 0;
-    transition: opacity 1.2s ease;
-  }
-  body.sunny .sun-note { opacity: 1; }
-  body.sunny .sunbtn { animation: none; }
+  .finale .txt { opacity: 0.3; transform: scale(0.96); transition: opacity 1s ease, transform 1.2s cubic-bezier(.2,.8,.2,1); }
+  .finale.on .txt { opacity: 1; transform: none; }
 
-  /* ---------- week ---------- */
-  .week h2, .sun-section h2, .closing .big { text-shadow: 0 4px 30px rgba(7, 10, 31, 0.55); }
-  .week h2 {
-    font-family: var(--display);
-    font-weight: 500;
-    font-size: clamp(34px, 6vw, 52px);
-    line-height: 1.1;
-    margin: 0 0 0.6rem;
-    text-align: center;
-    text-wrap: balance;
-  }
-  .week > p { text-align: center; color: var(--cream-dim); max-width: 48ch; margin: 0 auto 2.4rem; }
-  .orbit {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 10px;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  .day {
-    position: relative;
-    text-align: center;
-    padding: 14px 4px 12px;
-    border-radius: 18px;
-    background: rgba(10, 12, 40, 0.38);
-    border: 1px solid rgba(255,255,255,0.09);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition: transform .3s ease, background .3s ease, border-color .3s ease;
-    cursor: default;
-  }
-  .day:hover { transform: translateY(-4px); background: rgba(10, 12, 40, 0.55); border-color: rgba(255,255,255,0.2); }
-  .planet {
-    width: 34px; height: 34px; margin: 0 auto 10px;
-    border-radius: 50%;
-    box-shadow: 0 0 22px var(--glow), inset -6px -6px 12px rgba(0,0,0,0.35);
-    background: radial-gradient(circle at 35% 30%, #fff 0%, var(--c1) 30%, var(--c2) 100%);
-    animation: bob 4s ease-in-out infinite;
-    animation-delay: var(--d);
-  }
-  .day b { display: block; font-weight: 500; font-size: 13px; letter-spacing: 0.12em; }
-  .day small { display: block; font-size: 11px; line-height: 1.35; color: var(--cream-dim); margin-top: 4px; }
-  @media (max-width: 560px) {
-    .orbit { grid-template-columns: repeat(4, 1fr); }
-  }
-  @media (max-width: 400px) {
-    .day small { display: none; }
-  }
-
-  /* ---------- closing ---------- */
-  .closing { text-align: center; margin-bottom: 0; }
-  .closing .big {
-    font-family: var(--display);
-    font-style: italic;
-    font-weight: 500;
-    font-size: clamp(44px, 10vw, 84px);
-    line-height: 1;
-    margin: 0 0 1.2rem;
-    text-wrap: balance;
-    background: linear-gradient(180deg, #fff, var(--pink));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    filter: drop-shadow(0 0 24px rgba(255,111,181,.35));
-  }
-  .closing p { color: var(--cream-dim); margin: 0 auto; max-width: 44ch; }
-  .tap-tip {
-    margin-top: 3rem;
-    font-size: 12px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--cyan);
-    opacity: .85;
-  }
-
-  @keyframes rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
   @keyframes drip { 0%, 100% { transform: scaleY(0.2); transform-origin: top; opacity: .2; } 50% { transform: scaleY(1); opacity: 1; } }
-  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--ring), 0 18px 50px rgba(255,179,107,.35); } 50% { box-shadow: 0 0 0 16px rgba(255,217,142,0), 0 18px 50px rgba(255,179,107,.45); } }
-  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-
   @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    .eyebrow, .name, .lines span, .hint, .sunbtn, .planet, .hint::after { animation: none !important; }
+    .eyebrow, .name, .tag, .sub, .hint, .hint::after { animation: none !important; }
+    .day .txt, .finale .txt { transition: none; }
   }
 </style>
 
 </head>
 <body>
-<canvas id="sky" aria-hidden="true"></canvas>
+<canvas id="gl" aria-hidden="true"></canvas>
 
-<main class="page">
-  <section class="hero">
-    <p class="eyebrow">A transmission from somewhere past the moon</p>
-    <h1 class="name">Lan,</h1>
-    <p class="lines">
-      <span>I'm sorry.</span>
-      <span>And I love you.</span>
-    </p>
-    <p class="hint">Keep drifting down</p>
+<main class="flight" id="flight">
+  <section class="stage hero">
+    <p class="eyebrow">Transmission for Lan · from somewhere past the moon</p>
+    <h1 class="name">Lan</h1>
+    <p class="tag">Have a <em>great</em> week.</p>
+    <p class="sub">Seven days ahead, and seven flowers grown out here in the stars, one for each of them. Scroll to fly through.</p>
+    <p class="hint">Scroll to fly</p>
   </section>
 
-  <section class="letter">
-    <div class="panel">
-      <h2>I owe you a weekend <em>I didn't give you.</em></h2>
-      <p>I was supposed to bring the sunshine this weekend, and I didn't. You got clouds when you deserved a bright, easy, warm couple of days. I'm sorry I let it drift by gray.</p>
-      <p>So I went a little further than the weather would let me. I went out past the sky and grew you a garden in the stars. Every flower here bloomed for you.</p>
-      <p class="soft">Tap anywhere on the dark, and another one will grow. I'll keep planting them as long as you keep tapping.</p>
-      <p class="sig">I love you, more than any of this can hold.</p>
+  <section class="stage day" style="--c:#8ae9ff">
+    <div class="txt">
+      <p class="label"><i></i>Monday</p>
+      <h2><em>Launch.</em></h2>
+      <p>Coffee in hand and the whole sky ahead of you. Monday has no idea what's coming.</p>
     </div>
   </section>
 
-  <section class="sun-section">
-    <h2>I couldn't bring the sunshine on time.</h2>
-    <p>So I built one. It's a little late, and it's a little homemade, but it's all yours.</p>
-    <button class="sunbtn" id="sunbtn" type="button"><span class="orb"></span><span id="sunlabel">Bring the sunshine</span></button>
-    <p class="sun-note" id="sunnote">There. Sunshine, Lan. It was always meant for you.</p>
+  <section class="stage day" style="--c:#ff7cc1">
+    <div class="txt">
+      <p class="label"><i></i>Tuesday</p>
+      <h2><em>Momentum.</em></h2>
+      <p>Everything you touch today goes a little bit right. Ride it.</p>
+    </div>
   </section>
 
-  <section class="week">
-    <h2>Have a great week.</h2>
-    <p>Seven small worlds, one for each day. I hope every one of them is kind to you.</p>
-    <ul class="orbit">
-      <li class="day" style="--c1:#7fe3ff;--c2:#1f6fb0;--glow:rgba(127,227,255,.5);--d:0s"><span class="planet"></span><b>MON</b><small>Coffee first, then conquer.</small></li>
-      <li class="day" style="--c1:#ffb0d6;--c2:#c2377f;--glow:rgba(255,111,181,.5);--d:.3s"><span class="planet"></span><b>TUE</b><small>Something makes you laugh.</small></li>
-      <li class="day" style="--c1:#ffd98e;--c2:#d9862b;--glow:rgba(255,217,142,.5);--d:.6s"><span class="planet"></span><b>WED</b><small>Halfway, and you're glowing.</small></li>
-      <li class="day" style="--c1:#c9a6ff;--c2:#5b2a86;--glow:rgba(201,166,255,.5);--d:.9s"><span class="planet"></span><b>THU</b><small>Good news finds you.</small></li>
-      <li class="day" style="--c1:#9dffc9;--c2:#1f9c6a;--glow:rgba(157,255,201,.5);--d:1.2s"><span class="planet"></span><b>FRI</b><small>You exhale. You earned it.</small></li>
-      <li class="day" style="--c1:#ffc48a;--c2:#e2603f;--glow:rgba(255,196,138,.5);--d:1.5s"><span class="planet"></span><b>SAT</b><small>Real sunshine. I promise.</small></li>
-      <li class="day" style="--c1:#fff2c8;--c2:#b58e3e;--glow:rgba(255,242,200,.5);--d:1.8s"><span class="planet"></span><b>SUN</b><small>Slow morning, soft everything.</small></li>
-    </ul>
+  <section class="stage day" style="--c:#ffd98e">
+    <div class="txt">
+      <p class="label"><i></i>Wednesday</p>
+      <h2><em>Shine.</em></h2>
+      <p>Halfway through and already glowing. Someone notices today, because how could they not.</p>
+    </div>
   </section>
 
-  <section class="closing">
-    <p class="big">I love you.</p>
-    <p>From all the way out here, and from right next to you.</p>
-    <p class="tap-tip">Tap the sky to plant a flower</p>
+  <section class="stage day" style="--c:#c9a6ff">
+    <div class="txt">
+      <p class="label"><i></i>Thursday</p>
+      <h2><em>Gravity.</em></h2>
+      <p>Good things keep drifting toward you. Let them land.</p>
+    </div>
+  </section>
+
+  <section class="stage day" style="--c:#9dffd0">
+    <div class="txt">
+      <p class="label"><i></i>Friday</p>
+      <h2><em>Light speed.</em></h2>
+      <p>Loose shoulders, big laugh, the whole week bending in your favor.</p>
+    </div>
+  </section>
+
+  <section class="stage day" style="--c:#ffb36b">
+    <div class="txt">
+      <p class="label"><i></i>Saturday</p>
+      <h2><em>Sunshine.</em></h2>
+      <p>Warm and slow and all yours. This is the one I'm most excited for, because I get to be in it.</p>
+    </div>
+  </section>
+
+  <section class="stage day" style="--c:#fff0c2">
+    <div class="txt">
+      <p class="label"><i></i>Sunday</p>
+      <h2><em>Home.</em></h2>
+      <p>A soft morning with nothing to do. You, rested and glowing, ready for anything.</p>
+    </div>
+  </section>
+
+  <section class="stage finale">
+    <div class="txt">
+      <p class="big">Have a great week, Lan.</p>
+      <p class="love">I <em>love</em> you.</p>
+      <p class="tip">Tap the sky and watch it bloom</p>
+    </div>
   </section>
 </main>
 
 <script>
 (function () {
-  const canvas = document.getElementById('sky');
-  const ctx = canvas.getContext('2d');
+  'use strict';
+  const canvas = document.getElementById('gl');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let W = 0, H = 0, DPR = 1;
-  let stars = [], flowers = [], seeds = [], shooters = [];
-  let warm = 0, warmTarget = 0;       // 0 = deep space, 1 = sunshine
-  let lastT = performance.now();
+  const gl = canvas.getContext('webgl', { antialias: true, alpha: false, powerPreference: 'high-performance' });
+  if (!gl) { document.body.classList.add('nogl'); }
 
+  // ---------------- tiny math ----------------
+  const M = {
+    ident(o) { o.set([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]); return o; },
+    mul(o, a, b) {
+      const a00=a[0],a01=a[1],a02=a[2],a03=a[3],a10=a[4],a11=a[5],a12=a[6],a13=a[7],a20=a[8],a21=a[9],a22=a[10],a23=a[11],a30=a[12],a31=a[13],a32=a[14],a33=a[15];
+      let b0=b[0],b1=b[1],b2=b[2],b3=b[3];
+      o[0]=b0*a00+b1*a10+b2*a20+b3*a30; o[1]=b0*a01+b1*a11+b2*a21+b3*a31; o[2]=b0*a02+b1*a12+b2*a22+b3*a32; o[3]=b0*a03+b1*a13+b2*a23+b3*a33;
+      b0=b[4];b1=b[5];b2=b[6];b3=b[7];
+      o[4]=b0*a00+b1*a10+b2*a20+b3*a30; o[5]=b0*a01+b1*a11+b2*a21+b3*a31; o[6]=b0*a02+b1*a12+b2*a22+b3*a32; o[7]=b0*a03+b1*a13+b2*a23+b3*a33;
+      b0=b[8];b1=b[9];b2=b[10];b3=b[11];
+      o[8]=b0*a00+b1*a10+b2*a20+b3*a30; o[9]=b0*a01+b1*a11+b2*a21+b3*a31; o[10]=b0*a02+b1*a12+b2*a22+b3*a32; o[11]=b0*a03+b1*a13+b2*a23+b3*a33;
+      b0=b[12];b1=b[13];b2=b[14];b3=b[15];
+      o[12]=b0*a00+b1*a10+b2*a20+b3*a30; o[13]=b0*a01+b1*a11+b2*a21+b3*a31; o[14]=b0*a02+b1*a12+b2*a22+b3*a32; o[15]=b0*a03+b1*a13+b2*a23+b3*a33;
+      return o;
+    },
+    perspective(o, fovy, aspect, near, far) {
+      const f = 1 / Math.tan(fovy / 2), nf = 1 / (near - far);
+      o.set([f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)*nf,-1, 0,0,2*far*near*nf,0]); return o;
+    },
+    trs(o, x, y, z, rx, ry, rz, s) {
+      // T * Ry * Rx * Rz * S
+      const cx=Math.cos(rx),sx=Math.sin(rx),cy=Math.cos(ry),sy=Math.sin(ry),cz=Math.cos(rz),sz=Math.sin(rz);
+      // R = Ry*Rx*Rz
+      const r00 = cy*cz + sy*sx*sz, r01 = sx*cz*sy - cy*sz, r02 = cx*sy;
+      const r10 = cx*sz,             r11 = cx*cz,            r12 = -sx;
+      const r20 = cy*sx*sz - sy*cz,  r21 = sy*sz + cy*sx*cz, r22 = cy*cx;
+      o[0]=r00*s; o[1]=r10*s; o[2]=r20*s; o[3]=0;
+      o[4]=r01*s; o[5]=r11*s; o[6]=r21*s; o[7]=0;
+      o[8]=r02*s; o[9]=r12*s; o[10]=r22*s; o[11]=0;
+      o[12]=x; o[13]=y; o[14]=z; o[15]=1;
+      return o;
+    },
+    petalLocal(o, angle, tilt, s) {
+      // Rz(angle) * Rx(-tilt) * S(s)
+      const ca=Math.cos(angle), sa=Math.sin(angle), cb=Math.cos(-tilt), sb=Math.sin(-tilt);
+      o[0]=ca*s; o[1]=sa*s; o[2]=0; o[3]=0;
+      o[4]=-sa*cb*s; o[5]=ca*cb*s; o[6]=sb*s; o[7]=0;
+      o[8]=sa*sb*s; o[9]=-ca*sb*s; o[10]=cb*s; o[11]=0;
+      o[12]=0; o[13]=0; o[14]=0; o[15]=1;
+      return o;
+    }
+  };
   const rand = (a, b) => a + Math.random() * (b - a);
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const lerp = (a, b, t) => a + (b - a) * t;
-  const easeOutBack = t => { const c = 1.4; return 1 + c * Math.pow(t - 1, 3) + (c - 1) * Math.pow(t - 1, 2); };
+  const smooth = (a, b, t) => { t = clamp((t - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const easeOutBack = t => { const c = 1.35; return 1 + c * Math.pow(t - 1, 3) + (c - 1) * Math.pow(t - 1, 2); };
   const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const hex = h => { const n = parseInt(h.slice(1), 16); return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; };
 
-  const PALETTES = [
-    { a: '#ff6fb5', b: '#ffd6ea', c: '#ffd98e' },   // pink
-    { a: '#c9a6ff', b: '#f2e6ff', c: '#ffe3a3' },   // lilac
-    { a: '#7fe3ff', b: '#e6fbff', c: '#fff2c8' },   // ice
-    { a: '#ffb36b', b: '#ffe6c9', c: '#fff5d6' },   // peach
-    { a: '#ff8fa3', b: '#ffe0e6', c: '#ffe08a' },   // coral
-    { a: '#b0ffdc', b: '#eafff5', c: '#ffe9a8' },   // mint
-  ];
+  // ---------------- GL helpers ----------------
+  function program(vs, fs) {
+    const mk = (type, src) => {
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    };
+    const p = gl.createProgram();
+    gl.attachShader(p, mk(gl.VERTEX_SHADER, vs)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const info = { p, a: {}, u: {} };
+    const na = gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES);
+    for (let i = 0; i < na; i++) { const n = gl.getActiveAttrib(p, i).name; info.a[n] = gl.getAttribLocation(p, n); }
+    const nu = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < nu; i++) { const n = gl.getActiveUniform(p, i).name.replace('[0]', ''); info.u[n] = gl.getUniformLocation(p, n); }
+    return info;
+  }
+  function buffer(data, target, usage) {
+    const b = gl.createBuffer(); gl.bindBuffer(target || gl.ARRAY_BUFFER, b);
+    gl.bufferData(target || gl.ARRAY_BUFFER, data, usage || gl.STATIC_DRAW); return b;
+  }
+
+  // ---------------- shaders ----------------
+  const BG_VS = `attribute vec2 aP; void main(){ gl_Position = vec4(aP, 0.0, 1.0); }`;
+  const BG_FS = `
+    precision highp float;
+    uniform vec2 uRes; uniform float uTime, uP; uniform vec3 uA, uB, uC;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+      return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
+    float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ v += a*noise(p); p = p*2.03 + 17.0; a *= 0.5; } return v; }
+    void main(){
+      vec2 uv = gl_FragCoord.xy / uRes;
+      vec2 q = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0);
+      vec3 col = mix(vec3(0.012, 0.016, 0.06), vec3(0.07, 0.04, 0.18), uv.y);
+      float t = uTime * 0.02;
+      float n1 = fbm(q * 1.4 + vec2(uP * 2.5, t));
+      float n2 = fbm(q * 2.1 - vec2(t * 0.7, uP * 1.8) + 3.7);
+      float n3 = fbm(q * 0.8 + vec2(uP * 1.2, -t * 0.5) + 9.1);
+      col += uA * pow(n1, 2.4) * 1.1;
+      col += uB * pow(n2, 2.8) * 0.9;
+      col += uC * pow(n3, 3.2) * 0.9;
+      float vig = smoothstep(1.35, 0.35, length(q));
+      col *= 0.75 + 0.35 * vig;
+      col += (hash(gl_FragCoord.xy + uTime) - 0.5) * 0.012;
+      gl_FragColor = vec4(col, 1.0);
+    }`;
+
+  const PT_VS = `
+    attribute vec3 aP; attribute float aS; attribute float aPh; attribute vec3 aC;
+    uniform mat4 uProj, uView, uModel; uniform float uTime, uPR, uSize, uTw;
+    varying vec3 vC; varying float vA;
+    void main(){
+      vec4 mv = uView * uModel * vec4(aP, 1.0);
+      float tw = 1.0 - uTw * (0.5 + 0.5 * sin(uTime * (1.2 + aPh * 2.0) + aPh * 40.0));
+      vA = tw;
+      float d = max(0.5, -mv.z);
+      gl_PointSize = clamp(aS * uSize * uPR * (140.0 / d) * (0.6 + 0.4 * tw), 0.0, 90.0);
+      gl_Position = uProj * mv;
+      vC = aC;
+    }`;
+  const PT_FS = `
+    precision mediump float; varying vec3 vC; varying float vA; uniform float uAlpha;
+    void main(){
+      float d = length(gl_PointCoord - 0.5) * 2.0;
+      float a = smoothstep(1.0, 0.0, d); a = a * a * (1.0 + 2.0 * smoothstep(0.35, 0.0, d));
+      gl_FragColor = vec4(vC * a * vA * uAlpha, 1.0);
+    }`;
+
+  const PETAL_VS = `
+    attribute vec3 aP; attribute vec3 aN; attribute vec2 aUV;
+    uniform mat4 uProj, uView, uModel; uniform float uTime, uSeed;
+    varying vec2 vUV; varying vec3 vN; varying vec3 vW;
+    void main(){
+      vec3 p = aP;
+      float sway = sin(uTime * 1.4 + uSeed + aUV.y * 2.5) * 0.05 * aUV.y * aUV.y;
+      p.y += sway; p.z += sway * 0.5;
+      vec4 w = uModel * vec4(p, 1.0);
+      vW = w.xyz; vN = normalize(mat3(uModel) * aN); vUV = aUV;
+      gl_Position = uProj * uView * w;
+    }`;
+  const PETAL_FS = `
+    precision mediump float;
+    uniform vec3 uBase, uMid, uTip, uCam; uniform float uOpacity;
+    varying vec2 vUV; varying vec3 vN; varying vec3 vW;
+    void main(){
+      vec3 n = normalize(vN); vec3 v = normalize(uCam - vW);
+      float nd = abs(dot(n, v));
+      float fres = pow(1.0 - nd, 2.4);
+      float u = vUV.y;
+      vec3 col = mix(uBase, uMid, smoothstep(0.0, 0.45, u));
+      col = mix(col, uTip, smoothstep(0.5, 1.0, u));
+      float vein = smoothstep(0.035, 0.0, abs(vUV.x - 0.5)) * (1.0 - u) * 0.35;
+      float edge = smoothstep(0.06, 0.0, min(vUV.x, 1.0 - vUV.x));
+      col = col * (0.7 + 0.4 * nd) + fres * uTip * 1.3 + vein * vec3(1.0, 0.95, 0.85) + edge * uTip * 0.5;
+      float a = uOpacity * (0.86 + 0.14 * fres);
+      gl_FragColor = vec4(col, a);
+    }`;
+
+  const GLOW_VS = `
+    attribute vec2 aC; uniform mat4 uProj, uView; uniform vec3 uPos; uniform vec2 uSize;
+    varying vec2 vC;
+    void main(){ vec4 mv = uView * vec4(uPos, 1.0); mv.xy += aC * uSize; vC = aC; gl_Position = uProj * mv; }`;
+  const GLOW_FS = `
+    precision mediump float; uniform vec3 uColor; uniform float uAlpha, uPow; varying vec2 vC;
+    void main(){ float d = length(vC); float a = pow(clamp(1.0 - d, 0.0, 1.0), uPow); gl_FragColor = vec4(uColor * a * uAlpha, 1.0); }`;
+
+  // ---------------- geometry ----------------
+  function petalGeometry(len, wid, curl, cup) {
+    const SU = 18, SV = 8;
+    const pos = [], nrm = [], uv = [], idx = [];
+    for (let i = 0; i <= SU; i++) {
+      const u = i / SU;
+      const w = wid * Math.pow(Math.sin(Math.PI * Math.min(1, u * 0.92 + 0.04)), 0.75) * (1 - 0.15 * u);
+      for (let j = 0; j <= SV; j++) {
+        const v = j / SV * 2 - 1;
+        const x = v * w;
+        const z = u * len;
+        const y = curl * len * u * u + cup * w * v * v * (0.5 + 0.5 * u);
+        pos.push(x, y, z); uv.push(j / SV, u); nrm.push(0, 0, 0);
+      }
+    }
+    const row = SV + 1;
+    for (let i = 0; i < SU; i++) for (let j = 0; j < SV; j++) {
+      const a = i * row + j, b = a + row;
+      idx.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+    // vertex normals
+    for (let k = 0; k < idx.length; k += 3) {
+      const a = idx[k] * 3, b = idx[k + 1] * 3, c = idx[k + 2] * 3;
+      const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2];
+      const vx = pos[c] - pos[a], vy = pos[c + 1] - pos[a + 1], vz = pos[c + 2] - pos[a + 2];
+      const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      for (const q of [a, b, c]) { nrm[q] += nx; nrm[q + 1] += ny; nrm[q + 2] += nz; }
+    }
+    for (let k = 0; k < nrm.length; k += 3) {
+      const l = Math.hypot(nrm[k], nrm[k + 1], nrm[k + 2]) || 1; nrm[k] /= l; nrm[k + 1] /= l; nrm[k + 2] /= l;
+    }
+    return {
+      pos: buffer(new Float32Array(pos)), nrm: buffer(new Float32Array(nrm)), uv: buffer(new Float32Array(uv)),
+      idx: buffer(new Uint16Array(idx), gl.ELEMENT_ARRAY_BUFFER), count: idx.length
+    };
+  }
+
+  // ---------------- scene setup ----------------
+  let W = 1, H = 1, DPR = 1, aspect = 1;
+  const proj = new Float32Array(16), view = new Float32Array(16), model = new Float32Array(16), tmp = new Float32Array(16), ident = M.ident(new Float32Array(16));
+  const cam = { x: 0, y: 0, z: 10, tx: 0, ty: 0 };
+  const FOV = 60 * Math.PI / 180;
+  const SPACING = 14.125;
+  const SECTIONS = 9;
+  let progress = 0;
+
+  let bgP, ptP, petalP, glowP, bgBuf, quadBuf;
+  const geos = {};
+  const flowers = [];
+  let stars, bursts = [], comets = [];
+
+  const PAL = {
+    hero:  { base: '#ffd98e', mid: '#ff7cc1', tip: '#ffe6f4', glow: '#ff7cc1' },
+    mon:   { base: '#fff2c8', mid: '#5fc8ff', tip: '#e6fbff', glow: '#8ae9ff' },
+    tue:   { base: '#ffd98e', mid: '#ff5fae', tip: '#ffd6ea', glow: '#ff7cc1' },
+    wed:   { base: '#fff5d6', mid: '#ffc24d', tip: '#fff2c8', glow: '#ffd98e' },
+    thu:   { base: '#ffe3a3', mid: '#a77cff', tip: '#f0e6ff', glow: '#c9a6ff' },
+    fri:   { base: '#ffe9a8', mid: '#4fe0a0', tip: '#eafff5', glow: '#9dffd0' },
+    sat:   { base: '#fff5d6', mid: '#ff9a4a', tip: '#ffe6c9', glow: '#ffb36b' },
+    sun:   { base: '#ffd98e', mid: '#ffd9e8', tip: '#ffffff', glow: '#fff0c2' },
+  };
+  const SKY = [
+    ['#4a2a8a', '#c0347a', '#1f4f9a'],   // hero
+    ['#1f4f9a', '#3a8fd0', '#4a2a8a'],   // mon
+    ['#8a2a6a', '#d04a8a', '#3a2a8a'],   // tue
+    ['#8a5a1a', '#c08a2a', '#6a2a6a'],   // wed
+    ['#4a2a8a', '#7a4ad0', '#2a3a8a'],   // thu
+    ['#1a6a4a', '#2aa07a', '#2a4a8a'],   // fri
+    ['#9a4a1a', '#d07a2a', '#8a2a5a'],   // sat
+    ['#6a4a5a', '#b08a8a', '#4a3a8a'],   // sun
+    ['#6a2a8a', '#d04a9a', '#2a5aa0'],   // finale
+  ].map(r => r.map(hex));
+
+  const SHAPES = {
+    rose:  [{ n: 8, geo: 'wide', open: 1.3, len: 1 }, { n: 8, geo: 'wide', open: 0.95, len: 0.8 }, { n: 6, geo: 'wide', open: 0.55, len: 0.58 }],
+    daisy: [{ n: 14, geo: 'thin', open: 1.4, len: 1 }, { n: 12, geo: 'thin', open: 1.05, len: 0.7 }],
+    lotus: [{ n: 7, geo: 'lotus', open: 1.15, len: 1 }, { n: 7, geo: 'lotus', open: 0.8, len: 0.8 }, { n: 7, geo: 'lotus', open: 0.4, len: 0.6 }],
+    star:  [{ n: 5, geo: 'star', open: 1.35, len: 1 }, { n: 5, geo: 'star', open: 0.9, len: 0.75 }, { n: 5, geo: 'wide', open: 0.5, len: 0.5 }],
+  };
+
+  function ringPos(a) {
+    const narrow = aspect < 0.8;
+    const rx = narrow ? 3.1 : Math.min(9.2, 6.2 * aspect);
+    const ry = narrow ? 5.0 : 4.5;
+    return [Math.cos(a) * rx, Math.sin(a) * ry];
+  }
+  function makeFlower(o) {
+    const shape = SHAPES[o.shape];
+    const f = {
+      x: o.x, y: o.y, z: o.z, scale: o.scale, pal: PAL[o.pal], seed: rand(0, 100),
+      ry: o.ry || 0, rx: o.rx || 0, spin: o.spin || 0.08, bloom: 0, kind: o.kind,
+      layers: shape.map((L, li) => ({
+        n: L.n, geo: geos[L.geo], open: L.open, len: L.len, off: li * Math.PI / L.n,
+        stagger: li * 0.22, phases: Array.from({ length: L.n }, () => rand(0, 6.28))
+      })),
+      pollen: makePollen(o.scale),
+      mat: new Float32Array(16),
+      side: o.side || 0,
+      ringA: o.ringA || 0
+    };
+    flowers.push(f);
+    return f;
+  }
+  function makePollen(scale) {
+    const n = 46, p = [], s = [], ph = [], c = [];
+    for (let i = 0; i < n; i++) {
+      const r = rand(0.12, 0.42), th = rand(0, 6.28), phi = rand(0, 3.14);
+      p.push(r * Math.sin(phi) * Math.cos(th), r * Math.sin(phi) * Math.sin(th), r * Math.cos(phi) * 0.6 + 0.15);
+      s.push(rand(0.5, 1.6)); ph.push(rand(0, 1));
+      const g = hex(Math.random() < 0.5 ? '#ffd98e' : '#fff7dc'); c.push(g[0], g[1], g[2]);
+    }
+    return { n, pos: buffer(new Float32Array(p)), size: buffer(new Float32Array(s)), ph: buffer(new Float32Array(ph)), col: buffer(new Float32Array(c)) };
+  }
+
+  function makeStars() {
+    const n = W < 700 ? 6000 : 11000, p = [], s = [], ph = [], c = [];
+    const tints = ['#ffffff', '#ffffff', '#ffffff', '#dff4ff', '#ffe9c4', '#ffd0e8', '#bfe9ff'];
+    for (let i = 0; i < n; i++) {
+      p.push(rand(-60, 60), rand(-40, 40), rand(-150, 30));
+      s.push(Math.pow(Math.random(), 2.2) * 2.4 + 0.25); ph.push(Math.random());
+      const t = hex(tints[Math.floor(Math.random() * tints.length)]); c.push(t[0], t[1], t[2]);
+    }
+    return { n, pos: buffer(new Float32Array(p)), size: buffer(new Float32Array(s)), ph: buffer(new Float32Array(ph)), col: buffer(new Float32Array(c)) };
+  }
+
+  function layoutFlowers() {
+    flowers.length = 0;
+    const narrow = aspect < 0.8;
+    const sideX = narrow ? 0 : Math.min(3.9, 3.0 * aspect);
+    const sideY = narrow ? 1.7 : 0.1;
+    makeFlower({ kind: 'hero', shape: 'rose', pal: 'hero', x: 0, y: narrow ? -2.4 : -2.8, z: 0, scale: narrow ? 1.5 : 1.85, ry: 0, rx: 0.35, spin: 0.05 });
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const shapes = ['daisy', 'rose', 'star', 'lotus', 'daisy', 'rose', 'lotus'];
+    days.forEach((d, i) => {
+      const side = i % 2 === 0 ? 1 : -1;  // Monday text sits left, so its flower goes right
+      makeFlower({ kind: 'day', shape: shapes[i], pal: d, x: sideX * side, y: sideY, z: -SPACING * (i + 1),
+        scale: narrow ? 1.65 : 2.45, ry: -side * 0.45, rx: 0.1, spin: 0.06 + i * 0.01, side: i + 1 });
+    });
+    // finale: a ring of blooms around the words
+    const zf = -SPACING * 8 - 2;
+    const ring = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun', 'hero', 'tue', 'wed'];
+    ring.forEach((p, i) => {
+      const a = (i / ring.length) * Math.PI * 2;
+      const rp = ringPos(a);
+      makeFlower({ kind: 'ring', shape: ['daisy', 'rose', 'star', 'lotus'][i % 4], pal: p, x: rp[0], y: rp[1], z: zf + Math.sin(a * 3) * 0.6,
+        scale: narrow ? 0.6 : 0.85, ry: -Math.cos(a) * 0.5, rx: Math.sin(a) * 0.4, spin: 0.15, side: 8, ringA: a });
+    });
+  }
+
+  function init() {
+    bgP = program(BG_VS, BG_FS);
+    ptP = program(PT_VS, PT_FS);
+    petalP = program(PETAL_VS, PETAL_FS);
+    glowP = program(GLOW_VS, GLOW_FS);
+    bgBuf = buffer(new Float32Array([-1, -1, 3, -1, -1, 3]));
+    quadBuf = buffer(new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]));
+    geos.wide = petalGeometry(1, 0.42, 0.22, 0.28);
+    geos.thin = petalGeometry(1, 0.17, 0.18, 0.12);
+    geos.lotus = petalGeometry(1, 0.5, 0.35, 0.42);
+    geos.star = petalGeometry(1, 0.3, 0.1, -0.15);
+    resize();
+    stars = makeStars();
+    gl.clearColor(0.02, 0.03, 0.09, 1);
+    gl.enable(gl.DEPTH_TEST);
+  }
 
   function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
-    W = window.innerWidth; H = window.innerHeight;
-    canvas.width = Math.floor(W * DPR);
-    canvas.height = Math.floor(H * DPR);
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    buildStars();
-    if (!flowers.length) buildGarden();
+    W = window.innerWidth; H = window.innerHeight; aspect = W / H;
+    DPR = Math.min(window.devicePixelRatio || 1, W < 700 ? 1.5 : 2);
+    canvas.width = Math.floor(W * DPR); canvas.height = Math.floor(H * DPR);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    M.perspective(proj, FOV, aspect, 0.1, 300);
+    layoutFlowers();
   }
 
-  function buildStars() {
-    stars = [];
-    const n = Math.floor((W * H) / 3200);
-    for (let i = 0; i < n; i++) {
-      stars.push({ x: Math.random() * W, y: Math.random() * H, r: rand(0.4, 1.6), p: rand(0, Math.PI * 2), s: rand(0.6, 2.2), tint: Math.random() });
+  // ---------------- drawing ----------------
+  function bindPoints(set) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, set.pos); gl.enableVertexAttribArray(ptP.a.aP); gl.vertexAttribPointer(ptP.a.aP, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, set.size); gl.enableVertexAttribArray(ptP.a.aS); gl.vertexAttribPointer(ptP.a.aS, 1, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, set.ph); gl.enableVertexAttribArray(ptP.a.aPh); gl.vertexAttribPointer(ptP.a.aPh, 1, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, set.col); gl.enableVertexAttribArray(ptP.a.aC); gl.vertexAttribPointer(ptP.a.aC, 3, gl.FLOAT, false, 0, 0);
+  }
+  function drawGlow(x, y, z, w, h, color, alpha, pow) {
+    gl.uniform3f(glowP.u.uPos, x, y, z); gl.uniform2f(glowP.u.uSize, w, h);
+    gl.uniform3f(glowP.u.uColor, color[0], color[1], color[2]); gl.uniform1f(glowP.u.uAlpha, alpha); gl.uniform1f(glowP.u.uPow, pow);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  function flowerBloom(f, t) {
+    if (f.kind === 'hero') return reduceMotion ? 1 : clamp((t - 0.5) / 3.2, 0, 1);
+    if (f.kind === 'ring') return smooth(0.80, 0.96, progress);
+    const dist = cam.z - f.z;
+    const target = smooth(24, 9, dist);
+    return Math.max(f.bloom, target);
+  }
+
+  function updateFlowerMatrix(f, t) {
+    const wob = reduceMotion ? 0 : Math.sin(t * 0.5 + f.seed) * 0.06;
+    let x = f.x, y = f.y;
+    if (f.kind === 'ring' && !reduceMotion) {
+      const rp = ringPos(f.ringA + t * 0.1);
+      x = rp[0]; y = rp[1];
     }
+    M.trs(f.mat, x, y + wob * 0.3, f.z, f.rx + wob, f.ry + wob * 0.5, reduceMotion ? 0 : t * f.spin, f.scale);
+    f.wx = x; f.wy = y + wob * 0.3;
   }
 
-  function makeFlower(x, y, size, opts) {
-    const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)];
-    const type = Math.random();
-    return Object.assign({
-      x, y, size,
-      baseY: H,
-      pal,
-      petals: type < 0.35 ? 5 : type < 0.7 ? 8 : 12,
-      layers: type < 0.35 ? 3 : type < 0.7 ? 2 : 1,
-      width: type < 0.35 ? 0.62 : type < 0.7 ? 0.5 : 0.3,
-      bloom: 0,
-      delay: 0,
-      born: performance.now(),
-      phase: rand(0, Math.PI * 2),
-      sway: rand(0.5, 1.1),
-      lean: rand(-0.35, 0.35),
-      leaves: Math.random() < 0.8,
-      garden: false,
-    }, opts || {});
-  }
+  function render(tms) {
+    const t = tms * 0.001;
+    // camera
+    cam.z = 10 - progress * SPACING * 8;
+    cam.x += (cam.tx - cam.x) * 0.05; cam.y += (cam.ty - cam.y) * 0.05;
+    const cx = cam.x + (reduceMotion ? 0 : Math.sin(t * 0.25) * 0.15), cy = cam.y + (reduceMotion ? 0 : Math.cos(t * 0.2) * 0.1);
+    view.set([1,0,0,0, 0,1,0,0, 0,0,1,0, -cx, -cy, -cam.z, 1]);
 
-  function buildGarden() {
-    flowers = [];
-    const count = Math.max(7, Math.round(W / 110));
-    for (let i = 0; i < count; i++) {
-      const x = (i + 0.5) * (W / count) + rand(-22, 22);
-      const stemH = rand(H * 0.10, H * 0.26);
-      const size = rand(26, 46) * (W < 500 ? 0.8 : 1);
-      flowers.push(makeFlower(x, H - stemH, size, { delay: 900 + i * 160 + rand(0, 300), garden: true }));
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // background nebula
+    gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
+    gl.useProgram(bgP.p);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bgBuf); gl.enableVertexAttribArray(bgP.a.aP); gl.vertexAttribPointer(bgP.a.aP, 2, gl.FLOAT, false, 0, 0);
+    gl.uniform2f(bgP.u.uRes, canvas.width, canvas.height);
+    gl.uniform1f(bgP.u.uTime, reduceMotion ? 0 : t); gl.uniform1f(bgP.u.uP, progress);
+    const sp = progress * (SECTIONS - 1), si = Math.min(SECTIONS - 2, Math.floor(sp)), sf = sp - si;
+    for (let k = 0; k < 3; k++) {
+      const a = SKY[si][k], b = SKY[si + 1][k];
+      gl.uniform3f([bgP.u.uA, bgP.u.uB, bgP.u.uC][k], lerp(a[0], b[0], sf), lerp(a[1], b[1], sf), lerp(a[2], b[2], sf));
     }
-    // a few drifting seeds of light
-    seeds = [];
-    for (let i = 0; i < 18; i++) seeds.push({ x: Math.random() * W, y: Math.random() * H, vx: rand(-0.06, 0.06), vy: rand(-0.12, -0.03), r: rand(1, 2.4), p: rand(0, 6.28) });
-  }
-
-  function plantFlower(x, y) {
-    const size = rand(28, 50) * (W < 500 ? 0.85 : 1);
-    const f = makeFlower(x, clamp(y, 60, H - 40), size, { delay: 0 });
-    flowers.push(f);
-    if (flowers.length > 60) flowers.splice(0, flowers.length - 60);
-  }
-
-  // ---------- drawing ----------
-  function drawSky(t) {
-    // base gradient
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    if (warm < 0.001) {
-      g.addColorStop(0, '#05071a'); g.addColorStop(0.55, '#0b0f31'); g.addColorStop(1, '#1a1038');
-    } else {
-      const top = mix('#05071a', '#2b1750', warm), mid = mix('#0b0f31', '#8a3d6f', warm), bot = mix('#1a1038', '#ff9a5c', warm);
-      g.addColorStop(0, top); g.addColorStop(0.55, mid); g.addColorStop(1, bot);
-    }
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-
-    // nebulae
-    const drift = reduceMotion ? 0 : t * 0.00004;
-    nebula(W * (0.2 + 0.05 * Math.sin(drift)), H * 0.25, Math.max(W, H) * 0.55, mix('#5b2a86', '#ff7a8a', warm), 0.55);
-    nebula(W * (0.8 + 0.05 * Math.cos(drift * 1.3)), H * 0.45, Math.max(W, H) * 0.5, mix('#1f3f8a', '#ffb36b', warm), 0.45);
-    nebula(W * 0.5, H * (0.85 + 0.03 * Math.sin(drift * 0.7)), Math.max(W, H) * 0.6, mix('#7a2a6a', '#ffd98e', warm), 0.4);
-
-    // sun
-    if (warm > 0.001) {
-      const sunY = lerp(H + 160, H * 0.62, easeOut(warm));
-      const sunR = Math.min(W, H) * 0.16;
-      const halo = ctx.createRadialGradient(W / 2, sunY, sunR * 0.4, W / 2, sunY, sunR * 4);
-      halo.addColorStop(0, `rgba(255,236,190,${0.9 * warm})`);
-      halo.addColorStop(0.35, `rgba(255,180,110,${0.35 * warm})`);
-      halo.addColorStop(1, 'rgba(255,150,90,0)');
-      ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
-      const core = ctx.createRadialGradient(W / 2, sunY, 0, W / 2, sunY, sunR);
-      core.addColorStop(0, '#fffbe8'); core.addColorStop(0.7, '#ffe39a'); core.addColorStop(1, 'rgba(255,190,110,0.2)');
-      ctx.fillStyle = core;
-      ctx.beginPath(); ctx.arc(W / 2, sunY, sunR, 0, Math.PI * 2); ctx.fill();
-      // rays
-      ctx.save();
-      ctx.translate(W / 2, sunY);
-      ctx.rotate(reduceMotion ? 0 : t * 0.00005);
-      ctx.globalAlpha = 0.18 * warm;
-      for (let i = 0; i < 12; i++) {
-        ctx.rotate(Math.PI / 6);
-        const rg = ctx.createLinearGradient(0, 0, 0, -sunR * 4);
-        rg.addColorStop(0, '#fff2c8'); rg.addColorStop(1, 'rgba(255,242,200,0)');
-        ctx.fillStyle = rg;
-        ctx.beginPath(); ctx.moveTo(-sunR * 0.18, 0); ctx.lineTo(sunR * 0.18, 0); ctx.lineTo(0, -sunR * 4); ctx.closePath(); ctx.fill();
-      }
-      ctx.restore();
-    }
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
 
     // stars
-    const starAlpha = 1 - warm * 0.85;
-    if (starAlpha > 0.02) {
-      for (const s of stars) {
-        const tw = reduceMotion ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.001 * s.s + s.p);
-        ctx.globalAlpha = tw * starAlpha;
-        ctx.fillStyle = s.tint < 0.15 ? '#ffd98e' : s.tint < 0.3 ? '#7fe3ff' : '#ffffff';
-        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    }
+    gl.enable(gl.DEPTH_TEST); gl.depthMask(false);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+    gl.useProgram(ptP.p);
+    gl.uniformMatrix4fv(ptP.u.uProj, false, proj); gl.uniformMatrix4fv(ptP.u.uView, false, view);
+    gl.uniform1f(ptP.u.uTime, t); gl.uniform1f(ptP.u.uPR, DPR);
+    gl.uniformMatrix4fv(ptP.u.uModel, false, ident);
+    gl.uniform1f(ptP.u.uSize, 0.9); gl.uniform1f(ptP.u.uAlpha, 0.9); gl.uniform1f(ptP.u.uTw, reduceMotion ? 0 : 0.7);
+    bindPoints(stars); gl.drawArrays(gl.POINTS, 0, stars.n);
 
-    // shooting stars
-    for (let i = shooters.length - 1; i >= 0; i--) {
-      const sh = shooters[i];
-      sh.x += sh.vx; sh.y += sh.vy; sh.life -= 1;
-      if (sh.life <= 0) { shooters.splice(i, 1); continue; }
-      const a = clamp(sh.life / 40, 0, 1) * starAlpha;
-      const gr = ctx.createLinearGradient(sh.x, sh.y, sh.x - sh.vx * 14, sh.y - sh.vy * 14);
-      gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.strokeStyle = gr; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(sh.x, sh.y); ctx.lineTo(sh.x - sh.vx * 14, sh.y - sh.vy * 14); ctx.stroke();
-    }
-    if (!reduceMotion && Math.random() < 0.006 && shooters.length < 2) {
-      shooters.push({ x: rand(0, W), y: rand(0, H * 0.4), vx: rand(4, 8) * (Math.random() < 0.5 ? 1 : -1), vy: rand(2, 4), life: rand(50, 90) });
-    }
+    // comets
+    updateComets(t);
+    for (const c of comets) { gl.uniform1f(ptP.u.uSize, 1.2); gl.uniform1f(ptP.u.uAlpha, c.alpha); gl.uniform1f(ptP.u.uTw, 0); bindPoints(c); gl.drawArrays(gl.POINTS, 0, c.n); }
 
-    // drifting seeds of light
-    for (const s of seeds) {
-      if (!reduceMotion) {
-        s.x += s.vx; s.y += s.vy;
-        if (s.y < -10) { s.y = H + 10; s.x = Math.random() * W; }
-        if (s.x < -10) s.x = W + 10; if (s.x > W + 10) s.x = -10;
-      }
-      const a = 0.35 + 0.35 * Math.sin(t * 0.002 + s.p);
-      ctx.globalAlpha = a;
-      ctx.fillStyle = mix('#ffd98e', '#fff5d6', warm);
-      ctx.shadowColor = '#ffd98e'; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-    ctx.globalAlpha = 1;
-  }
+    // flowers: update, sort back to front
+    for (const f of flowers) { f.bloom = flowerBloom(f, t); updateFlowerMatrix(f, t); }
+    const visible = flowers.filter(f => f.bloom > 0.001 && f.z < cam.z + 2 && f.z > cam.z - 60).sort((a, b) => a.z - b.z);
 
-  function nebula(x, y, r, color, alpha) {
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, hexA(color, alpha)); g.addColorStop(1, hexA(color, 0));
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  }
-
-  function petal(len, wid) {
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(wid, -len * 0.25, wid * 1.05, -len * 0.75, 0, -len);
-    ctx.bezierCurveTo(-wid * 1.05, -len * 0.75, -wid, -len * 0.25, 0, 0);
-    ctx.closePath();
-  }
-
-  function drawFlower(f, t) {
-    const age = t - f.born - f.delay;
-    if (age < 0) return;
-    const dur = reduceMotion ? 1 : 2600;
-    f.bloom = clamp(age / dur, 0, 1);
-    const b = easeOutBack(f.bloom);
-    const grow = easeOut(clamp(age / (dur * 0.7), 0, 1));
-    const sway = reduceMotion ? 0 : Math.sin(t * 0.0009 * f.sway + f.phase) * 0.05;
-
-    const stemTop = lerp(f.baseY, f.y, grow);
-    const cx = f.x, cy = stemTop;
-    const bend = f.lean * 60;
-
-    // stem
-    ctx.save();
-    ctx.lineCap = 'round';
-    const sg = ctx.createLinearGradient(0, f.baseY, 0, f.y);
-    sg.addColorStop(0, mix('#1f6b57', '#3f9c5a', warm)); sg.addColorStop(1, mix('#7fe3b0', '#9dffc9', warm));
-    ctx.strokeStyle = sg; ctx.lineWidth = Math.max(1.6, f.size * 0.07);
-    ctx.shadowColor = 'rgba(127,227,176,0.5)'; ctx.shadowBlur = 8;
-    ctx.beginPath();
-    ctx.moveTo(f.x, f.baseY);
-    ctx.quadraticCurveTo(f.x + bend + sway * 120, lerp(f.baseY, stemTop, 0.55), cx + sway * 60, cy);
-    ctx.stroke();
-    // leaves
-    if (f.leaves && grow > 0.4) {
-      const lp = 0.45, lx = f.x + bend * lp * 0.9, ly = lerp(f.baseY, stemTop, lp);
-      const ls = f.size * 0.55 * easeOut(clamp((grow - 0.4) / 0.6, 0, 1));
-      ctx.fillStyle = mix('#2f8f6a', '#4fbf7a', warm);
-      ctx.shadowBlur = 6;
-      ctx.save(); ctx.translate(lx, ly); ctx.rotate(-1.1 + sway); petal(ls, ls * 0.35); ctx.fill(); ctx.restore();
-      ctx.save(); ctx.translate(lx, ly + ls * 0.5); ctx.rotate(1.15 + sway); petal(ls * 0.85, ls * 0.3); ctx.fill(); ctx.restore();
-    }
-    ctx.restore();
-
-    if (b <= 0) return;
-    ctx.save();
-    ctx.translate(cx + sway * 60, cy);
-    ctx.rotate(sway * 0.6);
-    ctx.scale(b, b);
-
-    // glow
-    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, f.size * 1.6);
-    glow.addColorStop(0, hexA(f.pal.a, 0.35)); glow.addColorStop(1, hexA(f.pal.a, 0));
-    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, f.size * 1.6, 0, Math.PI * 2); ctx.fill();
-
-    // petal layers, back to front
-    for (let L = f.layers - 1; L >= 0; L--) {
-      const scale = 1 - L * 0.28;
-      const n = f.petals;
-      const len = f.size * scale, wid = f.size * f.width * scale;
-      const rot = L * (Math.PI / n);
-      const pg = ctx.createLinearGradient(0, 0, 0, -len);
-      pg.addColorStop(0, f.pal.c); pg.addColorStop(0.35, f.pal.a); pg.addColorStop(1, f.pal.b);
-      ctx.fillStyle = pg;
-      ctx.shadowColor = hexA(f.pal.a, 0.6); ctx.shadowBlur = 14;
-      for (let i = 0; i < n; i++) {
-        ctx.save();
-        ctx.rotate(rot + (i / n) * Math.PI * 2 + (reduceMotion ? 0 : Math.sin(t * 0.0015 + i + f.phase) * 0.015));
-        petal(len, wid);
-        ctx.fill();
-        ctx.restore();
-      }
-      ctx.shadowBlur = 0;
-      // petal edge highlight
-      ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 0.6;
-      for (let i = 0; i < n; i++) {
-        ctx.save(); ctx.rotate(rot + (i / n) * Math.PI * 2); petal(len, wid); ctx.stroke(); ctx.restore();
+    // petals
+    gl.depthMask(true); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.useProgram(petalP.p);
+    gl.uniformMatrix4fv(petalP.u.uProj, false, proj); gl.uniformMatrix4fv(petalP.u.uView, false, view);
+    gl.uniform1f(petalP.u.uTime, reduceMotion ? 0 : t); gl.uniform3f(petalP.u.uCam, cx, cy, cam.z);
+    let boundGeo = null;
+    for (const f of visible) {
+      const pal = f.pal;
+      const base = hex(pal.base), mid = hex(pal.mid), tip = hex(pal.tip);
+      gl.uniform3f(petalP.u.uBase, base[0], base[1], base[2]); gl.uniform3f(petalP.u.uMid, mid[0], mid[1], mid[2]); gl.uniform3f(petalP.u.uTip, tip[0], tip[1], tip[2]);
+      gl.uniform1f(petalP.u.uOpacity, 0.96 * Math.min(1, f.bloom * 4));
+      gl.uniform1f(petalP.u.uSeed, f.seed);
+      for (let li = f.layers.length - 1; li >= 0; li--) {
+        const L = f.layers[li];
+        if (boundGeo !== L.geo) {
+          boundGeo = L.geo;
+          gl.bindBuffer(gl.ARRAY_BUFFER, L.geo.pos); gl.enableVertexAttribArray(petalP.a.aP); gl.vertexAttribPointer(petalP.a.aP, 3, gl.FLOAT, false, 0, 0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, L.geo.nrm); gl.enableVertexAttribArray(petalP.a.aN); gl.vertexAttribPointer(petalP.a.aN, 3, gl.FLOAT, false, 0, 0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, L.geo.uv); gl.enableVertexAttribArray(petalP.a.aUV); gl.vertexAttribPointer(petalP.a.aUV, 2, gl.FLOAT, false, 0, 0);
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, L.geo.idx);
+        }
+        const bl = clamp((f.bloom - L.stagger) / (1 - L.stagger), 0, 1);
+        if (bl <= 0) continue;
+        const tilt = lerp(0.06, L.open, easeOutBack(bl));
+        const ps = L.len * (0.12 + 0.88 * easeOut(bl));
+        for (let i = 0; i < L.n; i++) {
+          const ang = L.off + (i / L.n) * Math.PI * 2;
+          const flutter = reduceMotion ? 0 : Math.sin(t * 1.1 + L.phases[i]) * 0.04;
+          M.petalLocal(tmp, ang, tilt + flutter, ps);
+          M.mul(model, f.mat, tmp);
+          gl.uniformMatrix4fv(petalP.u.uModel, false, model);
+          gl.drawElements(gl.TRIANGLES, L.geo.count, gl.UNSIGNED_SHORT, 0);
+        }
       }
     }
 
-    // center
-    const cr = f.size * 0.26;
-    const cg = ctx.createRadialGradient(-cr * 0.3, -cr * 0.3, 0, 0, 0, cr);
-    cg.addColorStop(0, '#fff8dc'); cg.addColorStop(0.6, '#ffd98e'); cg.addColorStop(1, '#d9862b');
-    ctx.fillStyle = cg; ctx.shadowColor = '#ffd98e'; ctx.shadowBlur = 18;
-    ctx.beginPath(); ctx.arc(0, 0, cr, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(120,60,10,0.5)';
-    for (let i = 0; i < 14; i++) {
-      const a = i * 2.399, r = cr * 0.18 * Math.sqrt(i);
-      ctx.beginPath(); ctx.arc(Math.cos(a) * r, Math.sin(a) * r, cr * 0.09, 0, Math.PI * 2); ctx.fill();
+    // glows + pollen (additive, no depth write)
+    gl.depthMask(false); gl.blendFunc(gl.ONE, gl.ONE);
+    gl.useProgram(glowP.p);
+    gl.uniformMatrix4fv(glowP.u.uProj, false, proj); gl.uniformMatrix4fv(glowP.u.uView, false, view);
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf); gl.enableVertexAttribArray(glowP.a.aC); gl.vertexAttribPointer(glowP.a.aC, 2, gl.FLOAT, false, 0, 0);
+    for (const f of visible) {
+      const g = hex(f.pal.glow), b = f.bloom;
+      const px = f.wx, py = f.wy;
+      drawGlow(px, py, f.z + 0.05, f.scale * 2.6, f.scale * 2.6, g, 0.22 * b, 2.2);
+      drawGlow(px, py, f.z + 0.25 * f.scale, f.scale * 0.55, f.scale * 0.55, hex('#ffb347'), 0.9 * b, 3.0);
+      drawGlow(px, py, f.z + 0.3 * f.scale, f.scale * 0.24, f.scale * 0.24, hex('#fff6dc'), 1.4 * b, 1.6);
     }
-    ctx.restore();
-  }
-
-  // ---------- helpers ----------
-  function hexA(c, a) {
-    if (c[0] !== '#') return c.replace('rgb(', 'rgba(').replace(')', `,${a})`);
-    const n = parseInt(c.slice(1), 16);
-    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-  }
-  function mix(h1, h2, t) {
-    if (t <= 0) return h1; if (t >= 1) return h2;
-    const a = parseInt(h1.slice(1), 16), b = parseInt(h2.slice(1), 16);
-    const r = Math.round(lerp((a >> 16) & 255, (b >> 16) & 255, t));
-    const g = Math.round(lerp((a >> 8) & 255, (b >> 8) & 255, t));
-    const bl = Math.round(lerp(a & 255, b & 255, t));
-    return `rgb(${r},${g},${bl})`;
-  }
-
-  // ---------- loop ----------
-  function frame(t) {
-    const dt = Math.min(50, t - lastT); lastT = t;
-    warm += (warmTarget - warm) * (reduceMotion ? 1 : Math.min(1, dt / 1400));
-    if (Math.abs(warmTarget - warm) < 0.002) warm = warmTarget;
-    drawSky(t);
-    const sink = Math.min(H * 0.55, (window.scrollY || 0) * 0.45);
-    for (const f of flowers) {
-      if (f.garden && sink > 0) { ctx.save(); ctx.translate(0, sink); drawFlower(f, t); ctx.restore(); }
-      else drawFlower(f, t);
+    gl.useProgram(ptP.p);
+    gl.uniform1f(ptP.u.uTw, reduceMotion ? 0 : 0.8); gl.uniform1f(ptP.u.uAlpha, 1.0); gl.uniform1f(ptP.u.uSize, 0.55);
+    for (const f of visible) {
+      M.trs(model, f.wx, f.wy, f.z, 0, 0, reduceMotion ? 0 : t * 0.4, f.scale * (0.6 + 0.4 * f.bloom));
+      gl.uniformMatrix4fv(ptP.u.uModel, false, model);
+      bindPoints(f.pollen); gl.drawArrays(gl.POINTS, 0, f.pollen.n);
     }
-    requestAnimationFrame(frame);
-  }
 
-  // ---------- interactions ----------
-  const sunbtn = document.getElementById('sunbtn');
-  const sunlabel = document.getElementById('sunlabel');
-  sunbtn.addEventListener('click', () => {
-    const on = !document.body.classList.contains('sunny');
-    document.body.classList.toggle('sunny', on);
-    warmTarget = on ? 1 : 0;
-    sunlabel.textContent = on ? 'Back to the stars' : 'Bring the sunshine';
-    if (on) {
-      // a burst of new blooms to greet the sun
-      const n = W < 500 ? 3 : 5;
-      for (let i = 0; i < n; i++) {
-        setTimeout(() => plantFlower(rand(W * 0.1, W * 0.9), rand(H * 0.55, H * 0.85)), i * 220);
+    // bursts
+    gl.uniformMatrix4fv(ptP.u.uModel, false, ident); gl.uniform1f(ptP.u.uTw, 0);
+    for (let i = bursts.length - 1; i >= 0; i--) {
+      const b = bursts[i]; const age = t - b.t0;
+      if (age > b.life) { bursts.splice(i, 1); continue; }
+      const k = age / b.life;
+      for (let j = 0; j < b.n; j++) {
+        const j3 = j * 3;
+        b.vel[j3 + 1] -= 0.0025; b.vel[j3] *= 0.985; b.vel[j3 + 1] *= 0.985; b.vel[j3 + 2] *= 0.985;
+        b.arr[j3] += b.vel[j3]; b.arr[j3 + 1] += b.vel[j3 + 1]; b.arr[j3 + 2] += b.vel[j3 + 2];
       }
+      gl.bindBuffer(gl.ARRAY_BUFFER, b.pos); gl.bufferSubData(gl.ARRAY_BUFFER, 0, b.arr);
+      gl.uniform1f(ptP.u.uSize, 1.1 * (1 - k * 0.4)); gl.uniform1f(ptP.u.uAlpha, 1 - k * k);
+      bindPoints(b); gl.drawArrays(gl.POINTS, 0, b.n);
     }
+    gl.depthMask(true);
+  }
+
+  // ---------------- comets ----------------
+  function spawnComet() {
+    const n = 26, p = new Float32Array(n * 3), s = [], ph = [], c = [];
+    const g = hex(Math.random() < 0.5 ? '#ffffff' : '#bfe9ff');
+    for (let i = 0; i < n; i++) { const k = 1 - i / n; s.push(0.4 + 1.6 * k * k); ph.push(0); c.push(g[0] * k, g[1] * k, g[2] * k); }
+    const dir = [rand(-1, 1), rand(-0.6, -0.2), rand(-0.3, 0.3)];
+    const l = Math.hypot(...dir); dir[0] /= l; dir[1] /= l; dir[2] /= l;
+    return { n, arr: p, pos: buffer(p, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW), size: buffer(new Float32Array(s)), ph: buffer(new Float32Array(ph)), col: buffer(new Float32Array(c)),
+      head: [cam.x + rand(-14, 14), cam.y + rand(4, 12), cam.z + rand(-40, -14)], dir, speed: rand(0.25, 0.45), life: rand(1.6, 2.6), t0: 0, alpha: 1 };
+  }
+  let nextComet = 2;
+  function updateComets(t) {
+    if (!reduceMotion && t > nextComet && comets.length < 2) { const c = spawnComet(); c.t0 = t; comets.push(c); nextComet = t + rand(2.5, 6); }
+    for (let i = comets.length - 1; i >= 0; i--) {
+      const c = comets[i]; const age = t - c.t0;
+      if (age > c.life) { comets.splice(i, 1); continue; }
+      c.alpha = Math.sin(Math.PI * clamp(age / c.life, 0, 1));
+      c.head[0] += c.dir[0] * c.speed; c.head[1] += c.dir[1] * c.speed; c.head[2] += c.dir[2] * c.speed;
+      for (let j = 0; j < c.n; j++) { const j3 = j * 3, d = j * 0.32; c.arr[j3] = c.head[0] - c.dir[0] * d; c.arr[j3 + 1] = c.head[1] - c.dir[1] * d; c.arr[j3 + 2] = c.head[2] - c.dir[2] * d; }
+      gl.bindBuffer(gl.ARRAY_BUFFER, c.pos); gl.bufferSubData(gl.ARRAY_BUFFER, 0, c.arr);
+    }
+  }
+
+  // ---------------- bursts ----------------
+  const BURST_COLORS = ['#ff7cc1', '#ffd98e', '#8ae9ff', '#c9a6ff', '#9dffd0', '#ffb36b', '#ffffff'].map(hex);
+  function spawnBurst(ndcX, ndcY, tsec) {
+    const d = 9;
+    const hh = Math.tan(FOV / 2) * d, hw = hh * aspect;
+    const ox = cam.x + ndcX * hw, oy = cam.y + ndcY * hh, oz = cam.z - d;
+    const n = 220, arr = new Float32Array(n * 3), vel = new Float32Array(n * 3), s = [], ph = [], c = [];
+    const tint = BURST_COLORS[Math.floor(Math.random() * BURST_COLORS.length)];
+    for (let i = 0; i < n; i++) {
+      const th = rand(0, 6.28), phi = Math.acos(rand(-1, 1)), sp = rand(0.02, 0.11) * (Math.random() < 0.15 ? 1.8 : 1);
+      arr[i * 3] = ox; arr[i * 3 + 1] = oy; arr[i * 3 + 2] = oz;
+      vel[i * 3] = Math.sin(phi) * Math.cos(th) * sp; vel[i * 3 + 1] = Math.sin(phi) * Math.sin(th) * sp; vel[i * 3 + 2] = Math.cos(phi) * sp * 0.6;
+      s.push(rand(0.6, 2.2)); ph.push(0);
+      const g = Math.random() < 0.7 ? tint : BURST_COLORS[Math.floor(Math.random() * BURST_COLORS.length)];
+      c.push(g[0], g[1], g[2]);
+    }
+    bursts.push({ n, arr, vel, pos: buffer(arr, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW), size: buffer(new Float32Array(s)), ph: buffer(new Float32Array(ph)), col: buffer(new Float32Array(c)), t0: tsec, life: 2.4 });
+    if (bursts.length > 6) bursts.shift();
+  }
+
+  // ---------------- interaction ----------------
+  const sections = Array.from(document.querySelectorAll('.stage'));
+  function onScroll() {
+    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    progress = clamp(window.scrollY / max, 0, 1);
+    const mid = window.scrollY + window.innerHeight / 2;
+    sections.forEach(s => {
+      const top = s.offsetTop, bot = top + s.offsetHeight;
+      s.classList.toggle('on', mid >= top - 40 && mid < bot + 40);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    cam.tx = (e.clientX / W - 0.5) * 0.9; cam.ty = -(e.clientY / H - 0.5) * 0.6;
   });
-
-  document.addEventListener('pointerdown', (e) => {
+  let lastTime = 0;
+  window.addEventListener('pointerdown', e => {
     if (e.target.closest('a, button')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    plantFlower(e.clientX, e.clientY);
+    if (!gl) return;
+    const nx = (e.clientX / W) * 2 - 1, ny = -((e.clientY / H) * 2 - 1);
+    spawnBurst(nx, ny, lastTime);
   });
+  window.addEventListener('resize', () => { if (gl) resize(); onScroll(); });
 
-  window.addEventListener('resize', () => {
-    const oldH = H;
-    resize();
-    // keep existing flowers anchored to the new ground line
-    for (const f of flowers) { f.y = H - (oldH - f.y); f.baseY = H; }
-  });
-
-  resize();
-  requestAnimationFrame(frame);
+  if (gl) {
+    try {
+      init();
+      onScroll();
+      const loop = (tms) => { lastTime = tms * 0.001; render(tms); requestAnimationFrame(loop); };
+      requestAnimationFrame(loop);
+    } catch (err) {
+      document.body.classList.add('nogl');
+      console.error(err);
+    }
+  } else {
+    onScroll();
+  }
 })();
 </script>
 
