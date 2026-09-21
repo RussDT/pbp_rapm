@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A garden grown in the stars for Lan. I'm sorry, and I love you.">
+<title>A Garden for Lan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Jost:wght@300;400;500&display=swap">
+<style>
+  :root {
+    --space: #070a1f;
+    --space-2: #0e1236;
+    --violet: #5b2a86;
+    --pink: #ff6fb5;
+    --gold: #ffd98e;
+    --cyan: #7fe3ff;
+    --cream: #f5eff9;
+    --cream-dim: rgba(245, 239, 249, 0.72);
+    --glass: rgba(14, 18, 54, 0.55);
+    --glass-edge: rgba(255, 255, 255, 0.14);
+    --display: "Cormorant Garamond", "Garamond", "Times New Roman", serif;
+    --body: "Jost", "Futura", "Avenir Next", "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  html { height: 100%; scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--space);
+    color: var(--cream);
+    font-family: var(--body);
+    font-weight: 300;
+    font-size: 17px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  #sky {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 0;
+  }
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 0 96px;
+  }
+  section { margin-block: 0 8rem; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    min-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: 12vh 4rem;
+    text-align: center;
+  }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    opacity: 0.9;
+    margin: 0 0 1.6rem;
+    animation: rise 1.4s ease-out both;
+  }
+  .name {
+    font-family: var(--display);
+    font-weight: 500;
+    font-style: italic;
+    font-size: clamp(88px, 22vw, 180px);
+    line-height: 0.9;
+    margin: 0;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    background: linear-gradient(180deg, #fff 0%, var(--gold) 55%, var(--pink) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 28px rgba(255, 217, 142, 0.35));
+    animation: rise 1.6s 0.2s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .lines {
+    font-family: var(--display);
+    font-size: clamp(30px, 6vw, 44px);
+    font-weight: 400;
+    line-height: 1.2;
+    margin: 1.8rem 0 0;
+    text-wrap: balance;
+  }
+  .lines span { display: block; animation: rise 1.4s cubic-bezier(.2,.8,.2,1) both; }
+  .lines span:nth-child(1) { animation-delay: 0.7s; }
+  .lines span:nth-child(2) { animation-delay: 1.3s; color: var(--pink); font-style: italic; }
+  .hint {
+    margin-top: 3.5rem;
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    animation: rise 1.4s 2.2s ease-out both;
+  }
+  .hint::after {
+    content: "";
+    display: block;
+    width: 1px;
+    height: 48px;
+    margin: 14px auto 0;
+    background: linear-gradient(180deg, var(--cyan), transparent);
+    animation: drip 2.4s ease-in-out infinite;
+  }
+
+  /* ---------- letter ---------- */
+  .panel {
+    position: relative;
+    background: var(--glass);
+    border: 1px solid var(--glass-edge);
+    border-radius: 28px;
+    padding: clamp(28px, 6vw, 56px);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .panel::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(127,227,255,.55), transparent 40%, transparent 60%, rgba(255,111,181,.55));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .panel h2 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: clamp(34px, 6vw, 48px);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    text-wrap: balance;
+  }
+  .panel h2 em { font-style: italic; color: var(--gold); }
+  .panel p { margin: 0 0 1.2rem; max-width: 60ch; color: var(--cream); }
+  .panel p:last-child { margin-bottom: 0; }
+  .panel p.soft { color: var(--cream-dim); }
+  .sig {
+    margin-top: 2rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 26px;
+    color: var(--pink);
+  }
+
+  /* ---------- sunshine ---------- */
+  .sun-section { text-align: center; }
+  .sun-section h2 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: clamp(34px, 6vw, 52px);
+    line-height: 1.1;
+    margin: 0 0 1rem;
+    text-wrap: balance;
+  }
+  .sun-section p { max-width: 52ch; margin: 0 auto 2rem; color: var(--cream-dim); }
+  .sunbtn {
+    --ring: rgba(255, 217, 142, 0.5);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--body);
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--space);
+    background: linear-gradient(135deg, #fff2c8, var(--gold) 45%, #ffb36b);
+    border: 0;
+    border-radius: 999px;
+    padding: 18px 34px 18px 22px;
+    cursor: pointer;
+    box-shadow: 0 0 0 0 var(--ring), 0 18px 50px rgba(255, 179, 107, 0.35);
+    transition: transform .3s ease, box-shadow .3s ease;
+    animation: pulse 3s ease-in-out infinite;
+  }
+  .sunbtn:hover, .sunbtn:focus-visible { transform: translateY(-2px) scale(1.03); outline: none; }
+  .sunbtn:focus-visible { box-shadow: 0 0 0 4px var(--cyan), 0 18px 50px rgba(255, 179, 107, 0.35); }
+  .sunbtn .orb {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff, #ffd98e 55%, #ff9a5c);
+    box-shadow: 0 0 18px #ffd98e;
+  }
+  .sun-note {
+    margin-top: 1.6rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 24px;
+    color: var(--gold);
+    min-height: 1.4em;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+  body.sunny .sun-note { opacity: 1; }
+  body.sunny .sunbtn { animation: none; }
+
+  /* ---------- week ---------- */
+  .week h2, .sun-section h2, .closing .big { text-shadow: 0 4px 30px rgba(7, 10, 31, 0.55); }
+  .week h2 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: clamp(34px, 6vw, 52px);
+    line-height: 1.1;
+    margin: 0 0 0.6rem;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .week > p { text-align: center; color: var(--cream-dim); max-width: 48ch; margin: 0 auto 2.4rem; }
+  .orbit {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .day {
+    position: relative;
+    text-align: center;
+    padding: 14px 4px 12px;
+    border-radius: 18px;
+    background: rgba(10, 12, 40, 0.38);
+    border: 1px solid rgba(255,255,255,0.09);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: transform .3s ease, background .3s ease, border-color .3s ease;
+    cursor: default;
+  }
+  .day:hover { transform: translateY(-4px); background: rgba(10, 12, 40, 0.55); border-color: rgba(255,255,255,0.2); }
+  .planet {
+    width: 34px; height: 34px; margin: 0 auto 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 22px var(--glow), inset -6px -6px 12px rgba(0,0,0,0.35);
+    background: radial-gradient(circle at 35% 30%, #fff 0%, var(--c1) 30%, var(--c2) 100%);
+    animation: bob 4s ease-in-out infinite;
+    animation-delay: var(--d);
+  }
+  .day b { display: block; font-weight: 500; font-size: 13px; letter-spacing: 0.12em; }
+  .day small { display: block; font-size: 11px; line-height: 1.35; color: var(--cream-dim); margin-top: 4px; }
+  @media (max-width: 560px) {
+    .orbit { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 400px) {
+    .day small { display: none; }
+  }
+
+  /* ---------- closing ---------- */
+  .closing { text-align: center; margin-bottom: 0; }
+  .closing .big {
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(44px, 10vw, 84px);
+    line-height: 1;
+    margin: 0 0 1.2rem;
+    text-wrap: balance;
+    background: linear-gradient(180deg, #fff, var(--pink));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 24px rgba(255,111,181,.35));
+  }
+  .closing p { color: var(--cream-dim); margin: 0 auto; max-width: 44ch; }
+  .tap-tip {
+    margin-top: 3rem;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    opacity: .85;
+  }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+  @keyframes drip { 0%, 100% { transform: scaleY(0.2); transform-origin: top; opacity: .2; } 50% { transform: scaleY(1); opacity: 1; } }
+  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--ring), 0 18px 50px rgba(255,179,107,.35); } 50% { box-shadow: 0 0 0 16px rgba(255,217,142,0), 0 18px 50px rgba(255,179,107,.45); } }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .eyebrow, .name, .lines span, .hint, .sunbtn, .planet, .hint::after { animation: none !important; }
+  }
+</style>
+
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+
+<main class="page">
+  <section class="hero">
+    <p class="eyebrow">A transmission from somewhere past the moon</p>
+    <h1 class="name">Lan,</h1>
+    <p class="lines">
+      <span>I'm sorry.</span>
+      <span>And I love you.</span>
+    </p>
+    <p class="hint">Keep drifting down</p>
+  </section>
+
+  <section class="letter">
+    <div class="panel">
+      <h2>I owe you a weekend <em>I didn't give you.</em></h2>
+      <p>I was supposed to bring the sunshine this weekend, and I didn't. You got clouds when you deserved a bright, easy, warm couple of days. I'm sorry I let it drift by gray.</p>
+      <p>So I went a little further than the weather would let me. I went out past the sky and grew you a garden in the stars. Every flower here bloomed for you.</p>
+      <p class="soft">Tap anywhere on the dark, and another one will grow. I'll keep planting them as long as you keep tapping.</p>
+      <p class="sig">I love you, more than any of this can hold.</p>
+    </div>
+  </section>
+
+  <section class="sun-section">
+    <h2>I couldn't bring the sunshine on time.</h2>
+    <p>So I built one. It's a little late, and it's a little homemade, but it's all yours.</p>
+    <button class="sunbtn" id="sunbtn" type="button"><span class="orb"></span><span id="sunlabel">Bring the sunshine</span></button>
+    <p class="sun-note" id="sunnote">There. Sunshine, Lan. It was always meant for you.</p>
+  </section>
+
+  <section class="week">
+    <h2>Have a great week.</h2>
+    <p>Seven small worlds, one for each day. I hope every one of them is kind to you.</p>
+    <ul class="orbit">
+      <li class="day" style="--c1:#7fe3ff;--c2:#1f6fb0;--glow:rgba(127,227,255,.5);--d:0s"><span class="planet"></span><b>MON</b><small>Coffee first, then conquer.</small></li>
+      <li class="day" style="--c1:#ffb0d6;--c2:#c2377f;--glow:rgba(255,111,181,.5);--d:.3s"><span class="planet"></span><b>TUE</b><small>Something makes you laugh.</small></li>
+      <li class="day" style="--c1:#ffd98e;--c2:#d9862b;--glow:rgba(255,217,142,.5);--d:.6s"><span class="planet"></span><b>WED</b><small>Halfway, and you're glowing.</small></li>
+      <li class="day" style="--c1:#c9a6ff;--c2:#5b2a86;--glow:rgba(201,166,255,.5);--d:.9s"><span class="planet"></span><b>THU</b><small>Good news finds you.</small></li>
+      <li class="day" style="--c1:#9dffc9;--c2:#1f9c6a;--glow:rgba(157,255,201,.5);--d:1.2s"><span class="planet"></span><b>FRI</b><small>You exhale. You earned it.</small></li>
+      <li class="day" style="--c1:#ffc48a;--c2:#e2603f;--glow:rgba(255,196,138,.5);--d:1.5s"><span class="planet"></span><b>SAT</b><small>Real sunshine. I promise.</small></li>
+      <li class="day" style="--c1:#fff2c8;--c2:#b58e3e;--glow:rgba(255,242,200,.5);--d:1.8s"><span class="planet"></span><b>SUN</b><small>Slow morning, soft everything.</small></li>
+    </ul>
+  </section>
+
+  <section class="closing">
+    <p class="big">I love you.</p>
+    <p>From all the way out here, and from right next to you.</p>
+    <p class="tap-tip">Tap the sky to plant a flower</p>
+  </section>
+</main>
+
+<script>
+(function () {
+  const canvas = document.getElementById('sky');
+  const ctx = canvas.getContext('2d');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W = 0, H = 0, DPR = 1;
+  let stars = [], flowers = [], seeds = [], shooters = [];
+  let warm = 0, warmTarget = 0;       // 0 = deep space, 1 = sunshine
+  let lastT = performance.now();
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const easeOutBack = t => { const c = 1.4; return 1 + c * Math.pow(t - 1, 3) + (c - 1) * Math.pow(t - 1, 2); };
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+
+  const PALETTES = [
+    { a: '#ff6fb5', b: '#ffd6ea', c: '#ffd98e' },   // pink
+    { a: '#c9a6ff', b: '#f2e6ff', c: '#ffe3a3' },   // lilac
+    { a: '#7fe3ff', b: '#e6fbff', c: '#fff2c8' },   // ice
+    { a: '#ffb36b', b: '#ffe6c9', c: '#fff5d6' },   // peach
+    { a: '#ff8fa3', b: '#ffe0e6', c: '#ffe08a' },   // coral
+    { a: '#b0ffdc', b: '#eafff5', c: '#ffe9a8' },   // mint
+  ];
+
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    buildStars();
+    if (!flowers.length) buildGarden();
+  }
+
+  function buildStars() {
+    stars = [];
+    const n = Math.floor((W * H) / 3200);
+    for (let i = 0; i < n; i++) {
+      stars.push({ x: Math.random() * W, y: Math.random() * H, r: rand(0.4, 1.6), p: rand(0, Math.PI * 2), s: rand(0.6, 2.2), tint: Math.random() });
+    }
+  }
+
+  function makeFlower(x, y, size, opts) {
+    const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)];
+    const type = Math.random();
+    return Object.assign({
+      x, y, size,
+      baseY: H,
+      pal,
+      petals: type < 0.35 ? 5 : type < 0.7 ? 8 : 12,
+      layers: type < 0.35 ? 3 : type < 0.7 ? 2 : 1,
+      width: type < 0.35 ? 0.62 : type < 0.7 ? 0.5 : 0.3,
+      bloom: 0,
+      delay: 0,
+      born: performance.now(),
+      phase: rand(0, Math.PI * 2),
+      sway: rand(0.5, 1.1),
+      lean: rand(-0.35, 0.35),
+      leaves: Math.random() < 0.8,
+      garden: false,
+    }, opts || {});
+  }
+
+  function buildGarden() {
+    flowers = [];
+    const count = Math.max(7, Math.round(W / 110));
+    for (let i = 0; i < count; i++) {
+      const x = (i + 0.5) * (W / count) + rand(-22, 22);
+      const stemH = rand(H * 0.10, H * 0.26);
+      const size = rand(26, 46) * (W < 500 ? 0.8 : 1);
+      flowers.push(makeFlower(x, H - stemH, size, { delay: 900 + i * 160 + rand(0, 300), garden: true }));
+    }
+    // a few drifting seeds of light
+    seeds = [];
+    for (let i = 0; i < 18; i++) seeds.push({ x: Math.random() * W, y: Math.random() * H, vx: rand(-0.06, 0.06), vy: rand(-0.12, -0.03), r: rand(1, 2.4), p: rand(0, 6.28) });
+  }
+
+  function plantFlower(x, y) {
+    const size = rand(28, 50) * (W < 500 ? 0.85 : 1);
+    const f = makeFlower(x, clamp(y, 60, H - 40), size, { delay: 0 });
+    flowers.push(f);
+    if (flowers.length > 60) flowers.splice(0, flowers.length - 60);
+  }
+
+  // ---------- drawing ----------
+  function drawSky(t) {
+    // base gradient
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    if (warm < 0.001) {
+      g.addColorStop(0, '#05071a'); g.addColorStop(0.55, '#0b0f31'); g.addColorStop(1, '#1a1038');
+    } else {
+      const top = mix('#05071a', '#2b1750', warm), mid = mix('#0b0f31', '#8a3d6f', warm), bot = mix('#1a1038', '#ff9a5c', warm);
+      g.addColorStop(0, top); g.addColorStop(0.55, mid); g.addColorStop(1, bot);
+    }
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // nebulae
+    const drift = reduceMotion ? 0 : t * 0.00004;
+    nebula(W * (0.2 + 0.05 * Math.sin(drift)), H * 0.25, Math.max(W, H) * 0.55, mix('#5b2a86', '#ff7a8a', warm), 0.55);
+    nebula(W * (0.8 + 0.05 * Math.cos(drift * 1.3)), H * 0.45, Math.max(W, H) * 0.5, mix('#1f3f8a', '#ffb36b', warm), 0.45);
+    nebula(W * 0.5, H * (0.85 + 0.03 * Math.sin(drift * 0.7)), Math.max(W, H) * 0.6, mix('#7a2a6a', '#ffd98e', warm), 0.4);
+
+    // sun
+    if (warm > 0.001) {
+      const sunY = lerp(H + 160, H * 0.62, easeOut(warm));
+      const sunR = Math.min(W, H) * 0.16;
+      const halo = ctx.createRadialGradient(W / 2, sunY, sunR * 0.4, W / 2, sunY, sunR * 4);
+      halo.addColorStop(0, `rgba(255,236,190,${0.9 * warm})`);
+      halo.addColorStop(0.35, `rgba(255,180,110,${0.35 * warm})`);
+      halo.addColorStop(1, 'rgba(255,150,90,0)');
+      ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
+      const core = ctx.createRadialGradient(W / 2, sunY, 0, W / 2, sunY, sunR);
+      core.addColorStop(0, '#fffbe8'); core.addColorStop(0.7, '#ffe39a'); core.addColorStop(1, 'rgba(255,190,110,0.2)');
+      ctx.fillStyle = core;
+      ctx.beginPath(); ctx.arc(W / 2, sunY, sunR, 0, Math.PI * 2); ctx.fill();
+      // rays
+      ctx.save();
+      ctx.translate(W / 2, sunY);
+      ctx.rotate(reduceMotion ? 0 : t * 0.00005);
+      ctx.globalAlpha = 0.18 * warm;
+      for (let i = 0; i < 12; i++) {
+        ctx.rotate(Math.PI / 6);
+        const rg = ctx.createLinearGradient(0, 0, 0, -sunR * 4);
+        rg.addColorStop(0, '#fff2c8'); rg.addColorStop(1, 'rgba(255,242,200,0)');
+        ctx.fillStyle = rg;
+        ctx.beginPath(); ctx.moveTo(-sunR * 0.18, 0); ctx.lineTo(sunR * 0.18, 0); ctx.lineTo(0, -sunR * 4); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // stars
+    const starAlpha = 1 - warm * 0.85;
+    if (starAlpha > 0.02) {
+      for (const s of stars) {
+        const tw = reduceMotion ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.001 * s.s + s.p);
+        ctx.globalAlpha = tw * starAlpha;
+        ctx.fillStyle = s.tint < 0.15 ? '#ffd98e' : s.tint < 0.3 ? '#7fe3ff' : '#ffffff';
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // shooting stars
+    for (let i = shooters.length - 1; i >= 0; i--) {
+      const sh = shooters[i];
+      sh.x += sh.vx; sh.y += sh.vy; sh.life -= 1;
+      if (sh.life <= 0) { shooters.splice(i, 1); continue; }
+      const a = clamp(sh.life / 40, 0, 1) * starAlpha;
+      const gr = ctx.createLinearGradient(sh.x, sh.y, sh.x - sh.vx * 14, sh.y - sh.vy * 14);
+      gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.strokeStyle = gr; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(sh.x, sh.y); ctx.lineTo(sh.x - sh.vx * 14, sh.y - sh.vy * 14); ctx.stroke();
+    }
+    if (!reduceMotion && Math.random() < 0.006 && shooters.length < 2) {
+      shooters.push({ x: rand(0, W), y: rand(0, H * 0.4), vx: rand(4, 8) * (Math.random() < 0.5 ? 1 : -1), vy: rand(2, 4), life: rand(50, 90) });
+    }
+
+    // drifting seeds of light
+    for (const s of seeds) {
+      if (!reduceMotion) {
+        s.x += s.vx; s.y += s.vy;
+        if (s.y < -10) { s.y = H + 10; s.x = Math.random() * W; }
+        if (s.x < -10) s.x = W + 10; if (s.x > W + 10) s.x = -10;
+      }
+      const a = 0.35 + 0.35 * Math.sin(t * 0.002 + s.p);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = mix('#ffd98e', '#fff5d6', warm);
+      ctx.shadowColor = '#ffd98e'; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function nebula(x, y, r, color, alpha) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, hexA(color, alpha)); g.addColorStop(1, hexA(color, 0));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+
+  function petal(len, wid) {
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(wid, -len * 0.25, wid * 1.05, -len * 0.75, 0, -len);
+    ctx.bezierCurveTo(-wid * 1.05, -len * 0.75, -wid, -len * 0.25, 0, 0);
+    ctx.closePath();
+  }
+
+  function drawFlower(f, t) {
+    const age = t - f.born - f.delay;
+    if (age < 0) return;
+    const dur = reduceMotion ? 1 : 2600;
+    f.bloom = clamp(age / dur, 0, 1);
+    const b = easeOutBack(f.bloom);
+    const grow = easeOut(clamp(age / (dur * 0.7), 0, 1));
+    const sway = reduceMotion ? 0 : Math.sin(t * 0.0009 * f.sway + f.phase) * 0.05;
+
+    const stemTop = lerp(f.baseY, f.y, grow);
+    const cx = f.x, cy = stemTop;
+    const bend = f.lean * 60;
+
+    // stem
+    ctx.save();
+    ctx.lineCap = 'round';
+    const sg = ctx.createLinearGradient(0, f.baseY, 0, f.y);
+    sg.addColorStop(0, mix('#1f6b57', '#3f9c5a', warm)); sg.addColorStop(1, mix('#7fe3b0', '#9dffc9', warm));
+    ctx.strokeStyle = sg; ctx.lineWidth = Math.max(1.6, f.size * 0.07);
+    ctx.shadowColor = 'rgba(127,227,176,0.5)'; ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.moveTo(f.x, f.baseY);
+    ctx.quadraticCurveTo(f.x + bend + sway * 120, lerp(f.baseY, stemTop, 0.55), cx + sway * 60, cy);
+    ctx.stroke();
+    // leaves
+    if (f.leaves && grow > 0.4) {
+      const lp = 0.45, lx = f.x + bend * lp * 0.9, ly = lerp(f.baseY, stemTop, lp);
+      const ls = f.size * 0.55 * easeOut(clamp((grow - 0.4) / 0.6, 0, 1));
+      ctx.fillStyle = mix('#2f8f6a', '#4fbf7a', warm);
+      ctx.shadowBlur = 6;
+      ctx.save(); ctx.translate(lx, ly); ctx.rotate(-1.1 + sway); petal(ls, ls * 0.35); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.translate(lx, ly + ls * 0.5); ctx.rotate(1.15 + sway); petal(ls * 0.85, ls * 0.3); ctx.fill(); ctx.restore();
+    }
+    ctx.restore();
+
+    if (b <= 0) return;
+    ctx.save();
+    ctx.translate(cx + sway * 60, cy);
+    ctx.rotate(sway * 0.6);
+    ctx.scale(b, b);
+
+    // glow
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, f.size * 1.6);
+    glow.addColorStop(0, hexA(f.pal.a, 0.35)); glow.addColorStop(1, hexA(f.pal.a, 0));
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, f.size * 1.6, 0, Math.PI * 2); ctx.fill();
+
+    // petal layers, back to front
+    for (let L = f.layers - 1; L >= 0; L--) {
+      const scale = 1 - L * 0.28;
+      const n = f.petals;
+      const len = f.size * scale, wid = f.size * f.width * scale;
+      const rot = L * (Math.PI / n);
+      const pg = ctx.createLinearGradient(0, 0, 0, -len);
+      pg.addColorStop(0, f.pal.c); pg.addColorStop(0.35, f.pal.a); pg.addColorStop(1, f.pal.b);
+      ctx.fillStyle = pg;
+      ctx.shadowColor = hexA(f.pal.a, 0.6); ctx.shadowBlur = 14;
+      for (let i = 0; i < n; i++) {
+        ctx.save();
+        ctx.rotate(rot + (i / n) * Math.PI * 2 + (reduceMotion ? 0 : Math.sin(t * 0.0015 + i + f.phase) * 0.015));
+        petal(len, wid);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.shadowBlur = 0;
+      // petal edge highlight
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 0.6;
+      for (let i = 0; i < n; i++) {
+        ctx.save(); ctx.rotate(rot + (i / n) * Math.PI * 2); petal(len, wid); ctx.stroke(); ctx.restore();
+      }
+    }
+
+    // center
+    const cr = f.size * 0.26;
+    const cg = ctx.createRadialGradient(-cr * 0.3, -cr * 0.3, 0, 0, 0, cr);
+    cg.addColorStop(0, '#fff8dc'); cg.addColorStop(0.6, '#ffd98e'); cg.addColorStop(1, '#d9862b');
+    ctx.fillStyle = cg; ctx.shadowColor = '#ffd98e'; ctx.shadowBlur = 18;
+    ctx.beginPath(); ctx.arc(0, 0, cr, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(120,60,10,0.5)';
+    for (let i = 0; i < 14; i++) {
+      const a = i * 2.399, r = cr * 0.18 * Math.sqrt(i);
+      ctx.beginPath(); ctx.arc(Math.cos(a) * r, Math.sin(a) * r, cr * 0.09, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ---------- helpers ----------
+  function hexA(c, a) {
+    if (c[0] !== '#') return c.replace('rgb(', 'rgba(').replace(')', `,${a})`);
+    const n = parseInt(c.slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+  function mix(h1, h2, t) {
+    if (t <= 0) return h1; if (t >= 1) return h2;
+    const a = parseInt(h1.slice(1), 16), b = parseInt(h2.slice(1), 16);
+    const r = Math.round(lerp((a >> 16) & 255, (b >> 16) & 255, t));
+    const g = Math.round(lerp((a >> 8) & 255, (b >> 8) & 255, t));
+    const bl = Math.round(lerp(a & 255, b & 255, t));
+    return `rgb(${r},${g},${bl})`;
+  }
+
+  // ---------- loop ----------
+  function frame(t) {
+    const dt = Math.min(50, t - lastT); lastT = t;
+    warm += (warmTarget - warm) * (reduceMotion ? 1 : Math.min(1, dt / 1400));
+    if (Math.abs(warmTarget - warm) < 0.002) warm = warmTarget;
+    drawSky(t);
+    const sink = Math.min(H * 0.55, (window.scrollY || 0) * 0.45);
+    for (const f of flowers) {
+      if (f.garden && sink > 0) { ctx.save(); ctx.translate(0, sink); drawFlower(f, t); ctx.restore(); }
+      else drawFlower(f, t);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- interactions ----------
+  const sunbtn = document.getElementById('sunbtn');
+  const sunlabel = document.getElementById('sunlabel');
+  sunbtn.addEventListener('click', () => {
+    const on = !document.body.classList.contains('sunny');
+    document.body.classList.toggle('sunny', on);
+    warmTarget = on ? 1 : 0;
+    sunlabel.textContent = on ? 'Back to the stars' : 'Bring the sunshine';
+    if (on) {
+      // a burst of new blooms to greet the sun
+      const n = W < 500 ? 3 : 5;
+      for (let i = 0; i < n; i++) {
+        setTimeout(() => plantFlower(rand(W * 0.1, W * 0.9), rand(H * 0.55, H * 0.85)), i * 220);
+      }
+    }
+  });
+
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('a, button')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    plantFlower(e.clientX, e.clientY);
+  });
+
+  window.addEventListener('resize', () => {
+    const oldH = H;
+    resize();
+    // keep existing flowers anchored to the new ground line
+    for (const f of flowers) { f.y = H - (oldH - f.y); f.baseY = H; }
+  });
+
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
