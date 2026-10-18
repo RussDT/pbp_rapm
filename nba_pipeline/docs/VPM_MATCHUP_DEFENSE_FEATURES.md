@@ -220,6 +220,18 @@ It does not create a scheduled automation. Individual stage commands:
 .venv/bin/python -m pytest -q nba_pipeline/tests/test_matchup_game_archive.py
 ```
 
+The separate literal-BAM chain can wait for this ordinary job, then run its
+full2018–2025 source concordance, required-complete export, independent
+formula/date audit, v48 fit and both score audits:
+
+```bash
+.venv/bin/python -u nba_pipeline/scripts/run_lagged_bam_research.py --wait-main
+```
+
+Its stage logs, immutable code hashes and preserved receipt history live at
+`cache/matchup_games_v1/lagged_bam_run/`. It never starts a model from a
+partial feature manifest. Six admission and wait-failure tests pass.
+
 Immutable sibling v47 reads the final feature manifest dynamically, rejects
 partial-download pilot exports, saves per-feature single/leave-one-out
 development diagnostics, and emits selected, DE, simple and no-warm-up arms.
