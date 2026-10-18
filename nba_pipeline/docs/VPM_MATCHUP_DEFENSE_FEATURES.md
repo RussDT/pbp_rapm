@@ -80,6 +80,50 @@ minutes, and traded-player metadata uses the unique whole-season aggregate.
 The staged metadata has5,489 exact NBA-ID player-seasons2017–2026; three
 unmatched identities stay missing.
 
+### Feature dictionary
+
+All names below have the prefix `matchup_`. Unless marked as a rating or
+fraction, values are per100 tracked assignment partial possessions. Expected
+production uses the attacker's strictly earlier game-days; each lane keeps its
+own exposure and measurement mask. Values are TD550/K1000 stabilized except
+coverage. These are candidate predictors, not independent additive credits.
+
+|Feature suffix|Meaning|Direction before model fitting|
+|---|---|---|
+|`assignment_difficulty`|Expected opponent FG+FT scoring load|Assignment burden|
+|`assignment_bpm`|Prior-season opponent BPM, assignment weighted|Assignment burden; rating units|
+|`assignment_obpm`|Prior-season opponent offensive BPM|Assignment burden; rating units|
+|`assignment_pos_difficulty`|Opponent BPM minus the prior-minute-weighted mean at his position|Position-adjusted burden; rating units|
+|`assignment_assist_load100`|Expected opponent assists|Passing burden|
+|`assignment_usage_load100`|Expected opponent FGA +0.44FTA +TOV|Shot/turnover workload burden|
+|`points_saved100`|Expected minus allowed FG+FT points|Positive means less scoring allowed|
+|`fg_points_saved100`|Expected minus allowed FG points|Positive means less FG scoring allowed|
+|`ft_points_saved100`|Expected minus allowed FT points|Positive means less FT scoring allowed|
+|`fg_points_allowed100`|Raw tracked FG points allowed|Higher means more scoring allowed|
+|`points_allowed100`|Raw tracked FG+FT points allowed|Higher means more scoring allowed|
+|`shot_frequency_saved100`|Expected minus tracked opponent FGA|Positive means fewer shots allowed|
+|`three_frequency_saved100`|Expected minus tracked opponent three attempts|Positive means fewer threes allowed|
+|`assists_saved100`|Expected minus tracked opponent assists|Positive means fewer assists allowed|
+|`turnovers_above_expected100`|Tracked minus expected opponent turnovers|Positive means more turnovers|
+|`bam`|Expected minus actual FG points at the observed two/three attempt mix|Conditional shotmaking residual; distinct from legacy BAM|
+|`blocks100`|Tracked matchup blocks|Measured defensive event rate|
+|`help_blocks100`|Tracked help blocks, where measurement is established|Measured defensive event rate|
+|`shooting_fouls100`|Tracked shooting fouls committed|Higher means more fouls|
+|`potential_assists_allowed100`|Tracked opponent potential assists, where measured|Higher means more passing chances allowed|
+|`ft_frequency_saved100`|Expected minus tracked opponent FTA|Positive means fewer FT attempts allowed|
+|`primary_share`|Assignment-weighted average of each game's largest opponent share|Concentration; fraction|
+|`concentration`|Assignment-weighted average within-game opponent-share HHI|Concentration; fraction|
+|`coverage`|Accepted assignment exposure divided by all official defensive exposure|Acquisition diagnostic; excluded from ability inputs|
+|`guard_share`|Exposure against opponents listed as guards last season|Position mix; fraction|
+|`wing_share`|Exposure against opponents listed as forwards last season|Position mix; fraction|
+|`big_share`|Exposure against opponents listed as centers last season|Position mix; fraction|
+
+The direction column describes the measurement. All fitted coefficients,
+including assignment difficulty, remain free-signed. The raw-allowed and
+adjusted-saved columns deliberately share information; ridge and the saved
+correlation/leave-one-out diagnostics address that dependence without treating
+each coefficient as a separately identified basketball effect.
+
 ## Predictive selection and evaluation contract
 
 Keep frozen v44 offense, parent4000/8000, TD550, repaired SQ residuals and
