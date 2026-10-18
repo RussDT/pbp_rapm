@@ -111,3 +111,63 @@ def test_completed_pilot_replay_preserves_direction():
     assert len(d) == 260
     assert report["tracked_points"] == 216
     assert d.source_counts_valid.all()
+
+
+def test_network_retry_replaces_failed_session_and_preserves_identity(tmp_path, monkeypatch):
+    raw, game = fixture()
+    game['game_id'] = '0021700999'
+    raw['boxScoreMatchups']['gameId'] = game['game_id']
+    for folder in ['raw', 'metadata', 'pairs']:
+        (tmp_path/folder).mkdir()
+
+    class Reply:
+        status_code = 200
+        content = json.dumps(raw).encode()
+        def json(self):
+            return raw
+        def raise_for_status(self):
+            return None
+
+    class Session:
+        def __init__(self, fail=False):
+            self.headers = {}
+            self.fail = fail
+            self.closed = False
+        def get(self, *args, **kwargs):
+            if self.fail:
+                raise m.requests.ReadTimeout('stale transport')
+            return Reply()
+        def close(self):
+            self.closed = True
+
+    m.reset_http_session()
+    first, second = Session(True), Session(False)
+    available = iter([first, second])
+    monkeypatch.setattr(m.requests, 'Session', lambda: next(available))
+    monkeypatch.setattr(m.time, 'sleep', lambda _: None)
+    receipt = m.fetch_one(game, tmp_path, m.RateLimit(0), 1)
+    assert receipt['status'] == 'ok' and receipt['attempts'] == 2
+    assert first.closed and not second.closed
+    assert pd.read_parquet(tmp_path/'pairs'/'0021700999.parquet').offense_player_id.tolist() == [11]
+    m.reset_http_session()
+
+
+def test_service_refusal_aborts_batch_without_retry(tmp_path, monkeypatch):
+    _, game = fixture()
+    game['game_id'] = '0021700998'
+    for folder in ['raw', 'metadata', 'pairs']:
+        (tmp_path/folder).mkdir()
+    class Session:
+        calls = 0
+        def get(self, *args, **kwargs):
+            self.calls += 1
+            return type('Reply', (), {'status_code': 429})()
+    session = Session()
+    monkeypatch.setattr(m, 'http_session', lambda: session)
+    limiter = m.RateLimit(0)
+    with pytest.raises(PermissionError, match='429'):
+        m.fetch_one(game, tmp_path, limiter, 3)
+    assert limiter.aborted.is_set() and session.calls == 1
+    with pytest.raises(PermissionError, match='stopped'):
+        limiter.wait()
+    assert not (tmp_path/'raw'/'0021700998.json').exists()

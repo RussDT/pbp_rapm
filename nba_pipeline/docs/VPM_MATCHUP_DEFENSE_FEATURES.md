@@ -40,6 +40,11 @@ requires its own measurement gate. Do not infer exclusive possession credit.
 Backfill is restartable, rate limited, checksum protected and uses bounded
 retries. An HTTP403/429 stops the batch for cooldown. Downloading historical
 data today does not establish original publication or extraction availability.
+Network retries replace failed HTTP connection pools while retaining the
+same public endpoint, headers and request-rate limit. A bounded rolling queue
+keeps other workers moving while one game is slow. This recovery follows
+observed2021 request timeouts that succeeded on fresh ordinary connections;
+it does not convert a timeout into an empty or zero-valued observation.
 
 ## Candidate features and chronology
 
@@ -157,6 +162,33 @@ future-append invariance, defensive signs, frozen-control parity, exact affine
 response and independent seven-test arithmetic. A negative or unresolved
 feature result is a valid outcome; a backfill alone does not complete this
 research goal.
+
+### Literal BAM follow-up within this goal
+
+Source inspection established that `matchup_bam` is a conditional FG residual
+and does not test the original BAM formula's turnover penalty, Synergy
+creation load, nonlinear fallback and positional multiplier. A separate
+immutable siblingv48 is being prepared to test that actual hypothesis. It
+uses completed2018–2025 sources only, fresh native matchup counts,
+verified same-season TS/creation inputs and completed-season BRef positions.
+The archived BAM values remain a separately named retrospective diagnostic:
+their positions were static profiles, and2026 is incomplete. No new model
+outcomes have been inspected to choose this addition.
+
+The original2018 annual archive matches the native correct attacker/defender
+orientation exactly across78,602 pairs for integer shots, points and turnovers.
+Before v48 fits, require resolved RS requests and native/source checks for
+every needed2018–2025 source year. The partial source audit now verifies2018–2021; a partial
+identity proof does not certify the remaining years. Source-version tolerances are checked before any model score.
+The dated reconstruction preserves the legacy1.05 turnover/FGA-equivalent
+penalty and0.44 FT coefficient, with the all-defender FGA denominator before
+unknown-pair masking, exposure-weighted annual normalization, exact RS-end
+TD550, at most four completed source years and one K1000 shrink. Its source
+defects remain disclosed. Independent partial-pilot reconstruction checks
+311,861 native pairs and4,744 dated snapshots within1.82e-12; all77 combined
+source/feature/BAM tests pass. This remains partial, and neither the pilot nor
+the stored annual BAM is a predictive performance result. v47's
+frozen feature and model recipe remains separate.
 
 ## Commands
 

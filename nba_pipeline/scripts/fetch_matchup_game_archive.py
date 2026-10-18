@@ -8,7 +8,7 @@ today establish measurement availability, not historical publication vintage.
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait as wait_futures, FIRST_COMPLETED
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -43,6 +43,14 @@ def http_session():
         HTTP_LOCAL.session = requests.Session()
         HTTP_LOCAL.session.headers.update(HEADERS)
     return HTTP_LOCAL.session
+
+
+def reset_http_session():
+    """Drop a failed transport pool before retrying the public request."""
+    session = getattr(HTTP_LOCAL, "session", None)
+    if session is not None:
+        session.close()
+        del HTTP_LOCAL.session
 
 
 def sha_bytes(value):
@@ -201,12 +209,17 @@ class RateLimit:
         self.interval = interval
         self.lock = threading.Lock()
         self.next_at = 0.
+        self.aborted = threading.Event()
 
     def wait(self):
         with self.lock:
+            if self.aborted.is_set():
+                raise PermissionError("Batch stopped after NBA service refusal")
             delay = self.next_at-time.monotonic()
             if delay > 0:
                 time.sleep(delay)
+            if self.aborted.is_set():
+                raise PermissionError("Batch stopped after NBA service refusal")
             self.next_at = time.monotonic()+self.interval
 
 
@@ -226,12 +239,15 @@ def fetch_one(game, out, limiter, retries):
     error = None
     for attempt in range(retries+1):
         try:
+            if limiter.aborted.is_set():
+                raise PermissionError("Batch stopped after NBA service refusal")
             if not raw.exists():
                 limiter.wait()
                 response = http_session().get("https://stats.nba.com/stats/boxscorematchupsv3", params={"GameID": gid},
                                              timeout=(10, 30))
                 if response.status_code in [403, 429]:
                     # Stop the batch on service refusal. Restart later rather than bypass.
+                    limiter.aborted.set()
                     raise PermissionError(f"NBA service HTTP {response.status_code}; batch must cool down")
                 response.raise_for_status()
                 payload = response.json()
@@ -255,6 +271,10 @@ def fetch_one(game, out, limiter, retries):
             raise
         except Exception as exc:
             error = f"{type(exc).__name__}: {exc}"
+            if isinstance(exc, requests.RequestException):
+                # A fresh ordinary request recovered a game after repeated
+                # persistent-session timeouts. Preserve rate/permission gates.
+                reset_http_session()
             # A permanently bad cached payload needs review, not endless refetch.
             if raw.exists():
                 break
@@ -303,22 +323,42 @@ def download(out, frame, workers, interval, retries, limit):
     limiter = RateLimit(interval)
     start = time.monotonic()
     print(json.dumps({"download_pending": len(pending), "workers": workers, "interval": interval}), flush=True)
-    # Bounded batches allow an HTTP refusal to stop quickly, without a huge queue.
+    # At most one active game per worker. A slow retry must not hold up an
+    # otherwise completed batch; refusals stop replenishing the bounded queue.
+    iterator = iter(pending)
+    completed = 0
+    recent = []
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        for i in range(0, len(pending), 40):
-            futures = [pool.submit(fetch_one, g, out, limiter, retries) for g in pending[i:i+40]]
+        futures = set()
+
+        def replenish():
+            game = next(iterator, None)
+            if game is not None:
+                futures.add(pool.submit(fetch_one, game, out, limiter, retries))
+
+        for _ in range(workers):
+            replenish()
+        while futures:
+            done, _ = wait_futures(futures, return_when=FIRST_COMPLETED)
             try:
-                results = [f.result() for f in as_completed(futures)]
+                for future in done:
+                    futures.remove(future)
+                    result = future.result()
+                    completed += 1
+                    recent.append(result['status'])
+                    if completed == 1 or completed % 200 == 0 or completed == len(pending):
+                        print(json.dumps({"processed_this_run": completed,
+                            "elapsed_seconds": round(time.monotonic()-start, 1),
+                            "recent_status": pd.Series(recent).value_counts().to_dict()}), flush=True)
+                        audit(out)
+                        recent.clear()
+                    replenish()
             except PermissionError:
+                limiter.aborted.set()
                 for f in futures:
                     f.cancel()
                 audit(out)
                 raise
-            if i % 200 == 0 or i+40 >= len(pending):
-                print(json.dumps({"processed_this_run": min(i+40, len(pending)),
-                                  "elapsed_seconds": round(time.monotonic()-start, 1),
-                                  "batch_status": pd.Series([r["status"] for r in results]).value_counts().to_dict()}), flush=True)
-                audit(out)
     return audit(out)
 
 
