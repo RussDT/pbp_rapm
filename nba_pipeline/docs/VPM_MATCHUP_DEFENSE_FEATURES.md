@@ -1,0 +1,166 @@
+# Per-game matchups and defensive VPM feature research
+
+Owner authorized October18,2026: recover all available per-game NBA matchup
+evidence for ending seasons2018–2026, engineer defensive features, and test
+whether they improve predictive VPM. This extends the existing NBA VPM
+research portfolio slot. Implementation and backfill are in progress; no
+feature has been admitted and no performance result is claimed here.
+
+## Source contract
+
+`scripts/fetch_matchup_game_archive.py` builds an official `LeagueGameFinder`
+census and checks canonical PBP game IDs, dates, phases and ending seasons.
+The initial census contains12,214 completed games:11,503 regular-season and
+playoff games plus preseason, play-in and Cup-final games. All-Star games
+are excluded. Extra phases remain archived separately and do not alter the
+existing field benchmark's regular-season game universe. Ending2027 is
+forbidden. Census includes known PBP-only games if official history omits one.
+
+Private, generated outputs under `cache/matchup_games_v1/`:
+
+- `game_census.parquet`, `census_sources/official_games_{year}.csv`;
+- `raw/{game_id}.json`: exact provider response before normalization;
+- `metadata/{game_id}.json`: request/check time, SHA256, coverage/status;
+- `pairs/{game_id}.parquet`: native statistics with exact attacker/defender IDs;
+- `download_audit.parquet`, `download_counts.csv`, `progress.json`.
+
+Every native JSON's outer team/player is the attacker; the nested opponent
+is the defender. Verify exact official teams and flag opposing native-roster
+absence; defense-only players can be absent from the offense-oriented outer
+roster. Feature admission verifies exact PBP game/player/team and positive side
+exposure instead of rejecting those players automatically. Never copy the
+legacy BAM ID reversal. Preserve fractional partial possessions,
+nulls, source defects and per-field coverage. An empty response is unavailable,
+not a zero-skill observation. Source makes exceeding attempts remain flagged
+and excluded from accepted count measurements. Tracking totals need not close
+to the scoreboard: early FT fields can be unmeasured, shooting assignments can
+overlap, and potential assists are zero in every initial live pilot. Each lane
+requires its own measurement gate. Do not infer exclusive possession credit.
+
+Backfill is restartable, rate limited, checksum protected and uses bounded
+retries. An HTTP403/429 stops the batch for cooldown. Downloading historical
+data today does not establish original publication or extraction availability.
+
+## Candidate features and chronology
+
+RAPM owns raw pairs and measurement engineering. VPM receives only stabilized,
+dated player summaries from `results/estimated_skills/matchup_defense_v1/`,
+with exposure, coverage, latest observation date and pricing-training dates.
+No raw provider pairs or event rows cross the seam.
+
+1. Assignment difficulty: exposure-weighted opponent prior-season BPM/OBPM,
+   prior-day scoring, assist and shot/turnover load, concentration
+   and role mix. Compare raw burden with position-adjusted burden. Include
+   assignment difficulty as an explicit candidate and report its incremental
+   value; do not force a favorable coefficient or equate harder assignments
+   with causal points saved.
+2. Execution: raw points and field-goal points allowed, two/three shot frequency and
+   accuracy, assists, turnovers, blocks and fouls, with coherent denominators.
+   Compare actual production with expectations based on the opponent's strictly
+   earlier completed game-days. Keep assignment strength separate from results.
+3. BAM-like residual summaries: opponent-adjusted production allowed rather
+   than importing annual full-sample BAM. Distinguish native team-point rates
+   from individual production; neither is automatically total defensive impact.
+4. Position/context and missingness: exact prior-season position, opponent
+   position mix, coverage and count exposure. Missing source fields remain
+   missing; an absent historical player classification is not an inferred role.
+
+The initial bank has27 fields including coverage, which is a reliability
+diagnostic and never a player-quality input. Use fixed TD550 count decay and
+exposure stabilization K1000; conditional shooting percentages use K100 shot
+opportunities. Opponent rates use fixed-anchor decayed past counts; all
+current-game and same-day results are excluded. Full-season2026 means never
+price an earlier historical game. Basketball-Reference BPM2.0 was introduced
+in2020 and retrospectively recalculated: even prior-season BPM retrieved today
+has a historical-definition vintage caveat. BPM/OBPM matchup measurements
+are unavailable before a conservative March1,2020 knowledge floor; position
+information remains available. Even later retrieved historical values are
+not certified as-was publications. Position BPM means use prior-season
+minutes, and traded-player metadata uses the unique whole-season aggregate.
+The staged metadata has5,489 exact NBA-ID player-seasons2017–2026; three
+unmatched identities stay missing.
+
+## Predictive selection and evaluation contract
+
+Keep frozen v44 offense, parent4000/8000, TD550, repaired SQ residuals and
+entrant treatment unchanged for the first defense-only increments. Preserve
+v39, v44, true-zero-prior and entrant-only controls. Coefficients fit only
+earlier completed future-game packets through the exact fixed lineup solve;
+no saved shrunken player rating is treated as an error-free target. The2019
+warm-up may use saved v39 forecasts because v44 has no2018 emission; report
+that switch and a sensitivity excluding the2019 warm-up from every coefficient
+training prefix explicitly (hence the2020 forecast has exact zero increment).
+
+Development seasons2020–2022 alone select between null, assignment-only,
+execution-only, BAM-like and all-feature candidates. Differential evolution
+uses a compact continuous search over log10 ridge[-3,3], overall increment
+scale[0,2] and group weights[0,1], seed20261018, popsize8, maxiter30, no polish.
+Feature slopes remain free-signed. Objective is equal-season actual game
+margin MSE. A paired one-SE rule prefers the simpler eligible model, including
+the exact null. Record the full search and the limited three-year development
+sample. Neither stress rankings nor individual player aesthetics select models.
+
+Freeze all choices before2023–2026 report-only stress. Run the identical seven
+field tests, direct actual-point diagnostics where feasible, and paired error
+comparisons against VPM controls, dated EPM and lagged DARKO/LEBRON/MAMBA.
+Keep squared correlation distinct from direct forecast R²; RMSE is lower-is-
+better. Shared actual minutes/pace make this conditional player-quality
+evidence. These historical seasons are already spent research evidence;
+2026–27 remains untouched and nothing is promoted automatically.
+
+Audit source hashes/coverage, exact IDs/dates/teams, same-day exclusion,
+future-append invariance, defensive signs, frozen-control parity, exact affine
+response and independent seven-test arithmetic. A negative or unresolved
+feature result is a valid outcome; a backfill alone does not complete this
+research goal.
+
+## Commands
+
+Run the complete restartable chain with the bundled Python environment:
+
+```bash
+.venv/bin/python -u nba_pipeline/scripts/run_matchup_defense_research.py
+```
+
+This ordinary process runs download, archive audit, full feature export,
+feature audit, immutable v47 evaluation, independent score/QR audit and the
+existing field audit in order. It stops on any failure or code change. Stage
+logs and progress are private under `cache/matchup_games_v1/research_run/`.
+It does not create a scheduled automation. Individual stage commands:
+
+```bash
+.venv/bin/python nba_pipeline/scripts/fetch_matchup_game_archive.py --stage all
+.venv/bin/python nba_pipeline/scripts/fetch_matchup_game_archive.py --stage fetch
+.venv/bin/python nba_pipeline/scripts/fetch_matchup_game_archive.py --stage audit
+.venv/bin/python nba_pipeline/scripts/fetch_matchup_bpm.py
+.venv/bin/python nba_pipeline/scripts/build_matchup_defensive_features.py
+.venv/bin/python nba_pipeline/scripts/audit_matchup_game_archive.py
+.venv/bin/python nba_pipeline/scripts/audit_matchup_defensive_features.py \
+  nba_pipeline/results/estimated_skills/matchup_defense_v1
+.venv/bin/python ../vpm/vpm/run_harness.py \
+  --config ../vpm/vpm/configs/research_harness_v47_matchup_defense.json \
+  matchup-defense --stage all
+.venv/bin/python nba_pipeline/scripts/audit_matchup_vpm_scorecard.py
+.venv/bin/python -m pytest -q nba_pipeline/tests/test_matchup_game_archive.py
+```
+
+Immutable sibling v47 reads the final feature manifest dynamically, rejects
+partial-download pilot exports, saves per-feature single/leave-one-out
+development diagnostics, and emits selected, DE, simple and no-warm-up arms.
+A report-only common-native future actual-possession diagnostic supplements
+the seven full-game tests. The independent score auditor reconstructs game
+forecasts from player minutes, team quality and logistic wins, all seven
+scorecards/paired points, and coefficients via augmented QR least squares.
+Initial arithmetic verification reproduces693 frozen-control scorecard rows
+within3.6e−13. This validates the auditor, not the unrun new model.
+
+The final27-field pilot(v4) independently verifies238,275 feature cells and
+12,561 common-mask point identities, maximum gap3.55e−15. The combined source,
+BPM, feature and independent-audit suite passes48 tests. The full download
+and subsequent model stages are running; pilot validation is not a substitute
+for their eventual receipts or a predictive performance result.
+
+The source pilot and rejected legacy dated checkpoint are documented in
+[matchup source inventory](RIM_DEFENSE_MATCHUP_SKILLS.md). Existing controls:
+[long-SPM training](VPM_LONG_SPM_TRAINING.md), [field tests](VPM_FIELD_BENCHMARK.md),
+[old/new blends](VPM_LONG_SPM_BLENDS.md).
