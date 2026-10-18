@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import re
 import shutil
 import threading
 import time
@@ -68,6 +69,30 @@ def write_json(path, value):
     temp.replace(path)
 
 
+def official_team_ids(rows):
+    """Resolve venue slots from matchup tokens, including shared neutral text.
+
+    Neutral-site LeagueGameFinder rows can both say ``AWAY @ HOME``. Their
+    TEAM_ID is not necessarily the team on the left side of that text.
+    """
+    identities = rows[["TEAM_ABBREVIATION", "TEAM_ID"]].drop_duplicates()
+    if identities.TEAM_ABBREVIATION.duplicated().any():
+        raise ValueError("Ambiguous official team abbreviation")
+    teams = dict(zip(identities.TEAM_ABBREVIATION, identities.TEAM_ID))
+    home, away = set(), set()
+    for value in rows.MATCHUP:
+        match = re.fullmatch(r"(\S+)\s+(vs\.|@)\s+(\S+)", str(value).strip())
+        if match is None:
+            raise ValueError("Unrecognized official matchup text: " + str(value))
+        left, separator, right = match.groups()
+        h, a = (left, right) if separator == "vs." else (right, left)
+        if h in teams: home.add(int(teams[h]))
+        if a in teams: away.add(int(teams[a]))
+    if len(home) > 1 or len(away) > 1 or home & away:
+        raise ValueError("Conflicting official home/away matchup identities")
+    return next(iter(home), 0), next(iter(away), 0)
+
+
 def census(out, years):
     """Use completed official team games, cross-check dates against canonical PBP."""
     from nba_api.stats.endpoints import leaguegamefinder
@@ -112,11 +137,9 @@ def census(out, years):
             if len(dates) != 1 or int(gid[3:5]) != (year-1) % 100:
                 raise ValueError(f"Official census conflict {gid}")
             # International preseason opponents need not have a league00 row.
-            home = g.loc[g.MATCHUP.str.contains("vs.", regex=False), "TEAM_ID"]
-            away = g.loc[g.MATCHUP.str.contains("@", regex=False), "TEAM_ID"]
+            home, away = official_team_ids(g)
             rows.append(dict(game_id=gid, game_date=pd.Timestamp(dates[0]), season=year, season_type=phase,
-                             home_team_id=int(home.iloc[0]) if len(home) else 0,
-                             away_team_id=int(away.iloc[0]) if len(away) else 0,
+                             home_team_id=home, away_team_id=away,
                              official_team_rows=len(g), census_source="official"))
         print(json.dumps({"census_season": year, "team_rows": len(d)}), flush=True)
     frame = pd.DataFrame(rows)

@@ -26,6 +26,26 @@ def fixture():
     return raw, game
 
 
+@pytest.mark.parametrize('texts', [['MIA @ WAS', 'WAS vs. MIA'], ['MIA @ WAS', 'MIA @ WAS']])
+def test_official_team_slots_do_not_assume_row_team_starts_matchup(texts):
+    rows = pd.DataFrame(dict(TEAM_ABBREVIATION=['MIA', 'WAS'],
+                             TEAM_ID=[1610612748, 1610612764], MATCHUP=texts))
+    assert m.official_team_ids(rows) == (1610612764, 1610612748)
+    assert m.official_team_ids(rows.iloc[::-1]) == (1610612764, 1610612748)
+
+
+def test_official_foreign_preseason_opponent_is_unknown_not_inferred():
+    rows = pd.DataFrame(dict(TEAM_ABBREVIATION=['NOP'], TEAM_ID=[1610612740], MATCHUP=['NOP @ MEL']))
+    assert m.official_team_ids(rows) == (0, 1610612740)
+
+
+def test_conflicting_official_matchup_slots_fail():
+    rows = pd.DataFrame(dict(TEAM_ABBREVIATION=['MIA', 'WAS'], TEAM_ID=[1, 2],
+                             MATCHUP=['MIA @ WAS', 'MIA vs. WAS']))
+    with pytest.raises(ValueError, match='Conflicting'):
+        m.official_team_ids(rows)
+
+
 def test_native_direction_missing_fields_and_fractional_exposure():
     raw, game = fixture()
     d, report = m.normalize(raw, game)

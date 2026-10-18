@@ -45,6 +45,13 @@ same public endpoint, headers and request-rate limit. A bounded rolling queue
 keeps other workers moving while one game is slow. This recovery follows
 observed2021 request timeouts that succeeded on fresh ordinary connections;
 it does not convert a timeout into an empty or zero-valued observation.
+The official census resolves home/away from exact matchup abbreviation tokens,
+not from the row's team ID. Neutral-site official rows can both contain the
+same `AWAY @ HOME` text. Source checks caught this on2024–25 games before any
+model run;19 census records across2025–2026 needed corrected venue slots.
+Cached raw responses remain unchanged. Exact token/ID ambiguity fails, and
+unknown international preseason opponents keep unknown IDs. This source
+repair does not change the frozen field benchmark's venue rules.
 
 ## Candidate features and chronology
 
