@@ -239,6 +239,9 @@ A report-only common-native future actual-possession diagnostic supplements
 the seven full-game tests. The independent score auditor reconstructs game
 forecasts from player minutes, team quality and logistic wins, all seven
 scorecards/paired points, and coefficients via augmented QR least squares.
+A separate `audit_matchup_vpm_supplement.py --root <experiment>` verifies
+the no-warm-up QR coefficients/boards and independently reconstructs actual
+point errors plus the frozen paired game bootstrap; eight focused tests pass.
 Initial arithmetic verification reproduces693 frozen-control scorecard rows
 within3.6e−13. This validates the auditor, not the unrun new model.
 
