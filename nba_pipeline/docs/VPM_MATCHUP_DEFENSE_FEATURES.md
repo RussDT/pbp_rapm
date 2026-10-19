@@ -3,8 +3,9 @@
 Owner authorized October18,2026: recover all available per-game NBA matchup
 evidence for ending seasons2018–2026, engineer defensive features, and test
 whether they improve predictive VPM. This extends the existing NBA VPM
-research portfolio slot. Implementation and backfill are in progress; no
-feature has been admitted and no performance result is claimed here.
+research portfolio slot. The full backfill, dated feature export and v47 seven-test evaluation are
+complete. A fresh-source literal-BAM follow-up is being audited separately.
+Everything remains research; no feature is promoted.
 
 ## Source contract
 
@@ -175,7 +176,7 @@ research goal.
 Source inspection established that `matchup_bam` is a conditional FG residual
 and does not test the original BAM formula's turnover penalty, Synergy
 creation load, nonlinear fallback and positional multiplier. A separate
-immutable siblingv48 is being prepared to test that actual hypothesis. It
+immutable siblingv48 was prepared to test that actual hypothesis. It
 uses completed2018–2025 sources only, fresh native matchup counts,
 verified same-season TS/creation inputs and completed-season BRef positions.
 The archived BAM values remain a separately named retrospective diagnostic:
@@ -196,6 +197,96 @@ defects remain disclosed. Independent partial-pilot reconstruction checks
 source/feature/BAM tests pass. This remains partial, and neither the pilot nor
 the stored annual BAM is a predictive performance result. v47's
 frozen feature and model recipe remains separate.
+
+### Fresh-source v49 correction
+
+The completed v48 gate passes2018–2024 but rejects2025: archived/native FGA
+normalized L1 is25.93% and turnover L1 is55.14%, versus the fixed1% threshold.
+Adding playoffs does not explain it; participation counts mostly match while
+action attribution differs. The original raw annual response is absent, so its
+exact origin is unproven. V48 remains unfitted. This is a source failure, not a
+negative predictive BAM result; its gate was not widened.
+
+Separate immutable v49 discards every legacy annual count and metadata input.
+Fresh native RS counts, actual own-PBP RS TS rounded to the provider's three
+places,24 newly retrieved official Synergy PerGame RS responses2018–2025,
+and completed source-year BRef positions reconstruct the same formula. The
+fresh source has5,914 playtype rows. The original unweighted sum of
+`PPP * POSS` across player/team/playtype rows remains the primary creation
+load, with its full-cohort median and fifth-percentile fallback. This original
+convention overstates traded-player season load; a GP-weighted diagnostic is
+kept separate and never enters the feature or selection family. No BAM model
+outcome has been inspected to choose this repair or its settings.
+
+The fresh source, feature and independent formula/date gates must all pass
+before fitting v49. Its numerical model/DE/selection/seven-test settings are
+identical to v48. New source tools are `fetch_fresh_bam_inputs.py`,
+`build_fresh_bam_features.py` and the independent fresh-source/BAM auditors;
+the output seam is `results/estimated_skills/fresh_bam_v1`. The sibling
+configuration is `research_harness_v49_fresh_bam_defense.json`.
+
+## V47 completed results
+
+The archive resolves12,214 requests:11,521 contain2,169,558 native pairs,
+and693 are unavailable (22 regular-season games plus671 preseason games).
+The full native identity/fidelity audit passes with no count defects. The full
+feature export has8,825 dated summaries; independent reconstruction checks
+238,275 cells within7.11e-15. Help blocks and potential assists are wholly
+unmeasured and are not observed zeros.
+
+Development2020–2022 selects assignment-only. Its game-MSE gain over null is
+0.021735, with unadjusted paired95% interval[-0.229193,+0.272663]. The
+registered one-SE family preference places null first, individual groups next,
+all features next and DE last; equal-preference group ties use assignment-first
+order rather than physical feature count. Null misses eligibility by only
+0.006895MSE. Removing2019 warm-up training selects the exact null. The emitted
+`null_first` sensitivity instead keeps the registered assignment parameters
+and removes2019 training; do not confuse that board with the sensitivity's
+selection decision.
+
+Frozen2023–2026 stress contains4,920 games and120 team-seasons. The seven
+headline quantities below are squared correlations except team-net RMSE.
+Higher squared correlation is better; lower RMSE is better.
+
+| Test | v44 | +assignment | EPM | lagged DARKO | lagged LEBRON | lagged MAMBA |
+|---|---:|---:|---:|---:|---:|---:|
+| All games R² | 0.1866 | 0.1877 | 0.1889 | 0.1752 | 0.1577 | 0.1903 |
+| Low-continuity games R² | 0.2957 | 0.2951 | 0.2981 | 0.3044 | 0.2988 | 0.3113 |
+| Team win% R² | 0.6691 | 0.6697 | 0.6890 | 0.6490 | 0.5992 | 0.6967 |
+| Low-continuity team win% R² | 0.6201 | 0.6177 | 0.4860 | 0.5936 | 0.4687 | 0.5225 |
+| Team net RMSE | 3.2352 | 3.2225 | 3.1200 | 3.4102 | 3.6404 | 3.2431 |
+| Veteran games R² | 0.1763 | 0.1775 | 0.1795 | 0.1653 | 0.1474 | 0.1852 |
+| Veteran team win% R² | 0.6457 | 0.6469 | 0.6665 | 0.6215 | 0.5698 | 0.6834 |
+
+All-game RMSE falls13.9604→13.9510, versus EPM13.9415. Assignment's paired
+game-MSE gain over v44 is+0.262909[-0.003996,+0.530044], unresolved. Veteran
+game gain is+0.318686[+0.061167,+0.573544]; five of seven headline point
+estimates improve. EPM still has better team-net error, with a paired loss
+for assignment of-0.650083[-0.863152,-0.454109]. These overlap and are
+unadjusted historical research contrasts, not fresh confirmation.
+
+DE ran1,984 evaluations and reached its fixed30-iteration budget without
+convergence. Its game RMSE13.9588 and main game gain remain unresolved. No
+positive standalone feature gain excludes zero. Concentration, primary share,
+assignment difficulty and usage load have the leading positive point estimates;
+conditional blocks helps only inside the full fixed model, which itself loses
+to null. Highly correlated features prevent unique importance or causal claims.
+BPM has no observable development exposure in2020 and its slopes first learn
+for2022, leaving only one informative forward development season.
+
+The independent score audit reproduces1,078 score rows,126 paired points,
+8,289 game forecasts and210 team-seasons within3.56e-13, including exact veteran
+overrides and independent QR coefficients. Supplemental checks reproduce all
+seven no-warm-up boards and680,469 actual-point rows with eight paired intervals.
+The general field validator verifies source/artifact hashes, clock/score and win
+accounting. A scalar/vector missingness comparison bug in the independent
+auditor was fixed with three regression tests; the saved VPM inputs, model,
+forecasts and scores did not change. The failed receipt and explicit audit
+recovery are retained under `research_run/score_audit_recovery/`.
+
+Full controls, per-feature diagnostics and curated evidence are in the sibling
+`vpm/docs/MATCHUP_DEFENSE_RESEARCH.md` and
+`vpm/evidence/matchup_defense_v47_summary.json`.98 focused RAPM tests pass.
 
 ## Commands
 
@@ -227,7 +318,7 @@ It does not create a scheduled automation. Individual stage commands:
 .venv/bin/python -m pytest -q nba_pipeline/tests/test_matchup_game_archive.py
 ```
 
-The separate literal-BAM chain can wait for this ordinary job, then run its
+The archived-input literal-BAM chain can wait for this ordinary job, then run its
 full2018–2025 source concordance, required-complete export, independent
 formula/date audit, v48 fit and both score audits:
 
@@ -254,9 +345,8 @@ within3.6e−13. This validates the auditor, not the unrun new model.
 
 The final27-field pilot(v4) independently verifies238,275 feature cells and
 12,561 common-mask point identities, maximum gap3.55e−15. The combined source,
-BPM, feature and independent-audit suite passes48 tests. The full download
-and subsequent model stages are running; pilot validation is not a substitute
-for their eventual receipts or a predictive performance result.
+BPM, feature and independent-audit suite passes48 tests. The full v47 download and model stages have now completed as reported above;
+pilot validation alone was not their admission receipt.
 
 The source pilot and rejected legacy dated checkpoint are documented in
 [matchup source inventory](RIM_DEFENSE_MATCHUP_SKILLS.md). Existing controls:

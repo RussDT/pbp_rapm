@@ -14,6 +14,21 @@ import numpy as np
 import pandas as pd
 
 
+def comparison_gap(actual, expected, label):
+    """Permit a scalar reference while preserving array-shape/missingness gates."""
+    a, b = np.asarray(actual, float), np.asarray(expected, float)
+    if a.shape != b.shape:
+        if a.ndim == 0 or b.ndim == 0:
+            a, b = np.broadcast_arrays(a, b)
+        else:
+            raise ValueError(label+' shapes differ')
+    if not np.array_equal(np.isnan(a), np.isnan(b)):
+        raise ValueError(label+' missingness differs')
+    if np.isinf(a).any() or np.isinf(b).any():
+        raise ValueError(label+' contains infinity')
+    return float(np.max(np.abs(a[np.isfinite(a)]-b[np.isfinite(b)]), initial=0.))
+
+
 def weights(frame):
     n = frame.groupby('season').season.transform('size').to_numpy(float)
     return 1 / n / frame.season.nunique()
@@ -61,12 +76,7 @@ def audit(root):
                 coefficient_qr=0., board_from_affine=0.)
 
     def check(label, actual, expected, tolerance=1e-9):
-        a, b = np.asarray(actual, float), np.asarray(expected, float)
-        if not np.array_equal(np.isnan(a), np.isnan(b)):
-            raise ValueError(label+' missingness differs')
-        gap = float(np.max(np.abs(a-b), initial=0.)) if np.isfinite(a-b).all() else float(np.nanmax(np.abs(a-b)))
-        if np.isnan(gap):
-            gap = 0.
+        gap = comparison_gap(actual, expected, label)
         gaps[label] = max(gaps.get(label,0.),gap)
         if gap > tolerance:
             raise ValueError(f'{label} gap {gap}')
