@@ -131,3 +131,16 @@ This file complements `AGENTS.md` for coding agents working in `/Users/russellth
 - matching docs updated when behavior or methodology changed
 - validation run or explicitly skipped
 - `nba_pipeline/docs/Codex_Scratchpad.md` updated if new durable context was learned
+
+# Completed matchup VPM research (October18,2026)
+
+Use `nba_pipeline/docs/VPM_MATCHUP_DEFENSE_FEATURES.md` for the completed
+2018–2026 archive and immutable v47/v49 seven-test results. Assignment-only
+has a small unresolved gain; fresh literal BAM selects null. V48 remains
+unfitted after its archived-2025 source failed. Native outer players are
+attackers; resolve neutral-site official home/away from exact abbreviation
+tokens and verify missing outer-roster defenders via exact PBP team/side
+exposure. Missing source fields are not zeros. Preserve original traded-player
+creation-load summation as an explicit literal-BAM limitation. Source dates,
+QR, actual-point and field audits pass; nothing is promoted and 2027 remains
+untouched. Curated evidence is in sibling `vpm/evidence/`.

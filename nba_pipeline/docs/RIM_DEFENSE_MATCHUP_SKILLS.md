@@ -9,7 +9,7 @@ the official census.11,521 games contain2,169,558 native matchup pair rows;
 the693 empty responses are22 regular-season games and671 preseason games.
 No request errors remain. Raw JSON, hashes, game IDs, exact dates and normalized
 pairs live privately at `cache/matchup_games_v1/`; the independent full archive
-audit is running. This supersedes the pilot-only availability finding below.
+identity/count-fidelity audit passes all12,214 games with no count defects. This supersedes the pilot-only availability finding below.
 
 The defensive feature and predictive test contract is
 [VPM matchup-defense research](VPM_MATCHUP_DEFENSE_FEATURES.md). A successful

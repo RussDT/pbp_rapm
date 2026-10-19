@@ -4,6 +4,9 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Per-game matchup defensive VPM research](VPM_MATCHUP_DEFENSE_FEATURES.md) - completed 2018–26 archive, audited assignment/BAM features and seven-test comparisons; research only
+- [Matchup game-log inventory](RIM_DEFENSE_MATCHUP_SKILLS.md) - 11,521 games and 2,169,558 native matchup rows; coverage and source-grain audits
+
 - [Codex Scratchpad](./Codex_Scratchpad.md) - short-term session memory only
 - [Contributor Onboarding](./CONTRIBUTOR_ONBOARDING.md)
 - [Artifact Manifest](./ARTIFACT_MANIFEST.md)

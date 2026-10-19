@@ -2,6 +2,8 @@
 
 ## Agent Ops Workflow
 
+- Per-game defensive VPM research completed (2026-10-18): all 12,214 ending-2018–2026 requests resolved; 11,521 games contain 2,169,558 native pairs, with 22 RS and 671 preseason responses unavailable. V47 assignment-only lowers spent 2023–2026 game RMSE 13.9604→13.9510, but paired gain +0.2629[-0.0040,+0.5300] is unresolved and no-warm-up development selects null. V48 rejects the archived 2025 source; v49 rebuilds literal BAM from fresh native counts, actual RS rounded TS, official three-type Synergy and dated positions, then selects exact null. Forced BAM has seven better headline point estimates but all seven paired error gains versus baseline cross zero. Preserve original unweighted team-stint creation-load convention as a disclosed limitation; GP-weighted load is diagnostic only. Native outer player is attacker; defense-only roster omissions require exact PBP side/team exposure. Neutral-site census rows may share AWAY @ HOME text: resolve exact abbreviation tokens. Field coverage is nonexclusive/era-specific; missing is never zero. All source, feature, chronology, independent seven-test/QR/actual-point audits and 135 focused RAPM tests pass. No promotion or 2027 outcomes; historical publication vintages remain uncertified. Receipt: `nba_pipeline/docs/VPM_MATCHUP_DEFENSE_FEATURES.md`.
+
 - Treat `nba_pipeline/docs/` as this repo's FreshDocs surface.
 - Use `nba_pipeline/docs/Codex_Scratchpad.md` as the repo-versioned short-term memory file.
 - At session start: read `AGENTS.md`, `CLAUDE.md`, `nba_pipeline/CLAUDE.md`, `nba_pipeline/docs/Codex_Scratchpad.md`, run `git status --short`, then open the relevant docs before editing.

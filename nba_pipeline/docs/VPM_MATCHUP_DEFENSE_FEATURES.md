@@ -4,7 +4,8 @@ Owner authorized October18,2026: recover all available per-game NBA matchup
 evidence for ending seasons2018–2026, engineer defensive features, and test
 whether they improve predictive VPM. This extends the existing NBA VPM
 research portfolio slot. The full backfill, dated feature export and v47 seven-test evaluation are
-complete. A fresh-source literal-BAM follow-up is being audited separately.
+complete. The separate fresh-source literal-BAM test and its independent audits are
+also complete.
 Everything remains research; no feature is promoted.
 
 ## Source contract
@@ -218,7 +219,7 @@ convention overstates traded-player season load; a GP-weighted diagnostic is
 kept separate and never enters the feature or selection family. No BAM model
 outcome has been inspected to choose this repair or its settings.
 
-The fresh source, feature and independent formula/date gates must all pass
+The fresh source, feature and independent formula/date gates all passed
 before fitting v49. Its numerical model/DE/selection/seven-test settings are
 identical to v48. New source tools are `fetch_fresh_bam_inputs.py`,
 `build_fresh_bam_features.py` and the independent fresh-source/BAM auditors;
@@ -288,6 +289,53 @@ Full controls, per-feature diagnostics and curated evidence are in the sibling
 `vpm/docs/MATCHUP_DEFENSE_RESEARCH.md` and
 `vpm/evidence/matchup_defense_v47_summary.json`.98 focused RAPM tests pass.
 
+## V49 completed fresh-BAM result
+
+The independent source and formula audits pass646,089 native annual pair
+rows,4,389 defender-seasons and6,336 dated feature/provenance rows, maximum
+difference1.82e-12. The24 fresh Synergy responses contain5,914 rows. No legacy
+annual counts or metadata enter this feature.
+
+Development selects the exact null, also after removing2019 warm-up training.
+Fixedridge1 BAM loses0.170959 game-MSE relative to baseline, with paired95%
+interval[-0.449508,+0.107591] expressed as gain. DE converges after120
+evaluations/four iterations to a numerically negligible increment; selected
+boards therefore preserve v44 exactly on all seven tests.
+
+For transparency, the already-registered fixed BAM arm is reported below
+**despite not being selected**. These are spent2023–2026 stress outcomes;
+none changes selection or warrants promotion.
+
+| Test | v44 / selected null | Forced fixed BAM | EPM |
+|---|---:|---:|---:|
+| All games R² | 0.1866 | 0.1876 | 0.1889 |
+| Low-continuity games R² | 0.2957 | 0.2976 | 0.2981 |
+| Team win% R² | 0.6691 | 0.6700 | 0.6890 |
+| Low-continuity team win% R² | 0.6201 | 0.6283 | 0.4860 |
+| Team net RMSE | 3.2352 | 3.2257 | 3.1200 |
+| Veteran games R² | 0.1763 | 0.1773 | 0.1795 |
+| Veteran team win% R² | 0.6457 | 0.6466 | 0.6665 |
+
+Forced BAM game RMSE13.9544 is below baseline13.9604 and above EPM13.9415.
+Its paired game-MSE gain is+0.166913[-0.028475,+0.362350]. All seven headline
+point estimates improve, but all seven paired **error** gains versus baseline
+cross zero; team-win and veteran-team-win RMSE actually worsen slightly even
+though their squared correlations increase. Actual-possession gain is
++14.660e-6[-3.483,+32.270]e-6, unresolved. The DE possession gain around1e-11
+is numerically negligible, not meaningful evidence of a basketball improvement.
+
+All independent score/forecast/QR, no-warm-up and actual-point bootstrap audits
+pass for v49, with the same1,078 score rows/126 paired points/8,289 games and
+210 team-seasons as v47. Supplemental report-only fixed-BAM uncertainty has
+14 comparisons; independent paired-point arithmetic agrees within9.89e-17.
+135 focused RAPM source/feature/auditor tests pass. The sibling frozen model
+suite previously passes52 focused tests. Configs and incumbent outputs remain
+unchanged; neither feature family is promoted and2026–27 is untouched.
+
+Full fresh-BAM controls and curated evidence live in sibling
+`vpm/docs/FRESH_BAM_DEFENSE_RESEARCH.md` and
+`vpm/evidence/fresh_bam_defense_v49_summary.json`.
+
 ## Commands
 
 Run the complete restartable chain with the bundled Python environment:
@@ -352,3 +400,21 @@ The source pilot and rejected legacy dated checkpoint are documented in
 [matchup source inventory](RIM_DEFENSE_MATCHUP_SKILLS.md). Existing controls:
 [long-SPM training](VPM_LONG_SPM_TRAINING.md), [field tests](VPM_FIELD_BENCHMARK.md),
 [old/new blends](VPM_LONG_SPM_BLENDS.md).
+
+Fresh-source reconstruction and final audit commands (run in order):
+
+```bash
+.venv/bin/python nba_pipeline/scripts/fetch_fresh_bam_inputs.py
+.venv/bin/python nba_pipeline/scripts/audit_fresh_bam_sources.py
+.venv/bin/python nba_pipeline/scripts/build_fresh_bam_features.py --require-admitted
+.venv/bin/python nba_pipeline/scripts/audit_fresh_bam_features.py
+.venv/bin/python ../vpm/vpm/run_harness.py \
+  --config ../vpm/vpm/configs/research_harness_v49_fresh_bam_defense.json \
+  matchup-defense --stage all
+.venv/bin/python nba_pipeline/scripts/audit_matchup_vpm_scorecard.py \
+  --root ../vpm/vpm/results/harness/vpm_fresh_bam_defense_v1
+.venv/bin/python nba_pipeline/scripts/audit_matchup_vpm_supplement.py \
+  --root ../vpm/vpm/results/harness/vpm_fresh_bam_defense_v1
+.venv/bin/python ../vpm/vpm/scripts/validate_field_benchmark.py \
+  ../vpm/vpm/results/harness/vpm_fresh_bam_defense_v1
+```
