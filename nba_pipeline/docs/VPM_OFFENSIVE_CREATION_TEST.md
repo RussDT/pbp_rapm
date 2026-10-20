@@ -255,3 +255,37 @@ selecting on the new season. Archive predictions before their target games;
 live postgame state updates are distinct from refitting/scoring on protected
 2026–27 outcomes. Current VPM refresh is a separate downstream operation.
 No live-ready claim until a replay/idempotence/coverage/freshness check passes.
+
+## Current-control defensive prior inspection — October20,2026
+
+Owner questioned Paul Reed/Jokic defensive ratings. Read-only inspection of
+current forward_expanded_mpg_a10p0 atSep1,2026, without any new model fit:
+
+| Player | Own/combined defensive prior | Final D | Prior365-day RS MPG |
+|---|---:|---:|---:|
+| Paul Reed |4.168528|3.594742|13.855128|
+| Nikola Jokic |2.620965|3.017349|34.857692|
+
+Both have zero entrant/background weight. Reed's lineup solve/corrections
+move his defensive estimate down; Jokic's final estimate is above his prior.
+Nearness of prior and posterior alone does not quantify prior leverage.
+
+Reconstructed the complete saved defense prior as centered standardized feature
+columns times saved coefficients, using exact full-universe prior-centering
+exposures. All1556 priors match the exported inputs within1e−8. Conditional
+prior term contributions (each numeric column plus its missingness column):
+Jokic contestedDREB+2.508718, steals+1.081793, blocks+.631271, rim contests
+−.794067, DFGA−.718910, rim savings−.397446, with remaining terms closing to
++2.620965. Reed steals+2.316384, contestedDREB+1.229726, blocks+1.052889,
+rim savings+.820789, rim contests−.919240, DFGA−.644139, with other terms
+closing to+4.168528. These are fitted-model coordinates relative to the shared
+exposure reference, not causal or independent basketball credit. Correlated
+features can change their individual coefficients when refitted.
+
+This locates large positive priors in activity/rebound weights; it does not
+prove those weights are wrong or establish a precise prior-versus-lineup
+influence percentage. Aggregate future scoring/game gains do not by themselves
+validate player-level O/D identification or defensive scale across roles and
+minutes. Treat defensive calibration as unresolved; no player override,
+feature deletion, rescaling, new experiment, source/reader modification,
+model promotion or2027 outcome access was performed for this inspection.

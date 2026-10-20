@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-20 — Reed/Jokic defensive prior concern traced
+
+- Owner uneasy with Reed~+4/Jokic~+3 defense. Exact current prior/final D: Reed4.168528→3.594742 at13.855 MPG; Jokic2.620965→3.017349 at34.858 MPG, both entrant weight0. Full-universe centered saved-coefficient reconstruction matches all priors within1e−8. Jokic contestedDREB term+2.509, steals+1.082; Reed steals+2.316/contestedDREB+1.230/blocks+1.053. These are conditional prior coordinates, not independent causal credit or measured prior leverage.
+- Aggregate predictive gains do not settle player O/D identification/defensive calibration. Read-only result appended to VPM_OFFENSIVE_CREATION_TEST.md; no feature deletion, scale/manual override, new fit, reader/data change,2027 access or release decision.
+
 ## 2026-10-20 — NBA skill live-refresh readiness audited
 
 - Owner asked whether skills are organized to update as season games arrive. Research library yes; operational automatic refresh no. Skills reader fixed Sep1,2026, creation adapter historical cuts/season<=2026, tracking current_2026 exports. Existing daily RAPM shell hardcodes ending2026/old path and calls no estimated-skills refresh. No local crontab or dedicated NBA skills job found among inspected launch agents/Codex automation files. No script executed, new games fetched or schedules modified.
@@ -23,7 +28,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Owner asked predictive rim assists and playtype/assistedness inputs. Exact current13-field O mapper has none; v4 skill registry and monthly player-game panel lack rim-assist/assistedness filters/counts. Observed season rim-assists exist; lineup RIM_ASSIST is not passer-credited own skill. Separate potential-assist next_ou forecast exists (dev2020–22/stress2023–25/2026 export), unused by current VPM. Need proper historical parameter vintages before admission.
 - Current SQ already has description/role cues but no player-level difficulty prior. Prior PBP role study improves creation-controlled future-oTS1.4940→1.4744; not a current-VPM gate. Candidate blocks: predictive rim/potential assists, coherent assisted/unassisted zone makes replacing redundant totals, dated prior-priced mix difficulty. Made-only assist tags cannot classify missed-shot creation. Added source/interpretation note to VPM_REPAIRED_FORWARD_EXPANDED.md; no new model fit, source change, reader change or2027 access.
-
-## 2026-10-19 — Displayed VPM mean checked without changing ratings
-
-- Owner clarified average displayed ratings, not expected SQ gain. Current forward585-event reader simple mean−1.1323 (582 positive-exposure−1.1399);2025–26 RS-minute weighted mean−.0754, RS+PS+.00457. Full-universe O/D own TD550-exposure means0. Only178/585 positive;77 players above2000 RS minutes average+1.233. Explain exposure reference and selected high-minute players, not a broad positive offset or forced future zero. Added read-only note to VPM_REPAIRED_FORWARD_EXPANDED.md; no model/reader/forecast/source/2027 changes.
