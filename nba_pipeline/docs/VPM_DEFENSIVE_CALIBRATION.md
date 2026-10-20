@@ -144,3 +144,25 @@ exact-Net build discovered its two quarantined 2015 training games; v61 cleans
 that source for both current and the candidate, freezes the above choices,
 and reports changed forecasts separately in VPM_NET_LANE_DECOMPOSITION.md.
 Do not mix the archived v59 scores with the cleaned-board claim of parity.
+
+## Owner selection — October 20, 2026
+
+After reviewing the ratings and mixed forecast evidence, the owner explicitly
+selected `dmap_a100`: “Let’s do the 100 mapper.” Adopt the already-audited v61
+clean-source arm as the local default. This is an owner decision; do not claim
+new untouched confirmation or a resolved later predictive win. No new fitting,
+manual player adjustment, public deployment or 2027 outcomes.
+
+Sibling `vpm/configs/current_model.json` is the selection pointer. Rebuild local
+views with `vpm/scripts/render_selected_ratings.py`: ratings.html, skills.html,
+Net decomposition, current_vpm_full.csv and current_vpm_recent.csv all use the
+same selected clean board. Offense mapper10, defense mapper100, parent4000/8000,
+TD550 and SQ residual12000/48000 remain fixed. The skills renderer independently
+reconstructs all1556 own priors with zero error; input forecasts/feature sets
+are unchanged.582-row browser CSV matches the selected saved board;582/1556
+controls, selected defaults and Jokić row checked. Earlier four-model ratings
+remain at ratings-forward-archive.html; prior mapper10 remains a named comparison.
+
+Selected current Jokić O6.837923/D2.594525/VPM9.432448; Reed
+O0.218392/D3.430304/VPM3.648697. The source-repair/Net audits remain applicable.
+Curated selection receipt: sibling vpm/evidence/selected_mapper100_summary.json.

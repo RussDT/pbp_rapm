@@ -2,6 +2,10 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-20 — Owner selects defense mapper100
+
+- Explicit owner choice after ratings/predictive review; current_model.json points to existing audited clean v61 dmap_a100. Selected local ratings/Net/skills and CSV exports now agree; all1556 own priors reconstruct exactly. JokicO6.837923/D2.594525/VPM9.432448; ReedD3.430304.582/1556 defaults/search/CSV verified. No model/lane refit or player override; Omapper10/4000-8000/TD550/SQ12000-48000 fixed. Preserve previous mapper10 and earlier ratings archive. Owner adoption supersedes candidate-only operating status; mixed forecast evidence remains, no2027 or public deployment. Canonical VPM_DEFENSIVE_CALIBRATION.md / VPM_MODEL_MAP.md; sibling selected_mapper100_summary.json.
+
 ## 2026-10-20 — Defensive calibration and exact Net Parent completed
 
 - V59 tests nine arms: dev selectsDmapper100/4000-8000/TD550; spent game13.895289→13.888081 unresolved, low-continuity team win% worse. ReedD3.595→3.430/Jokic3.017→2.595. Native/context/400 conditional wild-draw intervals audited; priors/selection fixed, not full uncertainty. Same RESEARCH slot, candidate only.
@@ -23,8 +27,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Owner explicitly retains predictive rim/potential assists, assisted/unassisted zone makes and playtype difficulty/points as predictive box-score/advanced stats. Extended existing skills.html/CSV/field dictionary with15 auxiliary outputs/supports, Creation & shot difficulty group, Box score assists and Advanced TSA/difficulty. Player details show Retained/not in VPM with dated provenance; original24 mapper inputs and all priors/ratings preserved (reconstruction gap0).
 - Raw missingness preserved; splits close exactly, rim assists match bounded share×AST, approximate TSA=FGA+.44FTA and point conversion labeled.582-row browser CSV matches saved source values; count/method/provenance views verified. Added curated predictive_creation_library_summary. No new fitting, skill-parameter changes, VPM admission or2027 outcomes. Rebuild existing source export plus skills renderer; canonical VPM_OFFENSIVE_CREATION_TEST.md owner-decision section.
-
-## 2026-10-20 — Three offensive creation priors completed
-
-- Immutable sibling v58 separately adds dated rim/potential assists, coherent assisted/unassisted zone makes and playtype points to current forward Parent. Current/assist/split/role stress game13.895289/13.894258/13.907115/13.897795; role wins early development, no later increment. Assist prior-only native gain positive but final unresolved and low-continuity game worse; split game worse, role native/prior worse. Retain current, no2027/promotion.
-- 387962 player-games/2913812 shots,55 annual finite-budget OU fits,11 mix fits; source counts/state/prefix/price audits pass.629-source/24-mapper/24-board/84-score/63-pair independent model audit and6 tests pass; eight controls reproduce. Supplemental helper pins match pre-existing frozen sources.582/1556 ratings, priors and inputs at8767/offensive-creation.html; search/sort/download verified. Owner clarified role should be points: already2*predictedTSA*difficulty/100. TSA uses conventional predictedFGA+.44*predictedFTA, not exact FT-trip counts; explicitly disclosed without post-result refit. Canonical VPM_OFFENSIVE_CREATION_TEST.md; curated sibling evidence.

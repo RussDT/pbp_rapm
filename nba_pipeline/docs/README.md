@@ -4,7 +4,7 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
-- [Defensive Parent calibration](VPM_DEFENSIVE_CALIBRATION.md) - nine matched regularization/block/precision tests, conditional intervals and pre-cut calibration groups; mixed later evidence, candidate only
+- [Defensive Parent calibration](VPM_DEFENSIVE_CALIBRATION.md) - owner-selected mapper100, nine matched tests, conditional intervals and pre-cut groups; selected ratings/skills/Net align, later evidence remains mixed
 - [Exact Net lanes for Parent VPM](VPM_NET_LANE_DECOMPOSITION.md) - learned own/entrant/combined priors and final O/D into Net TS/TOV/SC and shot/SQ atoms; clean-source parent, independent closure and forecast audit
 
 - [Estimated-skills daily operations](ESTIMATED_SKILLS_DAILY.md) - one inventory of current/standalone/retained outputs, immutable recipe pins and daily-output preflight; live ingestion/state adapters and scheduler remain unwired

@@ -213,3 +213,13 @@ reconstructs the target equations separately and re-emits own/background
 component means, direct lanes, total-parent forecast parity, seven tests and
 paired comparisons. Preserve locked source/helper vintages; this uses existing
 local prerequisite caches, not a fresh-install historical publication claim.
+
+## Owner-selected default — October 20, 2026
+
+The owner subsequently chose mapper100. The clean Net reader now defaults to
+`dmap_a100`, labeled Selected VPM; mapper10 is the previous comparison. The
+ratings and skills pages/exported priors use that same clean board through
+`vpm/configs/current_model.json` and `render_selected_ratings.py`. No lane/model
+refit or new tuning occurred. The previous candidate-only recommendation above
+records the completed experiment; the owner selection is the current operating
+choice. Predictive limitations remain unchanged; this is not public deployment.

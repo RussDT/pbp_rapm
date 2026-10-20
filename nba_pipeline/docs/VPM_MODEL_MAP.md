@@ -8,6 +8,18 @@ runs; they do not identify new architectures or establish a release order.
 | **Component VPM / Impact Monster** | Ten component types solved separately on offense and defense; components sum to O/D/total | Existing product architecture; the component launch candidate still needs a correctly scoped comparison |
 | **Parent VPM** | One O/D parent with strongly shrunk midrange/three-point residual corrections | Research alternative; this is the family tested in the recent long-SPM/defense/FT runs |
 
+## Selected model — owner decision, October 20
+
+**VPM · defense mapper100** is now the selected local default, using the audited
+clean-source v61 board. [Ratings](http://127.0.0.1:8767/ratings.html),
+[Net lanes](http://127.0.0.1:8767/net-decomposition.html) and
+[skills/priors](http://127.0.0.1:8767/skills.html) all agree. The previous
+mapper10 is a comparison. Jokić D+2.595, Reed D+3.430. No new fit or
+player-specific override; the historical forecast caveats remain. The owner
+selection supersedes the candidate-only operating recommendation below.
+`vpm/configs/current_model.json` is the pointer; rebuild via
+`vpm/scripts/render_selected_ratings.py`. No public deployment.
+
 ## Parent VPM is now decomposable — October 20
 
 [Net lane reader](http://127.0.0.1:8767/net-decomposition.html) exposes the
