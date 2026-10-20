@@ -4,6 +4,8 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Current Parent offensive creation tests](VPM_OFFENSIVE_CREATION_TEST.md) - separate predicted assist, assistedness and playtype-points additions; retained current, approximate TSA disclosure, predictive evidence and audited ratings/priors
+
 - [Current Parent mid/three SQ ablation](VPM_CURRENT_SQ_ABLATION.md) - fixed-prior no SQ/mid/three/both forecasts, positive overall game increments, unchanged D3 48000 and audited four-way results
 
 - [Role-aware defensive prior](VPM_ROLE_AWARE_PRIOR.md) and [all skills in both O/D mappers](VPM_UNSPLIT_FEATURE_PRIOR.md) - matched current-Parent tests, retained split control, seven-test/native evidence and one combined ratings/prior reader

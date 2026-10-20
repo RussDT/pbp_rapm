@@ -8,6 +8,10 @@ runs; they do not identify new architectures or establish a release order.
 | **Component VPM / Impact Monster** | Ten component types solved separately on offense and defense; components sum to O/D/total | Existing product architecture; the component launch candidate still needs a correctly scoped comparison |
 | **Parent VPM** | One O/D parent with strongly shrunk midrange/three-point residual corrections | Research alternative; this is the family tested in the recent long-SPM/defense/FT runs |
 
+## Offensive creation follow-up within the same forward Parent
+
+[Three separate creation-feature tests](http://127.0.0.1:8767/offensive-creation.html) compare current with rim/potential assists, assisted/unassisted zone makes and point-valued playtype difficulty. No addition replaces current: assist game improvement is tiny/unresolved with worse low-continuity games, assistedness worsens, and the difficulty development winner does not improve later forecasts. Difficulty uses predicted approximate TSA=FGA+.44FTA. The page includes ratings, O/D priors and new predictive inputs for582/1556 players. [Source, methodology and results](VPM_OFFENSIVE_CREATION_TEST.md). These are Parent prior tests, not a new architecture.
+
 ## Rim-makes follow-up within the same forward Parent
 
 [Adding rim defended makes](http://127.0.0.1:8767/rim-defended-makes.html) is one matched feature test on the existing forward model. Its negative rim-makes slope does not lower Jokic: finalD3.017→3.171 as correlated slopes refit. Development retains the current forward control; native future-possession improvement is unresolved. [Source, differential-evolution fits and full evidence](VPM_DEFENDED_MAKES.md). This reader is a comparison, not a replacement release.
