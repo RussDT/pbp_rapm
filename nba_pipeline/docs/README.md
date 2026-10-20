@@ -4,7 +4,7 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
-- [Fixed fouls and contested-DREB replacement](VPM_FIXED_FOULS_CONTESTED_DREB.md) - completed Parent VPM rerun, exact replacement, previous-repaired comparison, audited ratings and small future-possession gain; game improvements remain inconclusive
+- [Fixed fouls and contested-DREB replacement](VPM_FIXED_FOULS_CONTESTED_DREB.md) - completed Parent VPM rerun, exact replacement, previous-repaired comparison, audited ratings and skill-only/blended prior views, plus small future-possession gain; game improvements remain inconclusive
 
 - [VPM defensive overlap and contested rebounds](VPM_DEFENSIVE_FEATURE_OVERLAP.md) - measured feature correlations, contested-DREB candidate scope, and corrected all-zero shooting-foul extraction; original saved ratings remain pre-repair; see the separate corrected rerun above
 

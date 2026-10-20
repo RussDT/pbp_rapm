@@ -138,3 +138,59 @@ Generated, gitignored artifacts in sibling `vpm/results/harness/vpm_fixed_fouls_
 28 focused source/calibration/FT/long-SPM tests pass. Independent audit verifies185 locked sources,24 conditional mapper equations,40 emitted O/D/total boards,154 score rows and105 paired MSE point estimates,8,289 total evaluation games/210 team-seasons, source chronology, correct feature exclusion, weighted centering, SQ closure, and player-minute reconstruction. Maximum game/team reconstruction gap7.11e-15; score gap3.56e-15; mapper residual4.27e-14. Existing core and six benchmark forecasts remain equal to saved controls. Browser verified three model options,585-player list, search and exact Clingan values across all three models; screenshot inspected.
 
 Keep as Parent VPM research. ActualFT is fixed for this comparison; expectedFT was separately tested in the preceding receipt and is not silently included here. No component-model promotion, public deployment, fresh-season claim or2027 outcomes.
+
+## Owner prior inspection view, October19
+
+[Player priors](http://127.0.0.1:8766/priors.html) now shows saved prior O/D/total
+beside final O/D/VPM. Default is fixed-fouls/contestedDREB skill-only SPM at
+scale1; the menu also includes fixed-totalDREB and previous repaired. A second
+selector shows the exact combined prior passed into the solve. Its background
+weight is `max(1 - observed NBA possessions / 2000, 0)`; skill-only and combined
+are identical for established players. The older model's skill-only display
+includes its original scale1.5. These are prior means, not standalone lineup
+ratings or an additional model fit.
+
+Current contested skill-only examples: JokicO7.056507/D2.577892/total9.634399;
+WembanyamaO1.826360/D6.004094/total7.830455; SGAO6.046403/D1.233709/total7.280112;
+ReedO0.967311/D4.632707/total5.600018. Joan Beringer demonstrates the distinction:
+skill-only total1.872418, combined−2.173458 at background weight.635.
+
+From sibling VPM, reproduce this presentation with:
+
+```bash
+../rapm/.venv/bin/python vpm/scripts/render_defense_priors.py \
+  vpm/results/harness/vpm_fixed_fouls_contested_dreb_v1
+```
+
+Generated files: `priors.html`, `<model>_priors.csv` (585 recent rows per model),
+`priors_full_universe.csv` (three models ×1,556 players), and
+`priors_view_manifest.json`. CSVs contain both prior types and the final ratings;
+the reader's download button exports the current sorted/filtered view.
+
+The renderer verifies exact player alignment, finite values, all prior/final
+sum identities, and the saved blend identity for all three models. Browser
+checks verified585/1556 universes, default values, search, model/basis changes,
+Beringer's actual blend and the screenshot. Model, calibration, rating and
+forecast artifacts remain unchanged. The final-ratings reader now links to
+priors; its original HTML and renderer are preserved under gitignored
+`reader_before_priors/`, and the curated summary records the UI-only hash change
+and new prior-view manifest. No refit, new evaluation or2027 outcomes.
+
+### Predictive scope of these priors
+
+The six-season SPM mapper uses statistics and lineup outcomes from the same
+calibration games. Its in-period fit does not establish forward predictiveness;
+transfer of coefficients from pooled observed counts to dated current skill
+forecasts is an empirical assumption. The final Parent VPM is a hybrid of this
+prior mean and pre-cut lineup evidence, with SQ residual corrections; the prior
+inspection page shows the means before that lineup update. Previous repaired
+priors instead mapped pre-cut skill snapshots onto subsequently observed,
+fully matured forward RAPM labels. Those methods should not be equated.
+
+The latest final metric has chronological historical forward tests, but game
+improvement versus previous is unresolved and that test does not establish
+standalone SPM-prior superiority or validate the wider prior scale. The
+[earlier old/new blend](VPM_LONG_SPM_BLENDS.md) combined previous and long-SPM
+core final ratings; its50/50 variant is not used in these fixed-foul priors or
+ratings. Its development selection retained previous, and the later50/50 gain
+is spent research evidence. No new blend or predictive calibration is run here.

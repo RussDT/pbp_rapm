@@ -10,6 +10,8 @@ runs; they do not identify new architectures or establish a release order.
 
 ## Current corrected ratings comparison
 
+The [player priors view](http://127.0.0.1:8766/priors.html) shows saved skill-only SPM and exact blended priors beside final ratings for all three comparisons. It is a view of existing fits, not a new model.
+
 The new private reader [ratings comparison](http://127.0.0.1:8766/ratings.html) shows exactly three main choices: **Fixed fouls + contested DREB**, **Fixed fouls + total DREB**, and **Previous repaired VPM**. Both new choices have seven active numeric defense fields; contested replaces total DREB including its missingness flag. They retain the Parent architecture and actualFT, at4000/8000/TD275. See [completed controlled rerun](VPM_FIXED_FOULS_CONTESTED_DREB.md) for forecasts, TD550 checks, source/numerical audits and current ratings. This does not resolve the large big-player prior-mapping shift or select a component release.
 
 ## Earlier pre-repair ratings page

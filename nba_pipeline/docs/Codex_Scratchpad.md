@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-19 — Fixed-fouls prior inspection page added
+
+- Owner requested the fixed-fouls priors. New local8766/priors.html defaults to contestedDREB skill-only SPM, with totalDREB/previous selectors and exact blended-prior toggle. Shows prior O/D/total beside final O/D/VPM; all585 recent/1556 universe and sorted/filtered CSV available. Jokic prior7.0565/2.5779/9.6344; Wemby1.8264/6.0041/7.8305. Beringer own1.8724 versus combined−2.1735 at.635 background weight illustrates first2000-possession blend.
+- Renderer checks all three models' exact IDs, finite inputs, sums and blended-prior identities. Browser verifies defaults/search/model/basis/universes and screenshot. Final-rating page links to priors. Original reader HTML/source archived in ignored reader_before_priors; curated summary records UI-only hash change and new priors_view_manifest. No model/rating/forecast changes, refits, new results, public deployment or2027 outcomes. Receipt VPM_FIXED_FOULS_CONTESTED_DREB.md.
+
 ## 2026-10-19 — Fixed-foul and contested-DREB Parent rerun completed
 
 - Owner requested corrected shooting fouls, contested DREB replacing total DREB, previous repaired comparison and ratings. Separate immutable sibling v52 has seven active numeric defense fields and exact removal of totalDREB+flag. Fixed4000/8000 TD275 (TD550 check), actualFT, own scale1, no tuning. Stress game13.960006 contested /13.969975 total /13.965886 previous; all seven point estimates favor contested versus previous but all seven paired MSE intervals cross zero. Core low-continuity team-win and EPM team-net remain better.
@@ -22,10 +27,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Owner was confused by the experiment labels and clarified the component-product scope. The recent v44–v51 ratings are Parent VPM (one O/D parent plus two SQ residual corrections), not the ten-component Impact Monster. Three broad component-prior calibration targets in v51 do not make its deployed board the component model. Withdraw the parent core+FT recommendation as a component launch decision; valid parent scores stay unchanged.
 - Canonical simple reference `VPM_MODEL_MAP.md`: two architectures; expected FT, priors, decay and blends are variants. Local product bundle `vpm-explorer/public/data/vpm-manifest.json` identifies gross ten-component epm12_x2, July24,2026, TD550; this is a checked-out bundle, not a live-deployment verification. Component launch selection remains unresolved. Reader labels/header and review manifest now say Parent VPM research only. Do not equate newest experiment number with best or launch-approved.
-
-## 2026-10-19 — VPM defensive bank and launch ratings review completed
-
-- Owner requested stronger defense for tomorrow's launch, then clarified ratings first. Immutable sibling v51 `defense-bank`:48 priors/date,96 fixed-penalty family/FT/ridge variants; individual rim/disruption/foul/rebound groups and actual-point component maps. Offense slopes frozen for total-defense maps. Source adds1,845,025 measured rows; new TD550/K1000 skills use only earlier dates; missing is not zero.
-- Literal-minimum2020–22 selects rim savings/contest volume+shooting/nonoffPF beside core3 at4000/8000/TD275. Stress gameRMSE13.9705 vs core13.9604; teamnet3.2125 vs3.2352, both unresolved. Low-continuity game/team-win losses exclude zero, so no stronger-defense promotion. Core+datedFT13.9564 improves seven point estimates but all intervals cross zero; explicitly retrospective launch-review recommendation only. Actual-point gains remain unresolved.
-- Current cutSeptember1,2026 has585 recent players/1556 universe. Local `ratings.html` compares six models; `launch_candidate_ratings.csv` is core+FT, `ratings_for_review.csv` expandedTD275/core/previous differences. Not an October certified roster; no new incoming identity pass or2027 outcomes. Browser search/sort/six-model review verified; local server127.0.0.1:8765 serves the private reader.
-- All25 tests,244909 independent source cells,368 conditional mapper equations,140 score rows,8289 games/210 teams and actual-point audits pass. Old controls/competitors preserved. Receipt `VPM_LAUNCH_DEFENSE.md`; curated sibling `launch_defense_v51_summary.json`. No public deployment. Preserve unrelated dirty work.
