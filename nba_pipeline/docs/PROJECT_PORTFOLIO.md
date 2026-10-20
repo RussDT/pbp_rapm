@@ -77,6 +77,8 @@ Canonical docs: [RAPM Table Catalog](./RAPM_TABLE_CATALOG.md),
 
 ### 2. RESEARCH — NBA predictive VPM defensive matchup features
 
+**Expanded forward-prior follow-up completed, October19:** [previous repaired with more features and covariance-aware future calibration](VPM_REPAIRED_FORWARD_EXPANDED.md), same VPM research slot. More features plus dated MPG in the forward mapper yields gameRMSE13.8953 vs previous13.9659, all seven historical paired gains positive; EPM superiority remains unresolved. Prior spread increases without an output multiplier. Overall early-development winner is still the feature-only old-label extension; the forward+MPG model wins within its declared family. Audited585-player prior/final-rating reader8767; no automatic public/component release or2027 outcomes.
+
 **Corrected ratings follow-up completed, October19:** [fixed shooting fouls and contested-DREB replacement](VPM_FIXED_FOULS_CONTESTED_DREB.md). Actual seven-field Parent fits now replace totalDREB entirely. ContestedTD275 gameRMSE13.9600 vs total13.9700/previous13.9659; game gains remain unresolved, while the tiny native actual-point rebound increment excludes zero. Same research slot, no public/component launch choice. Audited585-player current comparison is at local8766; old8765 remains flagged pre-repair.
 
 **Scope correction, October19:** the completed v51 work below concerns Parent VPM, not the ten-component product. The parent core+FT launch recommendation is withdrawn as a component launch choice. Owner needs one clear architecture map and component ratings before release; see [VPM model map](VPM_MODEL_MAP.md). Component launch selection remains unresolved.

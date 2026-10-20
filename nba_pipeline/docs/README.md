@@ -4,6 +4,8 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Expanded forward priors for repaired VPM](VPM_REPAIRED_FORWARD_EXPANDED.md) - dated skills predict future lineup scoring; wider learned priors, explicit MPG test, old-label feature control, seven-test evidence and audited ratings
+
 - [Fixed fouls and contested-DREB replacement](VPM_FIXED_FOULS_CONTESTED_DREB.md) - completed Parent VPM rerun, exact replacement, previous-repaired comparison, audited ratings and skill-only/blended prior views, plus small future-possession gain; game improvements remain inconclusive
 
 - [VPM defensive overlap and contested rebounds](VPM_DEFENSIVE_FEATURE_OVERLAP.md) - measured feature correlations, contested-DREB candidate scope, and corrected all-zero shooting-foul extraction; original saved ratings remain pre-repair; see the separate corrected rerun above
