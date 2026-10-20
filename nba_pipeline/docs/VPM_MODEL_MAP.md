@@ -104,3 +104,24 @@ The exact saved-rating bridge for all1556 players is private sibling
 `vpm/results/harness/vpm_launch_defense_v51/previous_to_parent_prior_changes.csv`
 with source hashes and closure in `prior_shift_audit.json`. No refit, new score,
 outcome access or rating change was performed for this diagnosis.
+
+
+## Current forward Parent follow-ups, October19
+
+The retained forward Parent is v53 `forward_expanded_mpg_a10p0` at4000/8000,
+TD550, actualFT, mapper10/outputscale1. Its split inputs remain the current
+review control. The unselected rim-DFGM addition is a separate experiment.
+
+|Plain reader name|Experiment|Change|Later game RMSE|Decision|
+|---|---|---|---:|---|
+|Current split features|v53|Retained forward Parent|13.895289|Retain|
+|Role-aware|v55|Position baseline/shared deviations/pooled role slopes|13.897586|Research|
+|All inputs in both mappers|v56|Current O/D union to both sides|13.913997|Research|
+
+The new [combined reader](http://127.0.0.1:8767/prior-comparisons.html) shows
+these same three saved cuts, current O/D priors/final ratings and previous
+repaired reference. Both new experiments won their own fixed2020–22
+comparisons, but later evidence does not support replacement. They do not
+change the earlier overall v53 family-selection record or establish a
+Component VPM release. See [role receipt](VPM_ROLE_AWARE_PRIOR.md) and
+[unsplit receipt](VPM_UNSPLIT_FEATURE_PRIOR.md). All three are Parent VPM.

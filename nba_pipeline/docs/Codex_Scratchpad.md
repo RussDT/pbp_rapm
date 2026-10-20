@@ -2,6 +2,12 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-19 — Role-aware and unsplit forward Parent priors tested
+
+- Owner requested role-aware versus current, then all offensive/defensive inputs in both mappers. Immutable sibling v55/v56, same4000/8000/TD550/actualFT/SQ/entrants. Dated position/minute source only;580/582 recent roles known, missing before2017. Role baseline+partially pooled slopes wins fixed dev comparison13.734402 vs13.740987, but stress13.897586 and native/defense-only errors worsen. Jokic D3.017→2.897, total9.875→9.743.
+- Unsplit24 numeric+flags/side wins development13.711644, loses all seven stress comparisons (game13.913997/teamnet3.163449 vs current13.895289/3.091360). Native final gain unresolved, prior-only worse; crossed D-only with incumbent O/intercept gives+48.25e-6[18.75,78.33]e-6, diagnostic only. Retain current; no new hybrid fit,2027/public/component promotion.
+- 11 focused tests and independent684/683-source,16/8-mapper,70/56-score,42/21-pair audits pass; all control boards/forecasts reproduce. Same8767/prior-comparisons.html shows three models, O/D priors,582/1556/search/sort and checked582-row CSV; role-aware.html exposes decomposition. Curated sibling role_aware_prior_summary/unsplit_feature_prior_summary; canonical VPM_ROLE_AWARE_PRIOR.md and VPM_UNSPLIT_FEATURE_PRIOR.md. Original readers/numerical outputs preserved.
+
 ## 2026-10-19 — Rim defended makes tested with annual DFGA-style filters
 
 - Owner clarified rim DFGM from per-game logs and requested the same filter as DFGA; broader FGM draft superseded before any VPM fit. Eleven annual past-only DE OU fits,314552 independently rebuilt measured rows,13092 prefix-invariant states. Fixed single addition to current forward Parent; all original feature transforms/4000-8000/TD550/SQ/actualFT/entrants unchanged. Dev retains control13.740987 vs13.741643; spent game13.895289→13.893452 tiny, native final/prior-only gains unresolved.
@@ -22,9 +28,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Owner requested the fixed-fouls priors. New local8766/priors.html defaults to contestedDREB skill-only SPM, with totalDREB/previous selectors and exact blended-prior toggle. Shows prior O/D/total beside final O/D/VPM; all585 recent/1556 universe and sorted/filtered CSV available. Jokic prior7.0565/2.5779/9.6344; Wemby1.8264/6.0041/7.8305. Beringer own1.8724 versus combined−2.1735 at.635 background weight illustrates first2000-possession blend.
 - Renderer checks all three models' exact IDs, finite inputs, sums and blended-prior identities. Browser verifies defaults/search/model/basis/universes and screenshot. Final-rating page links to priors. Original reader HTML/source archived in ignored reader_before_priors; curated summary records UI-only hash change and new priors_view_manifest. No model/rating/forecast changes, refits, new results, public deployment or2027 outcomes. Receipt VPM_FIXED_FOULS_CONTESTED_DREB.md.
-
-## 2026-10-19 — Fixed-foul and contested-DREB Parent rerun completed
-
-- Owner requested corrected shooting fouls, contested DREB replacing total DREB, previous repaired comparison and ratings. Separate immutable sibling v52 has seven active numeric defense fields and exact removal of totalDREB+flag. Fixed4000/8000 TD275 (TD550 check), actualFT, own scale1, no tuning. Stress game13.960006 contested /13.969975 total /13.965886 previous; all seven point estimates favor contested versus previous but all seven paired MSE intervals cross zero. Core low-continuity team-win and EPM team-net remain better.
-- Native423644 future possessions: contested-total MSE gain57.8e-6[25.0,88.8]e-6 atTD275;50.4e-6[22.9,78.6]e-6 atTD550. Small historical possession gain, not established game superiority.28 focused tests plus independent185-source/24-mapper/154-score/105-pair audits pass. Core/benchmark forecasts preserved; no2027, public deployment or component promotion.
-- Current Sep1 cut585 recent/1556 universe, still high bigs (Jokic10.765,Wemby9.517,RWIII5.599,Clingan5.421,Reed5.090). New local8766 three-choice reader/CSV checked via browser; old8765 remains flagged pre-repair. Servers intentionally stay available. Receipt `VPM_FIXED_FOULS_CONTESTED_DREB.md`; curated sibling `fixed_fouls_contested_dreb_summary.json`. Keep Parent/component scope clear and actualFT explicit.
