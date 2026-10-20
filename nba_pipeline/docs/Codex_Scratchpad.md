@@ -2,6 +2,13 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-20 — NBA skill live-refresh readiness audited
+
+- Owner asked whether skills are organized to update as season games arrive. Research library yes; operational automatic refresh no. Skills reader fixed Sep1,2026, creation adapter historical cuts/season<=2026, tracking current_2026 exports. Existing daily RAPM shell hardcodes ending2026/old path and calls no estimated-skills refresh. No local crontab or dedicated NBA skills job found among inspected launch agents/Codex automation files. No script executed, new games fetched or schedules modified.
+- Need one season-aware ingest→validated observations→frozen-parameter state refresh→dated checkpoint/export/reader runner, all families/rookie identities/missingness/source delays, pregame archives and monitored schedule. Do not confuse nightly filtering with refitting/tuning on2027. Documented readiness gap in VPM_OFFENSIVE_CREATION_TEST.md; no live-ready claim or VPM change.
+
+- Follow-up owner emphasized organization of all skills for future daily2027 flow. Built estimated_skills_operations.json (59 current/28 standalone/1 retained output,16 groups,20 research lanes), inventory reader and manage_estimated_skills.py inventory/freeze/check. Carry-forward bundle copies current2025-vintage recipes, not a new preseason fit.16 meaningful checks pass; actual check blocks16 missing live-adapter receipts. Browser inventory88 rows verified. Source adapters, state replay and schedule remain unwired. No automatic updating/new data or2027 scoring claimed. Canonical ESTIMATED_SKILLS_DAILY.md.
+
 ## 2026-10-20 — Creation stats retained independently of VPM admission
 
 - Owner explicitly retains predictive rim/potential assists, assisted/unassisted zone makes and playtype difficulty/points as predictive box-score/advanced stats. Extended existing skills.html/CSV/field dictionary with15 auxiliary outputs/supports, Creation & shot difficulty group, Box score assists and Advanced TSA/difficulty. Player details show Retained/not in VPM with dated provenance; original24 mapper inputs and all priors/ratings preserved (reconstruction gap0).
@@ -20,9 +27,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 ## 2026-10-19 — Displayed VPM mean checked without changing ratings
 
 - Owner clarified average displayed ratings, not expected SQ gain. Current forward585-event reader simple mean−1.1323 (582 positive-exposure−1.1399);2025–26 RS-minute weighted mean−.0754, RS+PS+.00457. Full-universe O/D own TD550-exposure means0. Only178/585 positive;77 players above2000 RS minutes average+1.233. Explain exposure reference and selected high-minute players, not a broad positive offset or forced future zero. Added read-only note to VPM_REPAIRED_FORWARD_EXPANDED.md; no model/reader/forecast/source/2027 changes.
-
-## 2026-10-19 — Current mid/three SQ contribution isolated
-
-- Owner requested no SQ/mid/three/both on retained forward Parent. Immutable sibling v57 freezes exact v53 own/entrant priors and4000/8000/TD550/actualFT. Both wins four-way dev; stress game13.956688/13.922137/13.925285/13.895289 and teamnet3.155076/3.106363/3.131277/3.091360. Both gameMSE gain+1.710078[1.026498,2.415750]; each zone adds after other. Season gains unresolved, low-continuity point estimates worse/unresolved. Native both gain141.68e-6[81.05,199.82]e-6 on423644 future possessions.
-- Owner clarified keep D3 residual48000 after two larger-penalty fits already completed; set those aside, preserve original immutable config/selection and append owner_update. Four-way report/downloads only; no adopted change. Independent8-prefix/142-source/48-board/126-score/77-pair audits pass; priors gap0, target/rating gaps<5e-13, controls/forecasts preserved. Audit-only intercept checker needed five-player factor; failed log archived, model outputs unchanged.8 unique focused tests pass.
-- New8767/sq-ablation.html exposes four-way forecasts, seven paired tests and native/marginal increments; browser selectors,98-row CSV/63 paired rows checked, no higher-D3 arms in reported scope. Curated sibling current_sq_ablation_summary; canonical VPM_CURRENT_SQ_ABLATION.md. No public/component promotion or2027 outcomes.

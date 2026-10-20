@@ -16,6 +16,10 @@ runs; they do not identify new architectures or establish a release order.
 
 [Adding rim defended makes](http://127.0.0.1:8767/rim-defended-makes.html) is one matched feature test on the existing forward model. Its negative rim-makes slope does not lower Jokic: finalD3.017→3.171 as correlated slopes refit. Development retains the current forward control; native future-possession improvement is unresolved. [Source, differential-evolution fits and full evidence](VPM_DEFENDED_MAKES.md). This reader is a comparison, not a replacement release.
 
+## Estimated-skill daily organization
+
+[Daily operations inventory](http://127.0.0.1:8767/skills-operations.html) lists the existing current-neutral and standalone estimator profiles, retained outputs, source dependencies and remaining adapters. This is an operator map, not another model or a running daily updater. [Operational handoff and checks](ESTIMATED_SKILLS_DAILY.md).
+
 ## Latest forward-prior comparison
 
 [Expanded forward priors and ratings](http://127.0.0.1:8767/ratings.html) retains Parent VPM and the previous repaired TD550 lineup solve. It learns the feature mapping from dated skills to future365-day actual lineup outcomes, rather than six-year same-window statistics or shrunken RAPM point labels. The page compares the forward+MPG candidate, feature-only old-label extension, previous repaired and the earlier six-year SPM. [Method, selection distinctions and evidence](VPM_REPAIRED_FORWARD_EXPANDED.md). This is a new prior-training comparison within Parent VPM, not a third architecture or a component launch choice.

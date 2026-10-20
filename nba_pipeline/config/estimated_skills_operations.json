@@ -1,0 +1,1777 @@
+{
+  "schema_version": 1,
+  "id": "nba_estimated_skills_operations",
+  "owner": "Russell Thomas",
+  "season_end_year": 2027,
+  "timezone": "America/Los_Angeles",
+  "inventory_as_of": "2026-10-20",
+  "status": "organized; daily source adapters not yet wired",
+  "profiles": {
+    "current_neutral": "Exact estimators currently displayed in skills.html, including retained auxiliaries; no new VPM admission",
+    "standalone_incumbent": "Existing 28-stat registry exports; different models remain explicitly separate",
+    "retained_research": "Retained measured-skill experiments without VPM admission"
+  },
+  "contract": {
+    "daily_action": "filter/recompute states from completed measured games using pinned parameters; never fit/tune/evaluate",
+    "missing": "unmeasured is missing, never zero; source delays visible per family",
+    "identity": "exact NBA ID; season-aware expanding player universe, no fixed 582-player gate",
+    "vpm": "daily skill export and VPM rating refresh are separate",
+    "publication": "new dated operational outputs only; immutable research packages preserved",
+    "scheduling": "no scheduler installed until end-to-end daily adapters and replay pass"
+  },
+  "families": [
+    {
+      "id": "neutral_core",
+      "label": "Neutral PBP skills",
+      "profile": "current_neutral",
+      "source_inputs": [
+        "canonical PBP player-game counts",
+        "dated team/opponent context and age/debut metadata"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_monthly_own_skills.py",
+        "nba_pipeline/scripts/assemble_monthly_own_skills.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/ast_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/blk_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/dreb_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/ft_pct.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/fta_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/mid_fga_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/mid_pct.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/oreb_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/pf_committed_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/pts_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/rim_fga_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/rim_pct.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/stl_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/three_fga_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/three_pct.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/tov_rate.json",
+        "nba_pipeline/results/estimated_skills/monthly_vintage_v1/models/2025/usg_pct.json",
+        "nba_pipeline/scripts/assemble_monthly_own_skills.py",
+        "nba_pipeline/scripts/build_monthly_own_skills.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Read canonical 2027 games without changing historical locks",
+        "Replay the exact neutral/context-corrected fixed-parameter estimator",
+        "Handle season rollover and new identities"
+      ],
+      "fields": [
+        {
+          "id": "current_neutral:own_rim_fga_rate",
+          "key": "own_rim_fga_rate",
+          "label": "Rim attempts",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_rim_fga_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_rim_pct",
+          "key": "own_rim_pct",
+          "label": "Rim%",
+          "unit": "%",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_rim_pct"
+          ]
+        },
+        {
+          "id": "current_neutral:own_mid_fga_rate",
+          "key": "own_mid_fga_rate",
+          "label": "Non-rim 2P attempts",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_mid_fga_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_mid_pct",
+          "key": "own_mid_pct",
+          "label": "Non-rim 2P%",
+          "unit": "%",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_mid_pct"
+          ]
+        },
+        {
+          "id": "current_neutral:own_three_fga_rate",
+          "key": "own_three_fga_rate",
+          "label": "3P attempts",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_three_fga_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_three_pct",
+          "key": "own_three_pct",
+          "label": "3P%",
+          "unit": "%",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_three_pct"
+          ]
+        },
+        {
+          "id": "current_neutral:own_fta_rate",
+          "key": "own_fta_rate",
+          "label": "FT attempts",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_fta_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_ft_pct",
+          "key": "own_ft_pct",
+          "label": "FT%",
+          "unit": "%",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_ft_pct"
+          ]
+        },
+        {
+          "id": "current_neutral:own_ast_rate",
+          "key": "own_ast_rate",
+          "label": "Assists",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_ast_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_tov_rate",
+          "key": "own_tov_rate",
+          "label": "Turnovers",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_tov_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_oreb_rate",
+          "key": "own_oreb_rate",
+          "label": "Offensive rebounds",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_oreb_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_dreb_rate",
+          "key": "own_dreb_rate",
+          "label": "Defensive rebounds",
+          "unit": "/100 defense",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_dreb_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_stl_rate",
+          "key": "own_stl_rate",
+          "label": "Steals",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_stl_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_blk_rate",
+          "key": "own_blk_rate",
+          "label": "Blocks",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_blk_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_usg_pct",
+          "key": "own_usg_pct",
+          "label": "Usage events",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_usg_pct"
+          ]
+        },
+        {
+          "id": "current_neutral:own_pts_rate",
+          "key": "own_pts_rate",
+          "label": "Separate points state",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_pts_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_pf_committed_rate",
+          "key": "own_pf_committed_rate",
+          "label": "Total personal fouls",
+          "unit": "/100 combined O+D",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_pf_committed_rate"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "neutral_rim",
+      "label": "Neutral rim defense and DFGA",
+      "profile": "current_neutral",
+      "source_inputs": [
+        "measured per-game rim defended attempts/makes",
+        "measured tracking DFGA",
+        "exact canonical defensive possessions"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_monthly_defensive_skills.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/monthly_defense_v1/models/2025.json",
+        "nba_pipeline/scripts/build_monthly_defensive_skills.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Append measured games with exact side/exposure joins",
+        "Keep lag-priced rim baseline and zero-versus-missing gates"
+      ],
+      "fields": [
+        {
+          "id": "current_neutral:own_rim_saved100",
+          "key": "own_rim_saved100",
+          "label": "Rim points saved",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_rim_contests100",
+            "own_rim_suppression"
+          ]
+        },
+        {
+          "id": "current_neutral:own_rim_contests100",
+          "key": "own_rim_contests100",
+          "label": "Rim contests",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_rim_contests100"
+          ]
+        },
+        {
+          "id": "current_neutral:own_dfga100",
+          "key": "own_dfga100",
+          "label": "Defended FG attempts",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_dfga100"
+          ]
+        },
+        {
+          "id": "current_neutral:own_rim_suppression",
+          "key": "own_rim_suppression",
+          "label": "Rim FG% suppression",
+          "unit": "percentage points",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_rim_suppression"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stabilized_defense",
+      "label": "Fixed TD550/K1000 defense and MPG",
+      "profile": "current_neutral",
+      "source_inputs": [
+        "measured hustle and tracking",
+        "corrected PBP shooting fouls",
+        "defensive exposure and regular-season minutes"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/export_vpm_forward_features.py",
+        "nba_pipeline/scripts/build_vpm_defense_bank.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/scripts/build_vpm_defense_bank.py",
+        "nba_pipeline/scripts/export_vpm_forward_features.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Replace fixed historical cuts with explicit as-of",
+        "Re-estimate dated aggregate states with fixed TD550/K1000",
+        "Refresh 365-day RS MPG and games with current identities"
+      ],
+      "fields": [
+        {
+          "id": "current_neutral:def_shooting_pf100",
+          "key": "def_shooting_pf100",
+          "label": "Shooting fouls",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "def_shooting_pf100"
+          ]
+        },
+        {
+          "id": "current_neutral:def_nonoff_pf100",
+          "key": "def_nonoff_pf100",
+          "label": "Non-offensive fouls",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "def_nonoff_pf100"
+          ]
+        },
+        {
+          "id": "current_neutral:def_deflections100",
+          "key": "def_deflections100",
+          "label": "Deflections",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "def_deflections100"
+          ]
+        },
+        {
+          "id": "current_neutral:def_off_fouls_drawn100",
+          "key": "def_off_fouls_drawn100",
+          "label": "Offensive fouls drawn",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "def_off_fouls_drawn100"
+          ]
+        },
+        {
+          "id": "current_neutral:def_contested_dreb100",
+          "key": "def_contested_dreb100",
+          "label": "Contested defensive rebounds",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "def_contested_dreb100"
+          ]
+        },
+        {
+          "id": "current_neutral:def_contested_shots100",
+          "key": "def_contested_shots100",
+          "label": "Contested shots",
+          "unit": "/100 defense",
+          "mapper": [
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "def_contested_shots100"
+          ]
+        },
+        {
+          "id": "current_neutral:def_charges_drawn100",
+          "key": "def_charges_drawn100",
+          "label": "Charges drawn",
+          "unit": "/100 defense",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "def_charges_drawn100"
+          ]
+        },
+        {
+          "id": "current_neutral:ctx_mpg",
+          "key": "ctx_mpg",
+          "label": "Minutes per appearance",
+          "unit": "minutes",
+          "mapper": [
+            "OFF",
+            "DEF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "ctx_mpg"
+          ]
+        },
+        {
+          "id": "current_neutral:ctx_games",
+          "key": "ctx_games",
+          "label": "RS appearances",
+          "unit": "games",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "ctx_mpg"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "creation",
+      "label": "Retained assist and assistedness forecasts",
+      "profile": "current_neutral",
+      "source_inputs": [
+        "canonical PBP counts and official assist tags",
+        "measured potential assists",
+        "same-game same-team passer identity"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/export_vpm_offensive_creation.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/vpm_offensive_creation_v1/models/2025/mid_unassisted_share.json",
+        "nba_pipeline/results/estimated_skills/vpm_offensive_creation_v1/models/2025/potential_assists.json",
+        "nba_pipeline/results/estimated_skills/vpm_offensive_creation_v1/models/2025/rim_assist_share.json",
+        "nba_pipeline/results/estimated_skills/vpm_offensive_creation_v1/models/2025/rim_unassisted_share.json",
+        "nba_pipeline/results/estimated_skills/vpm_offensive_creation_v1/models/2025/three_unassisted_share.json",
+        "nba_pipeline/scripts/export_vpm_offensive_creation.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Reuse frozen annual OU models on dated measured 2027 observations",
+        "Preserve team assist reconciliation and missing tag gates"
+      ],
+      "fields": [
+        {
+          "id": "current_neutral:own_potential_assists",
+          "key": "own_potential_assists",
+          "label": "Potential assists",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_potential_assists"
+          ]
+        },
+        {
+          "id": "current_neutral:own_rim_assist_share",
+          "key": "own_rim_assist_share",
+          "label": "Rim share of assists",
+          "unit": "%",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_rim_assist_share"
+          ]
+        },
+        {
+          "id": "current_neutral:own_rim_unassisted_share",
+          "key": "own_rim_unassisted_share",
+          "label": "Rim unassisted share",
+          "unit": "%",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_rim_unassisted_share"
+          ]
+        },
+        {
+          "id": "current_neutral:own_mid_unassisted_share",
+          "key": "own_mid_unassisted_share",
+          "label": "Non-rim 2P unassisted share",
+          "unit": "%",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_mid_unassisted_share"
+          ]
+        },
+        {
+          "id": "current_neutral:own_three_unassisted_share",
+          "key": "own_three_unassisted_share",
+          "label": "3P unassisted share",
+          "unit": "%",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_three_unassisted_share"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "playtype",
+      "label": "Retained shot-mix difficulty",
+      "profile": "current_neutral",
+      "source_inputs": [
+        "outcome-invariant PBP shot descriptions",
+        "strictly lagged completed-season category prices"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/export_vpm_offensive_creation.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/vpm_offensive_creation_v1/models/2025/shot_mix.json",
+        "nba_pipeline/scripts/export_vpm_offensive_creation.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Persist lagged category-price artifact and its source cutoff",
+        "Forecast mix with frozen half-life/prior, no made-only assist tags"
+      ],
+      "fields": [
+        {
+          "id": "current_neutral:own_role_difficulty_pp",
+          "key": "own_role_difficulty_pp",
+          "label": "Playtype difficulty",
+          "unit": "TS percentage points",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_role_difficulty_pp"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "derived",
+      "label": "Coherent makes and advanced summaries",
+      "profile": "current_neutral",
+      "source_inputs": [
+        "upstream dated forecasts, with raw missingness"
+      ],
+      "research_builders": [
+        "../vpm/vpm/scripts/render_predictive_inputs.py",
+        "nba_pipeline/scripts/assemble_monthly_own_skills.py"
+      ],
+      "frozen_files": [
+        "../vpm/vpm/scripts/predictive_inputs_template.html",
+        "../vpm/vpm/scripts/render_predictive_inputs.py",
+        "nba_pipeline/scripts/assemble_monthly_own_skills.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Compute after all available source families",
+        "Keep exact split and point identities; label approximate FGA+.44FTA",
+        "Replace fixed September snapshot reader with dated live output"
+      ],
+      "fields": [
+        {
+          "id": "current_neutral:own_rim_makes100",
+          "key": "own_rim_makes100",
+          "label": "Rim makes",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_rim_fga_rate",
+            "own_rim_pct"
+          ]
+        },
+        {
+          "id": "current_neutral:own_mid_makes100",
+          "key": "own_mid_makes100",
+          "label": "Non-rim 2P makes",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_mid_fga_rate",
+            "own_mid_pct"
+          ]
+        },
+        {
+          "id": "current_neutral:own_three_makes100",
+          "key": "own_three_makes100",
+          "label": "3P makes",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_three_fga_rate",
+            "own_three_pct"
+          ]
+        },
+        {
+          "id": "current_neutral:own_ft_makes100",
+          "key": "own_ft_makes100",
+          "label": "FT makes",
+          "unit": "/100 offense",
+          "mapper": [
+            "OFF"
+          ],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_fta_rate",
+            "own_ft_pct"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_fga100",
+          "key": "pred_fga100",
+          "label": "FG attempts",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_rim_fga_rate",
+            "own_mid_fga_rate",
+            "own_three_fga_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_fgm100",
+          "key": "pred_fgm100",
+          "label": "FG makes",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_rim_makes100",
+            "own_mid_makes100",
+            "own_three_makes100"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_pts100",
+          "key": "pred_pts100",
+          "label": "Coherent points",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_rim_makes100",
+            "own_mid_makes100",
+            "own_three_makes100",
+            "own_ft_makes100"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_fg_pct",
+          "key": "pred_fg_pct",
+          "label": "FG%",
+          "unit": "%",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "pred_fgm100",
+            "pred_fga100"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_two_pct",
+          "key": "pred_two_pct",
+          "label": "2P%",
+          "unit": "%",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_rim_makes100",
+            "own_mid_makes100",
+            "own_rim_fga_rate",
+            "own_mid_fga_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_efg_pct",
+          "key": "pred_efg_pct",
+          "label": "eFG%",
+          "unit": "%",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "pred_fgm100",
+            "own_three_makes100",
+            "pred_fga100"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_ts_pct",
+          "key": "pred_ts_pct",
+          "label": "TS% \u00b7 0.44",
+          "unit": "%",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "pred_pts100",
+            "pred_fga100",
+            "own_fta_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_three_ar",
+          "key": "pred_three_ar",
+          "label": "3P attempt share",
+          "unit": "%",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_three_fga_rate",
+            "pred_fga100"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_ft_rate",
+          "key": "pred_ft_rate",
+          "label": "FT attempt ratio",
+          "unit": "ratio",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_fta_rate",
+            "pred_fga100"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_ast_tov",
+          "key": "pred_ast_tov",
+          "label": "AST / TOV",
+          "unit": "ratio",
+          "mapper": [],
+          "status": "current_input_or_support",
+          "dependencies": [
+            "own_ast_rate",
+            "own_tov_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_rim_assists100",
+          "key": "own_rim_assists100",
+          "label": "Rim assists",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_ast_rate",
+            "own_rim_assist_share"
+          ]
+        },
+        {
+          "id": "current_neutral:pred_tsa100",
+          "key": "pred_tsa100",
+          "label": "TSA \u00b7 0.44",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "pred_fga100",
+            "own_fta_rate"
+          ]
+        },
+        {
+          "id": "current_neutral:own_role_added100",
+          "key": "own_role_added100",
+          "label": "Playtype difficulty points",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "pred_tsa100",
+            "own_role_difficulty_pp"
+          ]
+        },
+        {
+          "id": "current_neutral:own_rim_assisted_makes100",
+          "key": "own_rim_assisted_makes100",
+          "label": "Rim assisted makes",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_rim_makes100",
+            "own_rim_unassisted_share"
+          ]
+        },
+        {
+          "id": "current_neutral:own_rim_unassisted_makes100",
+          "key": "own_rim_unassisted_makes100",
+          "label": "Rim unassisted makes",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_rim_makes100",
+            "own_rim_unassisted_share"
+          ]
+        },
+        {
+          "id": "current_neutral:own_mid_assisted_makes100",
+          "key": "own_mid_assisted_makes100",
+          "label": "Non-rim 2P assisted makes",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_mid_makes100",
+            "own_mid_unassisted_share"
+          ]
+        },
+        {
+          "id": "current_neutral:own_mid_unassisted_makes100",
+          "key": "own_mid_unassisted_makes100",
+          "label": "Non-rim 2P unassisted makes",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_mid_makes100",
+            "own_mid_unassisted_share"
+          ]
+        },
+        {
+          "id": "current_neutral:own_three_assisted_makes100",
+          "key": "own_three_assisted_makes100",
+          "label": "3P assisted makes",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_three_makes100",
+            "own_three_unassisted_share"
+          ]
+        },
+        {
+          "id": "current_neutral:own_three_unassisted_makes100",
+          "key": "own_three_unassisted_makes100",
+          "label": "3P unassisted makes",
+          "unit": "/100 offense",
+          "mapper": [],
+          "status": "retained_auxiliary",
+          "dependencies": [
+            "own_three_makes100",
+            "own_three_unassisted_share"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rim_makes",
+      "label": "Retained rim defended-makes skill",
+      "profile": "retained_research",
+      "source_inputs": [
+        "measured per-game rim defended makes and defensive exposure"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/export_vpm_rim_defended_makes.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/vpm_rim_defended_makes_v1/models/2025.json",
+        "nba_pipeline/scripts/export_vpm_rim_defended_makes.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Adapt frozen OU exporter to dated daily inputs; preserve independent-count-forecast caveat"
+      ],
+      "fields": [
+        {
+          "id": "retained_research:own_rim_dfgm100",
+          "key": "own_rim_dfgm100",
+          "label": "Rim defended makes",
+          "unit": "/100 defense",
+          "mapper": [],
+          "status": "retained_research",
+          "dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "standalone_pbp_pct",
+      "label": "PBP shooting percentages",
+      "profile": "standalone_incumbent",
+      "source_inputs": [
+        "existing standalone export and its measured source family"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/hyperparams.json",
+        "nba_pipeline/results/estimated_skills/three_pct_volume_prior/report.json",
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Keep existing exported model separate from neutral VPM states",
+        "Add frozen-parameter daily-state export, not tune/evaluate commands"
+      ],
+      "fields": [
+        {
+          "id": "standalone_incumbent:rim_pct",
+          "key": "rim_pct",
+          "label": "Rim FG%",
+          "unit": "%",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:mid_pct",
+          "key": "mid_pct",
+          "label": "Mid-range FG%",
+          "unit": "%",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:three_pct",
+          "key": "three_pct",
+          "label": "3P%",
+          "unit": "%",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1 + three-point volume prior (lane 11, strength 0.5)",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:ft_pct",
+          "key": "ft_pct",
+          "label": "FT%",
+          "unit": "%",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "standalone_pbp_offense_rate",
+      "label": "PBP offensive rates",
+      "profile": "standalone_incumbent",
+      "source_inputs": [
+        "existing standalone export and its measured source family"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/hyperparams.json",
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Keep existing exported model separate from neutral VPM states",
+        "Add frozen-parameter daily-state export, not tune/evaluate commands"
+      ],
+      "fields": [
+        {
+          "id": "standalone_incumbent:rim_fga_rate",
+          "key": "rim_fga_rate",
+          "label": "Rim FGA /100",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:mid_fga_rate",
+          "key": "mid_fga_rate",
+          "label": "Mid FGA /100",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:three_fga_rate",
+          "key": "three_fga_rate",
+          "label": "3PA /100",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:fta_rate",
+          "key": "fta_rate",
+          "label": "FTA /100",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:pts_rate",
+          "key": "pts_rate",
+          "label": "PTS /100",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:ast_rate",
+          "key": "ast_rate",
+          "label": "AST /100",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:tov_rate",
+          "key": "tov_rate",
+          "label": "TOV /100",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:oreb_rate",
+          "key": "oreb_rate",
+          "label": "OREB /100",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:usg_pct",
+          "key": "usg_pct",
+          "label": "Usage %",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "standalone_pbp_defense_rate",
+      "label": "PBP defensive rates",
+      "profile": "standalone_incumbent",
+      "source_inputs": [
+        "existing standalone export and its measured source family"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/hyperparams.json",
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Keep existing exported model separate from neutral VPM states",
+        "Add frozen-parameter daily-state export, not tune/evaluate commands"
+      ],
+      "fields": [
+        {
+          "id": "standalone_incumbent:dreb_rate",
+          "key": "dreb_rate",
+          "label": "DREB /100",
+          "unit": "per 100 defensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:stl_rate",
+          "key": "stl_rate",
+          "label": "STL /100",
+          "unit": "per 100 defensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:blk_rate",
+          "key": "blk_rate",
+          "label": "BLK /100",
+          "unit": "per 100 defensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "standalone_pbp_both_rate",
+      "label": "PBP two-way rates",
+      "profile": "standalone_incumbent",
+      "source_inputs": [
+        "existing standalone export and its measured source family"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/hyperparams.json",
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Keep existing exported model separate from neutral VPM states",
+        "Add frozen-parameter daily-state export, not tune/evaluate commands"
+      ],
+      "fields": [
+        {
+          "id": "standalone_incumbent:pf_committed_rate",
+          "key": "pf_committed_rate",
+          "label": "PF committed /100",
+          "unit": "per 100 possessions (both sides)",
+          "mapper": [],
+          "status": "live",
+          "table_model": "v1",
+          "source_export": {
+            "path": "current_player_table/current_players_provenance.csv",
+            "id_column": "player_id",
+            "date_pattern": "{skill}_last_date",
+            "season_pattern": "{skill}_last_season",
+            "obs_pattern": "{skill}_n_obs",
+            "universe": "582 players with latest-season PBP participation",
+            "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+          },
+          "dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "standalone_hustle",
+      "label": "Hustle game-log filter",
+      "profile": "standalone_incumbent",
+      "source_inputs": [
+        "existing standalone export and its measured source family"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/deflections_next_game/frozen.json",
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Keep existing exported model separate from neutral VPM states",
+        "Add frozen-parameter daily-state export, not tune/evaluate commands"
+      ],
+      "fields": [
+        {
+          "id": "standalone_incumbent:deflections",
+          "key": "deflections",
+          "label": "Deflections /100 def",
+          "unit": "per 100 defensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "next_ou (plain OU, no corrections, no context)",
+          "source_export": {
+            "path": "deflections_next_game/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_deflections_per100",
+            "date_column": "game_date",
+            "name_column": "player_name",
+            "companion_columns": {
+              "deflections_observed_games": "observed_games"
+            }
+          },
+          "dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "standalone_tracking_offense",
+      "label": "Tracking game-log filters (offense)",
+      "profile": "standalone_incumbent",
+      "source_inputs": [
+        "existing standalone export and its measured source family"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/tracking_next_game/drives/frozen.json",
+        "nba_pipeline/results/estimated_skills/tracking_next_game/possession_minutes/frozen.json",
+        "nba_pipeline/results/estimated_skills/tracking_next_game/potential_assists/frozen.json",
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Keep existing exported model separate from neutral VPM states",
+        "Add frozen-parameter daily-state export, not tune/evaluate commands"
+      ],
+      "fields": [
+        {
+          "id": "standalone_incumbent:potential_assists",
+          "key": "potential_assists",
+          "label": "Potential assists /100 off",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "next_ou (plain OU)",
+          "source_export": {
+            "path": "tracking_next_game/potential_assists/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_potential_assists_per100",
+            "date_column": "game_date",
+            "name_column": "player_name"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:drives",
+          "key": "drives",
+          "label": "Drives /100 off",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "next_ou (plain OU)",
+          "source_export": {
+            "path": "tracking_next_game/drives/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_drives_per100",
+            "date_column": "game_date",
+            "name_column": "player_name"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:possession_minutes",
+          "key": "possession_minutes",
+          "label": "Possession minutes /100 off",
+          "unit": "per 100 offensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "next_ou (plain OU)",
+          "source_export": {
+            "path": "tracking_next_game/possession_minutes/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_possession_minutes_per100",
+            "date_column": "game_date",
+            "name_column": "player_name"
+          },
+          "dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "standalone_tracking_defense",
+      "label": "Tracking game-log filters (defense)",
+      "profile": "standalone_incumbent",
+      "source_inputs": [
+        "existing standalone export and its measured source family"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/tracking_next_game/contested_dreb/frozen.json",
+        "nba_pipeline/results/estimated_skills/tracking_next_game/contested_shots/frozen.json",
+        "nba_pipeline/results/estimated_skills/tracking_next_game/dfga/frozen.json",
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Keep existing exported model separate from neutral VPM states",
+        "Add frozen-parameter daily-state export, not tune/evaluate commands"
+      ],
+      "fields": [
+        {
+          "id": "standalone_incumbent:contested_shots",
+          "key": "contested_shots",
+          "label": "Contested shots /100 def",
+          "unit": "per 100 defensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "next_ou (plain OU; frozen despite a stress reversal)",
+          "source_export": {
+            "path": "tracking_next_game/contested_shots/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_contested_shots_per100",
+            "date_column": "game_date",
+            "name_column": "player_name"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:dfga",
+          "key": "dfga",
+          "label": "Defended FGA /100 def",
+          "unit": "per 100 defensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "next_ou (plain OU)",
+          "source_export": {
+            "path": "tracking_next_game/dfga/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_dfga_per100",
+            "date_column": "game_date",
+            "name_column": "player_name"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:contested_dreb",
+          "key": "contested_dreb",
+          "label": "Contested DREB /100 def",
+          "unit": "per 100 defensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "next_ou (plain OU)",
+          "source_export": {
+            "path": "tracking_next_game/contested_dreb/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_contested_dreb_per100",
+            "date_column": "game_date",
+            "name_column": "player_name"
+          },
+          "dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "standalone_fouls_drawn",
+      "label": "CDN fouls-drawn filters",
+      "profile": "standalone_incumbent",
+      "source_inputs": [
+        "existing standalone export and its measured source family"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/fouls_drawn_next_game/charges_drawn/frozen.json",
+        "nba_pipeline/results/estimated_skills/fouls_drawn_next_game/off_fouls_drawn/frozen.json",
+        "nba_pipeline/results/estimated_skills/fouls_drawn_next_game/pfd/frozen.json",
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Keep existing exported model separate from neutral VPM states",
+        "Add frozen-parameter daily-state export, not tune/evaluate commands"
+      ],
+      "fields": [
+        {
+          "id": "standalone_incumbent:off_fouls_drawn",
+          "key": "off_fouls_drawn",
+          "label": "Offensive fouls drawn /100 def",
+          "unit": "per 100 possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "next_ou (plain OU; near-equivalent to the random walk)",
+          "source_export": {
+            "path": "fouls_drawn_next_game/off_fouls_drawn/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_off_fouls_drawn_per100",
+            "date_column": "game_date",
+            "name_column": "player_name"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:charges_drawn",
+          "key": "charges_drawn",
+          "label": "Charges drawn /100 def",
+          "unit": "per 100 possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "next_ou (plain OU; near-equivalent to the random walk)",
+          "source_export": {
+            "path": "fouls_drawn_next_game/charges_drawn/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_charges_drawn_per100",
+            "date_column": "game_date",
+            "name_column": "player_name"
+          },
+          "dependencies": []
+        },
+        {
+          "id": "standalone_incumbent:pfd",
+          "key": "pfd",
+          "label": "Personal fouls drawn /100 off",
+          "unit": "per 100 possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "next_ou (plain OU)",
+          "source_export": {
+            "path": "fouls_drawn_next_game/pfd/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_pfd_per100",
+            "date_column": "game_date",
+            "name_column": "player_name"
+          },
+          "dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "standalone_rim_defense",
+      "label": "Rolling rim defense",
+      "profile": "standalone_incumbent",
+      "source_inputs": [
+        "existing standalone export and its measured source family"
+      ],
+      "research_builders": [
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "frozen_files": [
+        "nba_pipeline/results/estimated_skills/predictive_rim_saved/frozen.json",
+        "nba_pipeline/scripts/build_estimated_skills_registry.py"
+      ],
+      "live_adapter": null,
+      "remaining_work": [
+        "Keep existing exported model separate from neutral VPM states",
+        "Add frozen-parameter daily-state export, not tune/evaluate commands"
+      ],
+      "fields": [
+        {
+          "id": "standalone_incumbent:rim_points_saved",
+          "key": "rim_points_saved",
+          "label": "Rim points saved /100 def",
+          "unit": "points per 100 defensive possessions",
+          "mapper": [],
+          "status": "live",
+          "table_model": "exponential decay (730-day half-life, K=100 prior attempts), not the OU engine",
+          "source_export": {
+            "path": "predictive_rim_saved/current_2026.csv",
+            "id_column": "player_id",
+            "value_column": "estimated_rim_points_saved100",
+            "date_column": "game_date",
+            "name_column": "tracking_name",
+            "companion_columns": {
+              "rim_contests100": "post_contests100",
+              "rim_suppression": "post_suppression",
+              "rim_observed_games": "observed_games"
+            }
+          },
+          "dependencies": []
+        }
+      ]
+    }
+  ],
+  "research_lanes": [
+    {
+      "lane": 1,
+      "name": "PBP Kalman panel (17 skills)",
+      "status": "live"
+    },
+    {
+      "lane": 2,
+      "name": "Next-game deflections OU",
+      "status": "live"
+    },
+    {
+      "lane": 3,
+      "name": "Longer-horizon estimated deflections",
+      "status": "diagnostic"
+    },
+    {
+      "lane": 4,
+      "name": "Deflections playoff offset",
+      "status": "failed"
+    },
+    {
+      "lane": 5,
+      "name": "Deflections-to-steals increment",
+      "status": "increment"
+    },
+    {
+      "lane": 6,
+      "name": "Tracking game-log backfill",
+      "status": "imputation"
+    },
+    {
+      "lane": 7,
+      "name": "Tracking playoff quartiles",
+      "status": "diagnostic"
+    },
+    {
+      "lane": 8,
+      "name": "Rim contest savings and matchup burden",
+      "status": "measurement"
+    },
+    {
+      "lane": 9,
+      "name": "Rolling predictive rim points saved",
+      "status": "live"
+    },
+    {
+      "lane": 10,
+      "name": "Rim blocked-shot prior",
+      "status": "failed"
+    },
+    {
+      "lane": 11,
+      "name": "Three-point volume prior",
+      "status": "live"
+    },
+    {
+      "lane": 12,
+      "name": "Shooting fusion",
+      "status": "failed"
+    },
+    {
+      "lane": 13,
+      "name": "Physical features",
+      "status": "diagnostic"
+    },
+    {
+      "lane": 14,
+      "name": "Team-game and league seasonality",
+      "status": "failed"
+    },
+    {
+      "lane": 15,
+      "name": "Attempt rates vs EPM (2026)",
+      "status": "diagnostic"
+    },
+    {
+      "lane": 16,
+      "name": "EPM E-Skills benchmark (2026)",
+      "status": "diagnostic"
+    },
+    {
+      "lane": 17,
+      "name": "Current skill comparison table",
+      "status": "diagnostic"
+    },
+    {
+      "lane": 18,
+      "name": "2026 forward confirmation (v3)",
+      "status": "diagnostic"
+    },
+    {
+      "lane": 19,
+      "name": "Next-game tracking filters (six stats)",
+      "status": "live"
+    },
+    {
+      "lane": 20,
+      "name": "Next-game fouls-drawn filters (three stats)",
+      "status": "live"
+    }
+  ]
+}

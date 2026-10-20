@@ -1,0 +1,28 @@
+{
+  "status": "organized_not_live_wired",
+  "date": "2026-10-20",
+  "profiles": {
+    "current_neutral": 59,
+    "standalone_incumbent": 28,
+    "retained_research": 1
+  },
+  "source_groups": 16,
+  "research_lanes": 20,
+  "all_parameter_pins_available": true,
+  "bundle_manifest_sha256": "073c85b4665d371460bc5b5321afecfbe7e1511cad5e81ec9bd0e0a233ba28b7",
+  "bundle_file_count": 48,
+  "bundle_status": "carry-forward recipes currently exported; not a newly trained preseason vintage",
+  "inventory_sha256": "c42b2f107129cbb20ac4c03d610f8f0305187abb8c330b810062bccdc5bb87fb",
+  "tests_passed": 16,
+  "browser_inventory_fields": 88,
+  "browser_inventory_families": 16,
+  "live_adapters_wired": 0,
+  "scheduler_installed": false,
+  "protected_outcomes": 0,
+  "code_doc_sha256": {
+    "nba_pipeline/config/estimated_skills_operations.json": "42c79f6dd863022a9d5d63e8ae74d24b3f5a677e2070224c79cfea12809d260b",
+    "nba_pipeline/scripts/manage_estimated_skills.py": "605669e3f25ff555749be84a096cc8085ec004297afe6dc7cc347efe50989cb5",
+    "nba_pipeline/tests/test_estimated_skills_operations.py": "d81f6ad9f809e769089a886439bdade0afd90de5c3c196c71b40789f4a45502b",
+    "nba_pipeline/docs/ESTIMATED_SKILLS_DAILY.md": "3a9d62bacdca1d05b7429ed601114d09e4c0ab45d02a533a1154a70eaec52321"
+  }
+}

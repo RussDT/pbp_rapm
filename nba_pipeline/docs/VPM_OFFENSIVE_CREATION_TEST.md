@@ -226,3 +226,32 @@ labels passed; the downloaded582-row creation CSV matches saved values.
 Curated receipt `vpm/evidence/predictive_creation_library_summary.json` records
 retained fields, units, source/code/output hashes and coverage. No new fits,
 lineup inputs, VPM predictions or2027 outcomes.
+
+## Live refresh readiness audit — October20,2026
+
+Owner asked whether estimated skills are ready to update as games are played.
+The library is organized as dated research outputs, **not yet an operational
+automatic NBA refresh**. The reader fixes CUT=September1,2026. The creation
+adapter has hardcoded historical cuts, measured games before September1 and
+season<=2026; standalone tracking exports likewise stop at2026. Retaining
+stats in the reader does not create a live ingestion/update pipeline.
+
+The inspected daily_rapm_update.sh fetches/solves ending2026, uses the old
+/Users/russellthomas/Docs/pbp_rapm path and does not invoke estimated-skills,
+creation or skill-reader refresh commands. Local crontab has no entries;
+no dedicated NBA estimated-skills launch agent or Codex automation was found
+among the inspected local schedules. This audit did not execute the daily
+script, fetch2027 games, alter scheduling or modify immutable research outputs.
+
+Before calling this live-ready, implement one season-aware operational runner:
+validated completed-game box/PBP plus measured tracking/hustle ingestion;
+explicit frozen preseason parameter/version bundle; idempotent filtering of
+new/corrected observations across all retained families; exact missingness,
+identity/rookie and season-boundary handling; checkpointed as-of exports and
+reader freshness/source dates; then a monitored scheduled job. Tracking can
+arrive later than box/PBP, so per-family freshness must remain visible.
+Refresh skill states with frozen parameters rather than re-running DE or
+selecting on the new season. Archive predictions before their target games;
+live postgame state updates are distinct from refitting/scoring on protected
+2026–27 outcomes. Current VPM refresh is a separate downstream operation.
+No live-ready claim until a replay/idempotence/coverage/freshness check passes.
