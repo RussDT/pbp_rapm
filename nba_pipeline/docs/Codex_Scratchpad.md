@@ -3,6 +3,11 @@
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 
+## 2026-10-19 — Big-player prior shift diagnosed
+
+- Owner asked why bigs jump versus previous repaired VPM. Exact saved-rating bridge atSeptember1 holds lineup data/4000-8000/TD550/SQ/entrants fixed: changed long-SPM prior mapping plus core-feature replacement already raises D Wemby3.807→6.997, Reed1.741→4.025, RWIII1.917→4.176, Clingan1.229→2.803. Expected-FT increments are only+.052,+.009,−.054,+.168. Wemby D prior1.742→6.327; O prior changes also raise bigs (ClinganO.619→2.210; OREB mapper slope.168→.540). This identifies the prior pull, not proven positional overrating or proof old ratings are correct. Component architecture is not involved. Expanded rim/foul/decay changes are smaller in these examples; all-player path closes exactly.
+- Added explanation to `VPM_MODEL_MAP.md`; private sibling `previous_to_parent_prior_changes.csv` and `prior_shift_audit.json` preserve all1556 exact-cut comparisons/source hashes. No fit, tuning, new score, rating/publication change or2027 outcomes. Positional/lineup forward calibration remains untested for this specific prior shift.
+
 ## 2026-10-19 — Component versus Parent VPM scope corrected
 
 - Owner was confused by the experiment labels and clarified the component-product scope. The recent v44–v51 ratings are Parent VPM (one O/D parent plus two SQ residual corrections), not the ten-component Impact Monster. Three broad component-prior calibration targets in v51 do not make its deployed board the component model. Withdraw the parent core+FT recommendation as a component launch decision; valid parent scores stay unchanged.
@@ -29,7 +34,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 - V48 remains unfitted: archived-2025/native FGA/TOV L1 25.93%/55.14% fails fixed 1% source gate. V49 uses no old annual inputs: fresh native counts, own actual RS rounded TS, 24 official Synergy responses and dated positions. Independent 646,089-pair/6,336-snapshot audit passes. Development selects exact null. Forced BAM stress game RMSE 13.9544; all seven headline point estimates improve, all paired error gains vs baseline remain unresolved. Original unweighted team-stint load inflation is retained/disclosed; weighted load diagnostic only.
 - All independent seven-test/QR/game/team/veteran/source and no-warm-up/actual-point bootstrap audits pass for both models; 135 focused RAPM tests pass. Auditor scalar-mask bug repaired without model/forecast changes; failed receipt preserved. Full v47/fresh-BAM ledgers now passed under `cache/matchup_games_v1/{research_run,fresh_bam_run}`; v48 failed source ledger preserved. Old downloader/wait handles are terminal; no jobs need continuation. No 2027 outcomes or promotion.
 - Canonical docs and curated sibling `matchup_defense_v47_summary.json` / `fresh_bam_defense_v49_summary.json` carry full comparisons versus EPM and lagged DARKO/LEBRON/MAMBA. All code/docs/evidence backed up with scoped commits; raw/cache/model artifacts stay private and untracked. Preserve unrelated workspace edits. All requested work is complete; no continuation jobs remain.
-
-## 2026-10-18 — Latest VPM board lookup
-
-- Owner confirmed new long-SPM model. Calculated October15; September1,2026 is the estimate cutoff (585 recent players; games through June13). Verified v45 manifest/ratings hash and exact O+D closure; displayed saved ratings in a thread-local searchable board. Pure v45 is distinct from later v46 blend tests. v47 matchup-defense remains unfinished. Ratings/public sites unchanged; research status retained.

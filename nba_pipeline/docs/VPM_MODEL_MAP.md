@@ -49,3 +49,39 @@ component-sum board and matching forecast evidence explicitly.
 Do not open another model family, infer “latest = best,” or make new launch
 recommendations by mixing results from the two architectures. Start with this
 map; keep research variants secondary to the architecture name.
+
+## Why bigs moved versus the previous repaired parent
+
+The large jumps already occur in the six-season **core** parent, before dated
+expected FT, expanded rim/foul features or TD275. On the identical September1
+cut, final lineup data,4000/8000 penalties,TD550, repaired SQ and entrant treatment
+are held fixed; the prior calibration/mapping and defensive feature set change.
+The old map regresses matured short-window RAPM labels on skill forecasts. The
+new map profiles a matched six-season actual-lineup likelihood jointly with
+player residuals and uses three core defensive fields. These are multiple
+changes, not an isolated feature-count experiment.
+
+|Player|Previous repaired D|New core D|Expected-FT increment|Expanded TD275 D|
+|---|---:|---:|---:|---:|
+|Wembanyama|3.807|6.997|+0.052|6.344|
+|Paul Reed|1.741|4.025|+0.009|3.954|
+|Robert Williams III|1.917|4.176|−0.054|4.856|
+|Clingan|1.229|2.803|+0.168|3.138|
+|Queta|1.758|3.125|−0.050|3.578|
+
+Wembanyama's defensive prior mean rises1.742→6.327; Reed's1.671→4.750;
+Williams's1.653→4.570. The final solve pulls toward those larger means under
+unchanged penalties. Offensive prior mapping changes too: Clingan offense
+0.619→2.210. The OREB slope in prior points/100 per extra OREB/100 rises
+0.1678→0.5398. The conditional block/DREB slopes also rise substantially, but
+the old map contains correlated rim/DFGA/PF fields, so individual slopes are
+not directly comparable causal event prices.
+
+This establishes the computational source of the increase, not that bigs are
+systematically overvalued or that the old compressed estimates are correct.
+Global game-forecast differences remain unresolved; the larger ratings need a
+position/lineup calibration audit before they support a launch claim.
+The exact saved-rating bridge for all1556 players is private sibling
+`vpm/results/harness/vpm_launch_defense_v51/previous_to_parent_prior_changes.csv`
+with source hashes and closure in `prior_shift_audit.json`. No refit, new score,
+outcome access or rating change was performed for this diagnosis.
