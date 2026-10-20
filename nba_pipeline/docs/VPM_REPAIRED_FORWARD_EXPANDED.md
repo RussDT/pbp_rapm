@@ -231,3 +231,24 @@ selection and forecast hashes remain identical.
 Owner has authorized considering the BAM matchup features, but requested this
 input inspection first. That increment remains pending; no matchup input was
 silently admitted to this model.
+
+
+### Display-average check, October19
+
+Owner asked whether the displayed current forward VPM averages above zero.
+Read-only check of unchanged September1,2026 `forward_expanded_mpg_a10p0`:
+585 inherited recent-event rows have simple mean−1.132312;582 positive-playing
+exposure rows have mean−1.139895. Only178/585 or177/582 are above zero. Weighted
+by observed2025–26 RS minutes, current VPM averages−0.075417 (O−0.030713,
+D−0.044704); including playoffs gives+0.004572. Each fitted-universe side's
+own TD550 possession-weighted mean is numerically zero, as designed.
+
+Zero is a playing-exposure reference, not an equal-player average or a forced
+future-rotation mean. The77 players with at least2000 RS minutes average
++1.232872 unweighted, consistent with strong players earning more time and
+many low-minute players rating below average. A top-of-board impression is
+not evidence of a global positive offset. Future league-average exposure is
+unknown; shifting all ratings by a common constant leaves five-versus-five
+margin sums unchanged, but a native possession forecast also needs its
+matching intercept/reference adjustment. No recentering, rating, forecast,
+source, model or2027 changes were made for this check.

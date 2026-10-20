@@ -2,6 +2,10 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-19 — Displayed VPM mean checked without changing ratings
+
+- Owner clarified average displayed ratings, not expected SQ gain. Current forward585-event reader simple mean−1.1323 (582 positive-exposure−1.1399);2025–26 RS-minute weighted mean−.0754, RS+PS+.00457. Full-universe O/D own TD550-exposure means0. Only178/585 positive;77 players above2000 RS minutes average+1.233. Explain exposure reference and selected high-minute players, not a broad positive offset or forced future zero. Added read-only note to VPM_REPAIRED_FORWARD_EXPANDED.md; no model/reader/forecast/source/2027 changes.
+
 ## 2026-10-19 — Current mid/three SQ contribution isolated
 
 - Owner requested no SQ/mid/three/both on retained forward Parent. Immutable sibling v57 freezes exact v53 own/entrant priors and4000/8000/TD550/actualFT. Both wins four-way dev; stress game13.956688/13.922137/13.925285/13.895289 and teamnet3.155076/3.106363/3.131277/3.091360. Both gameMSE gain+1.710078[1.026498,2.415750]; each zone adds after other. Season gains unresolved, low-continuity point estimates worse/unresolved. Native both gain141.68e-6[81.05,199.82]e-6 on423644 future possessions.
@@ -23,9 +27,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Owner requested predictive advanced and box-score stats before authorized BAM exploration. Added sibling8767/skills.html with box/shooting/advanced/defense/all-mapper groups, player search/sort, physical units, dates, mapper imputation/missing flags and CSVs. Shows actual current sources: neutral own states, fixed TD550/K1000 tracking estimates and observed365-day RS MPG; derived TS/eFG/coherent points are display-only. All1556 O/D own priors reconstruct exactly, zero gap; coherent shooting/rim identities hold.
 - Reader audit found inherited585 recent-event flag includes Garnett/Redick/Splitter with zero recent playing exposure. New view defaults to582 positive-exposure players, retains all1556 and inherited metadata; original rating/forecast artifacts untouched. Browser checks verify groups, details,582/1556, sorting, missing/zero cells/download. Original ratings reader/code archived before nav-only update; curated evidence/source manifest pins revision. No refit/new model/2027/promotion; BAM increment remains authorized but pending user input inspection. Receipt VPM_REPAIRED_FORWARD_EXPANDED.md.
-
-## 2026-10-19 — Expanded forward priors without shrunken-label calibration
-
-- Owner requested previous repaired with more features and less-compressed priors. Immutable sibling v53 repaired-forward: dated skills→fully matured365-day future lineup likelihood, full-covariance cohort residuals2000/4000, mapper.1/1/10, output1, fixed4000/8000/TD550/SQ/actualFT/entrants. Four recipes include corrected foul/disruption/contested-DREB fields and separately named prior365-day RS MPG in O/D. Feature-only old-label extension is the overall13-way dev winner; expanded-contested+MPG/ridge10 is minimum among12 forward candidates using same dev losses.
-- Forward+MPG stress game13.895289 vs previous13.965886/EPM13.941515; teamnet3.091360 vs3.289191/3.120003. All seven historical paired gains vs previous exclude zero; EPM game/team intervals cross zero. Matched MPG increment gameMSE+1.1004[.7193,1.5046]. Prior-only native actual-point gain459.96e-6[304.35,616.33]e-6 vs previous; final native gain81.70e-6[-6.14,173.69]e-6 unresolved. Not fresh2027 or a new launch decision.
-- Current585 recent/1556 universe: D-prior SD.499→1.310 without hand scaling; Jokic9.875,Wemby9.083,SGA6.820,Reed3.812,RWIII3.223,Clingan4.220. Reader8767 shows four plain-name models, priors and final ratings; previous8765/8766 remain available.20 tests,167846 independent feature cells,23978 MPG cells,111-source/10-cohort/96-profile/112-board/280-score/105-pair audits pass.318 COVID-overlap training games and formal label maturity disclosed. Preflight intercept-convention and absent early-deflection fixes archived before scoring. Receipt VPM_REPAIRED_FORWARD_EXPANDED.md; curated sibling repaired_forward_expanded_summary.json.
