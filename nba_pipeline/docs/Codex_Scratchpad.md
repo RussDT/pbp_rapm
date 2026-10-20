@@ -28,3 +28,8 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 ## 2026-10-18 — Latest VPM board lookup
 
 - Owner confirmed new long-SPM model. Calculated October15; September1,2026 is the estimate cutoff (585 recent players; games through June13). Verified v45 manifest/ratings hash and exact O+D closure; displayed saved ratings in a thread-local searchable board. Pure v45 is distinct from later v46 blend tests. v47 matchup-defense remains unfinished. Ratings/public sites unchanged; research status retained.
+
+## 2026-10-18 — VPM feature inventory lookup
+
+- Owner requested the full input list. Verified latest v45 September1 board uses long-SPM core:12 offensive/3 defensive skill covariates plus their missingness flags; separate combined entrant background and26-feature chronological mid/three SQ models. Extended rim/DFGA/PF fields belong to older/extended parents; v47/v49 matchup additions are not admitted. Canonical definitions remain `VPM_LONG_SPM_TRAINING.md` and sibling `long_spm_features.py`, `entrant_priors.py`, `chronological_sq.py`. No model or board changes.
+- Follow-up at that date: owner favored strictly pregame expected-FT targets. Current v45 used actual FT and had no home/rubberband columns in calibration/deployment; home was fixed+3 only at game aggregation, bubble0. The later v50/v51 receipts above supersede the then-unimplemented dated-FT research status.
