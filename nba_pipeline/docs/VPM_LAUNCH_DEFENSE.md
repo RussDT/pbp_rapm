@@ -1,5 +1,10 @@
 # VPM defensive skill bank and ratings review — October 19, 2026
 
+**Scope correction:** this receipt evaluates **Parent VPM**, not the ten-component
+VPM / Impact Monster. Its earlier launch-review recommendation below is
+withdrawn as an answer to the component-product launch question. The parent
+scores are unchanged. See [the two-family model map](VPM_MODEL_MAP.md).
+
 Owner instruction: build stronger defensive priors and prepare the best available
 VPM for a launch tomorrow. The immediate deliverable is player ratings for owner
 inspection. Public deployment is deferred until that review.

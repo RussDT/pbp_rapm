@@ -3,6 +3,11 @@
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 
+## 2026-10-19 — Component versus Parent VPM scope corrected
+
+- Owner was confused by the experiment labels and clarified the component-product scope. The recent v44–v51 ratings are Parent VPM (one O/D parent plus two SQ residual corrections), not the ten-component Impact Monster. Three broad component-prior calibration targets in v51 do not make its deployed board the component model. Withdraw the parent core+FT recommendation as a component launch decision; valid parent scores stay unchanged.
+- Canonical simple reference `VPM_MODEL_MAP.md`: two architectures; expected FT, priors, decay and blends are variants. Local product bundle `vpm-explorer/public/data/vpm-manifest.json` identifies gross ten-component epm12_x2, July24,2026, TD550; this is a checked-out bundle, not a live-deployment verification. Component launch selection remains unresolved. Reader labels/header and review manifest now say Parent VPM research only. Do not equate newest experiment number with best or launch-approved.
+
 ## 2026-10-19 — VPM defensive bank and launch ratings review completed
 
 - Owner requested stronger defense for tomorrow's launch, then clarified ratings first. Immutable sibling v51 `defense-bank`:48 priors/date,96 fixed-penalty family/FT/ridge variants; individual rim/disruption/foul/rebound groups and actual-point component maps. Offense slopes frozen for total-defense maps. Source adds1,845,025 measured rows; new TD550/K1000 skills use only earlier dates; missing is not zero.
@@ -28,8 +33,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 ## 2026-10-18 — Latest VPM board lookup
 
 - Owner confirmed new long-SPM model. Calculated October15; September1,2026 is the estimate cutoff (585 recent players; games through June13). Verified v45 manifest/ratings hash and exact O+D closure; displayed saved ratings in a thread-local searchable board. Pure v45 is distinct from later v46 blend tests. v47 matchup-defense remains unfinished. Ratings/public sites unchanged; research status retained.
-
-## 2026-10-18 — VPM feature inventory lookup
-
-- Owner requested the full input list. Verified latest v45 September1 board uses long-SPM core:12 offensive/3 defensive skill covariates plus their missingness flags; separate combined entrant background and26-feature chronological mid/three SQ models. Extended rim/DFGA/PF fields belong to older/extended parents; v47/v49 matchup additions are not admitted. Canonical definitions remain `VPM_LONG_SPM_TRAINING.md` and sibling `long_spm_features.py`, `entrant_priors.py`, `chronological_sq.py`. No model or board changes.
-- Follow-up at that date: owner favored strictly pregame expected-FT targets. Current v45 used actual FT and had no home/rubberband columns in calibration/deployment; home was fixed+3 only at game aggregation, bubble0. The later v50/v51 receipts above supersede the then-unimplemented dated-FT research status.
