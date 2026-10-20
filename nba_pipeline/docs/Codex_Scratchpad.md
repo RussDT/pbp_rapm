@@ -3,6 +3,13 @@
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 
+## 2026-10-19 — VPM defensive bank and launch ratings review completed
+
+- Owner requested stronger defense for tomorrow's launch, then clarified ratings first. Immutable sibling v51 `defense-bank`:48 priors/date,96 fixed-penalty family/FT/ridge variants; individual rim/disruption/foul/rebound groups and actual-point component maps. Offense slopes frozen for total-defense maps. Source adds1,845,025 measured rows; new TD550/K1000 skills use only earlier dates; missing is not zero.
+- Literal-minimum2020–22 selects rim savings/contest volume+shooting/nonoffPF beside core3 at4000/8000/TD275. Stress gameRMSE13.9705 vs core13.9604; teamnet3.2125 vs3.2352, both unresolved. Low-continuity game/team-win losses exclude zero, so no stronger-defense promotion. Core+datedFT13.9564 improves seven point estimates but all intervals cross zero; explicitly retrospective launch-review recommendation only. Actual-point gains remain unresolved.
+- Current cutSeptember1,2026 has585 recent players/1556 universe. Local `ratings.html` compares six models; `launch_candidate_ratings.csv` is core+FT, `ratings_for_review.csv` expandedTD275/core/previous differences. Not an October certified roster; no new incoming identity pass or2027 outcomes. Browser search/sort/six-model review verified; local server127.0.0.1:8765 serves the private reader.
+- All25 tests,244909 independent source cells,368 conditional mapper equations,140 score rows,8289 games/210 teams and actual-point audits pass. Old controls/competitors preserved. Receipt `VPM_LAUNCH_DEFENSE.md`; curated sibling `launch_defense_v51_summary.json`. No public deployment. Preserve unrelated dirty work.
+
 ## 2026-10-19 — Extended-defense / expected-FT / context VPM completed
 
 - Owner rejected the one-SE preference and requested new numbers including expected FT in the lineup. Immutable sibling v50 `expected-ft-context`: full seven-field defense, dated own pregame FT, home/RB ablations; minimum development MSE chooses full4000/8000/TD275. Old v44/v45/configs/results remain unchanged.
@@ -21,16 +28,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 ## 2026-10-18 — Latest VPM board lookup
 
 - Owner confirmed new long-SPM model. Calculated October15; September1,2026 is the estimate cutoff (585 recent players; games through June13). Verified v45 manifest/ratings hash and exact O+D closure; displayed saved ratings in a thread-local searchable board. Pure v45 is distinct from later v46 blend tests. v47 matchup-defense remains unfinished. Ratings/public sites unchanged; research status retained.
-
-## 2026-10-18 — Matchup game-log availability checked
-
-- Owner asked to use per-game fetcher: confirmed live BoxScoreMatchupsV3 on4games (2017RS,2024RS,2025RS,2026PS),745rows cached under `nba_pipeline/cache/matchup_game_probe_v1`. Native outerplayer is attacker/opponentnested defender on all4 box-totalchecks; legacycore IDflip disagrees, do not reuse. Era caveat:2017 FTattempts0 vs40actual, trackedFGA184 vs177. Endpoint works; complete backfill and feature validation not yet executed. No2027 outcomes.
-- Follow-up found tracked `.ipynb_checkpoints/matchups_by_date_defense-checkpoint.csv` in matchup-fga Git although absent workingtree. Recovered exact88MB blob into ignored `nba_pipeline/external/matchup_daily_recovered_v1`; offense companion header-only. Defense671490rows = same134298aggregate rows across Oct16–20,2018, exact sorted equality. Drummond–TurnerGP4/220.4poss repeated evenOct16 when neither played. Reject as daily/as-of data; exact API cause unproven. Updated canonical inventory. Core per-game playoff fetcher aggregates before save.
-- Owner wants better VPM features and asked whether matchup data has game logs. Local BAM archive722,575season/off/def pairs2018–26 has no game/date;2026 incomplete. Separate `nba/data-sources/matchup-fga/defender/2021..2025` has537/594/534/569/568 player CSVs with shot/game/event/date/shooter/DEF_ID and outcomes; sampled every year has ambiguous pipe-joined defender IDs. This is defended-shot evidence, not full assignment possession exposure; total coverage not certified.
-- Daily LeagueSeasonMatchups scraper code exists (`scrape.py`, `new_scrape.ipynb`) but its output files were not found locally. Monthly rim/DFGA sources already have dated game rows2014–26; don't confuse with attacker-defender pair logs. Updated `RIM_DEFENSE_MATCHUP_SKILLS.md` inventory and README. No fetch, model fit, feature admission or2027 outcomes.
-
-## 2026-10-15 — Previous/new VPM blends
-
-- Owner requested blends. Immutable sibling v46 `long-spm-blend`:0/25/50/75/100% new long-SPM v44 versus previous repaired v39; same weightO/D, shared fills/veteran overrides, recompute teamwin from blended game margins. Development2020–22 retains0%;50/50 is best stressgamepoint estimate13.9474 versusold13.9659/new13.9604/EPM13.9415.50/50 teamnet3.2446 versusold3.2892/new3.2352/EPM3.1200.
--50/50 stressgameMSEgain versusold+.5164[+.0094,+1.0399], vsnew+.3636[−.1580,+.8773], versusEPM−.1637[−1.4688,+1.1625]. Historicalstress alreadyspent; fiveweights/sevenoverlappingtests, intervals unadjusted. Do not promote or choose50/50 as though developmentselectedit.2027 untouched.
-- Independentvalidator checks1001score rows,105pairedMSEpoints, full50/50gamebootstrap, win aggregation, selection andhashes. Canonical `VPM_LONG_SPM_BLENDS.md`; curated sibling `long_spm_blends_v46_summary.json`.

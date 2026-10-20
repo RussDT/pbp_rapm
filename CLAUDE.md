@@ -4,6 +4,8 @@ This file complements `AGENTS.md` for coding agents working in `/Users/russellth
 
 ## Agent Ops Workflow
 
+- Owner's launch-ratings review (2026-10-19) is complete in sibling immutable v51 `defense-bank`. Separate rim/disruption/foul/rebound/component tests select seven-field rim+foul defense at4000/8000/TD275 on2020–22. Stress gameRMSE13.9705 vs core13.9604 and teamnet3.2125 vs3.2352 are unresolved; low-continuity errors worsen. Core+datedFT13.9564 is the retrospective launch-review recommendation, not the development-selected family. The585-player recent board is datedSeptember1,2026 and is not a certified October roster.25 tests and independent source/mapper/seven-test/actual-point audits pass. Preserve old runs and2027; no public deployment. Receipt: `nba_pipeline/docs/VPM_LAUNCH_DEFENSE.md`.
+
 - Owner-requested v50 expected-FT/context VPM (2026-10-19) is complete: all seven defensive fields, dated pregame own FT in lineup deployment, joint home/smooth-RB calibration+deployment and literal minimum-MSE development tuning. Stress gameRMSE core13.9604 / extended13.9811 / extended+FT13.9764 / tuned full4000/8000/TD27514.0340. FT game gain is unresolved, but neutral actual-point lineup increment is+23.8e-6[+1.8,+45.3]e-6 on423,644 common-native possessions. Rubberband loses clearly in game forecasts; its known-state possession-fit benefit does not establish neutral game-sum benefit. All22 FT event audits,21 real context calibration checks,30 tests and independent seven-test/pair/actual-point audits pass. Preserve v44/v45, old one-SE receipts and untouched2027; no promotion or stress retuning. Receipt: `nba_pipeline/docs/VPM_EXPECTED_FT_CONTEXT.md`.
 
 - Treat `nba_pipeline/docs/` as this repo's FreshDocs surface.

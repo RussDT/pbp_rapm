@@ -4,6 +4,8 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [VPM launch defensive bank and ratings review](VPM_LAUNCH_DEFENSE.md) - completed v51: separate rim/disruption/foul/rebound and component tests, current585-player comparison, dated-FT launch-review recommendation and independent seven-test audits; no public deployment
+
 - [Extended-defense VPM with dated FT and context](VPM_EXPECTED_FT_CONTEXT.md) - completed v50: expected FT gives a tiny actual-point lineup gain; expanded defense and home/rubberband do not improve game forecasts; minimum-MSE tuning and independent seven-test audits
 
 - [Per-game matchup defensive VPM research](VPM_MATCHUP_DEFENSE_FEATURES.md) - completed 2018–26 archive, audited assignment/BAM features and seven-test comparisons; research only

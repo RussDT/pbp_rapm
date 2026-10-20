@@ -1,6 +1,6 @@
 # NBA Analytics Project Portfolio
 
-Last reviewed: 2026-10-18 (owner requested per-game matchup defensive VPM features)
+Last reviewed: 2026-10-19 (owner requested stronger defensive VPM and ratings review before tomorrow's launch)
 
 This is the portfolio-level source of truth for deciding what to work on. It is
 not a methodology document and it does not replace each project's canonical
@@ -76,6 +76,8 @@ Canonical docs: [RAPM Table Catalog](./RAPM_TABLE_CATALOG.md),
 [Supabase results publishing](./SUPABASE_RESULTS_PUBLISHING.md).
 
 ### 2. RESEARCH — NBA predictive VPM defensive matchup features
+
+**Owner launch follow-up completed, October19:** [defensive skill bank and ratings review](VPM_LAUNCH_DEFENSE.md), sibling immutable v51. Separate rim/disruption/foul/rebound and component maps;48 prior variants/date. Development chooses seven-field rim+foul defense4000/8000/TD275. Stress game13.9705/core13.9604 and teamnet3.2125/core3.2352 are unresolved; low-continuity regresses. Core+datedFT13.9564 has seven favorable unresolved point estimates and is the retrospective launch-review recommendation. Local six-model reader/CSV has585 recent players atSeptember1,2026; opening-night identities/roster remain a separate release task.25 tests and independent source/numerical/seven-test/actual-point audits pass. Owner requested ratings first; no public deployment or2027 outcomes. This resumes/completes the same VPM research slot and supplies the existing SHIP release train.
 
 **Owner follow-up completed, October19:** [extended defense, dated expected FT and context](VPM_EXPECTED_FT_CONTEXT.md), immutable v50. All seven defense fields and dated FT give stress game RMSE13.9764 vs core13.9604; FT alone improves by0.0047 but game gain is unresolved. FT improves neutral future actual-point MSE by23.8e-6[1.8,45.3]e-6 on the common-native diagnostic. Home/rubberband do not add; tuned full package4000/8000/TD275 has gameRMSE14.0340 and loses to core with a paired interval excluding zero. All source/numerical/seven-test audits pass; preserve v44/v45, no promotion or2027 outcomes.
 
