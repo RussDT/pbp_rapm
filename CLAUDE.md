@@ -4,6 +4,8 @@ This file complements `AGENTS.md` for coding agents working in `/Users/russellth
 
 ## Agent Ops Workflow
 
+- Owner-requested v50 expected-FT/context VPM (2026-10-19) is complete: all seven defensive fields, dated pregame own FT in lineup deployment, joint home/smooth-RB calibration+deployment and literal minimum-MSE development tuning. Stress gameRMSE core13.9604 / extended13.9811 / extended+FT13.9764 / tuned full4000/8000/TD27514.0340. FT game gain is unresolved, but neutral actual-point lineup increment is+23.8e-6[+1.8,+45.3]e-6 on423,644 common-native possessions. Rubberband loses clearly in game forecasts; its known-state possession-fit benefit does not establish neutral game-sum benefit. All22 FT event audits,21 real context calibration checks,30 tests and independent seven-test/pair/actual-point audits pass. Preserve v44/v45, old one-SE receipts and untouched2027; no promotion or stress retuning. Receipt: `nba_pipeline/docs/VPM_EXPECTED_FT_CONTEXT.md`.
+
 - Treat `nba_pipeline/docs/` as this repo's FreshDocs surface.
 - Use `nba_pipeline/docs/Codex_Scratchpad.md` as the repo-versioned short-term memory file.
 - At session start: read `AGENTS.md`, this file, `nba_pipeline/CLAUDE.md`, `nba_pipeline/docs/Codex_Scratchpad.md`, run `git status --short`, then open the relevant docs before editing.

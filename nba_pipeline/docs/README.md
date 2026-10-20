@@ -4,6 +4,8 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Extended-defense VPM with dated FT and context](VPM_EXPECTED_FT_CONTEXT.md) - completed v50: expected FT gives a tiny actual-point lineup gain; expanded defense and home/rubberband do not improve game forecasts; minimum-MSE tuning and independent seven-test audits
+
 - [Per-game matchup defensive VPM research](VPM_MATCHUP_DEFENSE_FEATURES.md) - completed 2018–26 archive, audited assignment/BAM features and seven-test comparisons; research only
 - [Matchup game-log inventory](RIM_DEFENSE_MATCHUP_SKILLS.md) - 11,521 games and 2,169,558 native matchup rows; coverage and source-grain audits
 

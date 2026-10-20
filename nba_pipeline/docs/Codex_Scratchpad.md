@@ -2,6 +2,14 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+
+## 2026-10-19 — Extended-defense / expected-FT / context VPM completed
+
+- Owner rejected the one-SE preference and requested new numbers including expected FT in the lineup. Immutable sibling v50 `expected-ft-context`: full seven-field defense, dated own pregame FT, home/RB ablations; minimum development MSE chooses full4000/8000/TD275. Old v44/v45/configs/results remain unchanged.
+- Stress2023–26 gameRMSE core13.9604 / seven actual13.9811 / seven+FT13.9764 / +home13.9784 / +RB14.0559 / both14.0630 / tunedfull14.0340; EPM13.9415. FT within-seven gain+.1317[-.0700,+.3415] gameMSE is unresolved. Rubberband and tuned full lose clearly versus core. Teamnet seven+FT3.2211 versuscore3.2352, unresolved; no promotion.
+- FT improves neutral future actual-point lineup MSE1.415044884→1.415021126, paired+23.8e-6[1.8,45.3]e-6;423,644 possessions/4,273games. This diagnostic excludes unseen-player lineups and uses no future score/clock. Actual FG+FT remains the long-SPM calibration/evaluation target; expected FT changes only lineup deployment denoising.
+- All22 FT files/639,070 raw FT events reconcile to canonical rows(max5.69e-14);97 terminal-tail FT events remain unassigned. Auditor fixes preserve old failed logs: canonical raw seconds differ occasionally from MM:SS; `MISS` needs word boundaries for Missi; non-FT heave/block companions share equal-clock event IDs. No model/forecast changes resulted from auditor repairs.21 context calibrations,30 focused tests and independent277-source/seven-test/pair/game/team/actual-point audits pass. No2027 outcomes, publication or further jobs. Receipt `VPM_EXPECTED_FT_CONTEXT.md`; curated sibling `expected_ft_context_v50_summary.json`.
+
 ## 2026-10-18 — Matchup defensive VPM research completed
 
 - Backfill/audit resolves all 12,214 games: 11,521 contain 2,169,558 pairs; 22 RS games and 671 preseason unavailable. Source identity/count fidelity passes. Exact native direction, PBP team/side gates, neutral-site token census repair and missing-field safeguards are durable in `VPM_MATCHUP_DEFENSE_FEATURES.md` and `RIM_DEFENSE_MATCHUP_SKILLS.md`.
@@ -26,11 +34,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 - Owner requested blends. Immutable sibling v46 `long-spm-blend`:0/25/50/75/100% new long-SPM v44 versus previous repaired v39; same weightO/D, shared fills/veteran overrides, recompute teamwin from blended game margins. Development2020–22 retains0%;50/50 is best stressgamepoint estimate13.9474 versusold13.9659/new13.9604/EPM13.9415.50/50 teamnet3.2446 versusold3.2892/new3.2352/EPM3.1200.
 -50/50 stressgameMSEgain versusold+.5164[+.0094,+1.0399], vsnew+.3636[−.1580,+.8773], versusEPM−.1637[−1.4688,+1.1625]. Historicalstress alreadyspent; fiveweights/sevenoverlappingtests, intervals unadjusted. Do not promote or choose50/50 as though developmentselectedit.2027 untouched.
 - Independentvalidator checks1001score rows,105pairedMSEpoints, full50/50gamebootstrap, win aggregation, selection andhashes. Canonical `VPM_LONG_SPM_BLENDS.md`; curated sibling `long_spm_blends_v46_summary.json`.
-
-## 2026-10-15 — Long-sample SPM VPM implemented
-
-- Current emission added: immutable sibling v45 `long-spm-current`, September1,2026; refit frozen v44 core architecture on2021–26, same4000/8000/TD550, dated own skills and entrant blend, repaired SQ. Wemby+2.5515O/+6.9966D=+9.5481, rank2; exact-cut repairedzero+1.5776/+2.5801. No2027 outcomes/retuning/promotion.
-- Reader correction: latest v44 ranking is October1,2025 backtest, excluding2025–26; do not describe it as a current2026 board. Wemby offense−0.12 there; Sept14,2026 archived SQ-parent is+2.72 with priors/+1.97 matched no-prior. Original monthly Sept1 own-SQ is+2.51. Different dates/methods require explicit labels.
-- Owner requested EPM-style division of labor. Immutable sibling v44 `long-spm` fits six-year covariance-aware actual-lineup SPM with matched observed counts, then emits dated neutral skill priors.2014/2015 source adapter+independent accounting quarantines four games; all player-side source/target exposures match exactly. Development2020–22 selects core defense, retains4000/8000/TD550, scale1; entrant/SQ conventions fixed.
--2023–26 stress4920 games/120teams: all seven point estimates improve over current; gameRMSE13.9604 vs13.9659, teamnet3.2352 vs3.2892. Six paired differences unresolved; low-continuity teamwin gain positive on13team-seasons. EPM still better on all-game/team-net errors. Beats zero-prior on all seven error intervals; common-native possession gain overzero+205.80e−6[+30.38,+386.17], versuscurrent−54.06e−6[−147.17,+38.80], unresolved. Entrant-only development arm is better than new own-skill arm; disclose, no post-stress tuning.
--44 tests and14 real fit audits pass; all incumbent forecasts preserved, independent selection/seven scores/49pairs/source hashes pass, future contamination changes coefficients0. Keep research challenger, no promotion/2027. Receipt `VPM_LONG_SPM_TRAINING.md`, sibling curated `long_spm_v44_summary.json`.
