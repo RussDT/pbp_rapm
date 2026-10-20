@@ -12,6 +12,8 @@ runs; they do not identify new architectures or establish a release order.
 
 [Expanded forward priors and ratings](http://127.0.0.1:8767/ratings.html) retains Parent VPM and the previous repaired TD550 lineup solve. It learns the feature mapping from dated skills to future365-day actual lineup outcomes, rather than six-year same-window statistics or shrunken RAPM point labels. The page compares the forward+MPG candidate, feature-only old-label extension, previous repaired and the earlier six-year SPM. [Method, selection distinctions and evidence](VPM_REPAIRED_FORWARD_EXPANDED.md). This is a new prior-training comparison within Parent VPM, not a third architecture or a component launch choice.
 
+[Predictive skills behind this same forward model](http://127.0.0.1:8767/skills.html) shows box-score, shooting, advanced and defensive inputs with per-player imputation/provenance. This is an input view, not another version. It defaults to582 players with recent playing exposure; the inherited585 recent-event flag includes three retired players with zero playing exposure. Full1556 ratings remain available.
+
 ## Earlier corrected six-year SPM comparison
 
 The [player priors view](http://127.0.0.1:8766/priors.html) shows saved skill-only SPM and exact blended priors beside final ratings for all three comparisons. It is a view of existing fits, not a new model.

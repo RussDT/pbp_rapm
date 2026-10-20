@@ -173,3 +173,61 @@ PYTHONPATH=. ../rapm/.venv/bin/python vpm/scripts/prepare_repaired_forward_revie
 ```
 
 Generated packets/models/boards/CSV/HTML/logs stay gitignored. Curated small receipt is sibling `vpm/evidence/repaired_forward_expanded_summary.json`.
+
+
+## Predictive input inspection (October 19)
+
+[Predictive skills](http://127.0.0.1:8767/skills.html) exposes the exact current
+forward+MPG input packet: box-score rates, zone shooting probabilities and
+makes/attempts, derived advanced summaries, defensive tracking and all24
+unique numeric mapper fields (MPG is shared by O/D). Search/sort, group tabs,
+player details, full-universe switching and CSV exports are available. The
+ratings reader links directly to this view. No calibration, rating or forecast
+was changed.
+
+Distinguish three methods: annual past-only neutral skill states; the extra
+tracking fields' fixed TD550/K1000 stabilized estimates; and observed trailing
+365-day RS MPG. The tracking fields are not the separate optimized next-game
+OU tracking models. Derived coherent points, FG%,2P%,eFG%,TS%,3P attempt share,
+FTA/FGA and AST/TOV are inspection summaries, not additional coefficients.
+TS% uses0.44; usage events/100 is not conventional USG%. The independent points
+state, totalDREB, totalPF and charges are labeled auxiliary/nonmapped. Never
+sum OREB/100 offense and DREB/100 defense as though their denominators matched.
+
+Player details show raw values, mapper-side values after coherent imputation,
+missingness flags, last observations, past parameter-fit endpoints and source
+exposure. A wholly unmeasured side reports neutral rather than representing
+its imputation means as used. Missing stays missing; actual zero remains zero.
+Variances are not displayed as calibrated confidence intervals. Percentages
+are fractions in CSV and percent units in the reader.
+
+The inherited585-player recent-event flag includes Kevin Garnett, JJ Redick
+and Tiago Splitter: those source rows have zero recent playing possession
+exposure. This view defaults to the582 with positive measured O+D exposure in
+the preceding365 days, retaining the inherited flag and all1556 ratings in
+the full export. It changes the display filter only. The original recent flag
+is not a certified active-player/roster field; upstream event-only rows must
+not establish a playing appearance. Existing rating comparison cohorts and
+saved results remain unchanged.
+
+Standalone reproduction from the sibling checkout:
+
+```sh
+python vpm/scripts/render_predictive_inputs.py \
+  vpm/results/harness/vpm_repaired_forward_expanded_v1 --rapm-root ../rapm
+```
+
+All1556 O/D own priors reconstruct exactly (maximum absolute error0) from the
+shown source packet and original calibration. Coherent makes and rim-saved
+identities pass with missingness preserved. Browser checks verify group
+switches, player search/details, sorting,582/1556 filters, missing/zero cells
+and CSV download. `skills_view_manifest.json` pins seven source artifacts,
+renderer/template hashes, missing-cell counts, the three event-only rows and
+generated exports. Original ratings HTML/current_review/renderer/evidence are
+archived under ignored `reader_before_skills`; curated evidence records only
+the reader navigation revision and new view. Existing numeric export, model,
+selection and forecast hashes remain identical.
+
+Owner has authorized considering the BAM matchup features, but requested this
+input inspection first. That increment remains pending; no matchup input was
+silently admitted to this model.
