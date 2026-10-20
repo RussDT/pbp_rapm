@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-20 — Midrange-reference view fixed; win bridge prepared
+
+- Owner flagged large rim/three frequency: page exposed full-attempt diagnostic, with standard midrange subtraction buried under Compact. Default/table/detail/shot-rollup/CSV now standard five-shot Net; full view explicitly diagnostic. Selected Jokic Dfreq rim1.780→.462/three−2.290→−.391, D2.594525 unchanged. Canonical235488/full93560/fresh-prefix TD audit max2.85e-14; all3112model-player rows/bases/O-D-total close3.6e-15; selected boards/ratings/skills hashes unchanged. Four target tests and582-row browser CSV pass.
+- Original request still team-win projections: read unified live p2_0 method, built team-wins bridge with exact season minutes once/240/team, same selected Net lanes, explicit pace/100, logistic.14/HCA3 and conditional game-result bands. Seven tests pass. No actual wins generated: July roster538rows/79missingIDs/90unrated/all projected mins blank; live allocator/GP outputs absent. Prepared template/readiness, async owner question pending on newer vs provisional assumptions; do not invent consent/inputs. Same VPM slot, no2027 outcomes/public deployment. Canonical VPM_TEAM_WIN_PROJECTIONS.md and VPM_NET_LANE_DECOMPOSITION.md.
+
 ## 2026-10-20 — Owner selects defense mapper100
 
 - Explicit owner choice after ratings/predictive review; current_model.json points to existing audited clean v61 dmap_a100. Selected local ratings/Net/skills and CSV exports now agree; all1556 own priors reconstruct exactly. JokicO6.837923/D2.594525/VPM9.432448; ReedD3.430304.582/1556 defaults/search/CSV verified. No model/lane refit or player override; Omapper10/4000-8000/TD550/SQ12000-48000 fixed. Preserve previous mapper10 and earlier ratings archive. Owner adoption supersedes candidate-only operating status; mixed forecast evidence remains, no2027 or public deployment. Canonical VPM_DEFENSIVE_CALIBRATION.md / VPM_MODEL_MAP.md; sibling selected_mapper100_summary.json.
@@ -22,8 +27,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 - Need one season-aware ingest→validated observations→frozen-parameter state refresh→dated checkpoint/export/reader runner, all families/rookie identities/missingness/source delays, pregame archives and monitored schedule. Do not confuse nightly filtering with refitting/tuning on2027. Documented readiness gap in VPM_OFFENSIVE_CREATION_TEST.md; no live-ready claim or VPM change.
 
 - Follow-up owner emphasized organization of all skills for future daily2027 flow. Built estimated_skills_operations.json (59 current/28 standalone/1 retained output,16 groups,20 research lanes), inventory reader and manage_estimated_skills.py inventory/freeze/check. Carry-forward bundle copies current2025-vintage recipes, not a new preseason fit.16 meaningful checks pass; actual check blocks16 missing live-adapter receipts. Browser inventory88 rows verified. Source adapters, state replay and schedule remain unwired. No automatic updating/new data or2027 scoring claimed. Canonical ESTIMATED_SKILLS_DAILY.md.
-
-## 2026-10-20 — Creation stats retained independently of VPM admission
-
-- Owner explicitly retains predictive rim/potential assists, assisted/unassisted zone makes and playtype difficulty/points as predictive box-score/advanced stats. Extended existing skills.html/CSV/field dictionary with15 auxiliary outputs/supports, Creation & shot difficulty group, Box score assists and Advanced TSA/difficulty. Player details show Retained/not in VPM with dated provenance; original24 mapper inputs and all priors/ratings preserved (reconstruction gap0).
-- Raw missingness preserved; splits close exactly, rim assists match bounded share×AST, approximate TSA=FGA+.44FTA and point conversion labeled.582-row browser CSV matches saved source values; count/method/provenance views verified. Added curated predictive_creation_library_summary. No new fitting, skill-parameter changes, VPM admission or2027 outcomes. Rebuild existing source export plus skills renderer; canonical VPM_OFFENSIVE_CREATION_TEST.md owner-decision section.

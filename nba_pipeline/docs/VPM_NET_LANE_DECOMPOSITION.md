@@ -223,3 +223,35 @@ ratings and skills pages/exported priors use that same clean board through
 refit or new tuning occurred. The previous candidate-only recommendation above
 records the completed experiment; the owner selection is the current operating
 choice. Predictive limitations remain unchanged; this is not public deployment.
+
+## Midrange-reference display correction — October20
+
+Owner noticed large rim/three frequency magnitudes and recalled the usual
+midrange adjustment. The page was defaulting to the full-attempt six-shot
+convention; the familiar public five-shot Net convention was buried under
+“Compact.” Both were implemented, but the default and labels obscured which
+quantity the owner was reading. This is separate from SQ residual shrinkage.
+
+The selected VPM reader now defaults to **Standard Net · midrange reference**:
+rim frequency=(q_rim−q_mid)*rim attempts; three frequency=(q_3−q_mid)*three
+attempts. Transfer the same midrange reference to the mid/reference cell,
+which contains the mid counterfactual on all FG opportunities, actual mid
+value and FT-trip reference. It is not pure midrange conversion. The full-
+attempt six-shot convention remains an explicitly labeled diagnostic. This
+changes the VPM reader convention only, not standalone Net RAPM's saved solves
+or its separately documented display preference.
+
+For selected Jokić defense, full→standard frequency is rim1.780367→0.461788
+and three−2.290177→−0.390954. O6.837923/D2.594525/VPM9.432448, all other
+ratings, skill exports and source boards remain identical. Player details,
+shot rollups and standard CSV all use the same midrange reference; full raw
+basis and all-convention downloads remain available.
+
+Independent fresh canonical five-child Net comparison passes on235488 full
+2016 RS possessions and93560 freshly truncated January1 rows, with and without
+TD550: maximum component gap2.85e-14. All3112model/player rows, every prior
+basis and O/D/total standard sums agree within3.6e-15. A nonzero-midrange
+regression test now checks the actual frequency subtraction, beyond mere total
+closure. Four target tests pass; browser default/player details/diagnostic
+labels and582-row standard CSV checked. Curated sibling receipt:
+`vpm/evidence/midrange_reference_display_summary.json`.

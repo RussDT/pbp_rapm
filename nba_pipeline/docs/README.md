@@ -4,6 +4,8 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Selected VPM team-win projection bridge](VPM_TEAM_WIN_PROJECTIONS.md) - unified donor method, tested minutes/Net aggregation and conditional win engine; current roster/minutes and missing identities remain required before forecasts
+
 - [Defensive Parent calibration](VPM_DEFENSIVE_CALIBRATION.md) - owner-selected mapper100, nine matched tests, conditional intervals and pre-cut groups; selected ratings/skills/Net align, later evidence remains mixed
 - [Exact Net lanes for Parent VPM](VPM_NET_LANE_DECOMPOSITION.md) - learned own/entrant/combined priors and final O/D into Net TS/TOV/SC and shot/SQ atoms; clean-source parent, independent closure and forecast audit
 

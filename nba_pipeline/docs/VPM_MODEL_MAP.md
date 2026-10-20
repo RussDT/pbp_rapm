@@ -10,6 +10,8 @@ runs; they do not identify new architectures or establish a release order.
 
 ## Selected model — owner decision, October 20
 
+The Net reader defaults to the standard **midrange-reference** convention. Full-attempt frequencies are a separate diagnostic; this changes no selected rating. See the display correction in VPM_NET_LANE_DECOMPOSITION.md. The [team-win bridge](VPM_TEAM_WIN_PROJECTIONS.md) preserves this selected model but awaits dated roster/minutes inputs before current forecasts.
+
 **VPM · defense mapper100** is now the selected local default, using the audited
 clean-source v61 board. [Ratings](http://127.0.0.1:8767/ratings.html),
 [Net lanes](http://127.0.0.1:8767/net-decomposition.html) and

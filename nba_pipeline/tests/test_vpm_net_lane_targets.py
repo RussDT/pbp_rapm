@@ -22,3 +22,13 @@ def test_missing_or_future_population_join_cannot_become_zero():
     with pytest.raises(ValueError,match='Nonfinite'):targets(d,g)
     d,g=sample();g.game_id=2
     with pytest.raises(ValueError,match='Pricing misses'):targets(d,g)
+
+def test_nonzero_midrange_reference_changes_frequency_not_total():
+    d,g=sample()
+    # Unfiltered pricing includes two mid attempts worth two FG points in total.
+    g.loc[0,['mid_attempts','mid_fg_points','mid_misses','mid_points']]=[2,2,1,0]
+    y,_=targets(d,g);five=compact(y)
+    assert y[0,0]==pytest.approx(2.) and five[0,0]==pytest.approx(1.)
+    assert y[3,4]==pytest.approx(3.) and five[3,3]==pytest.approx(2.)
+    assert five[0,2]==pytest.approx(1.) and five[3,2]==pytest.approx(1.)
+    np.testing.assert_allclose(five.sum(axis=1),d.actual_points,atol=1e-12)

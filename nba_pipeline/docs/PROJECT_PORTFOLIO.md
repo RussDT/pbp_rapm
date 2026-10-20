@@ -77,6 +77,8 @@ Canonical docs: [RAPM Table Catalog](./RAPM_TABLE_CATALOG.md),
 
 ### 2. RESEARCH — NBA predictive VPM defensive matchup features
 
+**Win-projection/display follow-up, October20:** same VPM slot. Unified season machinery inspected read-only; selected-VPM minutes/team/win bridge implemented and7 tests pass, but current rosters/minutes/identities missing and owner assumption choice pending. No current win forecasts claimed. Net reader now defaults to midrange-reference frequency; fresh canonical five-shot audit passes and selected ratings remain identical. See VPM_TEAM_WIN_PROJECTIONS.md and VPM_NET_LANE_DECOMPOSITION.md.
+
 **Owner selection, October20:** owner chooses already-audited clean mapper100 as local VPM default. Ratings/skills/Net and exports aligned through sibling current_model.json; JokicD+2.595/Reed+3.430. Preserve historical evidence and previous mapper10; no new fit, prospective-confirmation claim or public deployment.
 
 **Defense and exact Net follow-up completed, October20:** [nine defensive calibration arms](VPM_DEFENSIVE_CALIBRATION.md) select mapper100, retain4000/8000/TD550; game improvement unresolved and low-continuity team win percentage worse. [Parent now fully decomposes into learned Net lanes](VPM_NET_LANE_DECOMPOSITION.md), including own/entrant/combined priors and SQ children. Clean entrant source excludes two quarantined2015 games; eight direct clean parents and component sums audited, historical forecast parity1.2e-12. Reader8767/net-decomposition.html exposes582/1556 players. Same RESEARCH slot, no automatic promotion/public deployment/2027 outcomes.
