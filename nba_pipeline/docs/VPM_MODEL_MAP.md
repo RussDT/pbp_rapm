@@ -8,6 +8,10 @@ runs; they do not identify new architectures or establish a release order.
 | **Component VPM / Impact Monster** | Ten component types solved separately on offense and defense; components sum to O/D/total | Existing product architecture; the component launch candidate still needs a correctly scoped comparison |
 | **Parent VPM** | One O/D parent with strongly shrunk midrange/three-point residual corrections | Research alternative; this is the family tested in the recent long-SPM/defense/FT runs |
 
+## Rim-makes follow-up within the same forward Parent
+
+[Adding rim defended makes](http://127.0.0.1:8767/rim-defended-makes.html) is one matched feature test on the existing forward model. Its negative rim-makes slope does not lower Jokic: finalD3.017→3.171 as correlated slopes refit. Development retains the current forward control; native future-possession improvement is unresolved. [Source, differential-evolution fits and full evidence](VPM_DEFENDED_MAKES.md). This reader is a comparison, not a replacement release.
+
 ## Latest forward-prior comparison
 
 [Expanded forward priors and ratings](http://127.0.0.1:8767/ratings.html) retains Parent VPM and the previous repaired TD550 lineup solve. It learns the feature mapping from dated skills to future365-day actual lineup outcomes, rather than six-year same-window statistics or shrunken RAPM point labels. The page compares the forward+MPG candidate, feature-only old-label extension, previous repaired and the earlier six-year SPM. [Method, selection distinctions and evidence](VPM_REPAIRED_FORWARD_EXPANDED.md). This is a new prior-training comparison within Parent VPM, not a third architecture or a component launch choice.
