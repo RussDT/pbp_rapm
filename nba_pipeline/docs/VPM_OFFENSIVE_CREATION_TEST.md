@@ -190,3 +190,39 @@ From sibling VPM root:
 
 No source/model parameters were changed after inspecting outcomes. The reader
 now explicitly discloses approximate TSA; the numerical tests are unchanged.
+
+## Owner decision: retain the predictive stats library — October20,2026
+
+Keep these forecasts as predictive box-score/advanced-stat outputs independently
+of VPM feature selection. The skill-filter source package, annual parameters,
+dated states and provenance remain retained. Failure to add after existing
+VPM inputs does not mean the stat must be discarded, nor does this impact
+comparison establish superiority of each individual-stat forecast.
+
+The existing [predictive skills page](http://127.0.0.1:8767/skills.html) now
+includes a **Creation & shot difficulty** group. Box score also shows rim and
+potential assists; Advanced includes approximate TSA and playtype difficulty
+in both TS percentage points and points/100. Player details label all15 added
+outputs/support fields **Retained · not in VPM**, with no mapper coefficient.
+This includes three unassisted shares and assisted/unassisted zone makes,
+rim-assist share/count, potential assists, TSA, difficulty and difficulty points.
+Assistedness describes makes, not all shot attempts. The exact original
+current O/D mapper view, priors and ratings are preserved.
+
+These fields enter the full/recent predictive_inputs CSVs and field dictionary,
+plus the downloadable current table. Preserve raw missing cells without mapper
+imputation; each zone's assisted and unassisted forecasts sum to its existing
+predicted makes. Approximate TSA remains FGA+.44FTA, explicitly labeled. The
+retained difficulty points use raw observed forecast support, not training
+imputation. Display dates and method/provenance remain attached. This extends
+the dated skill library; it does not replace the older standalone next-game
+tracking-registry incumbent or claim a newly validated next-game recipe.
+
+Rebuild with sibling `vpm/scripts/render_predictive_inputs.py` on the existing
+v53 root. It checks the independent source audit, pre-cut dates, split closure,
+unchanged original packet,1556 identities/582 recent exposures and exact
+current prior reconstruction (gap0). Browser views and retained-status/date
+labels passed; the downloaded582-row creation CSV matches saved values.
+Curated receipt `vpm/evidence/predictive_creation_library_summary.json` records
+retained fields, units, source/code/output hashes and coverage. No new fits,
+lineup inputs, VPM predictions or2027 outcomes.

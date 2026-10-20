@@ -10,7 +10,7 @@ runs; they do not identify new architectures or establish a release order.
 
 ## Offensive creation follow-up within the same forward Parent
 
-[Three separate creation-feature tests](http://127.0.0.1:8767/offensive-creation.html) compare current with rim/potential assists, assisted/unassisted zone makes and point-valued playtype difficulty. No addition replaces current: assist game improvement is tiny/unresolved with worse low-continuity games, assistedness worsens, and the difficulty development winner does not improve later forecasts. Difficulty uses predicted approximate TSA=FGA+.44FTA. The page includes ratings, O/D priors and new predictive inputs for582/1556 players. [Source, methodology and results](VPM_OFFENSIVE_CREATION_TEST.md). These are Parent prior tests, not a new architecture.
+[Three separate creation-feature tests](http://127.0.0.1:8767/offensive-creation.html) compare current with rim/potential assists, assisted/unassisted zone makes and point-valued playtype difficulty. No addition replaces current: assist game improvement is tiny/unresolved with worse low-continuity games, assistedness worsens, and the difficulty development winner does not improve later forecasts. Difficulty uses predicted approximate TSA=FGA+.44FTA. The page includes ratings, O/D priors and new predictive inputs for582/1556 players. [Source, methodology and results](VPM_OFFENSIVE_CREATION_TEST.md). These are Parent prior tests, not a new architecture. Owner retains these predictive stats in the existing skills library, with a Creation & shot difficulty view and CSVs explicitly labeled outside the current mapper.
 
 ## Rim-makes follow-up within the same forward Parent
 
