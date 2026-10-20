@@ -125,3 +125,14 @@ comparisons, but later evidence does not support replacement. They do not
 change the earlier overall v53 family-selection record or establish a
 Component VPM release. See [role receipt](VPM_ROLE_AWARE_PRIOR.md) and
 [unsplit receipt](VPM_UNSPLIT_FEATURE_PRIOR.md). All three are Parent VPM.
+
+
+## SQ settings isolated in the retained current Parent
+
+The [v57 four-way likelihood ablation](VPM_CURRENT_SQ_ABLATION.md) leaves every
+current v53 prior unchanged and compares no SQ/mid/three/both under the same
+4000/8000 and TD550. Later gameRMSE is13.956688/13.922137/13.925285/13.895289.
+Both remains current, with residual12000/48000 for each zone. Owner explicitly
+retains D3 at48000; completed higher-penalty explorations are set aside.
+The [predictive-results page](http://127.0.0.1:8767/sq-ablation.html) is an
+ablation of this Parent, not a new prior family or Component VPM release.

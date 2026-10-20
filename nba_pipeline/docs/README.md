@@ -4,6 +4,8 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Current Parent mid/three SQ ablation](VPM_CURRENT_SQ_ABLATION.md) - fixed-prior no SQ/mid/three/both forecasts, positive overall game increments, unchanged D3 48000 and audited four-way results
+
 - [Role-aware defensive prior](VPM_ROLE_AWARE_PRIOR.md) and [all skills in both O/D mappers](VPM_UNSPLIT_FEATURE_PRIOR.md) - matched current-Parent tests, retained split control, seven-test/native evidence and one combined ratings/prior reader
 
 - [Rim defended makes in forward VPM](VPM_DEFENDED_MAKES.md) - annual DFGA-style OU fits, matched single-feature test, tiny spent forecast change, higher Jokic D, retained control and audited comparison
