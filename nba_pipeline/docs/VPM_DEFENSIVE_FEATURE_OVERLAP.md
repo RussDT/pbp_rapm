@@ -71,8 +71,9 @@ player-games and all244909 exported packet cells. Other six added source lanes
 remain exactly identical. Snapshot dates exclude same-day/future observations.
 All26 focused source/numerical/context/evaluation tests pass, including the
 zero-subtype shooting-foul regression fixture. The original ratings reader and
-review manifest now disclose the inactive field. **No calibration, selection,
-ratings or forecast scores have been rerun with corrected shooting fouls.**
+review manifest now disclose the inactive field. At the time of that correction, no fit had been rerun. The subsequent separate
+[fixed-foul/contested-replacement rerun](VPM_FIXED_FOULS_CONTESTED_DREB.md) now
+uses the corrected counts; original fits remain preserved.
 
 The private sibling diagnostic `defensive_feature_overlap.json` saves the full
 correlation matrix and tested scope. This correction supersedes claims that

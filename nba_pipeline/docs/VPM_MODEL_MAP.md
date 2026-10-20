@@ -8,7 +8,11 @@ runs; they do not identify new architectures or establish a release order.
 | **Component VPM / Impact Monster** | Ten component types solved separately on offense and defense; components sum to O/D/total | Existing product architecture; the component launch candidate still needs a correctly scoped comparison |
 | **Parent VPM** | One O/D parent with strongly shrunk midrange/three-point residual corrections | Research alternative; this is the family tested in the recent long-SPM/defense/FT runs |
 
-## What the current ratings page contains
+## Current corrected ratings comparison
+
+The new private reader [ratings comparison](http://127.0.0.1:8766/ratings.html) shows exactly three main choices: **Fixed fouls + contested DREB**, **Fixed fouls + total DREB**, and **Previous repaired VPM**. Both new choices have seven active numeric defense fields; contested replaces total DREB including its missingness flag. They retain the Parent architecture and actualFT, at4000/8000/TD275. See [completed controlled rerun](VPM_FIXED_FOULS_CONTESTED_DREB.md) for forecasts, TD550 checks, source/numerical audits and current ratings. This does not resolve the large big-player prior-mapping shift or select a component release.
+
+## Earlier pre-repair ratings page
 
 `http://127.0.0.1:8765/ratings.html` contains **Parent VPM only**:
 

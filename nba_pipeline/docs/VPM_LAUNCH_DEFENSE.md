@@ -1,5 +1,7 @@
 # VPM defensive skill bank and ratings review — October 19, 2026
 
+Subsequent corrected fits and the contested-instead-of-total DREB comparison are complete in [the controlled rerun](VPM_FIXED_FOULS_CONTESTED_DREB.md). Its private ratings reader is at port8766; this receipt preserves the original pre-repair experiment.
+
 **Source correction:** the attempted shooting-PF field was incorrectly all zero,
 so the declared seven-field selected model has six active numeric fields.
 The [corrected source and overlap audit](VPM_DEFENSIVE_FEATURE_OVERLAP.md)

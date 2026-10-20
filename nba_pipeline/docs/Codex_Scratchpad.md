@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-19 — Fixed-foul and contested-DREB Parent rerun completed
+
+- Owner requested corrected shooting fouls, contested DREB replacing total DREB, previous repaired comparison and ratings. Separate immutable sibling v52 has seven active numeric defense fields and exact removal of totalDREB+flag. Fixed4000/8000 TD275 (TD550 check), actualFT, own scale1, no tuning. Stress game13.960006 contested /13.969975 total /13.965886 previous; all seven point estimates favor contested versus previous but all seven paired MSE intervals cross zero. Core low-continuity team-win and EPM team-net remain better.
+- Native423644 future possessions: contested-total MSE gain57.8e-6[25.0,88.8]e-6 atTD275;50.4e-6[22.9,78.6]e-6 atTD550. Small historical possession gain, not established game superiority.28 focused tests plus independent185-source/24-mapper/154-score/105-pair audits pass. Core/benchmark forecasts preserved; no2027, public deployment or component promotion.
+- Current Sep1 cut585 recent/1556 universe, still high bigs (Jokic10.765,Wemby9.517,RWIII5.599,Clingan5.421,Reed5.090). New local8766 three-choice reader/CSV checked via browser; old8765 remains flagged pre-repair. Servers intentionally stay available. Receipt `VPM_FIXED_FOULS_CONTESTED_DREB.md`; curated sibling `fixed_fouls_contested_dreb_summary.json`. Keep Parent/component scope clear and actualFT explicit.
 
 ## 2026-10-19 — Defensive overlap and shooting-foul extraction corrected
 
@@ -24,10 +29,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 - Literal-minimum2020–22 selects rim savings/contest volume+shooting/nonoffPF beside core3 at4000/8000/TD275. Stress gameRMSE13.9705 vs core13.9604; teamnet3.2125 vs3.2352, both unresolved. Low-continuity game/team-win losses exclude zero, so no stronger-defense promotion. Core+datedFT13.9564 improves seven point estimates but all intervals cross zero; explicitly retrospective launch-review recommendation only. Actual-point gains remain unresolved.
 - Current cutSeptember1,2026 has585 recent players/1556 universe. Local `ratings.html` compares six models; `launch_candidate_ratings.csv` is core+FT, `ratings_for_review.csv` expandedTD275/core/previous differences. Not an October certified roster; no new incoming identity pass or2027 outcomes. Browser search/sort/six-model review verified; local server127.0.0.1:8765 serves the private reader.
 - All25 tests,244909 independent source cells,368 conditional mapper equations,140 score rows,8289 games/210 teams and actual-point audits pass. Old controls/competitors preserved. Receipt `VPM_LAUNCH_DEFENSE.md`; curated sibling `launch_defense_v51_summary.json`. No public deployment. Preserve unrelated dirty work.
-
-## 2026-10-19 — Extended-defense / expected-FT / context VPM completed
-
-- Owner rejected the one-SE preference and requested new numbers including expected FT in the lineup. Immutable sibling v50 `expected-ft-context`: full seven-field defense, dated own pregame FT, home/RB ablations; minimum development MSE chooses full4000/8000/TD275. Old v44/v45/configs/results remain unchanged.
-- Stress2023–26 gameRMSE core13.9604 / seven actual13.9811 / seven+FT13.9764 / +home13.9784 / +RB14.0559 / both14.0630 / tunedfull14.0340; EPM13.9415. FT within-seven gain+.1317[-.0700,+.3415] gameMSE is unresolved. Rubberband and tuned full lose clearly versus core. Teamnet seven+FT3.2211 versuscore3.2352, unresolved; no promotion.
-- FT improves neutral future actual-point lineup MSE1.415044884→1.415021126, paired+23.8e-6[1.8,45.3]e-6;423,644 possessions/4,273games. This diagnostic excludes unseen-player lineups and uses no future score/clock. Actual FG+FT remains the long-SPM calibration/evaluation target; expected FT changes only lineup deployment denoising.
-- All22 FT files/639,070 raw FT events reconcile to canonical rows(max5.69e-14);97 terminal-tail FT events remain unassigned. Auditor fixes preserve old failed logs: canonical raw seconds differ occasionally from MM:SS; `MISS` needs word boundaries for Missi; non-FT heave/block companions share equal-clock event IDs. No model/forecast changes resulted from auditor repairs.21 context calibrations,30 focused tests and independent277-source/seven-test/pair/game/team/actual-point audits pass. No2027 outcomes, publication or further jobs. Receipt `VPM_EXPECTED_FT_CONTEXT.md`; curated sibling `expected_ft_context_v50_summary.json`.
