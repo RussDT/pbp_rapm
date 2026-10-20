@@ -4,6 +4,8 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [VPM defensive overlap and contested rebounds](VPM_DEFENSIVE_FEATURE_OVERLAP.md) - measured feature correlations, contested-DREB candidate scope, and corrected all-zero shooting-foul extraction; saved ratings have not been refitted
+
 - [VPM model map: component versus parent](VPM_MODEL_MAP.md) - the two architectures, what the current ratings page actually contains, and correction of the parent-as-component launch recommendation
 
 - [VPM launch defensive bank and ratings review](VPM_LAUNCH_DEFENSE.md) - completed v51: separate rim/disruption/foul/rebound and component tests, current585-player comparison, dated-FT launch-review recommendation and independent seven-test audits; no public deployment

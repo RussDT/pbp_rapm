@@ -15,7 +15,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / 'results/estimated_skills'
-OUT = SKILLS / 'defense_bank_v51'
+OUT = SKILLS / 'defense_bank_v51_shooting_pf_repaired'
 FEATURES = ['deflections100', 'contested_dreb100', 'contested_shots100',
             'charges_drawn100', 'off_fouls_drawn100', 'shooting_pf100', 'nonoff_pf100']
 
@@ -39,6 +39,14 @@ def measured_rows(frame, feature, numerator, valid):
     d = d.loc[np.isfinite(d.numerator) & d.numerator.ge(0) & d.denominator.gt(0)]
     d['feature'] = 'def_' + feature
     return d
+
+
+def shooting_foul_events(raw):
+    """Recognize observed foul labels; archived action subtype is often zero."""
+    descriptions = raw[['home_description', 'neutral_description', 'visitor_description']].fillna('')
+    text = descriptions.astype(str).agg(' '.join, axis=1).str.upper()
+    shooting = text.str.contains(r'\bS\.FOUL\b|\bSHOOTING(?:\s+BLOCK)?\s+FOUL\b', regex=True)
+    return raw.loc[raw.event_type.eq(6) & raw.player1_id.gt(0) & shooting]
 
 
 def summarize(measurements, players, cut, game_ids=None, half_life=None, prior_exposure=1000.):
@@ -81,6 +89,8 @@ def summarize(measurements, players, cut, game_ids=None, half_life=None, prior_e
 
 def prepare(out=OUT):
     out = Path(out)
+    if out.resolve() == (SKILLS / 'defense_bank_v51').resolve():
+        raise ValueError('Preserve the original invalid shooting-foul source; use the repaired output root')
     out.mkdir(parents=True, exist_ok=True)
     linepath = SKILLS / 'monthly_source_2014_2026/player_game_lines.parquet'
     trackingpath = SKILLS / 'monthly_defense_v1/dfga_counts.parquet'
@@ -112,7 +122,9 @@ def prepare(out=OUT):
             paths.append(path)
             raw = pd.read_parquet(path).drop_duplicates()
             raw['game_id'] = raw.game_id.astype(str).str.zfill(10)
-            f = raw.loc[raw.event_type.eq(6) & raw.event_action_type.eq(2) & raw.player1_id.gt(0)]
+            f = shooting_foul_events(raw)
+            if raw.event_type.eq(6).sum() > 50 and f.empty:
+                raise ValueError('Degenerate shooting-foul extraction from a complete source file')
             if f.duplicated(['game_id', 'event_num']).any():
                 raise ValueError('Ambiguous shooting foul event identity')
             counts = f.groupby(['game_id', 'player1_id']).size().rename('shooting_pf')
@@ -163,6 +175,7 @@ def prepare(out=OUT):
                     measurement_rows=len(measured), features=['def_' + x for x in FEATURES],
                     snapshot_half_life=550, prior_exposure=1000,
                     calibration='raw same-window matched measured counts',
+                    shooting_fouls='description-labelled S.FOUL/shooting foul; archived numeric subtype is not authoritative',
                     snapshots='fixed TD550, K1000, past-prefix population prior; no fitted future parameters',
                     coverage={str(k): int(v) for k, v in coverage.items()}, protected_outcomes=0)
     (out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')

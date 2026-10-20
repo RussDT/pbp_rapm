@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from build_vpm_defense_bank import summarize
+from build_vpm_defense_bank import summarize, shooting_foul_events
 
 
 def measurement_frame():
@@ -33,3 +33,13 @@ def test_calibration_uses_only_exact_matched_games_and_sums_counts():
     assert a.loc[0, 'def_deflections100'] == 1.
     assert a.loc[0, 'def_deflections100__exposure'] == 200.
     assert np.isnan(a.loc[1, 'def_deflections100'])
+
+
+def test_shooting_foul_labels_work_when_archive_subtypes_are_all_zero():
+    raw = pd.DataFrame(dict(event_type=[6, 6, 6, 6, 1], event_action_type=[0] * 5,
+        player1_id=[1, 2, 3, 4, 5],
+        home_description=['Brown S.FOUL (P1.T1)', 'Brown P.FOUL (P2.T2)', None, 'Shooting Foul', 'S.FOUL'],
+        neutral_description=[None] * 5,
+        visitor_description=[None, None, 'Reed S.FOUL (P1.T1)', None, None]))
+    actual = shooting_foul_events(raw)
+    assert actual.player1_id.tolist() == [1, 3, 4]

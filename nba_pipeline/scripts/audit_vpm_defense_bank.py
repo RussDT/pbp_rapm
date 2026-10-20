@@ -12,6 +12,36 @@ def digest(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 
+def check_shooting_source(meta, measured):
+    """Recount literal source foul labels independently of the production regex."""
+    target = measured.loc[measured.feature.eq('def_shooting_pf100')]
+    checked = 0
+    source_events = 0
+    for name in meta['source_hashes']:
+        path = Path(name)
+        if path.parent.name != 'raw_data' or not path.name.startswith('NBA'):
+            continue
+        columns = ['game_id', 'event_num', 'event_type', 'player1_id',
+                   'home_description', 'neutral_description', 'visitor_description']
+        d = pd.read_parquet(path, columns=columns).drop_duplicates()
+        d.game_id = d.game_id.astype(str).str.zfill(10)
+        descriptions = [d[c].fillna('').astype(str).str.upper() for c in columns[-3:]]
+        labels = descriptions[0] + ' ' + descriptions[1] + ' ' + descriptions[2]
+        shooting = (labels.str.contains('S.FOUL', regex=False)
+                    | labels.str.contains('SHOOTING FOUL', regex=False)
+                    | labels.str.contains('SHOOTING BLOCK FOUL', regex=False))
+        f = d.loc[d.event_type.eq(6) & d.player1_id.gt(0) & shooting]
+        assert len(f) > 0, 'Complete source has no recognized shooting fouls: ' + name
+        counts = f.groupby(['game_id', 'player1_id']).size()
+        g = target.loc[target.game_id.isin(set(d.game_id))]
+        index = pd.MultiIndex.from_frame(g[['game_id', 'player_id']])
+        np.testing.assert_array_equal(g.numerator, counts.reindex(index, fill_value=0).to_numpy())
+        checked += len(g)
+        source_events += len(f)
+    assert checked == len(target) and checked > 0
+    return dict(shooting_player_games_checked=checked, independent_source_shooting_events=source_events)
+
+
 def audit(root):
     root = Path(root).resolve()
     meta = json.loads((root / 'manifest.json').read_text())
@@ -24,6 +54,7 @@ def audit(root):
     d = pd.read_parquet(root / 'measurements.parquet')
     assert not d.duplicated(['game_id', 'player_id', 'feature']).any()
     assert d.numerator.ge(0).all() and d.denominator.gt(0).all()
+    shooting_audit = check_shooting_source(meta, d)
     features = pd.read_parquet(root / 'features.parquet')
     provenance = pd.read_parquet(root / 'provenance.parquet')
     assert provenance.last_observation_date.lt(provenance.estimate_date).all()
@@ -56,7 +87,7 @@ def audit(root):
                 values = (100 * sums.numerator / sums.denominator).reindex(packet.player_id)
                 np.testing.assert_allclose(packet[name], values, atol=1e-10, rtol=0, equal_nan=True)
                 cells += len(values)
-    result = dict(status='passed', independently_reconstructed_cells=cells, maximum_snapshot_gap=maximum,
+    result = dict(status='passed', **shooting_audit, independently_reconstructed_cells=cells, maximum_snapshot_gap=maximum,
                   source_files=len(meta['source_hashes']), observations=len(d), prefix_dates=8,
                   protected_outcomes=0, same_day_observations=0,
                   measurement_sha256=digest(root / 'measurements.parquet'))

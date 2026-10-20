@@ -17,7 +17,10 @@ runs; they do not identify new architectures or establish a release order.
 - **Core defense + expected FT:** same parent/prior, with dated expected FT in
   lineup deployment. It is a target variant, not a third architecture.
 - **Expanded defense:** same parent architecture, with rim savings, rim contest
-  volume, shooting PF and non-offensive PF added to the three core fields.
+  volume and non-offensive PF added to the three core fields. Its attempted
+  shooting-PF column was incorrectly all zero; corrected counts exist but
+  the shown ratings have not been refitted. See
+  [the source correction and overlap audit](VPM_DEFENSIVE_FEATURE_OVERLAP.md).
 - Previous priors, different decay settings and blends are parent comparisons.
 
 “Selected in development” means lowest 2020–22 game MSE among the registered

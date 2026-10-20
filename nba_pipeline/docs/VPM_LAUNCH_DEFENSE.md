@@ -1,5 +1,11 @@
 # VPM defensive skill bank and ratings review — October 19, 2026
 
+**Source correction:** the attempted shooting-PF field was incorrectly all zero,
+so the declared seven-field selected model has six active numeric fields.
+The [corrected source and overlap audit](VPM_DEFENSIVE_FEATURE_OVERLAP.md)
+supersedes the earlier field-validity claim. Old ratings/scores are unchanged
+and have not been rerun with repaired shooting fouls.
+
 **Scope correction:** this receipt evaluates **Parent VPM**, not the ten-component
 VPM / Impact Monster. Its earlier launch-review recommendation below is
 withdrawn as an answer to the component-product launch question. The parent
