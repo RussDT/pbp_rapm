@@ -10,6 +10,8 @@ runs; they do not identify new architectures or establish a release order.
 
 ## Selected model — owner decision, October 20
 
+**Reader consolidation:** ratings.html and net-decomposition.html now open the same selected-model O/D/total overview. Main rows show all three; player details compare every Net lane across all three columns. Priors are separately labeled values. The experimental model/convention controls remain at net-decomposition-research.html. This is one data view, not another model or refit.
+
 The Net reader defaults to the standard **midrange-reference** convention. Full-attempt frequencies are a separate diagnostic; this changes no selected rating. See the display correction in VPM_NET_LANE_DECOMPOSITION.md. The [team-win bridge](VPM_TEAM_WIN_PROJECTIONS.md) preserves this selected model but awaits dated roster/minutes inputs before current forecasts.
 
 **VPM · defense mapper100** is now the selected local default, using the audited

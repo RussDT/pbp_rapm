@@ -4,6 +4,8 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Coherent selected VPM overview](VPM_NET_LANE_DECOMPOSITION.md#coherent-odtotal-overview--october20) - one Offense / Defense / Total leaderboard, grouped Net summary, three-column player lanes and separately labeled priors; same saved selected model
+
 - [Selected VPM team-win projection bridge](VPM_TEAM_WIN_PROJECTIONS.md) - unified donor method, tested minutes/Net aggregation and conditional win engine; current roster/minutes and missing identities remain required before forecasts
 
 - [Defensive Parent calibration](VPM_DEFENSIVE_CALIBRATION.md) - owner-selected mapper100, nine matched tests, conditional intervals and pre-cut groups; selected ratings/skills/Net align, later evidence remains mixed

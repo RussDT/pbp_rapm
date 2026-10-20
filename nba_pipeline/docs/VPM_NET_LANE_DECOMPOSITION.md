@@ -255,3 +255,41 @@ regression test now checks the actual frequency subtraction, beyond mere total
 closure. Four target tests pass; browser default/player details/diagnostic
 labels and582-row standard CSV checked. Curated sibling receipt:
 `vpm/evidence/midrange_reference_display_summary.json`.
+
+## Coherent O/D/total overview — October20
+
+Owner requested one coherent data view with offense, defense and total. Both
+`ratings.html` and `net-decomposition.html` now serve identical selected-model
+HTML from `render_vpm_overview.py` / `vpm_overview_template.html`. This is a
+reader consolidation, not a new model or experiment. Canonical rebuild remains
+sibling `vpm/scripts/render_selected_ratings.py`.
+
+Default leaderboard: VPM rank, player, Offense, Defense, Total VPM. Ranks are
+computed in the selected universe before search and remain total-VPM ranks
+when sorting offense/defense. Net summary groups shot/TOV/SC and side totals
+under offense and defense, with the overall total alongside. Selecting a player
+opens one table whose columns are lane / offense / defense / total; summary,
+shot rollup and all standard Net atoms use the same selected midrange-reference
+convention. No side-switching is required to compare O/D/total.
+
+Final ratings are the default. Combined/own priors are separately selected and
+explicitly labeled; unweighted background ability is labeled ability with a
+weight explanation. Player downloads preserve all three sides for every lane;
+leaderboard download exports the current view. Full selected data remain at
+`vpm_overview_full.csv` (1,556 rows); recent default582. The prior all-model/
+full-attempt research interface is retained at `net-decomposition-research.html`.
+Earlier ratings archives and raw Net/prior exports remain available.
+
+Renderer reconstructs every final/own/combined/background lane sum and every
+row's O+D=total, maximum gap3.6e-15, and matches saved selected O/D/VPM. Existing
+selected board, full/recent ratings CSVs and skills HTML hashes are unchanged.
+Browser checks cover582/1556 universes, final/prior/ability labels, search,
+O/D/total sorting, player summary/all-lanes and combined priors.582-row
+leaderboard CSV matches saved ratings; player CSV rows satisfy O+D=total and
+atomic rows sum to the player's three totals. Overall and player screenshots
+visually inspected. Curated receipt: sibling
+`vpm/evidence/coherent_overview_summary.json`.
+
+This does not resolve the separate team-win input question: current roster,
+projected minutes and missing-identity admission remain outstanding, as recorded
+in VPM_TEAM_WIN_PROJECTIONS.md.

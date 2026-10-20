@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-20 — One coherent selected VPM view
+
+- Owner wants offense/defense/total together. ratings.html and net-decomposition.html now identical selected100 overview: default O/D/total leaderboard, grouped Net shot/TOV/SC summary, player table lane/O/D/total, standard midrange reference and separate final/own/combined/ability values. Research/full-attempt variants remain secondary at net-decomposition-research.html. No new model or fit.
+- Renderer checks1556/582 rows/all4bases/3sides to3.6e-15; selected source boards/current rating CSVs/skills hashes unchanged. Browser search/sort/priors/universes/player details,582-row overall CSV and player lane CSV verified; screenshots viewed. Rebuild render_selected_ratings.py, curated coherent_overview_summary.json, canonical VPM_NET_LANE_DECOMPOSITION.md. Earlier team-win task still awaits prospective roster/minutes/identity input choice; no2027/public deployment.
+
 ## 2026-10-20 — Midrange-reference view fixed; win bridge prepared
 
 - Owner flagged large rim/three frequency: page exposed full-attempt diagnostic, with standard midrange subtraction buried under Compact. Default/table/detail/shot-rollup/CSV now standard five-shot Net; full view explicitly diagnostic. Selected Jokic Dfreq rim1.780→.462/three−2.290→−.391, D2.594525 unchanged. Canonical235488/full93560/fresh-prefix TD audit max2.85e-14; all3112model-player rows/bases/O-D-total close3.6e-15; selected boards/ratings/skills hashes unchanged. Four target tests and582-row browser CSV pass.
@@ -20,10 +25,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Owner uneasy with Reed~+4/Jokic~+3 defense. Exact current prior/final D: Reed4.168528→3.594742 at13.855 MPG; Jokic2.620965→3.017349 at34.858 MPG, both entrant weight0. Full-universe centered saved-coefficient reconstruction matches all priors within1e−8. Jokic contestedDREB term+2.509, steals+1.082; Reed steals+2.316/contestedDREB+1.230/blocks+1.053. These are conditional prior coordinates, not independent causal credit or measured prior leverage.
 - Aggregate predictive gains do not settle player O/D identification/defensive calibration. Read-only result appended to VPM_OFFENSIVE_CREATION_TEST.md; no feature deletion, scale/manual override, new fit, reader/data change,2027 access or release decision.
-
-## 2026-10-20 — NBA skill live-refresh readiness audited
-
-- Owner asked whether skills are organized to update as season games arrive. Research library yes; operational automatic refresh no. Skills reader fixed Sep1,2026, creation adapter historical cuts/season<=2026, tracking current_2026 exports. Existing daily RAPM shell hardcodes ending2026/old path and calls no estimated-skills refresh. No local crontab or dedicated NBA skills job found among inspected launch agents/Codex automation files. No script executed, new games fetched or schedules modified.
-- Need one season-aware ingest→validated observations→frozen-parameter state refresh→dated checkpoint/export/reader runner, all families/rookie identities/missingness/source delays, pregame archives and monitored schedule. Do not confuse nightly filtering with refitting/tuning on2027. Documented readiness gap in VPM_OFFENSIVE_CREATION_TEST.md; no live-ready claim or VPM change.
-
-- Follow-up owner emphasized organization of all skills for future daily2027 flow. Built estimated_skills_operations.json (59 current/28 standalone/1 retained output,16 groups,20 research lanes), inventory reader and manage_estimated_skills.py inventory/freeze/check. Carry-forward bundle copies current2025-vintage recipes, not a new preseason fit.16 meaningful checks pass; actual check blocks16 missing live-adapter receipts. Browser inventory88 rows verified. Source adapters, state replay and schedule remain unwired. No automatic updating/new data or2027 scoring claimed. Canonical ESTIMATED_SKILLS_DAILY.md.
