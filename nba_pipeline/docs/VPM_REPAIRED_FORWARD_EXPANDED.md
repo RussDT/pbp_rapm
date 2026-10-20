@@ -252,3 +252,49 @@ unknown; shifting all ratings by a common constant leaves five-versus-five
 margin sums unchanged, but a native possession forecast also needs its
 matching intercept/reference adjustment. No recentering, rating, forecast,
 source, model or2027 changes were made for this check.
+
+
+### Offensive creation-input inventory, October20 (no model changes)
+
+Owner asked about predictive rim assists, assisted/unassisted shooting and a
+playtype-difficulty prior. Exact current mapper schema still has13 O inputs:
+zone makes/attempts, AST/TOV/OREB, usage events and MPG. No rim-assist,
+potential-assist, assistedness or explicit player-level role-difficulty field
+enters this prior. The dated own-skill feature parquet and17-skill v4 registry
+have no rim-assist or assistedness filter. Current monthly player-game panel
+also lacks those count columns; existing `RIM_ASSIST` processed possessions
+measure lineup assisted rim makes, not a ready-made passer-credited player
+forecast.
+
+Observed player-season rim assists exist in the passing sources read by
+`analyze_pbp_playtype_difficulty_ots.py` (`AtRimAssists/100` and the named modern
+passing field). A dated player-game count source can be built from validated
+PBP made-shot assist descriptions; exact passer identity, team, deduplication
+and exposure need auditing. Raw `player2_id` is not a valid assist source.
+Absence of a made-only assist tag on a missed shot does not identify an
+unassisted attempt. No dated own rim-assist forecast has been verified here.
+
+A separate predictive **potential-assists** filter already exists under
+`results/estimated_skills/tracking_next_game/potential_assists/`: selected
+`next_ou`, development2020–22, stress2023–25,2026 export-only. It is not in the
+current VPM mapper. Historical admission still needs appropriate annual
+past-only parameter vintages rather than applying a later frozen fit to
+pre-fit-date observations.
+
+Current repaired SQ already contains shot-context/action/description cues
+including driving, cutting, pull-up, step-back, floating and alley-oop. That
+is a shot-EV correction, distinct from a learned player-level creation/difficulty
+prior. The existing [PBP difficulty study](PBP_PLAYTYPE_DIFFICULTY_OTS.md)
+uses six outcome-invariant description buckets with prior-season prices;
+creation-controlled future-oTS RMSE1.4940→1.4744 on735 chronological rows,
+change−.0197[−.0383,−.0024]. It supports a candidate, not an established
+increment to this current VPM or a fitted forecast of future shot mix.
+
+Reasonable separate candidate blocks are (1) predictive potential/rim assists,
+(2) coherent predicted assisted/unassisted makes by rim/mid/three, and (3) a
+dated stabilized/prior-priced shot-mix difficulty value. Do not add total,
+assisted and unassisted makes together: total=assisted+unassisted. Replace the
+total-makes basis with two coherent parts or retain total plus a creation
+composition term, with attempts unchanged. These are candidate specifications,
+not an authorized/completed new fit or automatic change to current ratings.
+No2027 source or outcomes inspected; existing features/models/readers preserved.
