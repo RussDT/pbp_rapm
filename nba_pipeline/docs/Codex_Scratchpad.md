@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-20 — Defensive calibration and exact Net Parent completed
+
+- V59 tests nine arms: dev selectsDmapper100/4000-8000/TD550; spent game13.895289→13.888081 unresolved, low-continuity team win% worse. ReedD3.595→3.430/Jokic3.017→2.595. Native/context/400 conditional wild-draw intervals audited; priors/selection fixed, not full uncertainty. Same RESEARCH slot, candidate only.
+- V60 exactly reproduces archived Parent in learned Net lanes; source audit23files/3.012m possessions and canonical fresh-prefix checks pass. Found inherited entrant2015 quarantine; v61 removes344 possessions/two matched pricing games, directly refits clean total/entrant components. Current archived side change<=.012. All own/entrant/combined means and final TS/TOV/SC/shot/SQ lanes close,16 boards/778 sources/8289 game+210team forecast audit1.2e-12;56 independent score RMSEs pass. Clean stress13.895302→13.888098, same mixed conclusion. JokicD dominated by netSC~3.102, not own rebound credit. Seven tests pass;582/1556 readers/search/detail/download verified. Curated sibling evidence and canonical VPM_DEFENSIVE_CALIBRATION.md / VPM_NET_LANE_DECOMPOSITION.md; no2027/public promotion.
+
 ## 2026-10-20 — Reed/Jokic defensive prior concern traced
 
 - Owner uneasy with Reed~+4/Jokic~+3 defense. Exact current prior/final D: Reed4.168528→3.594742 at13.855 MPG; Jokic2.620965→3.017349 at34.858 MPG, both entrant weight0. Full-universe centered saved-coefficient reconstruction matches all priors within1e−8. Jokic contestedDREB term+2.509, steals+1.082; Reed steals+2.316/contestedDREB+1.230/blocks+1.053. These are conditional prior coordinates, not independent causal credit or measured prior leverage.
@@ -23,8 +28,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Immutable sibling v58 separately adds dated rim/potential assists, coherent assisted/unassisted zone makes and playtype points to current forward Parent. Current/assist/split/role stress game13.895289/13.894258/13.907115/13.897795; role wins early development, no later increment. Assist prior-only native gain positive but final unresolved and low-continuity game worse; split game worse, role native/prior worse. Retain current, no2027/promotion.
 - 387962 player-games/2913812 shots,55 annual finite-budget OU fits,11 mix fits; source counts/state/prefix/price audits pass.629-source/24-mapper/24-board/84-score/63-pair independent model audit and6 tests pass; eight controls reproduce. Supplemental helper pins match pre-existing frozen sources.582/1556 ratings, priors and inputs at8767/offensive-creation.html; search/sort/download verified. Owner clarified role should be points: already2*predictedTSA*difficulty/100. TSA uses conventional predictedFGA+.44*predictedFTA, not exact FT-trip counts; explicitly disclosed without post-result refit. Canonical VPM_OFFENSIVE_CREATION_TEST.md; curated sibling evidence.
-
-## 2026-10-20 — Offensive creation feature gaps inventoried
-
-- Owner asked predictive rim assists and playtype/assistedness inputs. Exact current13-field O mapper has none; v4 skill registry and monthly player-game panel lack rim-assist/assistedness filters/counts. Observed season rim-assists exist; lineup RIM_ASSIST is not passer-credited own skill. Separate potential-assist next_ou forecast exists (dev2020–22/stress2023–25/2026 export), unused by current VPM. Need proper historical parameter vintages before admission.
-- Current SQ already has description/role cues but no player-level difficulty prior. Prior PBP role study improves creation-controlled future-oTS1.4940→1.4744; not a current-VPM gate. Candidate blocks: predictive rim/potential assists, coherent assisted/unassisted zone makes replacing redundant totals, dated prior-priced mix difficulty. Made-only assist tags cannot classify missed-shot creation. Added source/interpretation note to VPM_REPAIRED_FORWARD_EXPANDED.md; no new model fit, source change, reader change or2027 access.

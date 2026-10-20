@@ -8,6 +8,26 @@ runs; they do not identify new architectures or establish a release order.
 | **Component VPM / Impact Monster** | Ten component types solved separately on offense and defense; components sum to O/D/total | Existing product architecture; the component launch candidate still needs a correctly scoped comparison |
 | **Parent VPM** | One O/D parent with strongly shrunk midrange/three-point residual corrections | Research alternative; this is the family tested in the recent long-SPM/defense/FT runs |
 
+## Parent VPM is now decomposable — October 20
+
+[Net lane reader](http://127.0.0.1:8767/net-decomposition.html) exposes the
+same forward Parent recipe and the defensive mapper-100 candidate as learned
+Net components: TS/TOV/SC, shot zones, full-frequency atoms and SQ children.
+Own, entrant and combined priors also sum exactly. This supplies component
+explanations of Parent VPM; it is not the older independently tuned ten-component
+product or a third architecture. The clean source repair excludes two quarantined
+2015 entrant games and refits the total directly. Current-cut O/D movement from
+the archive is at most0.012; no new tuning or launch promotion.
+[Full method, source repair and audit](VPM_NET_LANE_DECOMPOSITION.md).
+
+[Defensive calibration comparison](http://127.0.0.1:8767/defensive-calibration.html)
+shows nine prior/precision tests, group calibration and conditional uncertainty.
+Development selects mapper100 with4000/8000/TD550 unchanged. Clean gameRMSE
+13.895302→13.888098 remains unresolved; low-continuity team win percentage
+worsens. The candidate reduces Jokić D3.017→2.595 and Reed3.595→3.430.
+Keep both named recipes visible, rather than treating newest as best.
+[Evidence and limits](VPM_DEFENSIVE_CALIBRATION.md).
+
 ## Offensive creation follow-up within the same forward Parent
 
 [Three separate creation-feature tests](http://127.0.0.1:8767/offensive-creation.html) compare current with rim/potential assists, assisted/unassisted zone makes and point-valued playtype difficulty. No addition replaces current: assist game improvement is tiny/unresolved with worse low-continuity games, assistedness worsens, and the difficulty development winner does not improve later forecasts. Difficulty uses predicted approximate TSA=FGA+.44FTA. The page includes ratings, O/D priors and new predictive inputs for582/1556 players. [Source, methodology and results](VPM_OFFENSIVE_CREATION_TEST.md). These are Parent prior tests, not a new architecture. Owner retains these predictive stats in the existing skills library, with a Creation & shot difficulty view and CSVs explicitly labeled outside the current mapper.
