@@ -81,7 +81,19 @@ uv pip install --python .venv/bin/python -r nba_pipeline/requirements_predictive
 .venv/bin/python -m pytest -q nba_pipeline/tests/test_full_skill_history.py
 ```
 
-The active [finish supervisor](../scripts/finish_full_skill_history.py) watches only this build's fit PID, verifies all annual recipe locks, then runs [whole-panel chronology/source checks](../scripts/audit_full_skill_history.py), cross-stat testing and coherent export. It records `failed` on a missing stage or exception; it does not report success just because a process started. No recurring automation, publication or live daily scheduler was installed.
+The active [finish supervisor](../scripts/finish_full_skill_history.py) watches only this build's fit PID, verifies all annual recipe locks, then runs [whole-panel chronology/source checks](../scripts/audit_full_skill_history.py), cross-stat testing and coherent export. It records `failed` on a missing stage or exception; it does not report success just because a process started. No publication or live daily data-refresh scheduler was installed. After the owner asked work to continue while away, a temporary hourly follow-up in this chat (`finish-predictive-stat-history`) was enabled to inspect failures/completion, verify results and update documentation; pause it after verified completion. This follow-up does not itself refresh sources or fit a daily live model.
+
+Before advancing, the supervisor checks all 30 Parquet footers: a file appearing in the directory is not proof that its writer has finished. It then runs [historical results diagnostics](../scripts/summarize_full_skill_history.py) after export and hashes that receipt in the completion status. This results step does not change any saved model, cross-stat selection or VPM input.
+
+## Results contract fixed before full-run scores
+
+The October 21 finishing pass adds a fixed evaluation of 2020–2025. For FT%, corner/above-break three-point accuracy, turnovers and rebounds, report independent versus selected cross-stat predictions. Also test the coherent derived three-point makes, FT makes, points and assists per 100 possessions. Each comparison uses identical observed rows in both arms, exposure weighting within season and equal weight across the six seasons. Different target units never enter a pooled raw MSE.
+
+Report paired game-cluster bootstrap intervals (1,000 draws, seed20261021), resampling games within each season. These intervals condition on saved annual filters, coefficients and model choices; they do not represent all parameter/selection uncertainty. This remains spent retrospective research evidence, not new confirmation. Derived forecast comparisons are diagnostics, not an automatic joint-makes or VPM admission gate.
+
+The specific FT question has a matched diagnostic: calibrated own-zone pregame accuracy versus that same input plus pregame FT% and its missing flag. Both residual ridge arms use fixed alpha0.1 and a1460-day calibration half-life, train only on earlier annual out-of-time forecasts, and score only through2025. Save annual coefficients and2026 predictions without reading2026 target rows. A positive paired increment supports predictive association in this limited comparison; it neither establishes causation nor isolates FT's contribution within the full166-head model. No reported result is used to retune these arms.
+
+The diagnostics also report fitted versus bootstrap annual slots and actual optimizer convergence separately. A fixed-budget forecast need not be a converged optimum. Head/family comparison CSVs retain the number of scored seasons per head, including short-history source-vintage branches.
 
 ## Outputs and checks
 
@@ -94,7 +106,12 @@ Generated package: `nba_pipeline/results/estimated_skills/full_history_v2/` (ign
 - `cross_stat/`: past-only choices, coefficients, historical scores and predictions; no2026 scores.
 - On completion, `library/independent/` and `library/cross_stat_research/`: pregame-only stat views and derived accounting, plus `library_receipt.json` and `latest_2026_pregame_values.csv`. Latest values carry each player's actual game cutoff; they are not silently relabeled as today's roster or states.
 - `run_status.json`: current stage and completion/failure status. Logs: `fit_replay.log`, `cross_stat_testing.log`, `coherent_exports_and_audits.log` and `supervisor.log`.
+- `diagnostics/RESULTS.md`, `research_summary.json`, head/family comparison CSVs and FT-association coefficients: historical results, paired conditional intervals and the fixed FT diagnostic. The completion status hashes this summary; until it exists, these results are pending.
 
 Twelve focused tests cover target/future perturbation invariance; missing versus observed zero; same-day batching; source epoch gates; tracking-vintage separation; agreement with the existing filter; manifest season fences; direct/moment ridge equivalence; chronological selection; an end-to-end synthetic FT-to-three example that is invariant to2026 target changes; and bounded makes/point/rebound accounting.
+
+Five additional finishing tests verify footer readiness, paired game aggregation, equal-season weighting, refusal to materialize2026 target rows and the matched FT diagnostic's chronology/2026 invariance. Combined focused suite:17 tests pass before final results.
+
+Early real-data probe: full166-head replay for ending1997 and2018 covers53,011 player-game rows. Exact source identity, strictly earlier last-observation dates, forecast bounds and unsupported-source epochs pass; coherent point accounting has maximum gap0 in both seasons. This partial probe does not replace the final30-season audit. A probe initially requested still-fitting2019; it stopped on a missing annual recipe, and2018 was checked instead. The main fit queue was unaffected.
 
 Raw independent proportion estimates are preserved when rebound/turnover compositions are normalized for coherent reporting. Head-error summaries refer to forecasts before deterministic products/composition normalization; they do not certify every derived output's accuracy. No balancing residual repairs broken shot/point accounting. Source provenance and shared aliases do not establish a public deployment or a new selected VPM model. Selected clean v61 and separate v65 history remain intact.

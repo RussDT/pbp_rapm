@@ -108,6 +108,8 @@ def run(out=ROOT):
     recent = recent.sort_values(["game_date", "game_id"]).groupby("player_id", sort=False).tail(1)
     recent.to_csv(out / "latest_2026_pregame_values.csv", index=False)
     write_json(out / "library_receipt.json", dict(status="completed_research_library", profiles=["independent", "cross_stat_research"],
+                                                 code_sha256=sha(__file__), baseline_lock_sha256=sha(out / "run_lock.json"),
+                                                 cross_stat_lock_sha256=sha(out / "cross_stat/run_lock.json"),
                                                  model_targets=len(SKILLS), rows_per_profile=expected, records=records,
                                                  data_through="2026", protected_2027_rows=0, selected_vpm_changed=False,
                                                  context="context_free_game_rates", neutral_causal_talent_identified=False,
