@@ -1,0 +1,7 @@
+# Tested local Python 3.9 runtime for the standalone full-history library.
+numpy==2.0.2
+pandas==2.3.3
+scipy==1.13.1
+pyarrow==21.0.0
+fastavro==1.12.2
+pytest==8.4.2

@@ -1,0 +1,159 @@
+{
+  "description": "Explicit alternate measurement columns from pinned player_game_report schema; never stitch different vintages into one filter.",
+  "versioned_fields": {
+    "dreb_chance_defer": [
+      "v1",
+      "v2"
+    ],
+    "dreb_chances": [
+      "v1",
+      "v2"
+    ],
+    "dreb_contest": [
+      "v1",
+      "v2"
+    ],
+    "drive_ast": [
+      "v1",
+      "v2"
+    ],
+    "drive_fga": [
+      "v1",
+      "v2"
+    ],
+    "drive_fgm": [
+      "v1",
+      "v2"
+    ],
+    "drive_passes": [
+      "v1",
+      "v2"
+    ],
+    "drive_pf": [
+      "v1",
+      "v2"
+    ],
+    "drive_tov": [
+      "v1",
+      "v2"
+    ],
+    "drives": [
+      "v1",
+      "v2"
+    ],
+    "elbow_touches": [
+      "v1",
+      "v2"
+    ],
+    "less_10ft_def_fga_lt_10": [
+      "v1",
+      "v2"
+    ],
+    "less_10ft_def_fgm_lt_10": [
+      "v1",
+      "v2"
+    ],
+    "less_6ft_def_fga_lt_06": [
+      "v1",
+      "v2"
+    ],
+    "less_6ft_def_fgm_lt_06": [
+      "v1",
+      "v2"
+    ],
+    "more_15ft_def_fgm_gt_15": [
+      "v1",
+      "v2"
+    ],
+    "open_fga": [
+      "v1",
+      "v2"
+    ],
+    "open_fgm": [
+      "v1",
+      "v2"
+    ],
+    "oreb_chance_defer": [
+      "v1",
+      "v2"
+    ],
+    "oreb_chances": [
+      "v1",
+      "v2"
+    ],
+    "oreb_uncontest": [
+      "v1",
+      "v2"
+    ],
+    "overall_def_d_fgm": [
+      "v1",
+      "v2"
+    ],
+    "paint_touches": [
+      "v1",
+      "v2"
+    ],
+    "passes_received": [
+      "v1",
+      "v2"
+    ],
+    "post_touches": [
+      "v1",
+      "v2"
+    ],
+    "potential_ast": [
+      "v1",
+      "v2"
+    ],
+    "secondary_ast": [
+      "v1",
+      "v2"
+    ],
+    "three_pt_def_fg3m": [
+      "v1",
+      "v2"
+    ],
+    "tight_fga": [
+      "v1",
+      "v2"
+    ],
+    "tight_fgm": [
+      "v1",
+      "v2"
+    ],
+    "time_of_poss": [
+      "v1",
+      "v2"
+    ],
+    "two_pt_def_fg2a": [
+      "v1",
+      "v2"
+    ],
+    "two_pt_def_fg2m": [
+      "v1",
+      "v2"
+    ],
+    "very_tight_fga": [
+      "v1",
+      "v2"
+    ],
+    "very_tight_fgm": [
+      "v1",
+      "v2"
+    ],
+    "wide_open_fga": [
+      "v1",
+      "v2"
+    ],
+    "wide_open_fgm": [
+      "v1",
+      "v2"
+    ]
+  },
+  "v2_first_season": 2025,
+  "canonical_display_policy": {
+    "through_2024": "v1",
+    "from_2025": "v2"
+  },
+  "source_epoch_rule_status": "Retrospective source-admission rules, not publication-vintage certification"
+}
