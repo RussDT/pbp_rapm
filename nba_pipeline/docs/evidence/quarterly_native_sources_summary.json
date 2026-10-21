@@ -1,0 +1,63 @@
+{
+  "status": "passed",
+  "evaluated_cuts": 39,
+  "verified_empty_cuts": 13,
+  "actual_endpoint_rows": 2490186,
+  "maximum_endpoint_prediction_gap": 1.5543122344752192e-15,
+  "maximum_scalar_score_gap": 4.440892098500626e-16,
+  "paired_games": 15810,
+  "paired_equal_quarter_gain": {
+    "mse_gain": 0.0005001017806830065,
+    "ci_low": 0.00040549426546687754,
+    "ci_high": 0.0005893606355928096
+  },
+  "representative_control_normal_equations": {
+    "2014-01-01": {
+      "actual_beta": 3.798327617360931e-14,
+      "mid_weak": 0.0,
+      "mid_strong": 0.0,
+      "three_weak": 0.0,
+      "three_strong": 0.0,
+      "candidate_minus_zero_prior_response": 7.206963065380145e-14
+    },
+    "2016-01-01": {
+      "actual_beta": 7.255503851145736e-14,
+      "mid_weak": 3.07198587713869e-14,
+      "mid_strong": 2.171418588751306e-14,
+      "three_weak": 2.840202688675759e-14,
+      "three_strong": 1.7402397976857252e-14,
+      "candidate_minus_zero_prior_response": 6.165568100776464e-14
+    },
+    "2026-04-01": {
+      "actual_beta": 3.993482107830488e-14,
+      "mid_weak": 2.7756413371423096e-14,
+      "mid_strong": 1.749274277870775e-14,
+      "three_weak": 3.038772092347419e-14,
+      "three_strong": 2.999813475778863e-14,
+      "candidate_minus_zero_prior_response": 5.557546472880358e-14
+    }
+  },
+  "normal_equations_are_not_model_refits": true,
+  "target_source_hashes_verified": 110,
+  "target_artifact_hashes_verified": 108,
+  "prepared_source_hashes_verified": 110,
+  "source_receipts_unchanged": true,
+  "protected_outcomes": 0,
+  "code_sha256": "0e0080f9c12d370f4e8bf5540c1aa6483663a0a810d9ea6bb2423ed310cc2c12",
+  "experiment": "v65_quarterly_2014_v3",
+  "audit_receipt": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_quarterly_2014_v3/independent/audit_quarterly_native_sources.json",
+  "audit_receipt_sha256": "52d571f57e3b571b394f08b3959c9daab35ab5c69155c006c01d9809acf8450b",
+  "native_summary_sha256": "cd1552d1ba8edd1fbc7cd40a8654695e6a79fe1400b530df36144acc86b2f820",
+  "identity_admission_sha256": "34141584f23c93a0649e6620d8bf4dd1057ff53b86d0c5dd382add87e3bf10e0",
+  "quarter_grid": "January/April/July/October 2014\u20132026; 52 cuts",
+  "matched_control": "same 4000/8000, TD550, actual FG+FT plus same SQ correction, zero player-impact prior",
+  "estimand": "actual future FG+FT points conditional on common known-player observed lineups",
+  "limitations": [
+    "Historical reconstruction and spent evidence; not untouched prospective confirmation.",
+    "Whole-game bootstrap holds learned priors and family selection fixed; equal weight to each nonempty quarter.",
+    "No future availability forecast; no 2027 outcomes; no model refit in this audit.",
+    "The rejected v64 availability-transition run is excluded from acceptance."
+  ],
+  "reproduce": "OPENBLAS_NUM_THREADS=1 .venv/bin/python nba_pipeline/scripts/historical_targets_native_audit.py --out ../vpm/vpm/results/harness/vpm_quarterly_2014_v3",
+  "tests": "4 passed: nba_pipeline/tests/test_historical_targets_native_audit.py"
+}
