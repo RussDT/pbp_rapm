@@ -1,5 +1,9 @@
 # CLAUDE.md
 
+## Historical VPM fallback admission (2026-10-21)
+
+For historical priors, an aggregate remains until its replacement is both admitted by the matured mapper and observed for that player. Use this rule identically before calibration preprocessing and at deployment; observed zero is valid. Raw tracking availability alone must not discard usable box/PBP information. v64 is rejected; v65 quarterly history is a completed separate52-cut2014–26 extension (105268rows/2649players); selected v61 remains unchanged. MPG retained after matched test.71 focused tests plus independent source/model/native/reader/browser audits pass. Overall game gain versus selected remains unresolved; reader8768/quarterly-history.html. See `nba_pipeline/docs/VPM_QUARTERLY_HISTORY.md`.
+
 This file complements `AGENTS.md` for coding agents working in `/Users/russellthomas/Docs/pbp_rapm`.
 
 ## Agent Ops Workflow

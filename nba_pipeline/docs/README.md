@@ -4,6 +4,9 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Quarterly predictive VPM from 2014](VPM_QUARTERLY_HISTORY.md) - completed 52 quarterly snapshots / 105,268 player-date rows, missing-tracking fallbacks, MPG decision, exact Net priors/finals and audited predictive results
+- [Matched selected-model MPG decision](VPM_MPG_DECISION.md) - retain MPG after mapper100 ablation, with audited prediction differences and appearance-count limitations
+
 - [Coherent selected VPM overview](VPM_NET_LANE_DECOMPOSITION.md#coherent-odtotal-overview--october20) - one Offense / Defense / Total leaderboard, grouped Net summary, three-column player lanes and separately labeled priors; same saved selected model
 
 - [Selected VPM team-win projection bridge](VPM_TEAM_WIN_PROJECTIONS.md) - unified donor method, tested minutes/Net aggregation and conditional win engine; current roster/minutes and missing identities remain required before forecasts

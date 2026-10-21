@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-21 — Quarterly predictive VPM completed
+
+- Retain MPG after matched mapper100 ablation; no hand shrinkage. Corrected immutable v65 emits52 Jan/Apr/Jul/Oct cuts2014–26,105268 player-date rows/2649players, exact final/own/combined/background Net O/D/total lanes and histories. Missing tracking stays missing; totalDREB/aggregatePF survives until replacement admitted AND observed. First full v64 rejected for premature fallback removal; corrected rebuild changes only first7quarters/2earlyfamilies; later boards/benchmark exact parity.
+- Seven stress error points improve; overall game13.888098→13.881618 gain unresolved. Native2.490m known-lineup possessions over39nonempty quarters beat matched zero-impact priors, conditional CI positive;13empty windows unevaluated.71 focused tests,37-map/170-board/441-source/raw/native audits and browser/export checks pass. Current5protectedfiles unchanged; no2027/promotion. Reader8768/quarterly-history.html; canonical VPM_QUARTERLY_HISTORY.md; code and curated source backup committed locally.
+
 ## 2026-10-20 — One coherent selected VPM view
 
 - Owner wants offense/defense/total together. ratings.html and net-decomposition.html now identical selected100 overview: default O/D/total leaderboard, grouped Net shot/TOV/SC summary, player table lane/O/D/total, standard midrange reference and separate final/own/combined/ability values. Research/full-attempt variants remain secondary at net-decomposition-research.html. No new model or fit.
@@ -20,8 +25,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - V59 tests nine arms: dev selectsDmapper100/4000-8000/TD550; spent game13.895289→13.888081 unresolved, low-continuity team win% worse. ReedD3.595→3.430/Jokic3.017→2.595. Native/context/400 conditional wild-draw intervals audited; priors/selection fixed, not full uncertainty. Same RESEARCH slot, candidate only.
 - V60 exactly reproduces archived Parent in learned Net lanes; source audit23files/3.012m possessions and canonical fresh-prefix checks pass. Found inherited entrant2015 quarantine; v61 removes344 possessions/two matched pricing games, directly refits clean total/entrant components. Current archived side change<=.012. All own/entrant/combined means and final TS/TOV/SC/shot/SQ lanes close,16 boards/778 sources/8289 game+210team forecast audit1.2e-12;56 independent score RMSEs pass. Clean stress13.895302→13.888098, same mixed conclusion. JokicD dominated by netSC~3.102, not own rebound credit. Seven tests pass;582/1556 readers/search/detail/download verified. Curated sibling evidence and canonical VPM_DEFENSIVE_CALIBRATION.md / VPM_NET_LANE_DECOMPOSITION.md; no2027/public promotion.
-
-## 2026-10-20 — Reed/Jokic defensive prior concern traced
-
-- Owner uneasy with Reed~+4/Jokic~+3 defense. Exact current prior/final D: Reed4.168528→3.594742 at13.855 MPG; Jokic2.620965→3.017349 at34.858 MPG, both entrant weight0. Full-universe centered saved-coefficient reconstruction matches all priors within1e−8. Jokic contestedDREB term+2.509, steals+1.082; Reed steals+2.316/contestedDREB+1.230/blocks+1.053. These are conditional prior coordinates, not independent causal credit or measured prior leverage.
-- Aggregate predictive gains do not settle player O/D identification/defensive calibration. Read-only result appended to VPM_OFFENSIVE_CREATION_TEST.md; no feature deletion, scale/manual override, new fit, reader/data change,2027 access or release decision.

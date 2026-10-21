@@ -1,6 +1,6 @@
 # NBA Analytics Project Portfolio
 
-Last reviewed: 2026-10-19 (owner requested stronger defensive VPM and ratings review before tomorrow's launch)
+Last reviewed: 2026-10-21 (owner requested MPG decision and quarterly predictive VPM history from2014, with Net lanes)
 
 This is the portfolio-level source of truth for deciding what to work on. It is
 not a methodology document and it does not replace each project's canonical
@@ -75,7 +75,9 @@ Canonical docs: [RAPM Table Catalog](./RAPM_TABLE_CATALOG.md),
 [Pipeline quickstart](./PIPELINE_QUICKSTART.md), and
 [Supabase results publishing](./SUPABASE_RESULTS_PUBLISHING.md).
 
-### 2. RESEARCH — NBA predictive VPM defensive matchup features
+### 2. RESEARCH — NBA predictive VPM and historical coverage
+
+**Quarterly history completed, October21:** same VPM slot. Matched mapper100 ablation retains MPG. Audited v65 emits52 quarterly cuts /105268 player-date rows from2014 through2026 with exact prior/final Net lanes. Missing tracking uses model-aware aggregate fallbacks until replacements are admitted and observed; rejected v64 remains archived. Seven stress point estimates improve, overall game gain remains unresolved (13.888098→13.881618). Native forward gain versus matched zero-impact priors is positive;71 focused tests and independent source/model/native/browser/export audits pass. Reader localhost8768/quarterly-history.html. Existing selected model stays unchanged; no2027 outcomes/public promotion. See [quarterly history](VPM_QUARTERLY_HISTORY.md) and [MPG decision](VPM_MPG_DECISION.md).
 
 **Coherent view, October20:** same selected mapper100, unchanged data. ratings.html and net-decomposition.html now alias one O/D/total leaderboard with grouped Net summary and three-column player lanes; priors are separate values.1556/582 universes and CSV/source identities verified. No new model/project; team-win inputs still pending.
 
