@@ -1,5 +1,9 @@
 # CLAUDE.md
 
+## Full predictive-stat history completed (2026-10-21)
+
+Corrected full_history_v2 is completed and final hashes verified:787558 rows/profile,30 ending seasons1997–2026,166 heads/4980 annual slots,60 final library files, zero chronology/epoch violations and point-accounting gap0. Historical cross-stat gains are modest (AST MSE1.179%,TOV.899%,points.343%); matched FT-to-three increment~.10%. Only38/2504 fitted recipes formally converge;2466 exhaust the fixed30-iteration budget, so these are best-found forecasts, not optimal decays.2476 bootstrap slots.17 focused tests pass.2026 export-only; no2027 outcomes, VPM replacement or live refresh. Canonical nba_pipeline/docs/FULL_PREDICTIVE_SKILL_HISTORY.md. Temporary finish-predictive-stat-history follow-up is paused after verification/documentation.
+
 ## Historical VPM fallback admission (2026-10-21)
 
 For historical priors, an aggregate remains until its replacement is both admitted by the matured mapper and observed for that player. Use this rule identically before calibration preprocessing and at deployment; observed zero is valid. Raw tracking availability alone must not discard usable box/PBP information. v64 is rejected; v65 quarterly history is a completed separate52-cut2014–26 extension (105268rows/2649players); selected v61 remains unchanged. MPG retained after matched test.71 focused tests plus independent source/model/native/reader/browser audits pass. Overall game gain versus selected remains unresolved; reader8768/quarterly-history.html. See `nba_pipeline/docs/VPM_QUARTERLY_HISTORY.md`.

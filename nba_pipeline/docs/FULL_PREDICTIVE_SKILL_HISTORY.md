@@ -2,7 +2,7 @@
 
 Owner authorized October 21, 2026: build the complete historical predictive-stat library, including new game-log families and learned relationships between stats. This is the upstream skills work in the existing VPM RESEARCH slot. It does not authorize a new impact mapper, selected-model replacement or 2027 outcome evaluation.
 
-**Implementation is built and the corrected historical run was launched. Full training/results are pending until the runtime status and final receipts say complete.** The authoritative generated status is `results/estimated_skills/full_history_v2/run_status.json`. Do not infer completion from this document or from the existence of a few annual model files.
+**The corrected historical research build completed and was independently checked on October21,2026.** All4,980 annual model slots,30 baseline/cross-stat seasons and60 final library files exist. Source/date/epoch gates cover787,558 rows; output hashes match both final receipts and all60 library files, with maximum point-accounting gap0. The authoritative generated status is `results/estimated_skills/full_history_v2/run_status.json` (`completed_research_build`). This completes the historical library, not a selected-VPM replacement or live refresh.
 
 ## Scope and data
 
@@ -57,7 +57,34 @@ Before each target season, choose the ridge setting versus the independent null 
 
 2026 is filtering/export-only. It contributes no cross-stat target fitting, penalty selection or error scores. All historical validation is retrospective/spent research evidence; no 2027 outcomes are loaded. The new layer has no completed joint-makes or downstream VPM admission claim. Save its independent baseline alongside the research candidate.
 
-## Execution and expected runtime
+## Completed results
+
+Both profiles contain787,558 pregame rows across ending seasons1997–2026, with292 identity/model/derived columns. The latest2026 export has615 players at their individual last actual-game pregame cutoff (October27,2025 throughJune13,2026), not a common as-of date or certified current roster. Cross-stat correction is selected for115/166 heads in2026 using older results. Of164 heads with2020–2025 scores,109 improve,53 are unchanged and2 worsen; this census includes short-history heads and does not establish109 independent significant effects. Overall defended attempts and traveling-turnover share have small negative point estimates; retain the saved annual choices rather than switching on reported results.
+
+All ten fixed headline comparisons improve in historical2020–2025, with positive conditional paired-game intervals:
+
+| Forecast | Reduction in exposure-weighted MSE |
+|---|---:|
+| FT% |0.225%|
+| Above-break3P% |0.207%|
+| Corner3P% |0.269%|
+| Turnovers/100 |0.899%|
+| Offensive rebounds/100 |0.450%|
+| Defensive rebounds/100 |0.178%|
+| Derived3PM/100 |0.103%|
+| DerivedFTM/100 |0.513%|
+| Derivedpoints/100 |0.343%|
+| Derivedassists/100 |1.179%|
+
+These percentages are reductions in MSE, not percentage-point changes in player accuracy or gains in VPM/game forecasts. Exact absolute errors, season results and conditional intervals are in the generated `diagnostics/RESULTS.md` and `research_summary.json`. The ten intervals are marginal/unadjusted and condition on the saved filters, coefficients and selection; all evidence is spent historical research.
+
+The fixed matched FT diagnostic improves above-break3P accuracy MSE by0.0957% and corner3P accuracy MSE by0.1017%. Its absolute gains are59.43e-6 [39.21,80.06]e-6 and137.90e-6 [83.53,195.42]e-6 respectively. Thus pregame FT shooting adds a small predictive association beyond calibrated own-zone shooting in this diagnostic. It does not identify causation or FT's separate increment within the full cross-stat model.
+
+**Optimizer qualification:**2,504 annual slots were fitted and2,476 use explicit bootstrap recipes (including unsupported/first-year/insufficient-history slots). Only38 fitted slots reported formal convergence;2,466 reached the fixed30-iteration budget without convergence. The delivered forecasts are the best candidates found under that budget, not certified optimal decay settings. Further optimizer diagnostics/refinement would require a separate preserved recipe and matched comparison; do not silently relabel or overwrite this run. The cross-stat1460-day training half-life was an engineering default, not an empirically selected winner.
+
+Both profiles remain retained, source-publication vintages remain uncertified and2026 contributes no cross-stat scoring. Selected clean v61 and separate v65 are unchanged; no2027 outcomes, daily refresh or VPM feature admission. The temporary completion follow-up was paused after verification and documentation.
+
+## Execution and runtime
 
 Observed pilot: early-history volume fit14s; two 2026 fits44s/52s. The older17-stat/11-vintage package recorded2.67 CPU-hours for187 fits. The current first full pass was provisionally budgeted **3–6 hours wall time** on this machine with8 fit workers, including replay, cross-stat comparisons and exports. That estimate is not a completion promise; source checks, fit throughput and final validation can change it.
 
