@@ -43,6 +43,8 @@ Most core filters already retain older player observations. This is primarily a 
 
 Start over the legal annual OU period. Use existing annual parameter vintages, with each vintage fitted only on outcomes available before its deployment period. Extend the earlier empirical-Bayes history only after the overlap-period timing test, as a separately labeled estimator/history change.
 
+**New source discovery, October 21:** [Databallr game-log inspection](DATABALLR_GAME_LOG_SOURCE_AUDIT.md) verified Denver core logs in all 30 seasons 1997–2026 and daily player core examples back to Jordan in 1997. `report=true` adds merged tracking/advanced reports where available. Audit this source for an earlier daily observation panel before relying on annual-only early counts; it does not establish legal earlier OU parameters. Keep the source/history extension separate from the matched timing test and respect tracking-vintage/FT reliability flags.
+
 For each game, freeze the neutral stats snapshot before tipoff, then attach it to that game's ten-player possession lineups. With date-only sources, use an earlier-date cutoff; do not infer within-day availability. Preserve the distinction between an event-date-safe reconstruction and a historically certified publication vintage.
 
 Store one row per player/game, with long-form per-family provenance:
