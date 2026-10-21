@@ -86,3 +86,23 @@ def test_raw_ft_accounting_does_not_confuse_surname_missi_with_a_miss():
         visitor_description=[None, None, None]))
     result = compare_scores(raw, pd.DataFrame(dict(game_id=[1], actual_points=[2.])))
     assert result.accepted.all() and result.raw_event_points.iloc[0] == 2
+
+
+def test_annual_identity_includes_playoff_only_and_zero_minute_appearances():
+    from historical_targets_identities import season_identity
+    rs = pd.DataFrame(dict(PLAYER_ID=[1, 2], PLAYER_NAME=['Tiny player', 'Roster only'],
+                           GP=[1, 0], MIN=[0., 0.]))
+    ps = pd.DataFrame(dict(PLAYER_ID=[3], PLAYER_NAME=['Playoff only'], GP=[7], MIN=[16.9]))
+    packet = season_identity(rs, ps)
+    assert packet['admitted_ids'] == [1, 3]
+    assert packet['phase_support']['3'] == ['PS']
+    assert packet['names']['1'] == 'Tiny player'
+
+
+def test_annual_identity_is_season_specific_and_does_not_promote_names():
+    from historical_targets_identities import season_identity
+    empty = pd.DataFrame(columns=['PLAYER_ID', 'PLAYER_NAME', 'GP', 'MIN'])
+    first = pd.DataFrame(dict(PLAYER_ID=[1], PLAYER_NAME=['Former player'], GP=[2], MIN=[1.]))
+    second = pd.DataFrame(dict(PLAYER_ID=[2], PLAYER_NAME=['Current player'], GP=[2], MIN=[1.]))
+    assert season_identity(first, empty)['admitted_ids'] == [1]
+    assert season_identity(second, empty)['admitted_ids'] == [2]
