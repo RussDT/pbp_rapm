@@ -2,10 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
-## 2026-10-21 — Actual historical quarantine transition verified
+## 2026-10-21 — Compensated adjoint repair and replay continuation
 
-- Existing four-arm development replay remains healthy; no fits, recipes, controller or selected pointer restarted/changed. All 60 controller pins and selected-v61 hash still match. Keep the registered timing→decay→rolling/annual/native/currentNet continuation active.
-- Streamed first actual nonempty exclusion transition independently passes: December14 drops76whole games/15732rows versus5517direct unknown-player rows, removing10215collateral teammate rows; zero unknown players remain in retained lineups/boards. All four forecast censuses match and exclude two required-unknown games. Geometry rebuilds on changedU, then appends1265retained rows onDecember15. `pregame_actual_quarantine_audit_v1/receipt.json` SHA8b3bffc2d4b31bf0c5ae0e975789840a8b067af7b2f69d90647d354eca70fa4e; two focused tests pass. No accuracy claim/2027 outcomes. Canonical VPM_PREGAME_BUILD_STATUS.md and sibling implementation doc.
+- Actualquarantine audit passes76whole games/15732rows removed versus5517direct rows, safe geometry rebuild/nextdateappend. The old replay then stopped after150season2020dates: actualnextquery Dec22,2020/2021mappers (notAug15) amplifies storedRHSroundoff past1e-9. Preserve all old roots/24modelprofiles/150dates/750outputs.
+- Newv69 compensated1024-row fixed-adjoint arithmetic plusone sparsecrossrefinement changes numericalevaluation only;312focused checks pass, commitdf3eddc. All12actualnewmappers independently auditpass: fullclosure≤6.07e-14, normal≤6.83e-13, unchangedpreprocessing/census/source/chronology. Original AnnualMapper guard passesexactfailed1782-playerpacket/fourarms at≤1.665e-13. CollectionauditSHA5f6d4b157065ee233b33d56aaa0261762dff405b23e1656d69f45235d3a6baeb; failedrecheckSHAcec354ad8381fe044fe5f3e7fde6bbb5afa9c1d856aea29ff0cb4a3d52eb7702, root pregame_actual_adjoint_calibration_audit_v1.
+- Newbasev69complete; only `vpm_pregame_progression_adjoint_v1` active, full timing→decay→rolling/annual/native/currentNet plan registered. All187COREfits/exports reused (7converged/180budgetlimited), no recipe/guard/selectedv61/2027changes oraccuracyclaim. Canonical VPM_PREGAME_BUILD_STATUS.md and sibling activeadjointcommands. ContinuationACTIVE until verified recommendation; let healthy replay run quietly.
 
 ## 2026-10-21 — Pregame calibrations complete; forecast replay running
 
