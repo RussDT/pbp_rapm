@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-21 — Clean fits complete; stable pregame calibration running
+
+- All187 clean CORE fits complete,7 converged/180 exhausted60iterations; game-date301706, static13426 and rolling4038620 queries exported and verified. Independent assembly audit5129002cells/45762neverobservedmissing; source/chronology pins pass. Defensive recipes/denominators remain frozen.
+- Originalv67 firstactual2020Netprofile failed fixed1e-9closure at1.061e-9 before saving models; oldbase/progression preserve failedclosed. Exact993138rowdiagnostic proves cancellation; residual-form4.20e-11 with unchanged objective/penalties/guard. Newstablev68 commit8368e54,All12 actual2020–22 models independently pass, maxNetgap5.62e-10/normal6.82e-13; preprocessor/census/chronology exact. Originalv68progression thenfailed relative diagnosticoutputpath validator; frozenreceipts preserved. Versioned exactreceipt/outputSHA compatibility90b4f72 and255checks pass, no model/config/mathchanges. Basev68complete; active `vpm_pregame_progression_receipts_v1` nowpassedprepare/defensive andactualfourarmdailyforecasts save1787-playerboards (twofactors/date), then advances timing/context→decay→rolling/annual/native/currentNet. Logs/commands canonical VPM_PREGAME_BUILD_STATUS.md and sibling implementationdoc. Do not duplicate/restart healthyprocesses; no forecasts/gains claimed yet. Selectedv61/2027 unchanged; continuationACTIVE until verified comparison/recommendation.
+
 ## 2026-10-21 — Source-clean pregame VPM and matched controls
 
 - Owner authorizes implementation and subagents. Sourcev2 retains356856 queries, masks62617 uncertain values;187 clean core annual fits are healthy (134 complete at this checkpoint), finite60-iteration recipe unchanged. Parameter/full-adapter prefix audits exact; defensive original denominators/parameters frozen. Annual static and2260-date full-universe neutral exports follow the existing fits.
@@ -20,8 +25,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 ## 2026-10-21 — Predictive-stat heartbeat at16:09 Pacific
 
 - Full_history_v2 healthy:4805/4980 annual model slots, fitting ending2025, elapsed2h14m; all eight fit workers active. Existing finish supervisor23105 is waiting correctly. Two baseline files are the earlier1997/2018 probes; full replay/cross-stat/diagnostic stages have not started. No errors or completed-result claim. Frozen recipes/checkpoints and selected VPM unchanged; hourly follow-up stays active.
-
-## 2026-10-21 — Predictive-stat build unattended finishing
-
-- Owner asked to continue while away. Added fixed historical2020–2025 head/family/coherent-output comparisons, conditional paired-game intervals and matched own-three versus own-three+pregameFT diagnostics;2026 labels excluded before diagnostic materialization.17 focused tests pass. Finish supervisor now waits for complete Parquet footers, runs diagnostics after export and hashes its receipt; fit recipe/checkpoints unchanged.
-- Eight-worker fit PID4235 remains healthy; replacement finishing supervisor PID23105 adds diagnostics. Temporary hourly chat follow-up finish-predictive-stat-history resumes checks/fixes and pauses after verified completion/docs. Early1997/2018 real replay passes source/date/bounds/epoch/point closure across53011 rows. Final30-season checks and results remain pending until receipts complete. Canonical FULL_PREDICTIVE_SKILL_HISTORY.md; no selected-VPM/live-refresh/2027 changes.
