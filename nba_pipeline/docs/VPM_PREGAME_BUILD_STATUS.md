@@ -2,6 +2,25 @@
 
 Owner authorized implementation October21,2026 after the full predictive-stat library completed. This is the existing VPM RESEARCH project. The [training plan](VPM_PREGAME_PRIOR_PLAN.md) still governs the comparisons. No improved VPM or selected-model replacement has been established.
 
+## Frozen development recipe — October21,2026
+
+The complete registered development comparison now chooses **annual-snapshot prior calibration + season/home controls + a365-day half-life for calibration games** (`static_season_home_h365`). This is the literal minimum equal-season game MSE among the declared decay candidates on the same3068games in2020–22.
+
+| Calibration-game half-life | Equal-season game MSE | Equal-season RMSE |
+|---|---:|---:|
+| No additional calibration decay |180.661864|13.441051|
+|365 days (selected)|180.513870|13.435545|
+|730 days|180.572147|13.437714|
+|1460 days|180.613812|13.439264|
+
+The selected decay's conditional paired MSE gain over null is+0.147994,95%game interval[+0.011405,+0.286076] and season interval[+0.105917,+0.186673]; per-season point gains are+0.091592/+0.157706/+0.194685. RMSE changes by only0.005506 points. These are small, post-selection retrospective development contrasts holding the fits and selected recipe fixed, not selection-adjusted/full-model uncertainty or independent confirmation.
+
+This decay weights **historical prior-calibration games** while retaining all eligible earlier evidence. It does not change predictive-stat filter memory or final ParentTD550. Annual-snapshot versus pregame **training** timing still has an unresolved difference; all arms use fresh daily inputs and daily rating updates at deployment. Do not infer that the registered minimum is an optimal decay across all possible rates or all stats.
+
+Independent audit verifies both455-date producer sets,6538uniquefile pins/1700JSONnodes, the identical8289-game full census and3068-game development subset, exact parent/final selection locks and all candidate scores/digests. Null predictions are **bit-identical** to the original timing winner. All nine actual decay maps preserve selected context, strict legal cuts (including2020-12-01), normalized weights and conditionalO10/D100. Audit: `pregame_actual_decay_selection_audit_v1/receipt.json`, SHA`b2b45b69dc124d2d9bd13fea57487405af4d790eeea11a8d4f4cdafc8027f9bf`.
+
+The final development recipe is frozen before the registered2023–26 **spent diagnostics**. The scorecard worker exited successfully and its checkpoint is complete; the existing adjoint controller is running the legally dated2023–26 null calibrations before their replay, annual seven tests against selectedv61/EPM/static controls, native prior-only/final diagnostics and current exactNet boards. The final recommendation and full report verification are still pending. Selectedv61, publication status and2027 remain unchanged.
+
 ## Development timing/context result — October21,2026
 
 The complete four-arm replay covers **455 dates and 3,068 common regular-season games** in ending seasons2020–2022:971/1059,958/1080 and1139/1230 games retained. The frozen literal equal-season game-MSE rule chooses **`static_season_home`**. The criterion averages the three season MSEs equally, then takes the square root for the RMSE below; it is not pooled-game RMSE.
@@ -19,7 +38,7 @@ The matched timing difference remains **unresolved**: static+context's condition
 
 Independent audit verifies all12,272 prediction rows,455 complete manifests, common census, frozen locks, exact source predictions and4,236 unique file pins/1,227 JSON nodes. Receipt: `pregame_actual_timing_selection_audit_v1/receipt.json`, SHA`27540ff5c90d7cf83316ab3abfcecc1066c21bb65947ffaefa6d1f01161a7b35`. No partial smoke or2023–26 outcome enters selection.
 
-All nine declared H365/730/1460 development mappers for this winning timing/context arm are now complete; maximum saved Net gap3.25e-14 and conditional normal error6.83e-13. The active controller is producing the separate decay-development replay; null predictions will be reused bit-for-bit. Decay selection, spent rolling/annual/native diagnostics, current Net boards and the final recommendation remain pending. Neither the upstream finite-budget stat fits nor the registered decay grid is an optimal-decay claim. Selectedv61 and2027 remain untouched.
+All nine declared H365/730/1460 development mappers for this winning timing/context arm are complete; maximum saved Net gap3.25e-14 and conditional normal error6.83e-13. The separate455-date decay replay and scorecard are also complete, with bit-identical null predictions. The frozen final recipe is reported above. Spent rolling/annual/native diagnostics, current Net boards and the final recommendation remain pending. Neither the upstream finite-budget stat fits nor the registered decay grid is an optimal-decay claim. Selectedv61 and2027 remain untouched.
 
 ## Numerical repair history — October21 evening,2026
 
