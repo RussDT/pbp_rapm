@@ -2,10 +2,10 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
-## 2026-10-22 — Expanded annual-feature VPM trained; forecasts running
+## 2026-10-22 — Expanded annual selection frozen; later maps verified
 
-- Owner authorized broader annualsnapshot features/engineering/subagents. Canonical VPM_EXPANDED_ANNUAL_PRIOR.md; configv71/outputvpm_expanded_annual_archived_v1. Source21444queries/1787IDs/12dates,203catalogfields/166heads; allcut/physical/date and futureperturbation audits pass. Transportfilterparameters, notrefitted. All36developmentmaps complete; C0coeffgap<=4.87e-12/newnormals<=1.60e-12. Bothside2020basis186/182 vsbaseline26/22; engineered197/193. Annualforecast replayhealthy, selectionpending. Do notscorepartialorreadspentdiagnostic scores beforefreeze.
-- Preserve v70 prefit-failure root: externalAPIaggregate.ts changed sinceoldcareer/diagnostic receipts. OriginalGitbytes recoveredSHA6910060e…28dd92;1472files/739JSON checked, activeAPI unchanged. Newsource_runner permits4exactreceipt/field/path/hash archival mappings; no math/data/guardrelaxation. Focusednewwrapper/modelchecks96pass; currentconsumer12pass separately. Finishforecast→prequentialselection→frozen2023–26/currentfits→annualseven/native/currentNet/independentrecommendation. Selectedv61/2027unchanged; dailynewlibrary notyetexported, annualentryrejectsrolling.
+- All36 development maps/37,668 predictions/3,139 common annual games independently pass. Prequential selection freezes transport_overlap (RMSE13.582260 vs cleanH36513.584409); paired MSEgain+.058374,game95%[-.115476,.224876] unresolved. Wider native/both/engineered banks did not win. Actual development audit SHA0f1aa693fa5102c411a02f936e3d113053b2637c93c8cf19f29a6467a2714d57. All10 later/current maps independently verify normal1.14e-12/Net4.27e-12, latesttarget2025Jun22, C0coefficientgap1.87e-11; summarySHA8145a0e8f029d22a6f1b232e22cdfaba908f1a291173d76680958703c7c19cd3.
+- Soleactive finishing_queue_verified_v1 reuses completedscience; oldparent stopped only at no-child read-only hash verification, immutablehandoffSHAb1811379d8a8e3c61b4f7da0cac37cbd881f05ae584bfa4f6e3b2bbd80e0b2d0. Independent dedupreviewSHA9e77c6af161ae7c5396fbc6507c6d7c4ad2f29ec993137f10aceb744c9438592 verifies exactpins/implementation/originalregistration,8692files/4.8GB/22.5s replacing59x repeatedIO.144 focused sibling tests pass; nofit/forecast restarted. Annualseven/native/currentNet/recommendation pending. Selectedv61/2027 unchanged; no improvement/optimalfilter/live claim. Dailynewlibrary notexported; annualentryrejectsrolling.
 
 ## 2026-10-22 — Registered comparison complete; retain selected VPM
 
