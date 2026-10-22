@@ -1,5 +1,9 @@
 # CLAUDE.md
 
+## Pregame VPM implementation authorized (2026-10-21)
+
+Owner authorized the new plan. Canonical nba_pipeline/docs/VPM_PREGAME_BUILD_STATUS.md:187 neutral-core files/301706 player-games,33 tests, v66 dynamic solver and native admission gate13942 games.49 false legacy exposures removed. Source-clean measurement/parameter gates (211 scoring-completeness cases plus2014–15 warm-up), full defensive/MPG/entrant/static-cut adapters and actual A/B VPM fits remain pending. Old annual parameters are transported, not refitted; no superiority or neutral-source parity claim. Hourly follow-up continues; selected v61 and2027 remain protected.
+
 ## Full predictive-stat history completed (2026-10-21)
 
 Corrected full_history_v2 is completed and final hashes verified:787558 rows/profile,30 ending seasons1997–2026,166 heads/4980 annual slots,60 final library files, zero chronology/epoch violations and point-accounting gap0. Historical cross-stat gains are modest (AST MSE1.179%,TOV.899%,points.343%); matched FT-to-three increment~.10%. Only38/2504 fitted recipes formally converge;2466 exhaust the fixed30-iteration budget, so these are best-found forecasts, not optimal decays.2476 bootstrap slots.17 focused tests pass.2026 export-only; no2027 outcomes, VPM replacement or live refresh. Canonical nba_pipeline/docs/FULL_PREDICTIVE_SKILL_HISTORY.md. Temporary finish-predictive-stat-history follow-up is paused after verification/documentation.

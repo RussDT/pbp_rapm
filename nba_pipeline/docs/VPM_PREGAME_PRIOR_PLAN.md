@@ -1,6 +1,6 @@
 # VPM pregame prior training plan
 
-Created October 21, 2026. **Plan only; implementation and results are pending.**
+Created October 21, 2026. **Owner authorized implementation after the full-history library completed; evidence-panel work is underway.** See [implementation status](VPM_PREGAME_BUILD_STATUS.md) for the neutral-core bridge, exposed legacy identity issue, tests and remaining gates. No improved VPM has been established.
 This work belongs to the existing predictive VPM RESEARCH project.
 
 ## The proposed change

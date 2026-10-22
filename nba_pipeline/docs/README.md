@@ -4,6 +4,7 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Pregame VPM implementation](VPM_PREGAME_BUILD_STATUS.md) -187 neutral core exports, dynamic profile solver, independent scoreboard/common-game gates; observation completeness and full-recipe adapters pending
 - [Full predictive stat history 1996–2026](FULL_PREDICTIVE_SKILL_HISTORY.md) - completed787558-row/30-season research library; chronological audits, coherent exports, modest cross-stat/FT-association gains and fixed-budget optimizer qualification
 - [Quarterly predictive VPM from 2014](VPM_QUARTERLY_HISTORY.md) - completed 52 quarterly snapshots / 105,268 player-date rows, missing-tracking fallbacks, MPG decision, exact Net priors/finals and audited predictive results
 - [Matched selected-model MPG decision](VPM_MPG_DECISION.md) - retain MPG after mapper100 ablation, with audited prediction differences and appearance-count limitations
