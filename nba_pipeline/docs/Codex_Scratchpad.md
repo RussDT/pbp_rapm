@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-21 — Actual historical quarantine transition verified
+
+- Existing four-arm development replay remains healthy; no fits, recipes, controller or selected pointer restarted/changed. All 60 controller pins and selected-v61 hash still match. Keep the registered timing→decay→rolling/annual/native/currentNet continuation active.
+- Streamed first actual nonempty exclusion transition independently passes: December14 drops76whole games/15732rows versus5517direct unknown-player rows, removing10215collateral teammate rows; zero unknown players remain in retained lineups/boards. All four forecast censuses match and exclude two required-unknown games. Geometry rebuilds on changedU, then appends1265retained rows onDecember15. `pregame_actual_quarantine_audit_v1/receipt.json` SHA8b3bffc2d4b31bf0c5ae0e975789840a8b067af7b2f69d90647d354eca70fa4e; two focused tests pass. No accuracy claim/2027 outcomes. Canonical VPM_PREGAME_BUILD_STATUS.md and sibling implementation doc.
+
 ## 2026-10-21 — Pregame calibrations complete; forecast replay running
 
 - All187 clean CORE fits and three exports verified:301706 game-date,13426 static and4038620 rolling queries. Only7 fits converge/180 exhaust60iterations; no optimal-decay claim. Defensive recipes/denominators remain frozen.
@@ -22,7 +27,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Full_history_v2 completed:4980 annual slots,30 baseline/cross-stat seasons and60 final292-column library files,787558 rows/profile. All60 hashes plus completion receipts verified; whole-source chronology/epoch/bounds audit passes, max point gap0. Latest2026 export615 players at individual game cutoffs, not today/current roster.17 focused tests pass.
 - Historical2020–25 cross-stat MSE reductions:AST1.179%,TOV.899%,points.343%; all10 headline conditional paired-game intervals positive,109/164 scored heads improve,53 unchanged,2 slightly worse. Matched FT-to-three increment~.10%.38/2504 fitted slots converge,2466 hit30 iterations;2476 slots bootstrap. No optimal-decay claim; fixed1460-day cross-stat decay remains unoptimized. Canonical FULL_PREDICTIVE_SKILL_HISTORY.md updated. Temporary hourly follow-up paused after verification/docs; no selected-VPM/live/2027 changes.
-
-## 2026-10-21 — Predictive-stat heartbeat at16:09 Pacific
-
-- Full_history_v2 healthy:4805/4980 annual model slots, fitting ending2025, elapsed2h14m; all eight fit workers active. Existing finish supervisor23105 is waiting correctly. Two baseline files are the earlier1997/2018 probes; full replay/cross-stat/diagnostic stages have not started. No errors or completed-result claim. Frozen recipes/checkpoints and selected VPM unchanged; hourly follow-up stays active.
