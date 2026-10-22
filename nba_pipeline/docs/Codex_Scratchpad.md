@@ -2,10 +2,10 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
-## 2026-10-22 — Expanded annual selection frozen; later maps verified
+## 2026-10-22 — Expanded annual bounded rebuild registered
 
-- All36 development maps/37,668 predictions/3,139 common annual games independently pass. Prequential selection freezes transport_overlap (RMSE13.582260 vs cleanH36513.584409); paired MSEgain+.058374,game95%[-.115476,.224876] unresolved. Wider native/both/engineered banks did not win. Actual development audit SHA0f1aa693fa5102c411a02f936e3d113053b2637c93c8cf19f29a6467a2714d57. All10 later/current maps independently verify normal1.14e-12/Net4.27e-12, latesttarget2025Jun22, C0coefficientgap1.87e-11; summarySHA8145a0e8f029d22a6f1b232e22cdfaba908f1a291173d76680958703c7c19cd3.
-- Soleactive finishing_queue_verified_v1 reuses completedscience; oldparent stopped only at no-child read-only hash verification, immutablehandoffSHAb1811379d8a8e3c61b4f7da0cac37cbd881f05ae584bfa4f6e3b2bbd80e0b2d0. Independent dedupreviewSHA9e77c6af161ae7c5396fbc6507c6d7c4ad2f29ec993137f10aceb744c9438592 verifies exactpins/implementation/originalregistration,8692files/4.8GB/22.5s replacing59x repeatedIO.144 focused sibling tests pass; nofit/forecast restarted. Annualseven/native/currentNet/recommendation pending. Selectedv61/2027 unchanged; no improvement/optimalfilter/live claim. Dailynewlibrary notexported; annualentryrejectsrolling.
+- V71 auxiliary projection failed actual2023cut input support before any spent scoring: two physically usable sparse-history rows produced Dpriors−786292.96/−393149.52; C0max22.93/oldpriorgap9.19e-12. Compensated arithmetic confirms genuine extrapolation. Preserve alloldfits/selection/failed roots; no tolerance relaxation/clipping/remainder. ExactpacketreceiptSHAae4c9084aeb0e786f10943dc696ba98854617c280c553fb6697088c6464dc796; coefficientdiagnosticSHAcbbb4e28bd1c094c93e0f21c9b2f6eeddb749afc6629997a151a15930fa99fe3.
+- Newv72/configresearch_harness_v72_expanded_annual_bounded.json/outputvpm_expanded_annual_bounded_v1 registered8721pins; solefinishing_queue_bounded_v1 runs new36dev→annualforecast→prequentialfreeze→laterfits/seven/native/current. Raw additional bank has train-only support/scale bound10, nolegacyprojection, unchangedbaseline/C0 and12spec/ridge/cohort/source/Net guards; added-onlyfamily rank.166focusedchecks pass; independent20-transform/metamorphicreviewSHA4c48507d60e29c638376de10543a58de14e41c84d524fcf59b9d75a18507a993. V72 predictive results pending. No duplicatejobs/selectedpointer/publication/2027change; transportedfilter/sourcevintage/spent/conditional qualifications remain.
 
 ## 2026-10-22 — Registered comparison complete; retain selected VPM
 
