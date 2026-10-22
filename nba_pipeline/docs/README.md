@@ -4,7 +4,7 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
-- [Pregame VPM implementation](VPM_PREGAME_BUILD_STATUS.md) - rolling and annual comparisons independently verified; annual candidate13.927 vs selected13.892/EPM13.934, headline gains unresolved; native/currentNet and final recommendation pending
+- [Pregame VPM results and recommendation](VPM_PREGAME_RESULTS.md) - completed registered comparisons and independent audits; retain selectedv61, overall gain unresolved; [operator history and receipts](VPM_PREGAME_BUILD_STATUS.md)
 - [Pregame VPM prior training plan](VPM_PREGAME_PRIOR_PLAN.md) - owner-authorized game-date predictive stats to actual lineup points; pregame replay, regularized dynamic mapper, separate timing/context/decay tests and historical validation. Implementation underway; selected v61 unchanged
 - [Full predictive stat history 1996–2026](FULL_PREDICTIVE_SKILL_HISTORY.md) - completed787558-row/30-season research library; chronological audits, coherent exports, modest cross-stat/FT-association gains and fixed-budget optimizer qualification
 - [Quarterly predictive VPM from 2014](VPM_QUARTERLY_HISTORY.md) - completed 52 quarterly snapshots / 105,268 player-date rows, missing-tracking fallbacks, MPG decision, exact Net priors/finals and audited predictive results
