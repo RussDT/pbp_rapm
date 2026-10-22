@@ -1,0 +1,365 @@
+{
+  "added_feature_rule": "train-only domain/support/scale; abs(coordinate)<=10; unchanged legacy prefix; no auxiliary projection",
+  "catalog_fields": 203,
+  "config": "research_harness_v72_expanded_annual_bounded.json",
+  "current_board": {
+    "canonical_source_pins": 8868,
+    "cut": "2026-09-01",
+    "emitted_players_per_model": 1785,
+    "full_annual_lane_arrays_persisted": false,
+    "full_current_lane_arrays_and_intercepts_audited": true,
+    "independent_own_prior_max_gap": 1.96723e-11,
+    "omitted_player_ids": [
+      2610,
+      1629741
+    ],
+    "positive_2026_exposure": 582,
+    "quarantined_games": 44,
+    "quarantined_rows": 9076,
+    "relative_parent_sq_normal_max": 7.59e-13,
+    "retained_history_games": 13898,
+    "retained_history_rows": 2735920,
+    "saved_closure_max": 1.94045e-12
+  },
+  "development_games": 3139,
+  "development_models": 36,
+  "diagnostic_period": "2023\u20132026, already-spent historical evidence",
+  "experiment": "vpm_expanded_annual_bounded_v1",
+  "full_model_uncertainty": false,
+  "later_current_models": 10,
+  "library_canonical_concepts": 129,
+  "live_readiness_claim": false,
+  "native_counts": {
+    "development": {
+      "games": 3139,
+      "rows": 623624
+    },
+    "spent": {
+      "games": 4782,
+      "rows": 949371
+    }
+  },
+  "native_diagnostics": {
+    "Combined prior / common past mean": {
+      "development": {
+        "game_interval": [
+          -6.149201336795227e-05,
+          -3.450249917275937e-05
+        ],
+        "mse_gain": -4.807421220239095e-05,
+        "season_interval": [
+          -8.416963907219883e-05,
+          -1.848940498937504e-05
+        ]
+      },
+      "spent": {
+        "game_interval": [
+          -0.00010184789381141796,
+          -7.899337322882578e-05
+        ],
+        "mse_gain": -9.059707805416068e-05,
+        "season_interval": [
+          -0.00013783134514907733,
+          -4.3362810959244076e-05
+        ]
+      }
+    },
+    "Combined prior / residual centered": {
+      "development": {
+        "game_interval": [
+          -8.449021052773142e-06,
+          1.1367882572465395e-05
+        ],
+        "mse_gain": 1.4142629439668442e-06,
+        "season_interval": [
+          -8.888421540669569e-06,
+          9.807405572535536e-06
+        ]
+      },
+      "spent": {
+        "game_interval": [
+          -1.3827173420725784e-05,
+          2.425155261052298e-06
+        ],
+        "mse_gain": -5.556384628781468e-06,
+        "season_interval": [
+          -2.56493243589173e-05,
+          7.87561312106415e-06
+        ]
+      }
+    },
+    "Final Parent + SQ": {
+      "development": {
+        "game_interval": [
+          -3.533581718599952e-06,
+          6.652207521775004e-06
+        ],
+        "mse_gain": 1.4858291731143182e-06,
+        "season_interval": [
+          -1.4373313033775935e-06,
+          4.316843811254374e-06
+        ]
+      },
+      "spent": {
+        "game_interval": [
+          -2.3168534716444605e-06,
+          5.2720907392461735e-06
+        ],
+        "mse_gain": 1.4939259132508622e-06,
+        "season_interval": [
+          -1.99016945651173e-06,
+          5.262453840505691e-06
+        ]
+      }
+    },
+    "Own prior / common past mean": {
+      "development": {
+        "game_interval": [
+          -7.798900661594597e-05,
+          -5.0594117806324534e-05
+        ],
+        "mse_gain": -6.448421194515189e-05,
+        "season_interval": [
+          -0.00010114778197743673,
+          -3.404342577440298e-05
+        ]
+      },
+      "spent": {
+        "game_interval": [
+          -0.00012818668409950604,
+          -0.00010471312476072016
+        ],
+        "mse_gain": -0.00011646263815221062,
+        "season_interval": [
+          -0.00016834421630059783,
+          -6.458106000382341e-05
+        ]
+      }
+    },
+    "Own prior / residual centered": {
+      "development": {
+        "game_interval": [
+          1.1481567217122513e-05,
+          3.14395774847789e-05
+        ],
+        "mse_gain": 2.153196251916267e-05,
+        "season_interval": [
+          1.6006396728554443e-05,
+          2.6019213672624583e-05
+        ]
+      },
+      "spent": {
+        "game_interval": [
+          5.4990763595828145e-06,
+          2.1691796706398915e-05
+        ],
+        "mse_gain": 1.368562722748167e-05,
+        "season_interval": [
+          -3.511863782718228e-06,
+          2.6481918419566604e-05
+        ]
+      }
+    }
+  },
+  "protected_2027_outcomes": 0,
+  "recommendation": "retain_owner_selected_v61",
+  "registered_candidate_recipes": 12,
+  "registered_scientific_stages_verified": 11,
+  "report_sha256": "e1140fc7b3187a14618997097571d9593c43badcbb63d19de0a058b4d96cd004",
+  "rmse_weighting": "equal season",
+  "scientific_evidence_sha256": {
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_actual_calibration_audit_v1/spent_current_summary.json": "1339408e03fabd93e715682af1ac0184d7a36faebcf311ea97e5062a5759ccac",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_actual_selection_audit_v1/receipt.json": "6804dc1e856bfc8f1383faad7c1393de7c9faedb70bf1223b6e2c92312f9221a",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_actual_seven_test_audit_v1/spent.json": "23590a0787734f5e03287337612acef08628972f137985805fdebced7a20d90d",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_actual_seven_test_audit_v1/spent_parity_and_season_sensitivity.json": "36efab330a8f9a632461ad04e505849b19dcaf85076f315c54bf58ff44bc6c03",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_actual_source_audit_v1/receipt.json": "00ac3ad6378a48769d9834611c4c15b52a5c6c95642578918f0cccb1e3a3e632",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_current_adjoint_board_audit_v2/receipt.json": "af09a2015bd1a0815cd0598aa344f4d1bade6bdcb7af5f245f4afef27fc94e9e",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_development_forecast_audit_v1/receipt.json": "026d1decbe57403c8c0fcbdd0ead527d701ec82020dc2109f762be10aa2aa35a",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_former_failure_packet_audit_v1/receipt.json": "3b068b113418e8ed7cddec234c722f3915d3a41fb8f62c2c47e916519f209204",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_native_audit_v1/completed_receipt.json": "c3a9a5c11a016c7710fd9e7c9f492b489d2bf40965794f5d82b969faede758ec",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_native_audit_v1/development/receipt.json": "1d9004248a31bcd168bcc479ff561eab2d6c8af32ef5bc324c6f7a9cda7ebff0",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_native_audit_v1/spent/receipt.json": "6a6a507d88a6986f454b07515ef5b1600fa2ed0b890bff2d3013ab1efd490efa",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/expanded_bounded_workflow_audit_v1/receipt.json": "6d29be7bdf4b7901d0c2acd7defb767b9611e5b5a7e8b444410d8e9bb3f8b9ad",
+    "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_expanded_annual_bounded_v1/diagnostics/spent/paired_comparisons.csv": "2613829a2980a1a94f2f6c9acefcedeb1defca6804b50aa716e8ff6475c87f7a",
+    "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_expanded_annual_bounded_v1/diagnostics/spent/scorecard.csv": "cd23202a925f0b9c5400432d1670ae08c46656696f7df6f770502e0181319d70",
+    "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_expanded_annual_bounded_v1/selection.json": "24ef739c65c3de4232b78a834260a2d4d273e271f4a9cc41b46c85c398436136",
+    "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_expanded_annual_bounded_v1/selection.lock.json": "720831ec33260ebc1e170e7605bea7f9ea0a7afff0462cd7b25a9e3ac9617dc1"
+  },
+  "selected_candidate": "transport_overlap",
+  "selected_pointer_sha256": "08e5882c463d2ac10eccc8161afd92f14650afd8585634b4008227fde75d05d5",
+  "selected_vpm_changed": false,
+  "selection_period": "2020\u20132022, prequential annual outer folds",
+  "source_heads": 166,
+  "source_publication_vintages_certified": false,
+  "spent_games": 4782,
+  "spent_scorecard": {
+    "game_margin": {
+      "EPM": {
+        "bias": 1.03248256059377,
+        "forecast_r2": 0.18539994293452278,
+        "rmse": 13.93447068780713
+      },
+      "clean_base": {
+        "bias": 1.003042879011369,
+        "forecast_r2": 0.18622022353305334,
+        "rmse": 13.9274530999876
+      },
+      "selected_v61": {
+        "bias": 1.0012871726742494,
+        "forecast_r2": 0.19035654663857782,
+        "rmse": 13.89201240818137
+      },
+      "transport_overlap": {
+        "bias": 1.0024782320141599,
+        "forecast_r2": 0.18603481812115785,
+        "rmse": 13.929039572268819
+      }
+    },
+    "game_margin_low_continuity": {
+      "EPM": {
+        "bias": 1.3097448852930655,
+        "forecast_r2": 0.2898539937649274,
+        "rmse": 14.478896200038664
+      },
+      "clean_base": {
+        "bias": 1.248066385802539,
+        "forecast_r2": 0.3267889168496708,
+        "rmse": 14.097342744916613
+      },
+      "selected_v61": {
+        "bias": 1.1191304732309875,
+        "forecast_r2": 0.296075482043604,
+        "rmse": 14.415332900137322
+      },
+      "transport_overlap": {
+        "bias": 1.2460744132525903,
+        "forecast_r2": 0.3265234292842395,
+        "rmse": 14.100122185407855
+      }
+    },
+    "game_margin_veterans": {
+      "EPM": {
+        "bias": 1.032132316155125,
+        "forecast_r2": 0.17542929302219246,
+        "rmse": 14.019489813977927
+      },
+      "clean_base": {
+        "bias": 1.009023633726359,
+        "forecast_r2": 0.1821326593938385,
+        "rmse": 13.962387642678117
+      },
+      "selected_v61": {
+        "bias": 1.0086022614862031,
+        "forecast_r2": 0.1804472138297899,
+        "rmse": 13.976766950674815
+      },
+      "transport_overlap": {
+        "bias": 1.0085823839063022,
+        "forecast_r2": 0.18210478963540921,
+        "rmse": 13.962625532759084
+      }
+    },
+    "team_net_rating": {
+      "EPM": {
+        "bias": -0.05613716999699835,
+        "forecast_r2": 0.6743178390954676,
+        "rmse": 3.118214516961188
+      },
+      "clean_base": {
+        "bias": -0.05613716999699843,
+        "forecast_r2": 0.6598894578768448,
+        "rmse": 3.186537622437413
+      },
+      "selected_v61": {
+        "bias": -0.056137169996998484,
+        "forecast_r2": 0.6751292887693747,
+        "rmse": 3.114327518389732
+      },
+      "transport_overlap": {
+        "bias": -0.05613716999699851,
+        "forecast_r2": 0.6591750970678141,
+        "rmse": 3.1898823343373643
+      }
+    },
+    "team_win_pct": {
+      "EPM": {
+        "bias": 0.00012309928793776044,
+        "forecast_r2": 0.6946657292447811,
+        "rmse": 0.08630276078261305
+      },
+      "clean_base": {
+        "bias": -0.00047571871599603067,
+        "forecast_r2": 0.6909645374882258,
+        "rmse": 0.08682425628258611
+      },
+      "selected_v61": {
+        "bias": -0.00015277482357629684,
+        "forecast_r2": 0.7007720510513963,
+        "rmse": 0.08543542624698858
+      },
+      "transport_overlap": {
+        "bias": -0.0004617866756235112,
+        "forecast_r2": 0.6914952556647092,
+        "rmse": 0.08674967097288
+      }
+    },
+    "team_win_pct_low_continuity": {
+      "EPM": {
+        "bias": 0.07250157319535527,
+        "forecast_r2": 0.08139046838195185,
+        "rmse": 0.11300223401551994
+      },
+      "clean_base": {
+        "bias": 0.054905187927395724,
+        "forecast_r2": 0.42166423966937594,
+        "rmse": 0.08966265181601778
+      },
+      "selected_v61": {
+        "bias": 0.07675834643125329,
+        "forecast_r2": 0.21769507747357153,
+        "rmse": 0.10428205652442941
+      },
+      "transport_overlap": {
+        "bias": 0.05451710603218643,
+        "forecast_r2": 0.42914373241994064,
+        "rmse": 0.08908097105366937
+      }
+    },
+    "team_win_pct_veterans": {
+      "EPM": {
+        "bias": 0.00011436394983979723,
+        "forecast_r2": 0.6721769603749247,
+        "rmse": 0.08942452646092522
+      },
+      "clean_base": {
+        "bias": -0.0005279701823231878,
+        "forecast_r2": 0.6793340937921789,
+        "rmse": 0.08844296759098119
+      },
+      "selected_v61": {
+        "bias": -0.0001652591770539651,
+        "forecast_r2": 0.6778233903276926,
+        "rmse": 0.08865105660085348
+      },
+      "transport_overlap": {
+        "bias": -0.0005139831684091607,
+        "forecast_r2": 0.6800685550815464,
+        "rmse": 0.08834162352425007
+      }
+    }
+  },
+  "spent_team_seasons": 120,
+  "status": "completed_registered_annual_feature_science_retain_selected_v61",
+  "target": "following 365-day actual lineup points; full-covariance profiled regularized cohort/player residual likelihood",
+  "team_win_pct_units": "fraction",
+  "tests": {
+    "rapm_independent_audit": 9,
+    "vpm_focused": 166
+  },
+  "workflow_source_audit": {
+    "bytes": 5333478929,
+    "canonical_files": 9805,
+    "json_nodes": 4215,
+    "receipt_sha256": "6d29be7bdf4b7901d0c2acd7defb767b9611e5b5a7e8b444410d8e9bb3f8b9ad"
+  }
+}

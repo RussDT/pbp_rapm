@@ -1,6 +1,6 @@
 # NBA Analytics Project Portfolio
 
-Last reviewed: 2026-10-21 (owner requested MPG decision and quarterly predictive VPM history from2014, with Net lanes)
+Last reviewed: 2026-10-22 (completed expanded annual VPM feature study; retain selected v61)
 
 This is the portfolio-level source of truth for deciding what to work on. It is
 not a methodology document and it does not replace each project's canonical
@@ -77,7 +77,7 @@ Canonical docs: [RAPM Table Catalog](./RAPM_TABLE_CATALOG.md),
 
 ### 2. RESEARCH — NBA predictive VPM and historical coverage
 
-**Expanded annual feature experiment authorized, October22:** [implementation/runbook](VPM_EXPANDED_ANNUAL_PRIOR.md), same RESEARCH slot. Source203catalog fields/129canonical concepts/166heads over12 exact cuts. V71 fitted36dev/10later maps but its auxiliary feature projection failed sparse-history deployment support before any later score; preserved/quarantined. New v72 bounded raw additions retain C0/source/Parent/Net guards and retrain the same12-candidate prequential study; registration8721pins/166checks and independent20-transform tests pass. Sole finishing_queue_bounded_v1 runs development freeze then later seven-test/native/currentNet. No predictive result/promotion yet; selectedv61/2027 unchanged.
+**Expanded annual feature study complete, October22:** [results and recommendation](VPM_EXPANDED_ANNUAL_RESULTS.md), [method](VPM_EXPANDED_ANNUAL_PRIOR.md). All12candidate recipes/36development+10later/current fits and11scientificstages pass independent source/math/Net/native/benchmark audits. Annual4782-game RMSE expanded13.929040/control13.927453/currentv6113.892012/EPM13.934471; all7C0gains and overall cross-system differences unresolved. Finalnative gain unresolved; prior-only results depend on intercept convention. Retain currentv61; preserve failed v70/v71 and frozen v72 outputs, no further continuation/retuning/promotion/2027/publication. Full-library transport/source-vintage/finitebudget/conditional-spent qualifications remain.
 
 **Pregame prior comparison completed, October22:** [final results/recommendation](VPM_PREGAME_RESULTS.md), same RESEARCH slot. Retain selectedv61: annual candidate/current/EPM13.927453/13.892012/13.934471, overall paired gains unresolved; subgroup gains do not support promotion. Registered rolling/annual/native/currentNet and source/math/workflow audits complete (all35stages exit0); dated1785-playerboards/582positive2026 exactNet verified. Primary native prior gains depend on intercept convention; final gain unresolved. Preserve frozen candidate/artifacts/failed versions and conditional/source-vintage/finite-budget qualifications. No retuning, selectedpointer/2027/publication/live change or new active experiment. Separate independent completion evidence closes the frozen controller pending-report marker.
 
