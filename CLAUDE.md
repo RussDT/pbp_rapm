@@ -2,7 +2,7 @@
 
 ## Pregame VPM implementation authorized (2026-10-21)
 
-Owner authorized the new plan. Canonical nba_pipeline/docs/VPM_PREGAME_BUILD_STATUS.md:187 neutral-core files/301706 player-games,33 tests, v66 dynamic solver and native admission gate13942 games.49 false legacy exposures removed. Source-clean measurement/parameter gates (211 scoring-completeness cases plus2014–15 warm-up), full defensive/MPG/entrant/static-cut adapters and actual A/B VPM fits remain pending. Old annual parameters are transported, not refitted; no superiority or neutral-source parity claim. Hourly follow-up continues; selected v61 and2027 remain protected.
+Owner authorized the new plan. Canonical nba_pipeline/docs/VPM_PREGAME_BUILD_STATUS.md:187 neutral-core files/301706 player-games,33 tests, v66 dynamic solver and native admission gate13942 games.49 false legacy exposures removed. Source-clean measurement/parameter gates (211 scoring-completeness cases plus2014–15 warm-up), full defensive/MPG/entrant/static-cut adapters and actual A/B VPM fits remain pending. Old annual parameters are transported, not refitted; no superiority or neutral-source parity claim. The15-minute continuation advances the plan; selected v61 and2027 remain protected.
 
 ## Full predictive-stat history completed (2026-10-21)
 

@@ -50,6 +50,8 @@ Source completeness remains a separate gate:211 games have incomplete/unresolved
 
 These generated artifacts remain ignored. The separate1996–2026 full-history library is retained. Its context-free production forecasts are not silently substituted for neutral inputs, and its fixed-budget decay fits are not called optimal.
 
+The owner-authorized continuation is active in this chat as **Advance pregame VPM**, every15 minutes (existing automation ID `finish-predictive-stat-history`). It resumes the new plan through the registered VPM comparison/recommendation; it is no longer the completed full-history build monitor and must not stop at the next preliminary milestone. It does not schedule a live daily data refresh.
+
 ## Required continuation
 
 1. Finish source/scoring admission using the independent terminal-scoreboard audit. Core export/hashes are complete. Independently adjudicate excluded target/scoreboard games and partial observations without changing archives.
