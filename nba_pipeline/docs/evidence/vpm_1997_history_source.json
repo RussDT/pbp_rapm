@@ -1,0 +1,189 @@
+{
+  "alias_policy": {
+    "mappings": [
+      {
+        "canonical_id": 1489,
+        "games": 1,
+        "player": "Lionel Simmons",
+        "source_id": 471
+      },
+      {
+        "canonical_id": 511,
+        "games": 14,
+        "player": "Melvin Booker",
+        "source_id": 775
+      }
+    ],
+    "native_counts_or_exposures_spliced": false,
+    "proof": "Official unique year/name/team + exact dated independent native canonical player/game key, clean census and unique eight-stat raw shooting/FT/TOV signature; substitutions retained as evidence.",
+    "scope": "Exact 1997 RS game/source-ID only",
+    "unresolved_identities": "Censored; no guessed aliases or player zero"
+  },
+  "artifact_sha256": {
+    "nba_pipeline/results/vpm_historical_targets_1997_dated_v2/alias_admission.json": "6d8d3784fc6b0a350753062ce9a21e08d2cc52385477f69f0a5ae23fed5aaec3",
+    "nba_pipeline/results/vpm_historical_targets_1997_dated_v2/century_recipe.json": "2809bfdbf4e9206846d1dd446395ff5d0ff97bea0e80f1a93b4a07425b41f385",
+    "nba_pipeline/results/vpm_historical_targets_1997_dated_v2/crossroot_admission_equality.json": "c7c31bb29f85194c81d92d30e2438846bd880028aeba2f6adc192a740ef0a228",
+    "nba_pipeline/results/vpm_historical_targets_1997_dated_v2/dated_calendar_admission.json": "0038c30d58970cf5c2ca8e53538f8fec8be9ddfbe121049b2199b903ae205bc3",
+    "nba_pipeline/results/vpm_historical_targets_1997_dated_v2/dated_recipe.json": "c6ff181f71343543e4013051aa0ff090bb7c3e6d6721d76fa8d2c033287b897d",
+    "nba_pipeline/results/vpm_historical_targets_1997_dated_v2/identity_admission.json": "e62a85e6ff0ed09770eeac8608134803e55cc7dd475e87aa4a12f4c19a292952",
+    "nba_pipeline/results/vpm_historical_targets_1997_dated_v2/identity_source_packet.json": "fa851d30eb90fb8d120bfd6d051862a1e42dfb19fa78186d991b5778f9230eb9",
+    "nba_pipeline/results/vpm_historical_targets_1997_dated_v2/manifest.json": "48da3d93e15d1704f57e8e9f64f0cdc0bc132cd1d00203a1cb3f36c2e3c8bc42",
+    "nba_pipeline/results/vpm_historical_targets_1997_dated_v2/registration.json": "415cc08e06299f07c22a712dbced91961cdbd1480eb6e8320a9234b5dd51e75a",
+    "nba_pipeline/results/vpm_historical_targets_1997_dated_v2/source_identity_census.json": "943050755dd4b52c72d1ccf3af6a46b25f6717e243e54944924a40daf2ac40c6"
+  },
+  "calendar_policy": {
+    "century_resolution": "Only97/98/99 inside corresponding1997/1998/1999 worker; binding restored in finally; full-year Season asserted.",
+    "external_schedule_used": false,
+    "raw_game_dates": "All3307 early games have one unique observed raw date identical to canonical date; missing event-row dates filled from that pinned calendar.",
+    "target_math_changed": false
+  },
+  "canonical_methodology": "nba_pipeline/docs/VPM_1997_HISTORY.md",
+  "code_sha256": {
+    "nba_pipeline/scripts/historical_targets_1997.py": "fd0df747062470d99d6ab0708aaab85a1e10b9ac3aaec93ec87fa04d7213ebac",
+    "nba_pipeline/scripts/historical_targets_1997_century.py": "52936563879be2a50b815a9ae701aa6fdf6fde9269145cbbba38caff81effd23",
+    "nba_pipeline/scripts/historical_targets_1997_dated.py": "37cbb67b60060e3be537d8fa8fcd1d1505b14585f4dd3067552a69960991795e",
+    "nba_pipeline/tests/test_historical_targets_1997.py": "b0c01eb281fb91782a47fcc2978a677f0be24afa6c9f570d743377f2565066da",
+    "nba_pipeline/tests/test_historical_targets_1997_century.py": "a524d81db37c1b6a2887b69709c7adc0cf69abf6a8d355045b332c38c3a9693f",
+    "nba_pipeline/tests/test_historical_targets_1997_dated.py": "51a92534f6ff8eceb48daf836640ce7e498be5d89320d900fd390af511726306"
+  },
+  "date": "2026-10-22",
+  "early_retained_games": 3284,
+  "early_retained_rows": 588430,
+  "early_score_quarantines": {
+    "1997_PS": [
+      "0049600063"
+    ],
+    "1997_RS": [
+      "0029600068",
+      "0029600121",
+      "0029600172",
+      "0029600294",
+      "0029600301",
+      "0029600370",
+      "0029600637",
+      "0029601188"
+    ],
+    "1998_PS": [
+      "0049700014",
+      "0049700045"
+    ],
+    "1998_RS": [
+      "0029700070",
+      "0029700967"
+    ],
+    "1999_PS": [],
+    "1999_RS": [
+      "0029800571"
+    ]
+  },
+  "early_whole_games_removed_by_identity": [
+    "0029600003",
+    "0029600017",
+    "0029600098",
+    "0029600142",
+    "0029600359",
+    "0029600648",
+    "0029600749",
+    "0029600906",
+    "0029601049"
+  ],
+  "loader_interface": "historical_targets_1997.load_before_cut(root, cut, years, **kwargs); target_matrix(atoms, games, cut, weights=None, standard=False)",
+  "old_2000_2026_retained_rows_unchanged": 6520215,
+  "output_root": "nba_pipeline/results/vpm_historical_targets_1997_dated_v2",
+  "phases": [
+    "RS",
+    "PS"
+  ],
+  "prefix_audit": {
+    "counterfactual_views_admitted": false,
+    "cut": "1997-01-01",
+    "games": 411,
+    "identity_slot_prefix_bit_exact": true,
+    "in_memory_future_measurement_mutations": {
+      "atom_rows": 7081508,
+      "pricing_rows": 37557
+    },
+    "last_observation": "1996-12-30",
+    "maximum_target_gap": 0.0,
+    "raw_pricing_prefix_bit_exact": true,
+    "rows": 73754
+  },
+  "prefix_receipt": {
+    "path": "nba_pipeline/results/estimated_skills/historical_targets_1997_prefix_audit_v1/receipt.json",
+    "sha256": "b954cc123dc6bce5c75223a2fc61484f7f6550274fda589c05983665b49ea4a7"
+  },
+  "preserved_failed_roots": [
+    {
+      "mutated_by_repair": false,
+      "path": "nba_pipeline/results/vpm_historical_targets_1997_v1",
+      "registration_sha256": "8b22fd66a55484e86987b835cb7d706c773ecc9c54634700db6e44061a52fb22"
+    },
+    {
+      "mutated_by_repair": false,
+      "path": "nba_pipeline/results/vpm_historical_targets_1997_dated_v1",
+      "registration_sha256": "2765be73ebfb331419f1999bde7c94a9e43070199c17e810da9a39244dbe7539"
+    }
+  ],
+  "protected_2027_outcomes": 0,
+  "qualifications": [
+    "Source/provider historical publication vintages are uncertified.",
+    "Available raw-game census is not a complete-season claim; exclusions and missing coverage remain visible.",
+    "Native pricing keeps raw first-chance counts within admitted games; partial/admin-ID rows are not invented.",
+    "Audited chronological SQ corrections begin ending2016; earlier correction is inactive, not observed zero or retrospective SQ substitution.",
+    "This is target/source preparation only: no mapper fit, historical board or predictive superiority claim."
+  ],
+  "reproduction_entrypoint": "nba_pipeline/scripts/historical_targets_1997_century.py",
+  "results": {
+    "aliases_admitted": 15,
+    "files": 60,
+    "hash_identical_reused_pairs": 54,
+    "maximum_TD550_standard_Net_gap": 8.881784197001252e-16,
+    "maximum_standard_Net_gap": 8.881784197001252e-16,
+    "new_measurement_pairs": 6,
+    "raw_games": 37979,
+    "raw_rows": 7157906,
+    "retained_games": 37845,
+    "retained_rows": 7108645
+  },
+  "schema_version": 1,
+  "selected_pointer_sha256": "08e5882c463d2ac10eccc8161afd92f14650afd8585634b4008227fde75d05d5",
+  "selected_vpm_changed": false,
+  "source_pins_frozen_before_build": 402,
+  "status": "passed_actual_target_source_extension_only",
+  "test_validation": {
+    "command": ".venv/bin/python -m pytest nba_pipeline/tests/test_historical_targets_1997_century.py nba_pipeline/tests/test_historical_targets_1997_dated.py nba_pipeline/tests/test_historical_targets_1997.py nba_pipeline/tests/test_historical_targets.py -q",
+    "passed": 32
+  },
+  "years": [
+    1997,
+    1998,
+    1999,
+    2000,
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ]
+}
