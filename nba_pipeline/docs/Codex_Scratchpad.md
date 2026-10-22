@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-22 — Expanded annual-feature VPM trained; forecasts running
+
+- Owner authorized broader annualsnapshot features/engineering/subagents. Canonical VPM_EXPANDED_ANNUAL_PRIOR.md; configv71/outputvpm_expanded_annual_archived_v1. Source21444queries/1787IDs/12dates,203catalogfields/166heads; allcut/physical/date and futureperturbation audits pass. Transportfilterparameters, notrefitted. All36developmentmaps complete; C0coeffgap<=4.87e-12/newnormals<=1.60e-12. Bothside2020basis186/182 vsbaseline26/22; engineered197/193. Annualforecast replayhealthy, selectionpending. Do notscorepartialorreadspentdiagnostic scores beforefreeze.
+- Preserve v70 prefit-failure root: externalAPIaggregate.ts changed sinceoldcareer/diagnostic receipts. OriginalGitbytes recoveredSHA6910060e…28dd92;1472files/739JSON checked, activeAPI unchanged. Newsource_runner permits4exactreceipt/field/path/hash archival mappings; no math/data/guardrelaxation. Focusednewwrapper/modelchecks96pass; currentconsumer12pass separately. Finishforecast→prequentialselection→frozen2023–26/currentfits→annualseven/native/currentNet/independentrecommendation. Selectedv61/2027unchanged; dailynewlibrary notyetexported, annualentryrejectsrolling.
+
 ## 2026-10-22 — Registered comparison complete; retain selected VPM
 
 - Final VPM_PREGAME_RESULTS.md recommendsretainselectedv61; independentjudgmentagrees. All32progression+3base stages exit0/workflow10579pins pass (SHAff0e7adc6c45b799e3f862f9f947a257336d5adc2ade32a19d2c43a00672fe00). Preserve controller intentional pending-report/full_experiment_finished=false marker; separate independent_completion.json binds final report/evidence/recommendation. No restart/newexperiment/selectedpointer/publication/2027change.
@@ -21,8 +26,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Registered decay replay/selection completes on the identical3068games/455dates: annual-snapshot + season/home +H365 calibration-game weighting, equal-season RMSE13.435545 vs null13.441051/H73013.437714/H146013.439264. Conditional paired MSE gain+.147994, game95%CI[.011405,.286076], seasonCI[.105917,.186673]; small post-selection development evidence, not confirmation or optimal decay. Timing difference remains unresolved; all arms update inputs/ratings daily. Stat-filter memory and ParentTD550 unchanged.
 - Independent6538pin/1700JSON audit verifies scores/locks, legal maps, full census and bit-identical null predictions; receipt pregame_actual_decay_selection_audit_v1/receipt.json SHAb2b45b69dc124d2d9bd13fea57487405af4d790eeea11a8d4f4cdafc8027f9bf. Scorecard exit/checkpoint succeeded; a briefly observed zombie was a normal handoff, not a failure. Existing adjoint controller runs2023–26null calibrations. Frozen rolling/annual/native/currentNet and independent recommendation remain pending; selectedv61/2027 unchanged. Do not restart healthy stages.
-
-## 2026-10-21 — Full timing/context selection completed
-
-- Full455-date/12272prediction-row development replay covers3068common RSgames2020–22 (971/1059,958/1080,1139/1230). Literal equal-season MSE selects `static_season_home`:RMSE13.441051/staticbase13.442517/pregamecontext13.452292/pregamebase13.453081. Matched timing conditionalMSE gain+.302303 hasgame95%CI[-.314380,.939561], unresolved; post-selection retrospective contrasts, fits/selection heldfixed. Allarms updatecurrent inputs/ratingsdaily; thischooses prior-trainingtiming only.
-- Independent4236filepin/1227JSON-node source/census/lock/predictionaudit passes; `pregame_actual_timing_selection_audit_v1/receipt.json` SHA27540ff5c90d7cf83316ab3abfcecc1066c21bb65947ffaefa6d1f01161a7b35. All9H365/730/1460maps forwinningstatic+context complete (Net≤3.25e-14,normal≤6.83e-13), controller advancing decayforecasts and bitexactnullreuse. Full2023–26spent/annual/native/currentNet/recommendation pending; selectedv61/2027unchanged. Lethealthycomputecontinue; do notforcenewtimingorclaimsuperiority.
