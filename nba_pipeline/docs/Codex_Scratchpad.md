@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-21 — Full timing/context selection completed
+
+- Full455-date/12272prediction-row development replay covers3068common RSgames2020–22 (971/1059,958/1080,1139/1230). Literal equal-season MSE selects `static_season_home`:RMSE13.441051/staticbase13.442517/pregamecontext13.452292/pregamebase13.453081. Matched timing conditionalMSE gain+.302303 hasgame95%CI[-.314380,.939561], unresolved; post-selection retrospective contrasts, fits/selection heldfixed. Allarms updatecurrent inputs/ratingsdaily; thischooses prior-trainingtiming only.
+- Independent4236filepin/1227JSON-node source/census/lock/predictionaudit passes; `pregame_actual_timing_selection_audit_v1/receipt.json` SHA27540ff5c90d7cf83316ab3abfcecc1066c21bb65947ffaefa6d1f01161a7b35. All9H365/730/1460maps forwinningstatic+context complete (Net≤3.25e-14,normal≤6.83e-13), controller advancing decayforecasts and bitexactnullreuse. Full2023–26spent/annual/native/currentNet/recommendation pending; selectedv61/2027unchanged. Lethealthycomputecontinue; do notforcenewtimingorclaimsuperiority.
+
 ## 2026-10-21 — Compensated adjoint repair and replay continuation
 
 - Actualquarantine audit passes76whole games/15732rows removed versus5517direct rows, safe geometry rebuild/nextdateappend. The old replay then stopped after150season2020dates: actualnextquery Dec22,2020/2021mappers (notAug15) amplifies storedRHSroundoff past1e-9. Preserve all old roots/24modelprofiles/150dates/750outputs.
@@ -23,8 +28,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Owner authorizes new plan implementation. RAPM neutral query kernel/adapter preserves context/age/debut mechanics, pure zero-opportunity queries, legal annual vintages; validated source removes49 false exposures/19 games.187 core files/301706 queries exported and hashes verified, reference post-state gap<=2.23e-16. Full FT/3P/assist adapter perturbation leaves14129 earlier/same-date rows/family unchanged. Old fitted parameters transported to new counts, not source-clean refitted.
 - Sibling v66 pregame-vpm, dynamic profile solver and native-admission module;33 focused tests pass. Full native source2781191 rows/14128 games; raw terminal scoreboards13954match/148mismatch/26unresolved, plus12 missing-state games =>13942 admitted/186 excluded.85 native games recovered despite incomplete player sums;211 partial/unresolved observation cases require gating, including2014–15 upstream check, before fitting. Current core bridge is not full-recipe ready. Finish defensive/MPG/entrant/static snapshots/cohort adapters then static/dynamic/context/decay comparisons. Canonical VPM_PREGAME_BUILD_STATUS.md; selected v61/no2027 intact. Advance pregame VPM continuation runs every15minutes through registered comparisons, not just next milestone.
-
-## 2026-10-21 — Full predictive-stat library completed and verified
-
-- Full_history_v2 completed:4980 annual slots,30 baseline/cross-stat seasons and60 final292-column library files,787558 rows/profile. All60 hashes plus completion receipts verified; whole-source chronology/epoch/bounds audit passes, max point gap0. Latest2026 export615 players at individual game cutoffs, not today/current roster.17 focused tests pass.
-- Historical2020–25 cross-stat MSE reductions:AST1.179%,TOV.899%,points.343%; all10 headline conditional paired-game intervals positive,109/164 scored heads improve,53 unchanged,2 slightly worse. Matched FT-to-three increment~.10%.38/2504 fitted slots converge,2466 hit30 iterations;2476 slots bootstrap. No optimal-decay claim; fixed1460-day cross-stat decay remains unoptimized. Canonical FULL_PREDICTIVE_SKILL_HISTORY.md updated. Temporary hourly follow-up paused after verification/docs; no selected-VPM/live/2027 changes.

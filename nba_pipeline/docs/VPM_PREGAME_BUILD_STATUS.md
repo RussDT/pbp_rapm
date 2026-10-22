@@ -2,7 +2,26 @@
 
 Owner authorized implementation October21,2026 after the full predictive-stat library completed. This is the existing VPM RESEARCH project. The [training plan](VPM_PREGAME_PRIOR_PLAN.md) still governs the comparisons. No improved VPM or selected-model replacement has been established.
 
-## Current checkpoint — October21 evening,2026
+## Development timing/context result — October21,2026
+
+The complete four-arm replay covers **455 dates and 3,068 common regular-season games** in ending seasons2020–2022:971/1059,958/1080 and1139/1230 games retained. The frozen literal equal-season game-MSE rule chooses **`static_season_home`**. The criterion averages the three season MSEs equally, then takes the square root for the RMSE below; it is not pooled-game RMSE.
+
+| Prior-calibration inputs | Season/home controls | Equal-season game MSE | Equal-season RMSE |
+|---|---|---:|---:|
+| Annual snapshot | Yes |180.661864|13.441051|
+| Annual snapshot | No |180.701275|13.442517|
+| Pregame before each game | Yes |180.964167|13.452292|
+| Pregame before each game | No |180.985400|13.453081|
+
+The matched timing difference remains **unresolved**: static+context's conditional paired-game MSE gain over pregame+context is+0.302303,95% interval[-0.314380,+0.939561]; the season interval is[-0.347665,+1.042868]. Its context increment versus static without context is only+0.039411 MSE (game interval[+0.006122,+0.071861], RMSE difference0.001466). These are retrospective development, post-selection contrasts with fits and choices held fixed—not independent confirmation or full model uncertainty. No current-model or EPM superiority follows.
+
+**All four arms still receive current dated inputs and daily rating updates at deployment.** This choice concerns how the stats-to-impact prior is trained; it does not select held annual player ratings. Source/estimator changes relative to selectedv61 remain separate from the matched timing comparison.
+
+Independent audit verifies all12,272 prediction rows,455 complete manifests, common census, frozen locks, exact source predictions and4,236 unique file pins/1,227 JSON nodes. Receipt: `pregame_actual_timing_selection_audit_v1/receipt.json`, SHA`27540ff5c90d7cf83316ab3abfcecc1066c21bb65947ffaefa6d1f01161a7b35`. No partial smoke or2023–26 outcome enters selection.
+
+All nine declared H365/730/1460 development mappers for this winning timing/context arm are now complete; maximum saved Net gap3.25e-14 and conditional normal error6.83e-13. The active controller is producing the separate decay-development replay; null predictions will be reused bit-for-bit. Decay selection, spent rolling/annual/native diagnostics, current Net boards and the final recommendation remain pending. Neither the upstream finite-budget stat fits nor the registered decay grid is an optimal-decay claim. Selectedv61 and2027 remain untouched.
+
+## Numerical repair history — October21 evening,2026
 
 **Latest repair checkpoint:** the receipt-compatible replay stopped after all150 season2020 dates; its first season2021 cut is **December22,2020**, not August15. That date's fixed mapper produces own-prior Net-to-total gaps up to1.316e-9 against the unchanged1e-9guard. This is stored profile-RHS roundoff amplified by large dated standardized inputs; compensated final dot products do not fix it. All150 outputs and old code/config/models remain preserved. No overall accuracy result or selection exists.
 
