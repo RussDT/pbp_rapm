@@ -1,6 +1,6 @@
 # VPM pregame prior training plan
 
-Created October 21, 2026. **Owner authorized implementation after the full-history library completed; evidence-panel work is underway.** See [implementation status](VPM_PREGAME_BUILD_STATUS.md) for the neutral-core bridge, exposed legacy identity issue, tests and remaining gates. No improved VPM has been established.
+Created October 21, 2026. **Owner authorized implementation and subagents after the full-history library completed.** See [implementation status](VPM_PREGAME_BUILD_STATUS.md) for admitted observation masks, clean core refits, audited daily/static adapters, shared calibration and remaining forecast gates. No improved VPM has been established.
 This work belongs to the existing predictive VPM RESEARCH project.
 
 ## The proposed change
@@ -58,6 +58,8 @@ Store one row per player/game, with long-form per-family provenance:
 | Admission | Mapper-admitted family, observed status, aggregate/replacement choice |
 
 Use the audited actual-FG-plus-FT possession targets, exact O1–O5/D1–D5 identities and existing scoring/entrant exclusions. Each target possession appears once in the new panel. Actual game minutes or possessions determine target exposure; **they do not enter pregame predictors or pregame eligibility**. Do not replace future-exposure thresholds with another future-minute gate. Any reliability rule must use information available before the game.
+
+Implementation exposed seven unsafe historical career-exposure games. Preserve unknown entrant weights; native-target appearances use a different possession definition and cannot silently replace these counts. Because Parent priors couple ratings, excluding only future games where an unknown-weight player appears is insufficient. The common non-imputation control removes all historical games containing a currently unknown-weight player, omits that player from the emitted board, and excludes forecast games requiring them. This uses only information at the emission date, retains exact selected entrant handling for identified players, and applies identically to every new arm. Disclose its changed likelihood sample versus the selected archive and rebuild incremental geometry when its quarantine changes. Independently validated original-counter reconstruction may supersede this control; imputed exposure/weight would be a separate registered estimator change.
 
 Apply model-aware historical fallbacks **before preprocessing and design construction**: retain aggregate DREB/PF until the replacement is both admitted by that dated mapper and observed for the player. An observed zero is valid. Calibration and deployment must use the same transformation; see the v64 rejection and v65 repair in [quarterly history](VPM_QUARTERLY_HISTORY.md).
 

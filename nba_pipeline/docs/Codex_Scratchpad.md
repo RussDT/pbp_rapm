@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-10-21 — Source-clean pregame VPM and matched controls
+
+- Owner authorizes implementation and subagents. Sourcev2 retains356856 queries, masks62617 uncertain values;187 clean core annual fits are healthy (134 complete at this checkpoint), finite60-iteration recipe unchanged. Parameter/full-adapter prefix audits exact; defensive original denominators/parameters frozen. Annual static and2260-date full-universe neutral exports follow the existing fits.
+- Sibling draftv67 matched calibration uses shared training-only preprocessing, cohort residuals, global season/home, joint10 then conditionalD100 and exact Net responses. Native/reference reconstruction and chronology checks pass; new evaluation identifies full Parent through common global historical quarantine, not direct-player exclusions alone. Three-player career-only recovery is independently under review; seven unsafe games remain masked in sourcev2.43 focused new RAPM and95 sibling checks pass. No actual new impact fit/forecast gain yet. Continue supervisor, daily forecasts,2020–22 timing/context then decay selection and2023–26 spent diagnostics. Selectedv61/2027 unchanged; canonical VPM_PREGAME_BUILD_STATUS.md.
+
 ## 2026-10-21 — Pregame VPM core and source gates implemented
 
 - Owner authorizes new plan implementation. RAPM neutral query kernel/adapter preserves context/age/debut mechanics, pure zero-opportunity queries, legal annual vintages; validated source removes49 false exposures/19 games.187 core files/301706 queries exported and hashes verified, reference post-state gap<=2.23e-16. Full FT/3P/assist adapter perturbation leaves14129 earlier/same-date rows/family unchanged. Old fitted parameters transported to new counts, not source-clean refitted.
@@ -20,8 +25,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Owner asked to continue while away. Added fixed historical2020–2025 head/family/coherent-output comparisons, conditional paired-game intervals and matched own-three versus own-three+pregameFT diagnostics;2026 labels excluded before diagnostic materialization.17 focused tests pass. Finish supervisor now waits for complete Parquet footers, runs diagnostics after export and hashes its receipt; fit recipe/checkpoints unchanged.
 - Eight-worker fit PID4235 remains healthy; replacement finishing supervisor PID23105 adds diagnostics. Temporary hourly chat follow-up finish-predictive-stat-history resumes checks/fixes and pauses after verified completion/docs. Early1997/2018 real replay passes source/date/bounds/epoch/point closure across53011 rows. Final30-season checks and results remain pending until receipts complete. Canonical FULL_PREDICTIVE_SKILL_HISTORY.md; no selected-VPM/live-refresh/2027 changes.
-
-## 2026-10-21 — Full predictive stat history running
-
-- Owner authorized full1996–2026 predictive-stat library and asked about cross-stat learning/runtime. Implemented bulk read-only Cloudflare Catalog/Object source pinning (18s;787558core/356035report rows,2939players),129 concepts/166 versioned heads, compiled annual past-only OU replay, cross-stat residual ridge through nextgame lab, whole-panel chronology gate and coherent exports.12 focused tests pass, plus full source identity/scoring/assist/turnover accounting on37986 games.
-- First full_history_v1 queue stopped/quarantined for unsupported turnover subtype zeros. Corrected full_history_v2 uses coarse consistent TOV/foul groups, source-epoch gates and separate v1/v2 filters. Eight-worker annual queue is running; finish supervisor automatically gates chronology, cross-stat testing and exports. Check ignored full_history_v2/run_status.json and logs before claiming completion; provisional3–6h wall estimate. Canonical FULL_PREDICTIVE_SKILL_HISTORY.md. Context-free research profile, no VPM replacement/live scheduling/2027 outcomes;2026 cross-stat export only.
