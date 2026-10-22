@@ -2,10 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
-## 2026-10-21 — Clean fits complete; stable pregame calibration running
+## 2026-10-21 — Pregame calibrations complete; forecast replay running
 
-- All187 clean CORE fits complete,7 converged/180 exhausted60iterations; game-date301706, static13426 and rolling4038620 queries exported and verified. Independent assembly audit5129002cells/45762neverobservedmissing; source/chronology pins pass. Defensive recipes/denominators remain frozen.
-- Originalv67 firstactual2020Netprofile failed fixed1e-9closure at1.061e-9 before saving models; oldbase/progression preserve failedclosed. Exact993138rowdiagnostic proves cancellation; residual-form4.20e-11 with unchanged objective/penalties/guard. Newstablev68 commit8368e54,All12 actual2020–22 models independently pass, maxNetgap5.62e-10/normal6.82e-13; preprocessor/census/chronology exact. Originalv68progression thenfailed relative diagnosticoutputpath validator; frozenreceipts preserved. Versioned exactreceipt/outputSHA compatibility90b4f72 and255checks pass, no model/config/mathchanges. Basev68complete; active `vpm_pregame_progression_receipts_v1` nowpassedprepare/defensive andactualfourarmdailyforecasts save1787-playerboards (twofactors/date), then advances timing/context→decay→rolling/annual/native/currentNet. Logs/commands canonical VPM_PREGAME_BUILD_STATUS.md and sibling implementationdoc. Do not duplicate/restart healthyprocesses; no forecasts/gains claimed yet. Selectedv61/2027 unchanged; continuationACTIVE until verified comparison/recommendation.
+- All187 clean CORE fits and three exports verified:301706 game-date,13426 static and4038620 rolling queries. Only7 fits converge/180 exhaust60iterations; no optimal-decay claim. Defensive recipes/denominators remain frozen.
+- Preserve failedv67 numericalclosure andv68receipt-validation roots. Residual-formv68 keeps objective/penalties/1e-9guard; all12 actual2020–22 models independently pass (Net≤5.62e-10, normal≤6.82e-13, exactpreprocessing/census/chronology). Exactreceipt/outputSHA-whitelisted compatibility90b4f72 changes no models/config/math.255focusedchecks plus2forecastaudit tests pass; first3actualdates verify1438pins/1787players×4arms/date/16games, gamegap≤3.56e-15.
+- Basev68complete; only `vpm_pregame_progression_receipts_v1` is active. Prepare/defensive passed, full455-date four-armforecastreplay saves boards; registered timing→decay→rolling/annual/native/currentNet continues automatically. Canonical VPM_PREGAME_BUILD_STATUS.md and sibling activecommands. No duplicates/healthyrestarts, selectedv61/2027 unchanged, no accuracy/gainclaim. ContinuationACTIVE until verified comparison/recommendation.
 
 ## 2026-10-21 — Source-clean pregame VPM and matched controls
 
