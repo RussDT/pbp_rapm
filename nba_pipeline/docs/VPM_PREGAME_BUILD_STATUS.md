@@ -2,6 +2,16 @@
 
 Owner authorized implementation October21,2026 after the full predictive-stat library completed. This is the existing VPM RESEARCH project. The [training plan](VPM_PREGAME_PRIOR_PLAN.md) still governs the comparisons. No improved VPM or selected-model replacement has been established.
 
+## Verified rolling diagnostics — October21,2026
+
+The complete651-date2023–26 replay and scientific scorecard pass independent audit. On **4,772 common regular-season games**, the frozen annual-snapshot + season/home +H365 candidate has pooled game RMSE **13.586407**, versus matched `static_base` **13.593466** (MSE184.590448 versus184.782330). These scores pool games; development selection above used equal-season MSE.
+
+The paired conditional MSE gain is+0.191881;95%whole-game interval **[-0.006710,+0.396485]** includes zero. The whole-season interval is[+0.058315,+0.325448], with gains+0.038200/+0.078429/+0.314381/+0.336516 in2023/24/25/26. The small game gain remains unresolved. Both intervals hold learned fits and selected recipes fixed; these are spent historical diagnostics with actual minutes/pace, not untouched confirmation or full-model uncertainty. This comparison combines season/home controls and calibration decay within the annual-snapshot arm; it does not isolate pregame timing or compare with selectedv61/EPM.
+
+Retained/full games are1218/1230,1188/1230,1181/1230 and1185/1230. The audit verifies all651dated products,2,323,592board rows, strict history/model/background/college/G-League chronology, identified entrant weights, common source geometry and omitted-player gates, unchanged timing/decay locks and exact raw prediction identity. Headline scores and game/season intervals independently reproduce within1e-12/1e-14. Maximum geometry closure7.22e-16 and normal residual8.39e-15. Receipt `pregame_actual_rolling_stress_audit_v1/receipt.json`, SHA`65e53271aae8e130335ee81d0037106ec71be2f994ea98d8914a5c919f92c2d6`, verifies9,176unique file pins/2,371JSONnodes before and after. The scorecard controller worker also exits successfully; annual seven-test, native/currentNet and independent final recommendation remain pending. Selectedv61 and2027 remain unchanged.
+
+All20actual2023–26 prior calibrations separately pass independent preprocessing/census/global-M0 age-weight/pricing/chronology/conditional-offense checks: full Net closure9.24e-14 and normal error2.67e-12. Receipt `pregame_actual_stress_calibration_audit_v1/receipt.json`, SHA`6d10de87320e01dd39068928c41efd8ceee3a7cbd60a521dc42a35335a0e1f39`, verifies4,278unique pins/1,245JSONnodes. Stage recipe/checkpoint bytes are verified as their declared controller inputs; actual mapper transitive source chains are checked separately, preserving strict receipt compatibility.
+
 ## Frozen development recipe — October21,2026
 
 The complete registered development comparison now chooses **annual-snapshot prior calibration + season/home controls + a365-day half-life for calibration games** (`static_season_home_h365`). This is the literal minimum equal-season game MSE among the declared decay candidates on the same3068games in2020–22.
@@ -19,7 +29,7 @@ This decay weights **historical prior-calibration games** while retaining all el
 
 Independent audit verifies both455-date producer sets,6538uniquefile pins/1700JSONnodes, the identical8289-game full census and3068-game development subset, exact parent/final selection locks and all candidate scores/digests. Null predictions are **bit-identical** to the original timing winner. All nine actual decay maps preserve selected context, strict legal cuts (including2020-12-01), normalized weights and conditionalO10/D100. Audit: `pregame_actual_decay_selection_audit_v1/receipt.json`, SHA`b2b45b69dc124d2d9bd13fea57487405af4d790eeea11a8d4f4cdafc8027f9bf`.
 
-The final development recipe is frozen before the registered2023–26 **spent diagnostics**. The scorecard worker exited successfully and its checkpoint is complete; the existing adjoint controller is running the legally dated2023–26 null calibrations before their replay, annual seven tests against selectedv61/EPM/static controls, native prior-only/final diagnostics and current exactNet boards. The final recommendation and full report verification are still pending. Selectedv61, publication status and2027 remain unchanged.
+The final development recipe is frozen before the registered2023–26 **spent diagnostics**. The development scorecard checkpoint and legally dated2023–26 calibrations/replay are complete. The existing adjoint controller continues with annual seven tests against selectedv61/EPM/static controls, native prior-only/final diagnostics and current exactNet boards. The final recommendation and full report verification are still pending. Selectedv61, publication status and2027 remain unchanged.
 
 ## Development timing/context result — October21,2026
 
