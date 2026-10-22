@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "small_curated_research_evidence_reference",
+  "status": "completed_30_season_predictive_feature_transport",
+  "implementation": {
+    "path": "nba_pipeline/scripts/export_vpm_1997_features.py",
+    "sha256": "9fc14b259f9f816cffdda218c0d7d45bb3bb76d6102517be0f9588c3a80f375f"
+  },
+  "tests": {
+    "path": "nba_pipeline/tests/test_export_vpm_1997_features.py",
+    "sha256": "94da87a768c165f6e2db912197371af54d14b7c28d421a9ae97526acff7f58a9",
+    "combined_new_and_frozen_tests_passed": 16
+  },
+  "receipts": [
+    {
+      "path": "nba_pipeline/results/estimated_skills/vpm_1997_features_v1_registration/registration.json",
+      "sha256": "5fa589264764ed839af4f52e35140eed77669b42aef0878f945138a6b8661615"
+    },
+    {
+      "path": "nba_pipeline/results/estimated_skills/vpm_1997_features_v1/receipt.json",
+      "sha256": "7df07b66f1d548844dfb3fc6a5668ee57f8170393ee4a17a28cdd72c4c2a9d49"
+    },
+    {
+      "path": "nba_pipeline/results/estimated_skills/historical_feature_bridge_full_export_audit_v1/receipt.json",
+      "sha256": "2382f31922654a5636d352fcfb26c061c075e4e53a9a084734eff9244d2d129c"
+    },
+    {
+      "path": "nba_pipeline/results/estimated_skills/historical_feature_bridge_full_export_audit_v1/execution_receipt.json",
+      "sha256": "22304f4ffbcd5553f513457aae85c7328fc647d5cb9620af271c8fb4e60e446f"
+    },
+    {
+      "path": "nba_pipeline/results/estimated_skills/vpm_1997_independent_audit_v1/feature_bridge_review.json",
+      "sha256": "bf7b1852dff80be6f815c0132c28ae650152718748f92a7e75286fb1051fd056"
+    }
+  ],
+  "completed_ending_seasons": [
+    1997,
+    2026
+  ],
+  "annual_report_policy": "October1, except November1,2020; query_season is explicit completed ending year",
+  "query_rows": 46784,
+  "query_dates": 30,
+  "canonical_archive_players": 2939,
+  "source_head_rows": 7766144,
+  "annual_parameter_slots": 4980,
+  "generic_numeric_fields": 203,
+  "parameter_transport_not_refit": true,
+  "modern_frozen_terminal_replay_probe_bit_exact": true,
+  "selected_neutral_parity": false,
+  "upstream_bootstrap_and_finite_optimizer_budget_retained": true,
+  "nonoffensive_foul_split": "unavailable",
+  "aggregate_foul_definition": "Seven recorded PBP foul groups including technicals, per100 total possessions; not official personal PF",
+  "mpg": "Literal prior365day positive-minute RS appearance mean using explicit admitted source masks; not a minutes forecast or exhaustive official appearance census",
+  "archive_exposure": "Observed lower bound only, not complete career or quality feature",
+  "model_aware_rebound_and_foul_fallback_required": true,
+  "protected_2027_inputs": 0,
+  "selected_pointer_changed": false,
+  "generated_artifacts_excluded_from_git": true
+}
