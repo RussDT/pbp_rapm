@@ -1,0 +1,48 @@
+{
+  "comparison_receipt_sha256": "a2c816f07a2087c28b53e4d48786ac8b65a45cfb8182b09e56164a0308776474",
+  "conditional_actual_minutes_pace": true,
+  "coverage": "100% native played minutes for both metrics; no fills used",
+  "dates": 651,
+  "frozen_VPM_replay_gap": 0.0,
+  "games": 4772,
+  "independent_audit_sha256": "93b20664f2d057c5e3c52abdf6342b4e39454b353c7ab428e64474bd727bb74e",
+  "independent_forecast_gap": 1.4210854715202004e-14,
+  "new_RAPM_fits": 0,
+  "pair_rows": 8,
+  "paired_game_95": [
+    0.5056505459199615,
+    4.150986962161488
+  ],
+  "paired_mse_gain": 2.3246951543517502,
+  "paired_season_95": [
+    0.3093701385938393,
+    4.364613004511797
+  ],
+  "post_2023_SPM_summary": [
+    {
+      "game_hi": 3.460224374103637,
+      "game_lo": -0.9426158188676964,
+      "interpretation": "Positive favors VPM; fits and prior-selection fixed; spent historical outcomes",
+      "mse_gain": 1.2815481052104158,
+      "n": 3554,
+      "replicates": 4000,
+      "sample": "2024_2026",
+      "season_hi": 3.2259040384435687,
+      "season_lo": -0.4773028355322537,
+      "variant": "headline"
+    }
+  ],
+  "primary": "static_season_home_h365",
+  "primary_rmse": {
+    "EPM": 13.671691309214784,
+    "VPM": 13.586406739830338
+  },
+  "protected_2027_outcomes": 0,
+  "provider_model": "fresh APIv2 retrospective neutral EPM",
+  "report_sha256": "8eec61fa76b45ba7b0f7c53d85e8e6df80aa1a1b1fe2870ce8ae3b6744e278a9",
+  "score_rows": 84,
+  "selected_model_unchanged": true,
+  "spent_historical": true,
+  "status": "independently_verified_daily_VPM_EPM_comparison",
+  "tests_passed": 33
+}
