@@ -4,6 +4,7 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Annual VPM history from1996–97](VPM_1997_HISTORY.md) -30 completed-season boards/46,322 rows, independently verified forward Parent/Net history; explicit1997–99 backcasts, era missingness and uniform own-only priors; selectedv61 unchanged
 - [Expanded annual VPM results](VPM_EXPANDED_ANNUAL_RESULTS.md) - completed broad-feature/engineering search and independent audits; no established gain, retain selected v61; [method and reproduction](VPM_EXPANDED_ANNUAL_PRIOR.md)
 - [Pregame VPM results and recommendation](VPM_PREGAME_RESULTS.md) - completed registered comparisons and independent audits; retain selectedv61, overall gain unresolved; [operator history and receipts](VPM_PREGAME_BUILD_STATUS.md)
 - [Pregame VPM prior training plan](VPM_PREGAME_PRIOR_PLAN.md) - owner-authorized game-date predictive stats to actual lineup points; pregame replay, regularized dynamic mapper, separate timing/context/decay tests and historical validation. Implementation underway; selected v61 unchanged

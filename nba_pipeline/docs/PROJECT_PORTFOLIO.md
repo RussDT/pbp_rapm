@@ -9,6 +9,8 @@ from competing for attention as if they were all equally urgent.
 
 ## Portfolio call
 
+The [1996–97 through2025–26 VPM history](VPM_1997_HISTORY.md) is a completed private research reconstruction:30 annual boards, independently verified source/model/Net equations and exports. Its three initial backcasts and era-specific inputs are explicit. It is separate from selectedv61 and carries no new forecasting-promotion or public-release decision.
+
 The constraint is not a shortage of good work. It is too much simultaneous
 work in progress.
 
