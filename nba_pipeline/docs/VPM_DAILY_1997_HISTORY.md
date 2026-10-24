@@ -39,3 +39,23 @@ This is the v73 source-adapted historical series, not a splice of selected moder
 ## Active source preparation
 
 The immutable calendar/query preparation is sibling `vpm/results/harness/vpm_daily_1997_preflight_v3/receipt.json`. The first preparation failed on mixed date types during persistence; a second minimal census omitted the existing scoring quarantine. Both roots are preserved. Version3 normalizes dates and applies the exact per-file excluded-game lists before identity admission, retaining37,845 games. The numerical controller will independently compare this minimal census with the original fully admitted loader before emitting ratings.
+
+## Held implementation and current run
+
+Task branches in both repositories are `codex/vpm-daily-history-1997`. RAPM `d77c5121` holds the pure daily source adapter and its guarded integer date conversion; sibling VPM `017c905` holds the calendar/preparation/controller/numerical implementation and `cc961a7` the separate reader. Existing frozen harness entry points and scientific files were not edited.
+
+The final-byte independent daily-partition proof is `nba_pipeline/results/estimated_skills/daily_history_1997_daily_append_independent_v2/receipt.json`, SHA `49a780d08e005933814b6a0de0e644e21bd86a1b33320f52818e1657b6f0fe07`. It checks6,108 cuts,6,073 nonempty daily append blocks,7,108,645 native rows and37,845 games against all30 saved annual endpoints. Maximum array/rating difference is1.128e−10 and scalar-intercept difference2.709e−14. The independent review receipt is `review_receipt.json`, SHA `c6bfe56c0f5089d55a6f1bde47d1a3d0dd3532ecdb617a4a81533f733370c155`. The controller requires and pins this final-byte proof before rating emission.
+
+A separate actual first20-date integration check also passes, including the empty November1,1996 cut and the first nonempty daily priors/ratings/components. This tests real cold-start data rather than only annual endpoints.
+
+The full source producer completed9,507,828 queries in109 partitions and608.1seconds, with5,468,449,804 compressed bytes. Its final receipt is `nba_pipeline/results/estimated_skills/vpm_1997_daily_features_v1/receipt.json`, SHA `6b13a3393be07371085441f2d2fd05241f9ea0f7ec1d3187f83be83ba1c44343`. The separate all-partition output/source/date/missingness/exposure/MPG audit passes, including all30 persisted annual packets; `vpm_1997_daily_feature_export_audit_v1/receipt.json` SHA `9a295a78c540dd6081b100dee184277bed623fab1e467556c78ba375a75ba687`. Its log remains `vpm_1997_daily_features_work_v1/export.log`; do not relaunch it. The sole rating controller log is sibling `vpm/results/daily_history_1997_v1.log`. Its initial invocation has completed the real first10 dates (November1–10,1996) and exited0 at its explicit debug limit for a consumer/resume check. The first cut is empty; the next9 contain262–342 native players. Independent first-product and same-recipe resume checks now pass. The full replay is ACTIVE in that same root and the real reader is at `http://127.0.0.1:8800/`; do not execute a second controller while its exclusive lock is owned. The command below is for a necessary continuation after the current worker has ended, with the same immutable registration:
+
+```bash
+env OPENBLAS_NUM_THREADS=2 OMP_NUM_THREADS=2 \
+  ../rapm/.venv/bin/python -u -m vpm.harness.daily_history_1997 \
+  --config vpm/configs/research_harness_v74_daily_history_1997.json \
+  --preparation vpm/results/harness/vpm_daily_1997_preflight_v3 \
+  --out vpm/results/harness/vpm_daily_1997_v1 --resume
+```
+
+The reader has7 passing tests and a preserved3-product preview. The real reader now uses the production root and separate `vpm_daily_1997_reader_v1` index, with completed coverage shown explicitly. Its first10-date source/value audit passes; the independent first10 numerical audit is `daily_history_1997_first10_audit_v2/receipt.json`, SHA `856353d19b4e4a723f5888e2b82f3659dbccc636d79f7773b53e40f46ab633e3`. An independent fresh batch reconstruction matches the saved arrays within2.9e−12 and ratings within9.8e−15. The explicit stop/resume preserves all39 initial registration/load/product files byte-for-byte. Full-product, final real consumer and completion audits remain pending.
