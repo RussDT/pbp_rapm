@@ -4,7 +4,7 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
-- [Daily VPM history from1996–97](VPM_DAILY_1997_HISTORY.md) - in progress:6,108 game/report dates, annual-trained historical prior with daily stat and lineup updates; exact Net components, explicit initial backcasts and checkpointed output.
+- [Daily VPM history from1996–97](VPM_DAILY_1997_HISTORY.md) -6,108 dates/9,416,143 estimates/2,856players, independently checked source-adapted annual-trained prior with daily updates and exact components; [browse all dates/players](http://127.0.0.1:8800/?coherent=2#date=2026-10-01), explicit initial backcasts and preserved selectedv61.
 
 - [Daily-trained VPM versus EPM](VPM_DAILY_TRAINED_EPM_COMPARISON.md) - completed same-game pregame-input training replay: 4,772 games, RMSE13.622290 versus EPM13.671691; overall difference unresolved, annual-trained controls better. [Earlier annual-trained daily-deployment comparison](VPM_DAILY_EPM_COMPARISON.md) remains separate.
 - [Annual VPM history from1996–97](VPM_1997_HISTORY.md) -30 completed-season boards/46,322 rows, independently verified forward Parent/Net history; explicit1997–99 backcasts, era missingness and uniform own-only priors; selectedv61 unchanged
