@@ -1,0 +1,232 @@
+{
+  "annual_control_RMSE": {
+    "annual_winner": 13.58640673983034,
+    "matched_annual": 13.592864821213134
+  },
+  "calibration_half_life_days": null,
+  "conditional_actual_minutes_and_pace": true,
+  "dates": 651,
+  "games": 4772,
+  "input_hashes": {
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/docs/VPM_DAILY_TRAINED_EPM_COMPARISON.md": "dc1e9468c063cd0a4158ec8433d81b6744fa777b6bc1d72d52630368300eb9bb",
+    "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_daily_trained_epm_provenance_v2/audit_timestamp_correction.json": "a74ebd86d64e755b640239342aef1b7d8c5d093d770a6d78e4b3da2a630e5577",
+    "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_daily_trained_epm_provenance_v2/comparison/receipt.json": "e9f8a73bbc88cfff01129bd4da3d63f9b3b29a0ca99f44541570efb7a14a79f6",
+    "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_daily_trained_epm_provenance_v2/forecast_receipt.json": "a087c4ae539c6f27c13cfe1bc3e2377ce77fa1e45dfd9cd15bbe91f9c343fd29",
+    "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_daily_trained_epm_provenance_v2/independent_audit.json": "2743833d54c894e8b88d7af3ae7736d86b2be5fbe6d3edff8c383ba6d8ef0872",
+    "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_daily_trained_epm_provenance_v2/registration.json": "244801ba814047b4877c4dd9930304b791c78e35352d3d9ee23d893351aa2d08"
+  },
+  "paired_EPM": [
+    {
+      "game_hi": 3.4218115016010544,
+      "game_lo": -0.6872859368193758,
+      "mse_gain": 1.3483656528628738,
+      "n": 4772,
+      "replicates": 4000,
+      "sample": "all",
+      "season_hi": 4.311531654906663,
+      "season_lo": -0.6931158088870911,
+      "variant": "headline"
+    },
+    {
+      "game_hi": 2.8499033627355495,
+      "game_lo": -1.013431214902581,
+      "mse_gain": 0.93569320432274,
+      "n": 4772,
+      "replicates": 4000,
+      "sample": "all",
+      "season_hi": 4.061933869100981,
+      "season_lo": -1.6227545750559758,
+      "variant": "_veterans"
+    },
+    {
+      "game_hi": 2.329697421629433,
+      "game_lo": -2.621380113719943,
+      "mse_gain": -0.118625856710794,
+      "n": 3554,
+      "replicates": 4000,
+      "sample": "2024_2026",
+      "season_hi": 0.8552561502630857,
+      "season_lo": -1.2092397952704834,
+      "variant": "headline"
+    },
+    {
+      "game_hi": 1.6243982900571818,
+      "game_lo": -2.9103555107637074,
+      "mse_gain": -0.6567410785965154,
+      "n": 3554,
+      "replicates": 4000,
+      "sample": "2024_2026",
+      "season_hi": 1.2752859143224051,
+      "season_lo": -2.3542564672743524,
+      "variant": "_veterans"
+    },
+    {
+      "game_hi": 3.4218115016010544,
+      "game_lo": -0.6872859368193758,
+      "mse_gain": 1.3483656528628738,
+      "n": 4772,
+      "replicates": 4000,
+      "sample": "common_native",
+      "season_hi": 4.311531654906663,
+      "season_lo": -0.6931158088870911,
+      "variant": "headline"
+    },
+    {
+      "game_hi": 2.8499033627355495,
+      "game_lo": -1.013431214902581,
+      "mse_gain": 0.93569320432274,
+      "n": 4772,
+      "replicates": 4000,
+      "sample": "common_native",
+      "season_hi": 4.061933869100981,
+      "season_lo": -1.6227545750559758,
+      "variant": "_veterans"
+    },
+    {
+      "game_hi": 1.064525131224456,
+      "game_lo": -18.707675503515127,
+      "mse_gain": -8.677359903625147,
+      "n": 474,
+      "replicates": 4000,
+      "sample": "low_continuity",
+      "season_hi": 6.516762138812251,
+      "season_lo": -23.87148194606255,
+      "variant": "headline"
+    },
+    {
+      "game_hi": -0.9355002945459592,
+      "game_lo": -17.59928118191674,
+      "mse_gain": -9.390083234913746,
+      "n": 474,
+      "replicates": 4000,
+      "sample": "low_continuity",
+      "season_hi": 5.32420042195569,
+      "season_lo": -24.104366891783183,
+      "variant": "_veterans"
+    }
+  ],
+  "primary": "pregame_season_home",
+  "protected_2027_outcomes": 0,
+  "recommendation": "Daily training does not improve this matched replay; overall EPM difference unresolved. Preserve existing selected model.",
+  "results": [
+    {
+      "mse": 158.15654394549617,
+      "n": 1218,
+      "period": "2023",
+      "rmse": 12.576030532147104,
+      "system": "VPM"
+    },
+    {
+      "mse": 163.90588412708004,
+      "n": 1218,
+      "period": "2023",
+      "rmse": 12.802573340039103,
+      "system": "EPM"
+    },
+    {
+      "mse": 188.6904536140632,
+      "n": 1188,
+      "period": "2024",
+      "rmse": 13.736464378218406,
+      "system": "VPM"
+    },
+    {
+      "mse": 189.54570976432623,
+      "n": 1188,
+      "period": "2024",
+      "rmse": 13.767560051233708,
+      "system": "EPM"
+    },
+    {
+      "mse": 194.297341033878,
+      "n": 1181,
+      "period": "2025",
+      "rmse": 13.939058111431992,
+      "system": "VPM"
+    },
+    {
+      "mse": 194.295447108753,
+      "n": 1181,
+      "period": "2025",
+      "rmse": 13.938990175358938,
+      "system": "EPM"
+    },
+    {
+      "mse": 201.12277181294715,
+      "n": 1185,
+      "period": "2026",
+      "rmse": 14.181776045790144,
+      "system": "VPM"
+    },
+    {
+      "mse": 199.91353201767672,
+      "n": 1185,
+      "period": "2026",
+      "rmse": 14.139078188399578,
+      "system": "EPM"
+    },
+    {
+      "mse": 185.56677760159613,
+      "n": 4772,
+      "period": "equal_season",
+      "rmse": 13.622289734167165,
+      "system": "VPM"
+    },
+    {
+      "mse": 186.915143254459,
+      "n": 4772,
+      "period": "equal_season",
+      "rmse": 13.671691309214784,
+      "system": "EPM"
+    },
+    {
+      "mse": 194.70352215362945,
+      "n": 3554,
+      "period": "2024_2026_equal_season",
+      "rmse": 13.95362039592698,
+      "system": "VPM"
+    },
+    {
+      "mse": 194.58489629691863,
+      "n": 3554,
+      "period": "2024_2026_equal_season",
+      "rmse": 13.9493690286306,
+      "system": "EPM"
+    }
+  ],
+  "same_EPM_bit_identical": true,
+  "selected_pointer_changed": false,
+  "source_vintages_certified": false,
+  "spent_retrospective_evidence": true,
+  "status": "verified_daily_trained_VPM_EPM_research_comparison",
+  "tests_passed": 46,
+  "timing_controls": [
+    {
+      "game_hi": -0.0853922040345728,
+      "game_lo": -1.501712314371173,
+      "mse_gain": -0.8008035538225898,
+      "n": 4772,
+      "reference": "annual_snapshot_same_no_extra_decay",
+      "replicates": 4000,
+      "sample": "all",
+      "season_hi": 0.5153227120489641,
+      "season_lo": -2.1169298196941435,
+      "variant": "headline"
+    },
+    {
+      "game_hi": -0.290318638811894,
+      "game_lo": -1.6609313156364816,
+      "mse_gain": -0.976329501488876,
+      "n": 4772,
+      "reference": "previous_annual_winner_H365",
+      "replicates": 4000,
+      "sample": "all",
+      "season_hi": 0.3853063951076976,
+      "season_lo": -2.3379653980854496,
+      "variant": "headline"
+    }
+  ],
+  "training": "pregame stats to same-game actual lineup scoring; annual past-only coefficient fits",
+  "upstream_converged_fits": 7,
+  "upstream_fits": 187
+}
