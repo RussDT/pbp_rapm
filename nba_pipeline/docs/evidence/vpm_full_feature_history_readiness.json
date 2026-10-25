@@ -1,9 +1,10 @@
 {
-  "status": "sources_models_and_v2_real_handoff_verified_registered_four_arm_development_replay_running",
+  "status": "development_resource_guard_stop_prefix_independently_preserved_current_preview_implementation_reviewed",
   "scope": "Restored modern bank with bounded contest split and positional rim tests; source-adapted early fallbacks",
   "focused_tests": {
     "rapm": 48,
-    "vpm": 165
+    "vpm": 274,
+    "vpm_existing_warnings": 3
   },
   "code_and_recipe": [
     {
@@ -81,6 +82,22 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_remaining_fit_queue.py",
       "sha256": "f2d771d55ef28a824a64dd2fcd0a3ad6c0953b011b0cc29ffa9bfccaa7416915"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_spent.py",
+      "sha256": "2224d650bdf9308596d39b23613075d245fa74f032f6b5da31907e075b60cfaf"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_spent_registration.py",
+      "sha256": "fa83e39f4f38a94e16f2f18afe16ecafd985a562849b6592d10958cd3009f5e7"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_storage_pilot.py",
+      "sha256": "af34d117b760e578481a467fdf05cba73f8247d9bd7ebd1d75d8ff8b7ef8edef"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_current_preview.py",
+      "sha256": "4296fe9096be0f7315bbee3556905a0077cc6a5f829e0ba0bc2c6706f25d2884"
     }
   ],
   "evidence_receipts": [
@@ -182,6 +199,30 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_daily_failed_archive_handoff_v1/receipt.json",
       "sha256": "600e8193ee7add9cb8cd56b97c08a41353e475bad38ceef7c8c8562419a655d1"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_history_development_resource_failure_v1/receipt.json",
+      "sha256": "b9a020764bfa73c903efac92eb6161aa63c912f1ffa7e6d51f89e0b6545e8abb"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_history_current_preview_independent_implementation_review_v1/receipt.json",
+      "sha256": "ce8157f4740994cbacae977cf3a1a312767415212d624b27ed876916f4ac39e0"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_history_spent_independent_implementation_review_v1/receipt.json",
+      "sha256": "6b706aebfe690a763f9d05103b04bf2414b970aca76841f0e2ed89b2f43de14c"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_history_storage_pilot_independent_implementation_review_v1/receipt.json",
+      "sha256": "d32517e9f5c5cd96dc6450b3e76634f0222b0dfd2d8a40e0de50b3e20c356e9c"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_development_forecast_audit_review_v1/receipt.json",
+      "sha256": "a6afb3b499571014e5a88f5e8225778589e8998375c9bd9f6d09d1b3efdfdc4e"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_offcalendar_inventory_v1/receipt.json",
+      "sha256": "92b0915fae1ed039fac82460d3ab40062bc07930b824b75af2d4c84e67bf1f48"
     }
   ],
   "active_source_root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/source_preparation_v3",
@@ -189,10 +230,12 @@
   "new_impact_fits": 12,
   "full_history_finished": false,
   "remaining": [
+    "restore sustained disk headroom and verified same-v2 recovery, preserving273complete dates",
     "complete four-arm daily development replay and independent forecast audit",
-    "independently freeze literal equal-season development selection before spent fits/diagnostics",
-    "rolling/annual seven-test/native/current diagnostics",
-    "actual new-model compact-storage budget pilot",
+    "independently freeze literal equal-season development selection before spent/current fits",
+    "one chosen2026mapper and independently audited current preview shown to owner before fullhistory",
+    "rolling/annual seven-test/native diagnostics and donor-aware19earlyfit integration",
+    "actual new-model compact-storage budget including2026 and native planning ceiling",
     "full6108date production and independent math/reader/report/certificate verification"
   ],
   "nonsemantic_source_normalization": {
@@ -216,7 +259,7 @@
   },
   "development_replay": {
     "root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/development_forecasts_v2",
-    "status": "registered_v2_running_first_complete_day_saved_pins_and_guards_verified",
+    "status": "stopped_disk_reserve_guard_no_active_producer",
     "candidate_games": 3369,
     "common_games": 3129,
     "common_games_by_season": {
@@ -241,7 +284,17 @@
       "maximum_saved_normal_error": 4.2676669466853216e-15,
       "maximum_saved_points100_net_sum_gap": 2.230909901257405e-12,
       "scope": "First actual full-prefix product saved guards and file hashes only; not independent fresh normal-equation verification or a performance score"
-    }
+    },
+    "completed_dates": 273,
+    "total_registered_dates": 453,
+    "last_complete_date": "2021-04-30",
+    "next_unproduced_date": "2021-05-01",
+    "producer_exit_code": 1,
+    "independent_complete_prefix_integrity_passed": true,
+    "complete_artifact_hashes_verified": 1639,
+    "recovery_requires_sustained_headroom": true,
+    "same_v2_resume_conditionally_reviewed": true,
+    "no_partial_performance_scoring": true
   },
   "source_extension": {
     "root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/daily_source_work_v1",
@@ -305,6 +358,37 @@
     "new_remaining_history_releases": 20,
     "audited_reused_releases": 7,
     "full_history_release_count": 27,
-    "requires_frozen_choice_and_exact_concrete_plan_review": true
+    "requires_frozen_choice_and_exact_concrete_plan_review": true,
+    "original_history20_phase_authorized_after_current_preview": false,
+    "early_releases_after_current_preview": 19,
+    "current2026_reused_not_refitted": true
+  },
+  "current_first_preview": {
+    "owner_priority": "Audited current2026-10-01 ratings before full6108dailyhistory",
+    "implemented_and_independently_reviewed": true,
+    "actual_proposal_or_fit_or_board": false,
+    "new_mapper_count": 1,
+    "required_before_fit": [
+      "complete independent development forecast audit",
+      "independently frozen feature selection",
+      "exact independently approved current fit registration",
+      "sustained disk headroom"
+    ],
+    "separate_actual_current_mapper_and_board_audits_required": true,
+    "old_reader_8800_unchanged": true,
+    "future_history_reuses_exact2026_mapper": true
+  },
+  "recovery": {
+    "minimum_runtime_free_gib": 15,
+    "restart_headroom_target_gib": 20,
+    "failure": "OSError: Preserve15GiB source-work reserve",
+    "completed_prefix_capsule_sha256": "744c57fb9ca0fef7699650c6e10b4e4cc7d7ca9139623cd6af3735dc4d485a5b",
+    "archived_failure_log_sha256": "99e234a0307beb636901408b28c34d9e3124d1943b63903652a75da9e61cb4fa",
+    "scientific_sources_and12models_preserved": true,
+    "incomplete_date_folders": 0,
+    "resume_code_or_model_change_required": false,
+    "separate_resume_log_required": true,
+    "check_capsule_after_first_new_date": true,
+    "cleanup_or_app_termination_authorized": false
   }
 }

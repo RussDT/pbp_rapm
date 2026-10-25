@@ -4,6 +4,8 @@ This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs
 
 ## Start Here
 
+- [Full-feature VPM rebuild — current first](VPM_FULL_FEATURE_HISTORY_REBUILD.md) - source and 12 development maps complete; no selected arm or new current board yet. Development v2 stopped at the 15 GiB disk guard with 273 dates/1,639 completed hashes independently verified and no incomplete date folder. Preserve all outputs; same-v2 resume awaits sustained 20 GiB headroom and the reviewed prefix checks. After frozen choice, independently audit the 2026-10-01 current preview before full history. Preview implementation `34b1a374` / review `ce8157f4`; 22 focused / 274 total checks pass. Existing reader 8800, selected v61 and 2027 unchanged.
+
 - [Daily VPM history from1996–97](VPM_DAILY_1997_HISTORY.md) -6,108 dates/9,416,143 estimates/2,856players, independently checked source-adapted annual-trained prior with daily updates and exact components; [browse all dates/players](http://127.0.0.1:8800/?coherent=2#date=2026-10-01), explicit initial backcasts and preserved selectedv61.
 
 - [Daily-trained VPM versus EPM](VPM_DAILY_TRAINED_EPM_COMPARISON.md) - completed same-game pregame-input training replay: 4,772 games, RMSE13.622290 versus EPM13.671691; overall difference unresolved, annual-trained controls better. [Earlier annual-trained daily-deployment comparison](VPM_DAILY_EPM_COMPARISON.md) remains separate.
