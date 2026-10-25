@@ -1,9 +1,9 @@
 {
-  "status": "implementation_reviewed_source_preparation_in_progress_no_impact_fit",
+  "status": "source_independently_cleared_development_models_produced_pending_independent_audit",
   "scope": "Restored modern bank with bounded contest split and positional rim tests; source-adapted early fallbacks",
   "focused_tests": {
     "rapm": 48,
-    "vpm": 97
+    "vpm": 109
   },
   "code_and_recipe": [
     {
@@ -53,6 +53,14 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/configs/research_harness_v77_full_feature_history.json",
       "sha256": "242dfa7fb7d107573e7e95dd0a20584837cf9e18e17ba0a2f246672db72daf90"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_fit_queue.py",
+      "sha256": "75063304467c4e7ab3ae0b71d2bf3e2721f34ab4dfce735bd341f1fb3272d9af"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_selection.py",
+      "sha256": "06648d8aaa5e663a4cfc01b61b90845bd272f655d61466bf1b6ba674813bf96f"
     }
   ],
   "evidence_receipts": [
@@ -87,15 +95,27 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_provenance_date_fix_v1/receipt.json",
       "sha256": "5741bb4989e12637d87876284197bc549d339ebcad3f51076b6eba87408ac893"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_source_all_audit_v3/receipt.json",
+      "sha256": "aabc1e91ed84fb558222093b723129e9935c89aa8f3518e1d6649dc466ec2747"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_development_registration_audit_v1/receipt.json",
+      "sha256": "29f65d7728ce226bb0b8a38e9d564e6babfedae7a469d77aa86ac725aa19f114"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_selection_implementation_review_v1/receipt.json",
+      "sha256": "de84d330d5165570dea9302885dd14439b46c03ad1279456818e81a3d91115fc"
     }
   ],
   "active_source_root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/source_preparation_v3",
   "selected_pointer_sha256": "08e5882c463d2ac10eccc8161afd92f14650afd8585634b4008227fde75d05d5",
-  "new_impact_fits": 0,
+  "new_impact_fits": 12,
   "full_history_finished": false,
   "remaining": [
-    "all30 produced-source independent clearance",
-    "actual annual impact mapper fits and independent audits",
+    "independent actual twelve-model calibration audits and four development release registries",
+    "daily provider source-extension clearance and registered forecast integration",
     "matched development selection frozen before spent diagnostics",
     "rolling/annual seven-test/native/current diagnostics",
     "actual new-model compact-storage budget pilot",
@@ -107,5 +127,18 @@
     "before_sha256": "313adda0cc70d35908a837a7f8e8b91a7331dfc53de8724221a5155cdfebdca3",
     "after_sha256": "93786c483ac7f388e67a5ece23dd5465a1d081230b7cdbc05afb8a4ba8e64879",
     "change": "Remove one blank EOF line only; function bytes unchanged; focused emitter tests rerun"
+  },
+  "impact_models_independently_verified": false,
+  "development_predictions_produced": false,
+  "source_clearance": {
+    "annual_cuts": 30,
+    "complete_prefix_reference_rows": 53518,
+    "canonical_cells": 1766094,
+    "verified_pins": 795
+  },
+  "produced_model_manifest": {
+    "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/development_calibrations_v1/manifest.json",
+    "sha256": "4f10d2c2dc1c3c295cfbc4287b45937fe9167926fb7a3da451dba8ed9b801c6e",
+    "independent_model_audit_pending": true
   }
 }
