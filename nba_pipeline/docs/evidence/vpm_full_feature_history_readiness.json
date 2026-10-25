@@ -1,0 +1,111 @@
+{
+  "status": "implementation_reviewed_source_preparation_in_progress_no_impact_fit",
+  "scope": "Restored modern bank with bounded contest split and positional rim tests; source-adapted early fallbacks",
+  "focused_tests": {
+    "rapm": 48,
+    "vpm": 97
+  },
+  "code_and_recipe": [
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/scripts/selected_state_history.py",
+      "sha256": "bff2ac2f84ae588b763985abf00afaf80b3273eed46ab8f86bc69d28f12c0147"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/scripts/build_contested_shot_states.py",
+      "sha256": "95961e658c8c8153ce04f3f8393908e453ba93b52e0b7a2405ca7dc0dcd5cf1a"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/scripts/positional_rim_savings.py",
+      "sha256": "4ba9af5d23c279688bd7adfd9144275132b5ac1d08ed576666bedd430dde52a5"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_calibration.py",
+      "sha256": "54aaac4ff5d171dd55cc8bf0b586c5b9e7481b813ba39dff74cad1375acca1a8"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_features.py",
+      "sha256": "93a27b9760d15d842c11fc8fbcc54f5061d96e9dc3a9578b28c1ff7f080209d6"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_numerics.py",
+      "sha256": "93786c483ac7f388e67a5ece23dd5465a1d081230b7cdbc05afb8a4ba8e64879"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_provenance.py",
+      "sha256": "144d76000cb7381a5e0c203b9bc75d42e259c1bf6cd6a9033111a84d793a67ef"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_registry.py",
+      "sha256": "467b37e69b5d83f4fba6a6da71249024431e2d7af3bca1eb8749c4232d9369be"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_roles.py",
+      "sha256": "ed84f58937e10424f7667a955e729901ad832d4961c18a1eff2d4a60c657775a"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_storage.py",
+      "sha256": "022aef2b15bf9445e7d050c2a56db4f3d15b7bd0aea8a9f3768553daa6bc5378"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_feature_history.py",
+      "sha256": "dd3db5b630c1a63bf8426a7dbdb9a165599d4e4d4b9f583ac1ff19fd62c73193"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/configs/research_harness_v77_full_feature_history.json",
+      "sha256": "242dfa7fb7d107573e7e95dd0a20584837cf9e18e17ba0a2f246672db72daf90"
+    }
+  ],
+  "evidence_receipts": [
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/selected_state_history_pilot_v5/receipt.json",
+      "sha256": "fe14a94a1dc8020d22183405068311d7eaf7e648d0bd8e9927f365321d594d53"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/contested_shot_adapter_readiness_v1/receipt.json",
+      "sha256": "fd80d382202bc894c2c20a8ddf7561eb2308c2ba802ada4ecee337ec9ec0d593"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/positional_rim_savings_plumbing_v3/receipt.json",
+      "sha256": "c4d0308bb8c99e1659bc24669d90d4ab3550af33560df4b85f6ee2a9a730fc7c"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_history_roles_integration_v2/receipt.json",
+      "sha256": "b1e764cacf8ce76301dbadcdc8cbe20f86495da8ab18ffc5b2001f130c260e57"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_history_storage_pilot_v3/receipt.json",
+      "sha256": "99e0bd306d238593709012ba1b2b6dd70434ee6f38862a2787a7c190204c0723"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_history_numerics_review_v2/receipt.json",
+      "sha256": "d9c5dbe0546badea2b67ca092defd2e3bfc96724ac89beb3a41447f857fb2190"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_source_pilot_audit_v2/receipt.json",
+      "sha256": "dee98b163c6474562a6e5b8d93d21c97fd84e31a68d6b0923344ae78b9946214"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_provenance_date_fix_v1/receipt.json",
+      "sha256": "5741bb4989e12637d87876284197bc549d339ebcad3f51076b6eba87408ac893"
+    }
+  ],
+  "active_source_root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/source_preparation_v3",
+  "selected_pointer_sha256": "08e5882c463d2ac10eccc8161afd92f14650afd8585634b4008227fde75d05d5",
+  "new_impact_fits": 0,
+  "full_history_finished": false,
+  "remaining": [
+    "all30 produced-source independent clearance",
+    "actual annual impact mapper fits and independent audits",
+    "matched development selection frozen before spent diagnostics",
+    "rolling/annual seven-test/native/current diagnostics",
+    "actual new-model compact-storage budget pilot",
+    "full6108date production and independent math/reader/report/certificate verification"
+  ],
+  "nonsemantic_source_normalization": {
+    "file": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/harness/full_bank_history_numerics.py",
+    "preserved_source": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_history_numerics_review_v2/held_code/full_bank_history_numerics_before_eof_normalization.py",
+    "before_sha256": "313adda0cc70d35908a837a7f8e8b91a7331dfc53de8724221a5155cdfebdca3",
+    "after_sha256": "93786c483ac7f388e67a5ece23dd5465a1d081230b7cdbc05afb8a4ba8e64879",
+    "change": "Remove one blank EOF line only; function bytes unchanged; focused emitter tests rerun"
+  }
+}
