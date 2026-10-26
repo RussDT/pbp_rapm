@@ -1,5 +1,5 @@
 {
-  "status": "development_resource_guard_stop_prefix_independently_preserved_current_preview_implementation_reviewed",
+  "status": "development_current_board_and_same_date_comparison_independently_verified_full_history_unfinished",
   "scope": "Restored modern bank with bounded contest split and positional rim tests; source-adapted early fallbacks",
   "focused_tests": {
     "rapm": 48,
@@ -239,17 +239,79 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_prepared_plan_v1/prepared_plan.json",
       "sha256": "6f63f083ea26a00d4df28ea59a092c44073a53a614c3dcd7775844cc80473d59"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_history_development_recovery_checkpoint_v1/receipt.json",
+      "sha256": "85244381ad8e9318eb0ad0915c4db982444c7965bba2f0cb3dedfecde975846d",
+      "scope": "Original 273-date prefix and immutable input byte integrity after the first new date; not a completed forecast or numerical audit"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_bank_history_development_recovery_exit_v1/receipt.json",
+      "sha256": "85216aa3cd344fde039e2bb87c62810477e2d66f1f605cf3bafc6735093c0013",
+      "scope": "Operational exit and final artifact identity only; not a completed independent forecast audit"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_development_forecast_auditor_v3_review_v1/receipt.json",
+      "sha256": "8d5199236431a2edb3d565313b0fb592abfaa1c11da52b0a00a372636cd03148",
+      "scope": "Implementation review with 21 focused tests; no actual full audit result"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_development_forecast_audit_v3/census_preflight_receipt.json",
+      "sha256": "2f3e9bb5806d0a0bbb2d9a5612cd3279e00ef9e006e9d7604530e88c9b7965e1",
+      "scope": "Bounded actual census-only preflight; no daily loops, samples or performance scores"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_first_sample_numerical_diagnostic_v2/receipt.json",
+      "sha256": "a8298d0b116db2f3a1c18b852a23818a602c873fcc3f17a05ee6d04bb3639ce2"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_development_forecast_auditor_v4_review_v1/receipt.json",
+      "sha256": "d9d1d2dc4826020207c66954df595a2f87a1880520cd7a8d1d02ddc86f3c6dbf"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_development_forecast_audit_v4/receipt.json",
+      "sha256": "c6d03cf19ffcac4fb85dc9ccc48113b8f4f7e8045c41cf09e46bb657da96cf46"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_development_selection_audit_v1/receipt.json",
+      "sha256": "4ac7e6f609bf43eb063e256b104beb4544e794ca3ff575c2f212850bc4ece631"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/development_selection_v1/selection.json",
+      "sha256": "b421b973417d31c3827e2d1643a1140bfb12ef61b14c370654bd97c6fbcd2fca"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/current_preview_v1/fit_receipt.json",
+      "sha256": "2dc9d4127faf37f9f3c3936815d864b97c12cd72abfb115d12fb42cc117ba210"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/current_preview_v1/mapper/model.json",
+      "sha256": "0d60bfb7b5fee5904ca2e429874caf5ab1ac945cca2079aaaa47b1083ecf3d48"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_current_model_audit_v1/receipt.json",
+      "sha256": "e92973c8415cf1b93881db273751af09c91b311515d0935b7f0b89f4d530c34c"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_current_board_audit_v1/receipt.json",
+      "sha256": "873fc59d924257cb970bcaf776ba03282fb9b28cde63c41cedd0bc0b53d45221"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_current_preview_comparison_v1/manifest.json",
+      "sha256": "5c2bc989542ffe93d3ae632025f5fe8017d0209191745e1e92099beda42a9792"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_current_preview_comparison_audit_v1/receipt.json",
+      "sha256": "b5c45e6f9e78f98dcc33d3e28d05164d2559125ee2a871310a6ec37e19ac1a48",
+      "scope": "Independent saved same-date values, coverage, ranks, both tables and interpretation; comparison producer pending marker preserved"
     }
   ],
   "active_source_root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/source_preparation_v3",
   "selected_pointer_sha256": "08e5882c463d2ac10eccc8161afd92f14650afd8585634b4008227fde75d05d5",
-  "new_impact_fits": 12,
+  "new_impact_fits": 13,
   "full_history_finished": false,
   "remaining": [
-    "restore sustained disk headroom and verified same-v2 recovery, preserving273complete dates",
-    "complete four-arm daily development replay and independent forecast audit",
-    "independently freeze literal equal-season development selection before spent/current fits",
-    "one chosen2026mapper and independently audited current preview shown to owner before fullhistory",
+    "current preview and independently verified same-date comparison ready for owner review before separately registered remaining history work",
     "rolling/annual seven-test/native diagnostics; separately approved and audited19earlyfits via new donor-aware queue",
     "actual new-model compact-storage budget including2026 and native planning ceiling",
     "full6108date production and independent math/reader/report/certificate verification"
@@ -275,7 +337,7 @@
   },
   "development_replay": {
     "root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/development_forecasts_v2",
-    "status": "stopped_disk_reserve_guard_no_active_producer",
+    "status": "complete_independently_audited_and_selection_frozen",
     "candidate_games": 3369,
     "common_games": 3129,
     "common_games_by_season": {
@@ -286,7 +348,7 @@
     "strict_first_native_history_exclusions": 230,
     "native_exclusions": 10,
     "counts_are_coverage_not_results": true,
-    "selected_arm": null,
+    "selected_arm": "full_split_raw",
     "registration": {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/development_replay_registration_v2/registration.json",
       "sha256": "4b6f9a0628e424b1a8f977e6c1e8565cc69844abb4f5cd045ac319c65fad7e88"
@@ -301,16 +363,30 @@
       "maximum_saved_points100_net_sum_gap": 2.230909901257405e-12,
       "scope": "First actual full-prefix product saved guards and file hashes only; not independent fresh normal-equation verification or a performance score"
     },
-    "completed_dates": 273,
+    "completed_dates": 453,
     "total_registered_dates": 453,
-    "last_complete_date": "2021-04-30",
-    "next_unproduced_date": "2021-05-01",
-    "producer_exit_code": 1,
+    "last_complete_date": "2022-04-10",
+    "next_unproduced_date": null,
+    "producer_exit_code": 0,
     "independent_complete_prefix_integrity_passed": true,
     "complete_artifact_hashes_verified": 1639,
     "recovery_requires_sustained_headroom": true,
     "same_v2_resume_conditionally_reviewed": true,
-    "no_partial_performance_scoring": true
+    "no_partial_performance_scoring": true,
+    "snapshot_utc": "2026-10-26T07:03:42Z",
+    "next_date_scope": "All registered dates complete",
+    "prefix_verification_scope": "All 1,639 artifacts of the original 273-date prefix; not all newly produced artifacts",
+    "immutable_input_pins_verified": 3179,
+    "final_receipt_available": true,
+    "producer_pid_absent": true,
+    "root_reaped_retained_execution": 41969,
+    "predictions": 12516,
+    "final_receipt": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/development_forecasts_v2/receipt.json",
+      "sha256": "e714f63728a68782831c769ed0e2264cf5442fbe8bef6766110381f129ccdf5f"
+    },
+    "independent_full_forecast_audit_passed": true,
+    "full_forecast_audit_sha256": "c6d03cf19ffcac4fb85dc9ccc48113b8f4f7e8045c41cf09e46bb657da96cf46"
   },
   "source_extension": {
     "root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/daily_source_work_v1",
@@ -326,7 +402,7 @@
     "timing_scope": "source initialization/cache preparation, not daily rating solve",
     "scope": "Historical v1 source-value audit; v2 source work and replay admission require separate actual audits"
   },
-  "development_forecasts_complete": false,
+  "development_forecasts_complete": true,
   "failed_handoff": {
     "missing_fields": [
       "first_archive_observation_date",
@@ -382,7 +458,7 @@
   "current_first_preview": {
     "owner_priority": "Audited current2026-10-01 ratings before full6108dailyhistory",
     "implemented_and_independently_reviewed": true,
-    "actual_proposal_or_fit_or_board": false,
+    "actual_proposal_or_fit_or_board": true,
     "new_mapper_count": 1,
     "required_before_fit": [
       "complete independent development forecast audit",
@@ -392,7 +468,39 @@
     ],
     "separate_actual_current_mapper_and_board_audits_required": true,
     "old_reader_8800_unchanged": true,
-    "future_history_reuses_exact2026_mapper": true
+    "future_history_reuses_exact2026_mapper": true,
+    "actual_fit": true,
+    "actual_board": true,
+    "chosen_arm": "full_split_raw",
+    "fit_cut": "2026-10-01",
+    "model_sha256": "0d60bfb7b5fee5904ca2e429874caf5ab1ac945cca2079aaaa47b1083ecf3d48",
+    "fit_receipt_sha256": "2dc9d4127faf37f9f3c3936815d864b97c12cd72abfb115d12fb42cc117ba210",
+    "independent_current_mapper_audit_passed": true,
+    "independent_current_mapper_audit_sha256": "e92973c8415cf1b93881db273751af09c91b311515d0935b7f0b89f4d530c34c",
+    "cohorts": 29,
+    "source_reference_rows": 50025,
+    "last_training_game": "2026-06-13",
+    "latest_label_end": "2026-10-01",
+    "maximum_source_basis_prior_Net_gap": 1.6653345369377348e-16,
+    "augmented_normal_relative_error": 1.366953740469285e-15,
+    "board_and_independent_board_audit_pending": false,
+    "fit_prerequisites_met": true,
+    "required_before_fit_scope": "Historical required gates; satisfied for the single completed current fit, not authorization for another fit",
+    "independent_current_board_audit_passed": true,
+    "independent_current_board_audit_sha256": "873fc59d924257cb970bcaf776ba03282fb9b28cde63c41cedd0bc0b53d45221",
+    "board_manifest_sha256": "759f79925413d530665d4bdd576ad132dfeefa8c1cbb0c2cddda9aec1f42b8d6",
+    "players": 2856,
+    "rating_columns": 168,
+    "saved_arrays": 20,
+    "current_donor_sha256": "9bdb7c1924df76b7cc4fa53a0b1ad1e5b1a9bacd2ab6a057c4f5deaddf73e4ba",
+    "full_prefix_native_rows": 7108645,
+    "full_prefix_games": 37845,
+    "maximum_fresh_scalar_gap": 6.427081089555031e-12,
+    "fresh_parent_normal_relative_error": 3.942495362203473e-15,
+    "source_physical_rows": 3493,
+    "source_physical_columns": 106,
+    "source_augmented_columns": 109,
+    "producer_pending_marker_preserved": true
   },
   "recovery": {
     "minimum_runtime_free_gib": 15,
@@ -405,7 +513,25 @@
     "resume_code_or_model_change_required": false,
     "separate_resume_log_required": true,
     "check_capsule_after_first_new_date": true,
-    "cleanup_or_app_termination_authorized": false
+    "cleanup_or_app_termination_authorized": false,
+    "status": "completed_exact_same_v2_exit0_original_failure_preserved",
+    "resumed_at_utc": "2026-10-26T06:30:48Z",
+    "producer_pid": 32533,
+    "retained_execution_id": 41969,
+    "recovery_log_path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/development_forecasts_v2_recovery_20261026T063048Z.log",
+    "recovery_log_is_mutable_operational_metadata": false,
+    "recovery_log_immutable_pin": false,
+    "first_new_complete_date": "2021-05-01",
+    "capsule_after_first_new_date_passed": true,
+    "immutable_input_pins_verified": 3179,
+    "checkpoint_receipt_sha256": "85244381ad8e9318eb0ad0915c4db982444c7965bba2f0cb3dedfecde975846d",
+    "snapshot_utc": "2026-10-26T06:48:48Z",
+    "free_gib_at_checkpoint": 52.33941650390625,
+    "original_producer_exit_code": 1,
+    "active_recovery_exit_code": 0,
+    "producer_pid_absent": true,
+    "operational_exit_receipt_sha256": "85216aa3cd344fde039e2bb87c62810477e2d66f1f605cf3bafc6735093c0013",
+    "recovery_log_metadata_scope": "Earlier checkpoint recorded the growing log without an immutable input pin; operational exit receipt separately binds final log bytes"
   },
   "donor_aware_history_queue": {
     "implemented_and_independently_reviewed": true,
@@ -450,5 +576,126 @@
     "requires_actual2020_vs2021_source_epoch_sensitivity_before_admission": true,
     "nov1_physical_carry_allowed": false,
     "static_base_alias_allowed": false
+  },
+  "development_forecast_independent_audit": {
+    "status": "passed_full_bank_development_forecast_audit",
+    "preserved_v1_failure": "audit-only ending-year column name assumption",
+    "preserved_v2_failure": "nullable-minute arrays became object dtype",
+    "both_failures_before_all_date_loops_and_samples": true,
+    "scientific_sources_models_outputs_and_scorer_unchanged": true,
+    "driver_v3_sha256": "e9948b0eca4f01f7ae8735633d366f5f2d79dcaf10f040f541bb123aa217d611",
+    "implementation_review_passed": true,
+    "focused_tests": 21,
+    "census_preflight_passed": true,
+    "candidate_games": 3369,
+    "included_games": 3129,
+    "census_preflight_is_not_full_forecast_audit": true,
+    "full_audit_passed": true,
+    "feature_choice_frozen": true,
+    "current_fit_or_board_available": true,
+    "preserved_v3_failure": "Unchanged absolute1e-9 field guard on independent sparse-summed TD mass; original discrepancy preserved",
+    "independent_v4_correction": "Literal expected TD mass uses original row weights and slot IDs with math.fsum; producer values/targets/objective/priors/scorer unchanged",
+    "unchanged_absolute_field_guard": 1e-09,
+    "unchanged_normal_guard": 1e-10,
+    "driver_v4_sha256": "56be0aa75f9d3e2278c78952cff6478df1e4b77a0f43d73499f67580496c293e",
+    "v4_implementation_review_tests": 32,
+    "current_fit_available": true,
+    "current_board_available": true,
+    "dated_manifests": 453,
+    "predictions": 12516,
+    "scalar_board_rows": 4216116,
+    "unique_files_verified": 4325,
+    "maximum_independent_prediction_gap": 1.0658141036401503e-14,
+    "full_sample_boards": 12,
+    "fresh_literal_dates": [
+      "2019-10-22",
+      "2020-12-22",
+      "2022-04-10"
+    ],
+    "all_saved_development_11_raw_arrays_audited": false,
+    "component_scope": "All actual development files save scalars only. Full11-head/raw/center/intercept independent checks apply only to the12 separately reconstructed predeclared sample boards."
+  },
+  "development_selection": {
+    "status": "passed_frozen_full_feature_development_selection",
+    "chosen_arm": "full_split_raw",
+    "selection_sha256": "b421b973417d31c3827e2d1643a1140bfb12ef61b14c370654bd97c6fbcd2fca",
+    "independent_certificate_sha256": "4ac7e6f609bf43eb063e256b104beb4544e794ca3ff575c2f212850bc4ece631",
+    "rule": "literal_minimum_equal_season_game_MSE_then_registered_arm_order",
+    "scores": [
+      {
+        "arm": "full_total_raw",
+        "game_mse": 180.39767245482048,
+        "game_rmse": 13.431220065758005,
+        "season_mse": {
+          "2020": 160.25369612683784,
+          "2021": 193.14666171338962,
+          "2022": 187.79265952423398
+        }
+      },
+      {
+        "arm": "full_split_raw",
+        "game_mse": 180.30707878435146,
+        "game_rmse": 13.427847138851092,
+        "season_mse": {
+          "2020": 160.22980372984154,
+          "2021": 192.96422763227952,
+          "2022": 187.72720499093336
+        }
+      },
+      {
+        "arm": "full_total_role",
+        "game_mse": 181.27364604612282,
+        "game_rmse": 13.46379018130195,
+        "season_mse": {
+          "2020": 160.54796439532728,
+          "2021": 194.42847752218978,
+          "2022": 188.84449622085143
+        }
+      },
+      {
+        "arm": "full_split_role",
+        "game_mse": 181.15552735165548,
+        "game_rmse": 13.459402934441613,
+        "season_mse": {
+          "2020": 160.42834408493673,
+          "2021": 194.1796485587663,
+          "2022": 188.8585894112635
+        }
+      }
+    ],
+    "games": 3129,
+    "spent_labels_used": false,
+    "conditional_on_actual_minutes_pace_and_frozen_fits_selection": true,
+    "retrospective_development_only": true,
+    "selected_pointer_changed": false
+  },
+  "same_date_current_comparison": {
+    "status": "passed_independent_current_preview_comparison_audit",
+    "root": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_current_preview_comparison_v1",
+    "manifest_sha256": "5c2bc989542ffe93d3ae632025f5fe8017d0209191745e1e92099beda42a9792",
+    "estimate_date": "2026-10-01",
+    "old_rows": 2856,
+    "new_rows": 2856,
+    "exact_matched_rows": 2856,
+    "positive_admitted_2026_each": 582,
+    "name_conflicts": 0,
+    "activity_conflicts": 0,
+    "admitted_exposure_conflicts": 0,
+    "nonfinite_saved_ratings_or_priors": 0,
+    "csv_float64_roundtrip_exact": true,
+    "rank_same_matched_positive_id_set": true,
+    "final_and_prior_tables_same20players": true,
+    "saved_full_universe_centering_unchanged": true,
+    "new_source": "restored full bank with split contests and raw rim savings",
+    "old_source": "v74 compact bank",
+    "predictive_win_claim": false,
+    "current_roster_claim": false,
+    "reader8800_changed": false,
+    "full_history_finished": false,
+    "independent_audit_sha256": "b5c45e6f9e78f98dcc33d3e28d05164d2559125ee2a871310a6ec37e19ac1a48",
+    "independent_audit_path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_current_preview_comparison_audit_v1/receipt.json",
+    "csv_columns_verified": 61,
+    "bitexact_rating_prior_alias_and_delta_float_cells": 51408,
+    "original_comparison_producer_pending_marker_preserved": true
   }
 }
