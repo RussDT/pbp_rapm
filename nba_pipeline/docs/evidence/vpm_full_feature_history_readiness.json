@@ -392,6 +392,66 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_failure_audit_v2/receipt.json",
       "sha256": "b5291e09afd62c3595fa6b3d8ea1c28007c5a914102dbd8cdb12d32fd1bea0da"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_first_context_diagnostic_execution_registration_v1/registration.json",
+      "sha256": "b8c61513b8e90d25c6c5660659e6aec83c71317f888f0eeb8a4aa2b3976575ce"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_first_context_diagnostic_implementation_review_v1/receipt.json",
+      "sha256": "dd30e215ad703a6d337361129bafae21b89c2194122e374f0947d8ec2d2891f0"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_first_context_diagnostic_execution_review_v1/receipt.json",
+      "sha256": "542f518c0d79c6b23109a631c91f3ff8eecaf469947d98e750b3c0595fcf66d0"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_first_context_diagnostic_actual_v1/receipt.json",
+      "sha256": "3ac8514db1a4b79578a10c45fbb8d9707f646239e1a464ff65e043895e01e2c7"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_first_context_diagnostic_execution_v1/receipt.json",
+      "sha256": "8ba6b6cd27b17cec6c6f6c2457e031c3049cedced34c338c67d07db83e20d6da"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_first_context_result_auditor_review_v1/receipt.json",
+      "sha256": "346c8140b69ea6b669979e7240172ff0a6387f78f82d447a546c3e62ab3dcd50"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_first_context_result_auditor_review_v2/receipt.json",
+      "sha256": "f564fded431ec977e40b78575228374c58996c619e77a1255dd95292629bbfa2"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_first_context_result_audit_v1/receipt.json",
+      "sha256": "fc2b08aa8d3fddb43d415c9b6048e3d257094dd0728bfc6bb7fda707e0ff9793"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_first_context_result_audit_execution_v1/execution_receipt.json",
+      "sha256": "fdd03316a51a7113695554798686c92bb997bd390760f9b77efea7ace07886dd"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_streamed_basis_hold_v1/implementation_hold.json",
+      "sha256": "7dcb09e83a8df4ec6639ff5efa9477711c12e05273ec26e0de742bf296152aee"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_streamed_basis_independent_review_v1/receipt.json",
+      "sha256": "b3f22c292a13c2a17806290eff28f546ee8b87052aa9eec395572c49f6bf1cb2"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_cacheonly_context_bootstrap_prepared_design_v1/prepared_design.json",
+      "sha256": "ac606bed1f4ffe893c5c93306d17a293a125db532abd903ed92994da6d5a201c"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_recovery_prepared_design_v3/prepared_design.json",
+      "sha256": "2a60d3133b6d023ad0065c3ceca8ac373a40f6ed3ce15635a23826983e5348e4"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_recovery_design_pre_review_v3/receipt.json",
+      "sha256": "481e793e131923b53de30fe90ea012d2f4f145e2234f4cfc59897655d72ac7d6"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_recovery_design_final_review_v3/receipt.json",
+      "sha256": "a7ed27418bb5de0dcd06134ed5fb0cdc749b78c2bd33b447058fac88ff22271a"
     }
   ],
   "active_source_root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/source_preparation_v3",
@@ -661,7 +721,7 @@
     "actual_model_audit_sha256": "a16ab1e4783e46dceb00195150cad1a40a02952e35a2f0ffbbeecfaf15eeebc3"
   },
   "annual_source_design": {
-    "status": "bounded_probe_v2_first_context_failed_dtype_interface_pending_separate_diagnosis",
+    "status": "v2_preserved_one_context_diagnostic_and_v3_design_reviewed_HOLD_implementation_pending",
     "implemented": true,
     "actual_queries": true,
     "requires_actual_post2015_recipe_schema_parity": true,
@@ -679,7 +739,10 @@
     "original_v2_preserved": true,
     "all_actual_values_equal_claimed": false,
     "source_failure_receipt_sha256": "3d25740821d651946de94c4a31ecff74ebb16d6ae9307583dd55df1a1e2ef13c",
-    "independent_failure_review_sha256": "b5291e09afd62c3595fa6b3d8ea1c28007c5a914102dbd8cdb12d32fd1bea0da"
+    "independent_failure_review_sha256": "b5291e09afd62c3595fa6b3d8ea1c28007c5a914102dbd8cdb12d32fd1bea0da",
+    "single_context_diagnostic_audit_sha256": "fc2b08aa8d3fddb43d415c9b6048e3d257094dd0728bfc6bb7fda707e0ff9793",
+    "v3_design_final_review_sha256": "a7ed27418bb5de0dcd06134ed5fb0cdc749b78c2bd33b447058fac88ff22271a",
+    "v3_actual_execution_authorized": false
   },
   "development_forecast_independent_audit": {
     "status": "passed_full_bank_development_forecast_audit",
@@ -890,7 +953,7 @@
     "actual_full_history_budget_verified": false
   },
   "compact_history": {
-    "status": "graph_hold_v2_independently_reviewed_streamed_basis_bridge_in_preparation",
+    "status": "graph_and_streamed_basis_HOLD_independently_reviewed_actual_context_controller_and_budget_pending",
     "implementation_authorized": true,
     "execution_authorized": false,
     "actual_early_and_2026_budget_pilot_required": true,
@@ -900,7 +963,10 @@
     "graph_hold_code_sha256": "0b6f5e9f95309e95cb67f61790194b0a3fcb9ab49a4692882c2d852079b80f3f",
     "graph_hold_independent_review_sha256": "59a22685ae31166de1d455adeaa8d174f45a111d995609d9cdc401ca960a9784",
     "full_controller_implemented": false,
-    "scientific_graph_admitted": false
+    "scientific_graph_admitted": false,
+    "streamed_basis_HOLD_sha256": "7dcb09e83a8df4ec6639ff5efa9477711c12e05273ec26e0de742bf296152aee",
+    "streamed_basis_independent_review_sha256": "b3f22c292a13c2a17806290eff28f546ee8b87052aa9eec395572c49f6bf1cb2",
+    "actual_cache_only_context_admitted": false
   },
   "actual_development_sample_storage_pilot": {
     "status": "passed_independent_twelve_sample_roundtrip_and_projection_only",
@@ -925,5 +991,38 @@
     "actual_earliest_and2026_production_model_pilot_required": true,
     "result_sha256": "d21429013a93f2d3cf1b0c91e90de37173619f9b9208a6341d8853681d96163e",
     "independent_actual_result_audit_sha256": "cfaf19d6e9aaf7bc1d9da09efcdf2c8f176890dbfca1bff4ecd79eb6549caa5f"
+  },
+  "annual_source_diagnostic": {
+    "status": "passed_independent_one_annual2015_transport_diagnostic_result_audit",
+    "contexts": 1,
+    "date": "2015-10-01",
+    "source_query_season": 2015,
+    "rows": 2192,
+    "reference_columns": 109,
+    "archived_reference_columns": 106,
+    "canonical_features": 33,
+    "provenance_rows": 72336,
+    "value_missingness_and_float_bits_equal": true,
+    "date_unit_difference_columns": {
+      "reference": [
+        "query_date",
+        "estimate_date"
+      ],
+      "provenance": [
+        "parameter_fit_end",
+        "estimate_date"
+      ]
+    },
+    "raw_memory_date_unit": "s",
+    "archived_date_unit": "ms",
+    "instants_exactly_reversible": true,
+    "both_parquet_modes_change_date_units": true,
+    "index_true_changes_rangeindex_to_index": true,
+    "original_index_false_preserves_rangeindex": true,
+    "appended_three_archive_dates_have_original106_comparator": false,
+    "original_object_null_identity_scope": "pandas value hashes; not every original pre-Arrow Python null representation",
+    "source_epoch_or_adapter_or_all14_or_basis_admitted": false,
+    "v2_retry_allowed": false,
+    "blanket_dtype_cast_or_guard_waiver_allowed": false
   }
 }
