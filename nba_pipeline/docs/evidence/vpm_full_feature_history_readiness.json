@@ -728,6 +728,66 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_execution_v3/closure_failure_v1.json",
       "sha256": "b55fb9a68e5d199c2452c92318481877ab48fb69500ef5a0f4030fa713380eae"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_phase_A_semantic_boundary_independent_review_v1/receipt.json",
+      "sha256": "5b8806537721a7e6f6ac7f448ec3d4894a32e33265b2d9da14188c8c52497eca"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_semantic_boundary_direction_v1/receipt.json",
+      "sha256": "b505107fa3e7c76aedc4c7e237e6a848740d4b583801e637df0370639b0322ec"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_phase_A_historical_variant_archive_inventory_v1/inventory.json",
+      "sha256": "d81a3529979416c2908f79e9486081332e308ae2a702b699106c3eb46ea51957"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_contract_design_v2/prepared_design.json",
+      "sha256": "aba5fff016023e8dade65989acbb49351cae70efe3e9454912d41c4b39a62f52"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_contract_design_v2/authority_field_contracts.json",
+      "sha256": "a6044393fa46c90a030f4a2c961e816b9d28d4e1dea7ee3dd64704b32dc54487"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_contract_design_v2/current_stage_bytes.json",
+      "sha256": "e9ed1a3a7055bbe16a7cbd2ec43af71704ef7d9822be1b851c4d6b47ac2556ed"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_contract_design_v2/consumer_evidence.json",
+      "sha256": "1142c307826f23cacb60578211e8b9683a223b2a1012d0030820200d65500ae2"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_contract_design_v2/receipt.json",
+      "sha256": "d131f51bd17ec315dac3073b01fb66f7f7bedb5b965d78c2a06ee20b522d339a"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_boundary_independent_review_v2/receipt.json",
+      "sha256": "9afdb889d9f3f2e420a5bcc351f515b2120b5f6fa77990406e314f2ba45dd727"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_boundary_parent_adoption_v2/receipt.json",
+      "sha256": "2b22a3e4d851f411f2d17dd893be9640fd5fb9979f456dd10f7fb7e26fd5a55e"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_native_adapter_refined_design_v1/prepared_design.json",
+      "sha256": "15a4c935daeb40638d5c1576a3b13285d0780313bf0dd4cf74c9b42c73539404"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_native_refined_design_independent_review_v1/receipt.json",
+      "sha256": "ddd97c5f5d090b47fe34d50ed082913add70c70e04fd61429752b4914ce15069"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_native_adapter_refined_design_v2/prepared_design.json",
+      "sha256": "d9ccde5f3193eb312712f9717cb7f0ac0a98368532209323cbb4fa72e544725f"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_native_refined_design_independent_review_v2/receipt.json",
+      "sha256": "4c52319ba5f4871a70626e2aff7717544df261fb6bb58a21cea2c25097c33322"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_native_refined_design_parent_adoption_v2/receipt.json",
+      "sha256": "1141a0ad40155444b375b8cc417be5e76d0861cf005cca9c40e60fa2f8a30ae5"
     }
   ],
   "active_source_root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/source_preparation_v3",
@@ -1514,7 +1574,7 @@
       "replacement_v3_HOLD_preparation_required": false,
       "actual_replacement_audit_executed": true,
       "separate_Phase_B_authorities_with_unadmitted_extra_top_level_pin_map_fields": 13,
-      "explicit_consolidated_leaf_contract_design_pending": true,
+      "explicit_consolidated_leaf_contract_design_pending": false,
       "unknown_map_or_opaque_dependency_or_old_verifier_bypass_admitted": false,
       "metadata_only_Phase_B_draft_approved": false,
       "new_Phase_B_version_after_canonical_certificate_required": true,
@@ -1529,9 +1589,79 @@
       "replacement_v3_failure_sha256": "b55fb9a68e5d199c2452c92318481877ab48fb69500ef5a0f4030fa713380eae",
       "replacement_v3_failure_guard": "Strict transitive receipt input/output leaf closure; no publication",
       "initial_wrong_digest_argument_failure_preserved": true,
-      "all_historical_extra_map_finite_inventory_and_explicit_contract_recovery_design_pending": true,
+      "all_historical_extra_map_finite_inventory_and_explicit_contract_recovery_design_pending": false,
       "canonical_replacement_or_Phase_B_or_graph_admitted": false,
-      "code_change_or_retry_authorized": false
+      "code_change_or_retry_authorized": false,
+      "exact_boundary_design_status": "independently_reviewed_and_root_adopted_verifier_HOLD_preparation_only",
+      "exact_boundary_design_sha256": "aba5fff016023e8dade65989acbb49351cae70efe3e9454912d41c4b39a62f52",
+      "exact_boundary_independent_review_sha256": "9afdb889d9f3f2e420a5bcc351f515b2120b5f6fa77990406e314f2ba45dd727",
+      "exact_boundary_root_adoption_sha256": "2b22a3e4d851f411f2d17dd893be9640fd5fb9979f456dd10f7fb7e26fd5a55e",
+      "authorization_qualification": "Only NEW isolated boundary-verifier HOLD/tiny fixtures authorized; no metadata auditor/graph/callback/controller version or actual retry authorized."
     }
+  },
+  "exact_authority_boundary_policy": {
+    "status": "adopted_exact_current_byte_and_historical_assertion_boundary_design_v2_verifier_HOLD_only",
+    "actual_base_current_files": 1182,
+    "failed_metadata_stage_additions": 18,
+    "current_required_files": 1200,
+    "current_JSON_authorities": 631,
+    "exact_field_contracts": 405,
+    "sha_map_entry_occurrences": 66748,
+    "field_role_counts": {
+      "current_dependency_map": 20,
+      "current_descriptor_authority": 5,
+      "current_observed_module_byte_evidence": 3,
+      "current_scope_justification_assertion_no_runtime_grant": 5,
+      "existing_exact_v77_cohort_contract": 1,
+      "structured_historical_assertion": 371
+    },
+    "current_flat_pin_exclusions": 0,
+    "nonJSON_payloads_freshly_hashed_during_design_review": 0,
+    "historical_target_variants": 35401,
+    "historical_payload_graph_fresh_verification": false,
+    "historical_conflicting_code_paths": 6,
+    "historical_expected_code_variants_archived": 12,
+    "historical_assertions_grant_runtime_or_used_leaf_authority": false,
+    "unknown_authority_version_schema_keyset_or_map": "reject_pending_separate_exact_extension",
+    "known_new_stage_extensions": "Independently pinned known table/policy/schema/registration/code; no self/future hashes, generic fallback, or typed-graph downgrade.",
+    "verifier_HOLD_implementation_only_authorized": true,
+    "new_metadata_auditor_graph_callback_controller_versions_authorized": false,
+    "actual_metadata_audit_retry_authorized": false,
+    "Phase_B_query_graph_pilot_history_admitted": false,
+    "original_failure_preserved_sha256": "b55fb9a68e5d199c2452c92318481877ab48fb69500ef5a0f4030fa713380eae",
+    "design_sha256": "aba5fff016023e8dade65989acbb49351cae70efe3e9454912d41c4b39a62f52",
+    "authority_table_sha256": "a6044393fa46c90a030f4a2c961e816b9d28d4e1dea7ee3dd64704b32dc54487",
+    "current_byte_set_sha256": "e9ed1a3a7055bbe16a7cbd2ec43af71704ef7d9822be1b851c4d6b47ac2556ed",
+    "consumer_evidence_sha256": "1142c307826f23cacb60578211e8b9683a223b2a1012d0030820200d65500ae2",
+    "independent_design_review_sha256": "9afdb889d9f3f2e420a5bcc351f515b2120b5f6fa77990406e314f2ba45dd727",
+    "root_adoption_sha256": "2b22a3e4d851f411f2d17dd893be9640fd5fb9979f456dd10f7fb7e26fd5a55e"
+  },
+  "annual_native_adapter_design": {
+    "status": "refined_v2_design_reviewed_root_authorized_pure_validator_and_scorer_HOLD_only",
+    "v1_design_sha256": "15a4c935daeb40638d5c1576a3b13285d0780313bf0dd4cf74c9b42c73539404",
+    "v1_changes_required_review_sha256": "ddd97c5f5d090b47fe34d50ed082913add70c70e04fd61429752b4914ce15069",
+    "v1_required_groups": [
+      "literal_raw_prior_final_centered_columns_intercepts_and_complete_mass",
+      "fixed_endpoint_contrast_absolute_and_paired_uncertainty_seed_order_registry",
+      "strict_scalar_control_identity_rating_validation_before_permissive_helpers"
+    ],
+    "v2_design_sha256": "d9ccde5f3193eb312712f9717cb7f0ac0a98368532209323cbb4fa72e544725f",
+    "v2_independent_review_sha256": "4c52319ba5f4871a70626e2aff7717544df261fb6bb58a21cea2c25097c33322",
+    "all_three_groups_resolved": true,
+    "source_contexts_proposed": 7,
+    "native_report_rows": 6,
+    "native_absolute_identity_groups": 3,
+    "native_frozen_paired_contrasts": 2,
+    "seven_clocks_unchanged": true,
+    "IPC_packet_control_native_values_decoded_during_design_reviews": false,
+    "implementation_authorized": true,
+    "execution_authorized": false,
+    "packet_catalog_control_native_census_admission": false,
+    "actual_adapter_or_board_or_score_produced": false,
+    "oldcompact_original_task_still_required": true,
+    "oldcompact_same_date_preferred_or_separately_frozen_qualified_lagged_route": true,
+    "bounded_three_system_stage_closes_full_original_task": false,
+    "implementation_authorization_scope": "Only isolated pure packet-validator/annual scalar-frame/native-frame HOLD functions and tiny fixtures; no actual board producer/native-prefix/query/data decode/scoring.",
+    "root_HOLD_adoption_sha256": "1141a0ad40155444b375b8cc417be5e76d0861cf005cca9c40e60fa2f8a30ae5"
   }
 }
