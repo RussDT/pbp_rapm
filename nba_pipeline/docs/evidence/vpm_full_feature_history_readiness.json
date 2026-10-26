@@ -1,5 +1,5 @@
 {
-  "status": "current_preview_27_release_registry_and_spent_forecasts_independently_verified_full_history_unfinished",
+  "status": "current_preview_27_release_registry_spent_and_bounded_annual_source_verified_full_history_unfinished",
   "scope": "Restored modern bank with bounded contest split and positional rim tests; source-adapted early fallbacks",
   "focused_tests": {
     "rapm": 48,
@@ -472,6 +472,94 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_spent_actual_audit_execution_v1/completion_proof.json",
       "sha256": "56c9d5e09842524118a6a470bd654baaf16f26cbb1b9a1b4bc4b939e3d6f29c2"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_result_audit_v3/receipt.json",
+      "sha256": "97a45b2f12541ab3674e2e79f2a2b8ccd5dc67717f6b6d75dd8ba34c378f0ea5"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_result_audit_v3/observations.json",
+      "sha256": "4a6468e5edf3ece2d4487b6b4d2f1cc194fa08841df35e829cb673970b8c8e55"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_result_audit_v3/dec1_independent_sensitivity.json",
+      "sha256": "c162d0301f9978518c1d8fa42c79248f91feb4025e5f8ef2fc6bc7eac03f94fc"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_result_audit_v3/gap_recheck.json",
+      "sha256": "f160362838f7ecd7d1bc49ed754812b7b28a8b0e7cc9a3c99859ff9abfbdbcf7"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_result_audit_execution_v3/completion_proof.json",
+      "sha256": "c220f88097f8983254f5a199139d66c4fbb0f63276c6346ea325571be30bc496"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_result_audit_execution_v3/execution_receipt.json",
+      "sha256": "e0c79a026528222167e3d7168ba377a0c68ea8d59bef63f664689a1c7b0a902a"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_result_audit_execution_v3/observations_summary.json",
+      "sha256": "f37f671cb61e67aff55463b0cbfdd6265c0f426cbcf21b06d8c1ae11d2795f9a"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_result_auditor_independent_review_v3/receipt.json",
+      "sha256": "531c4ccd4d7f1de0b368e36e2358e14a5697cdba0522d45ef9368466422d4d52"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_result_audit_v2_failure_v1/receipt.json",
+      "sha256": "f00df3e692eaad92dbfda8de78a05e42fb252d28e5476a6f241005e781cda82e"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_result_audit_execution_v2/execution_receipt.json",
+      "sha256": "ef72142e7ac42e5407b3c158f5281ba8389c60803a5f7ba6bd8250fbb5b07a29"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_actual_v3/receipt.json",
+      "sha256": "c27b455600c862f761d6ec1878a6b8c8d0a81ba6fa7b7f6e595b06e852b0a328"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_execution_v3/receipt.json",
+      "sha256": "314589d9e3391b8a85dd09e422f01edc30168d5077be7566c5d6d6ca391d1cbe"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_implementation_v3/implementation_hold.json",
+      "sha256": "90def9a0d4e4f29b5c024d60a640ffd319bdd797dcf25e81e8fc02607a84ae76"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_epoch_policy_proposal_v1/proposal.json",
+      "sha256": "4396e0a9425b7a406073ca735277308b141de0b78fed54952f83ad572f9c92e7"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_epoch_policy_review_v1/receipt.json",
+      "sha256": "025a100bf4258eedc5b1096e663dcf124b284ba3e9b21e3d3bbfca15765f510c"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_epoch_policy_adoption_v1/receipt.json",
+      "sha256": "fe7d01e767dac018580d046c81527778fcccc692f489ab14b70e91f61cd37abf"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_streamed_basis_independent_review_v2/receipt.json",
+      "sha256": "8aba2163e2f13b0fede4e052aeef40ff2ca4e7b972c8db6ae2865b2f8a4d0db5"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_cacheonly_context_hold_v3/implementation_hold.json",
+      "sha256": "34e70ac43e08e2bef638a25321547a45e7b84806d92d681a23a3f87d2177faf4"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_cacheonly_context_independent_review_v3/receipt.json",
+      "sha256": "6af47b2b0d9893fcf413dd2805639500bfecb9ab2107dfa87d76e0c3142c318c"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_cacheonly_context_independent_review_v3/admission_driving_data_fields.json",
+      "sha256": "080946ac1c4ac7e22b3b7150ede84a4186b9ea5bb5e05fd4d1dc3bd2e36030d5"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_cache_installer_hold_v2/implementation_hold.json",
+      "sha256": "776653643760abb87345f32dc855f03bf2604f3c58e469a27b688c35cd826346"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_cache_installer_independent_review_v2/receipt.json",
+      "sha256": "f39b4ae5752245e1039e7af855bd22b3dee5857109d91309732b02c192c3ee6e"
     }
   ],
   "active_source_root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/source_preparation_v3",
@@ -480,8 +568,8 @@
   "full_history_finished": false,
   "remaining": [
     "Registered genuine-system matched rolling and annual forecast-error comparisons plus both-intercept native diagnostics; complete spent forecast products are already independently audited",
-    "Annual source parity/epoch probe, genuine matched annual controls and both-intercept native diagnostics",
-    "Actual new-model compact storage/basis/checkpoint/reader budget including earliest and2026 production models",
+    "Separately registered annual adapter with adopted Dec1 source convention, genuine matched annual controls and both-intercept native diagnostics",
+    "Actual four-cut cold/first-estimated/modern/current compact source/basis/checkpoint/reader budget, thirty new checkpoints and independently admitted cache-only contexts",
     "Full6108date production and independent math/source/reader/report/completion-certificate verification"
   ],
   "nonsemantic_source_normalization": {
@@ -741,18 +829,18 @@
     "actual_model_audit_sha256": "a16ab1e4783e46dceb00195150cad1a40a02952e35a2f0ffbbeecfaf15eeebc3"
   },
   "annual_source_design": {
-    "status": "v2_preserved_one_context_diagnostic_and_v3_design_reviewed_HOLD_implementation_pending",
+    "status": "v3_14_context_products_independently_verified_limited_Dec1_source_convention_adopted_no_adapter",
     "implemented": true,
     "actual_queries": true,
-    "requires_actual_post2015_recipe_schema_parity": true,
-    "source_query_season2020_is_only_proposed": true,
-    "requires_actual2020_vs2021_source_epoch_sensitivity_before_admission": true,
+    "requires_actual_post2015_recipe_schema_parity": false,
+    "source_query_season2020_is_only_proposed": false,
+    "requires_actual2020_vs2021_source_epoch_sensitivity_before_admission": false,
     "nov1_physical_carry_allowed": false,
     "static_base_alias_allowed": false,
-    "attempted_contexts": 1,
-    "persisted_contexts": 0,
-    "basis_oracle_checks_completed": 0,
-    "actual_source_epoch_admitted": false,
+    "attempted_contexts": 14,
+    "persisted_contexts": 14,
+    "basis_oracle_checks_completed": 45,
+    "actual_source_epoch_admitted": true,
     "failed_probe_exit_code": 1,
     "failed_probe_pid": 15743,
     "failed_probe_pid_absent": true,
@@ -762,7 +850,17 @@
     "independent_failure_review_sha256": "b5291e09afd62c3595fa6b3d8ea1c28007c5a914102dbd8cdb12d32fd1bea0da",
     "single_context_diagnostic_audit_sha256": "fc2b08aa8d3fddb43d415c9b6048e3d257094dd0728bfc6bb7fda707e0ff9793",
     "v3_design_final_review_sha256": "a7ed27418bb5de0dcd06134ed5fb0cdc749b78c2bd33b447058fac88ff22271a",
-    "v3_actual_execution_authorized": false
+    "v3_actual_execution_authorized": true,
+    "historical_v2_failure_scope": {
+      "attempted_contexts": 1,
+      "persisted_contexts": 0,
+      "basis_oracle_checks_completed": 0,
+      "exit_code": 1,
+      "preserved": true
+    },
+    "source_epoch_admission_scope": "Dec1 interseason source_query_season2020 convention only; evaluation2021, selected parameter release2020-12-01 and mapper2020-11-01 remain distinct",
+    "annual_adapter_admitted": false,
+    "native_or_annual_scoring_admitted": false
   },
   "development_forecast_independent_audit": {
     "status": "passed_full_bank_development_forecast_audit",
@@ -1003,7 +1101,7 @@
     "actual_full_history_budget_verified": false
   },
   "compact_history": {
-    "status": "graph_and_streamed_basis_HOLD_independently_reviewed_actual_context_controller_and_budget_pending",
+    "status": "graph_callback_v2_and_installer_v2_HOLD_reviewed_cache_v3_changes_required_v4_repair_and_controller_drafting",
     "implementation_authorized": true,
     "execution_authorized": false,
     "actual_early_and_2026_budget_pilot_required": true,
@@ -1014,9 +1112,37 @@
     "graph_hold_independent_review_sha256": "59a22685ae31166de1d455adeaa8d174f45a111d995609d9cdc401ca960a9784",
     "full_controller_implemented": false,
     "scientific_graph_admitted": false,
-    "streamed_basis_HOLD_sha256": "7dcb09e83a8df4ec6639ff5efa9477711c12e05273ec26e0de742bf296152aee",
-    "streamed_basis_independent_review_sha256": "b3f22c292a13c2a17806290eff28f546ee8b87052aa9eec395572c49f6bf1cb2",
-    "actual_cache_only_context_admitted": false
+    "streamed_basis_HOLD_sha256": "101e60f86314f6003ec5a87393c61d6727d6a85612331253e00349d27e060856",
+    "streamed_basis_independent_review_sha256": "8aba2163e2f13b0fede4e052aeef40ff2ca4e7b972c8db6ae2865b2f8a4d0db5",
+    "actual_cache_only_context_admitted": false,
+    "cache_constructor_v3_status": "changes_required",
+    "cache_constructor_v3_review_sha256": "6af47b2b0d9893fcf413dd2805639500bfecb9ab2107dfa87d76e0c3142c318c",
+    "finite_v4_repair_inventory_sha256": "080946ac1c4ac7e22b3b7150ede84a4186b9ea5bb5e05fd4d1dc3bd2e36030d5",
+    "installer_v2_status": "code_only_review_passed_actual_plan_blocked_by_overbroad_input_parent_overlap_guard",
+    "installer_v2_review_sha256": "f39b4ae5752245e1039e7af855bd22b3dee5857109d91309732b02c192c3ee6e",
+    "actual_bootstrap_executed": false,
+    "controller_status": "drafting_no_execution_admission",
+    "new_registered_geometry_checkpoints_required": 30,
+    "old_v74_checkpoint_reuse_allowed": false,
+    "required_capacity_pilot": [
+      "cold",
+      "first_estimated",
+      "modern_SQ",
+      "current"
+    ],
+    "installer_v2_concrete_plan_admitted": false,
+    "installer_v3_status": "minimal_HOLD_repair_in_progress_pending_independent_review",
+    "installer_concrete_blocker": {
+      "required_sibling_input_leaves": [
+        "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/daily_source_extension_v3.log",
+        "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/age_lookup.parquet"
+      ],
+      "cause": "Immutable input parent is ancestor of required new output; input file itself remains outside output.",
+      "authorized_repair_scope": "Only installer overlap predicate: reject source leaf equal to or inside output, retaining canonical/output-separation/dirfd/no-follow/full-closure/runtime guards.",
+      "new_registration_context_or_install_written": false,
+      "codec_separate_ancestor_input_graph_guard_changed": false,
+      "v2_code_and_review_preserved": true
+    }
   },
   "actual_development_sample_storage_pilot": {
     "status": "passed_independent_twelve_sample_roundtrip_and_projection_only",
@@ -1106,5 +1232,52 @@
     "maximum_sq_normal_error": 4.4675126889212234e-15,
     "maximum_saved_scalar_reconstruction_gap": 0.0,
     "scope": "Only five predeclared coverage dates; actual daily products persist scalar O/D/Total only. No all-date full11-head/fresh-normal claim."
+  },
+  "annual_source_actual_14_context_audit": {
+    "status": "passed_bounded_persisted_products_and_sensitivity_with_separate_limited_policy_adoption",
+    "actual_result_audit_sha256": "97a45b2f12541ab3674e2e79f2a2b8ccd5dc67717f6b6d75dd8ba34c378f0ea5",
+    "closing_proof_sha256": "c220f88097f8983254f5a199139d66c4fbb0f63276c6346ea325571be30bc496",
+    "contexts": 14,
+    "report_contexts": 12,
+    "basis_oracle_uses": 45,
+    "distinct_oracle_models": 13,
+    "reference_rows": 39849,
+    "canonical_cells": 1315017,
+    "canonical_features": 33,
+    "original_memory_reference_columns": 109,
+    "original_report_comparison_columns": 106,
+    "only_reversible_transport_date_columns": {
+      "reference": [
+        "query_date",
+        "estimate_date"
+      ],
+      "provenance": [
+        "parameter_fit_end",
+        "estimate_date"
+      ]
+    },
+    "Dec1_rows_each": 2821,
+    "Dec1_cells_each": 93093,
+    "Dec1_value_or_basis_differences_excluding_query_season": false,
+    "source_query_season": 2020,
+    "evaluation_season": 2021,
+    "source_parameter_release": "2020-12-01",
+    "impact_mapper_release": "2020-11-01",
+    "policy_review_sha256": "025a100bf4258eedc5b1096e663dcf124b284ba3e9b21e3d3bbfca15765f510c",
+    "policy_adoption_sha256": "fe7d01e767dac018580d046c81527778fcccc692f489ab14b70e91f61cd37abf",
+    "audit_receipt_pending_semantic_status_preserved": true,
+    "producer_pending_marker_preserved": true,
+    "v2_audit_only_flag_parser_failure_preserved_sha256": "f00df3e692eaad92dbfda8de78a05e42fb252d28e5476a6f241005e781cda82e",
+    "v3_parser_review_sha256": "531c4ccd4d7f1de0b368e36e2358e14a5697cdba0522d45ef9368466422d4d52",
+    "original_object_null_scope": "Pre-Arrow Python null kinds limited to frozen pandas hashes; persisted IPC nulls/floatbits/dtypes/index checked explicitly.",
+    "new_source_queries_during_audit": 0,
+    "impact_coefficients_decoded": 0,
+    "new_fits": 0,
+    "native_or_pricing_decodes": 0,
+    "performance_scoring": false,
+    "protected_2027_inputs": 0,
+    "selected_pointer_changed": false,
+    "annual_adapter_admitted": false,
+    "full_history_execution_admitted": false
   }
 }
