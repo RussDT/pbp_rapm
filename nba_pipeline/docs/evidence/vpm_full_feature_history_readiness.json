@@ -1,5 +1,5 @@
 {
-  "status": "current_preview_and_27_release_registry_independently_verified_spent_replay_running_full_history_unfinished",
+  "status": "current_preview_27_release_registry_and_spent_forecasts_independently_verified_full_history_unfinished",
   "scope": "Restored modern bank with bounded contest split and positional rim tests; source-adapted early fallbacks",
   "focused_tests": {
     "rapm": 48,
@@ -452,6 +452,26 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_source_probe_recovery_design_final_review_v3/receipt.json",
       "sha256": "a7ed27418bb5de0dcd06134ed5fb0cdc749b78c2bd33b447058fac88ff22271a"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/spent_forecasts_v3/receipt.json",
+      "sha256": "8f586a0bff77a29f63e9b3c3a048bdffa5ef7b4ee22cb8cf169060b63f84b7a7"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_spent_execution_exit_v1/receipt.json",
+      "sha256": "96d1c71a612da928dd4fa13b0899041c6642b67600845a68b5a9ddc52415d6f4"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_spent_forecast_audit_v1/actual_v1/receipt.json",
+      "sha256": "51a374272f268b7d946009107cbf85d5de81f318fe285381ca31ea8b725e7ad3"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_spent_forecast_audit_v1/actual_v1/sample_boards/manifest.json",
+      "sha256": "bd88a5b9436639db5ca6bce863f21ad9eb7339943e63f24dd0c2c75f6cd8ed13"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_spent_actual_audit_execution_v1/completion_proof.json",
+      "sha256": "56c9d5e09842524118a6a470bd654baaf16f26cbb1b9a1b4bc4b939e3d6f29c2"
     }
   ],
   "active_source_root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/source_preparation_v3",
@@ -459,7 +479,7 @@
   "new_impact_fits": 36,
   "full_history_finished": false,
   "remaining": [
-    "Complete the active exact N3 spent replay, reap actual exit0 and independently audit all files/prefixes plus five predeclared literal samples before performance scoring",
+    "Registered genuine-system matched rolling and annual forecast-error comparisons plus both-intercept native diagnostics; complete spent forecast products are already independently audited",
     "Annual source parity/epoch probe, genuine matched annual controls and both-intercept native diagnostics",
     "Actual new-model compact storage/basis/checkpoint/reader budget including earliest and2026 production models",
     "Full6108date production and independent math/source/reader/report/completion-certificate verification"
@@ -888,7 +908,7 @@
     "verified_pins": 979
   },
   "spent_replay": {
-    "status": "registered_running_no_partial_performance_scoring",
+    "status": "completed_and_independently_audited_scalar_products_with_five_fresh_literal_samples",
     "root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/spent_forecasts_v3",
     "retained_execution": 58222,
     "actual_pid": 7099,
@@ -906,10 +926,40 @@
       "2025-10-22",
       "2026-04-12"
     ],
-    "producer_exit_code": null,
-    "final_receipt_available": false,
-    "full_forecast_audit_passed": false,
-    "growing_log_is_immutable_future_pin": false
+    "producer_exit_code": 0,
+    "final_receipt_available": true,
+    "full_forecast_audit_passed": true,
+    "growing_log_is_immutable_future_pin": false,
+    "producer_pid_absent": true,
+    "forecast_receipt_sha256": "8f586a0bff77a29f63e9b3c3a048bdffa5ef7b4ee22cb8cf169060b63f84b7a7",
+    "exit_proof_sha256": "96d1c71a612da928dd4fa13b0899041c6642b67600845a68b5a9ddc52415d6f4",
+    "full_forecast_audit_sha256": "51a374272f268b7d946009107cbf85d5de81f318fe285381ca31ea8b725e7ad3",
+    "audit_exit_code": 0,
+    "audit_pid": 24490,
+    "audit_pid_absent": true,
+    "dated_manifests": 648,
+    "predictions": 4634,
+    "scalar_board_rows": 1736003,
+    "included_games_by_season": {
+      "2023": 1169,
+      "2024": 1162,
+      "2025": 1157,
+      "2026": 1146
+    },
+    "exclusions": {
+      "not_in_retained_native_target_census": 13,
+      "positive_minute_player_without_strict_earlier_native_history": 273
+    },
+    "closed_log_sha256": "d092d9b3a3a3b552732d64e7fc7102b97fb9fc76e5a1444b277f3e6d902d2cc4",
+    "full_sample_manifest_sha256": "bd88a5b9436639db5ca6bce863f21ad9eb7339943e63f24dd0c2c75f6cd8ed13",
+    "unique_audit_pins": 6544,
+    "maximum_independent_prediction_gap": 1.0658141036401503e-14,
+    "maximum_independent_probability_gap": 2.220446049250313e-16,
+    "maximum_scalar_side_sum_gap": 0.0,
+    "all_date_full11_arrays_persisted": false,
+    "all_date_fresh_normals_recomputed": false,
+    "performance_scores_or_comparisons_published": false,
+    "full_rebuild_complete": false
   },
   "native_storage_ceiling": {
     "status": "actual_census_independently_verified_storage_projection_only",
@@ -1024,5 +1074,37 @@
     "source_epoch_or_adapter_or_all14_or_basis_admitted": false,
     "v2_retry_allowed": false,
     "blanket_dtype_cast_or_guard_waiver_allowed": false
+  },
+  "spent_forecast_fresh_literal_samples": {
+    "dates": [
+      "2022-10-18",
+      "2023-10-24",
+      "2024-10-24",
+      "2025-10-22",
+      "2026-04-12"
+    ],
+    "count": 5,
+    "maximum_absolute_gaps": {
+      "centered_intercepts": 2.2787327580431338e-14,
+      "centered_lanes": 2.5946944245958115e-12,
+      "def_basis": 0.0,
+      "def_td": 1.0550138540565968e-10,
+      "mid_sq_delta": 3.2829641782861074e-16,
+      "mid_sq_strong": 3.0726289568239196e-16,
+      "off_basis": 0.0,
+      "off_td": 9.822542779147625e-11,
+      "own_lanes": 0.0,
+      "parent_intercept": 6.417089082333405e-14,
+      "raw_intercepts": 1.7616463843239671e-13,
+      "raw_lanes": 4.482178517228874e-14,
+      "raw_parent": 1.0470443956300812e-13,
+      "scalar": 6.934952612169809e-12,
+      "three_sq_delta": 5.499073418846478e-16,
+      "three_sq_strong": 3.209238430557093e-16
+    },
+    "maximum_parent_normal_error": 4.599834223879132e-15,
+    "maximum_sq_normal_error": 4.4675126889212234e-15,
+    "maximum_saved_scalar_reconstruction_gap": 0.0,
+    "scope": "Only five predeclared coverage dates; actual daily products persist scalar O/D/Total only. No all-date full11-head/fresh-normal claim."
   }
 }
