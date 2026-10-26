@@ -126,6 +126,18 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_actual_metadata_audit_hold_v3/audit.py",
       "sha256": "72538b4b1447a682b563a5d6e7111be3a3db212c72e8376464638f7d93dda37a"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_actual_metadata_audit_hold_v6/audit.py",
+      "sha256": "53f7f8a1c71aaced8354e082f2856608efe33b5a96a3147b078cae9d0bd4bd37"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_boundaries_hold_v3/exact_authority_boundaries.py",
+      "sha256": "2afe62ce7119d9b15627903edb57aebb95ce4f72cc94f999f7f7085ccfd17983"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_compact_graph_hold_v3/compact_graph.py",
+      "sha256": "f75fdba64cc530a4e05e8248c6632cb249d5eb51a5b3c3cd083e7427b898fb0b"
     }
   ],
   "evidence_receipts": [
@@ -788,6 +800,54 @@
     {
       "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_annual_native_refined_design_parent_adoption_v2/receipt.json",
       "sha256": "1141a0ad40155444b375b8cc417be5e76d0861cf005cca9c40e60fa2f8a30ae5"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_failure_v6/receipt.json",
+      "sha256": "77fc839943496b5d788a5edc2eb79389748c89e3c42bc7ecc0334161571ed374"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_failure_v6/v77_metadata_diagnostic.json",
+      "sha256": "3a1ea147364c4ec1a64ace5caf36c3814b219051a75ca916a9f889a1755086bb"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_execution_v6/actual_execution_v1.log",
+      "sha256": "a8798fcffb81dbdf7cde7e26186182bec6b75438ec07feda6203406eea776659"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_phase_A_metadata_audit_execution_plan_v6/execution_plan.json",
+      "sha256": "4e653d41592281e9f54c0bc7329b69548f58cdecaef79a38f3f9981ead05c386"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_phase_A_metadata_audit_stage_extension_v6/registration.json",
+      "sha256": "a4a977cc6e5dfbf643a6d58b9ca4d3d10c38162e714587c8adaf069a9e1d04c6"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_phase_A_metadata_audit_stage_extension_independent_review_v6/receipt.json",
+      "sha256": "3fab644428c5f780afa5f9ce772524540dd3df3265a239034da89a087f53ddcb"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_execution_v6/root_go.json",
+      "sha256": "35f96ba55846e4676a6e692df63e98b6710e7d39e156cdf319b99b947b932caa"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_independent_review_v6/receipt.json",
+      "sha256": "99f589ad91feb8e8e635c6f4b2dc6f373d901da54947a63731087d5f6595f864"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_boundaries_independent_review_v3/receipt.json",
+      "sha256": "23da4d16a7e55f103ff3730c852db5c22b8717873bc62383390016781c95239c"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_compact_graph_independent_review_v3/receipt.json",
+      "sha256": "ed998b1b39ee052c79f7554655a245e72ab85d81efbf0a860efaae47115cb794"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_compact_graph_v3_parent_next_design_v1/receipt.json",
+      "sha256": "8b2bc53c2950c36736d7608a7e379caf6191f28463731f5b80a51045bd7aace9"
+    },
+    {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_compact_nonempty_continuation_gap_design_v1/prepared_design.json",
+      "sha256": "62c554c74714eef5c0845bb497ace2483048352b2aba0d825264b95992d7571e"
     }
   ],
   "active_source_root": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_full_feature_history_v1/source_preparation_v3",
@@ -1384,7 +1444,30 @@
     "controller_v3_review_sha256": "012778a49e5eb3fef7383407e6648b331fd76f7c38cbf4c69deb13eee5b56fdd",
     "controller_v3_author_fixtures": 122,
     "controller_v3_independent_failure_rechecks": 3,
-    "controller_actual_native_graph_pilot_history_admitted": false
+    "controller_actual_native_graph_pilot_history_admitted": false,
+    "graph_v3_code": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_compact_graph_hold_v3/compact_graph.py",
+      "sha256": "f75fdba64cc530a4e05e8248c6632cb249d5eb51a5b3c3cd083e7427b898fb0b"
+    },
+    "graph_v3_review": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_compact_graph_independent_review_v3/receipt.json",
+      "sha256": "ed998b1b39ee052c79f7554655a245e72ab85d81efbf0a860efaae47115cb794"
+    },
+    "graph_v3_fixture_scope": {
+      "author": 113,
+      "additional_synthetic": 8,
+      "scope": "Code-only; no actual graph or production admission."
+    },
+    "nonempty_continuation_integration_status": "finite_read_only_gap_design_held_pending_review_no_graph_or_controller_admission",
+    "graph_v3_integration_direction": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_compact_graph_v3_parent_next_design_v1/receipt.json",
+      "sha256": "8b2bc53c2950c36736d7608a7e379caf6191f28463731f5b80a51045bd7aace9"
+    },
+    "nonempty_continuation_gap_design": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_compact_nonempty_continuation_gap_design_v1/prepared_design.json",
+      "sha256": "62c554c74714eef5c0845bb497ace2483048352b2aba0d825264b95992d7571e"
+    },
+    "controller_v4_created_or_complete": false
   },
   "actual_development_sample_storage_pilot": {
     "status": "passed_independent_twelve_sample_roundtrip_and_projection_only",
@@ -1523,7 +1606,7 @@
     "full_history_execution_admitted": false
   },
   "producer_cacheonly_Phase_A": {
-    "status": "actual_v3_saved_metadata_independently_audited_Phase_B_unadmitted",
+    "status": "actual_v3_saved_metadata_scope_preserved_canonical_recovery_v6_failed_Phase_B_unadmitted",
     "failed_actual_v2_preserved_sha256": "d9469395e6141b7928bcc45b845087578d6e30e958f1e49aae29e494aa4dd330",
     "failure_before_constructor": true,
     "failed_v2_only_attempt_output": true,
@@ -1592,15 +1675,69 @@
       "all_historical_extra_map_finite_inventory_and_explicit_contract_recovery_design_pending": false,
       "canonical_replacement_or_Phase_B_or_graph_admitted": false,
       "code_change_or_retry_authorized": false,
-      "exact_boundary_design_status": "independently_reviewed_and_root_adopted_verifier_HOLD_preparation_only",
+      "exact_boundary_design_status": "design_adopted_verifier_v3_code_review_passed_actual_metadata_recovery_v6_failed",
       "exact_boundary_design_sha256": "aba5fff016023e8dade65989acbb49351cae70efe3e9454912d41c4b39a62f52",
       "exact_boundary_independent_review_sha256": "9afdb889d9f3f2e420a5bcc351f515b2120b5f6fa77990406e314f2ba45dd727",
       "exact_boundary_root_adoption_sha256": "2b22a3e4d851f411f2d17dd893be9640fd5fb9979f456dd10f7fb7e26fd5a55e",
-      "authorization_qualification": "Only NEW isolated boundary-verifier HOLD/tiny fixtures authorized; no metadata auditor/graph/callback/controller version or actual retry authorized."
+      "authorization_qualification": "Reviewed verifier-v3, auditor-v6 and graph-v3 code plus one separately approved actual v6 saved-metadata attempt. That attempt failed at unchanged v77 target membership; no canonical replacement, further retry, PhaseB, query or graph admission.",
+      "replacement_v6": {
+        "status": "actual_exit1_preserved_no_result_pending_independent_four_target_recovery_design",
+        "actual_exit_code": 1,
+        "actual_PID": 15038,
+        "retained_exec": 67005,
+        "process_absent": true,
+        "failure_receipt": {
+          "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_failure_v6/receipt.json",
+          "sha256": "77fc839943496b5d788a5edc2eb79389748c89e3c42bc7ecc0334161571ed374"
+        },
+        "diagnostic": {
+          "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_failure_v6/v77_metadata_diagnostic.json",
+          "sha256": "3a1ea147364c4ec1a64ace5caf36c3814b219051a75ca916a9f889a1755086bb"
+        },
+        "closed_log": {
+          "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_execution_v6/actual_execution_v1.log",
+          "sha256": "a8798fcffb81dbdf7cde7e26186182bec6b75438ec07feda6203406eea776659"
+        },
+        "execution_plan": {
+          "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_phase_A_metadata_audit_execution_plan_v6/execution_plan.json",
+          "sha256": "4e653d41592281e9f54c0bc7329b69548f58cdecaef79a38f3f9981ead05c386"
+        },
+        "registration": {
+          "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_phase_A_metadata_audit_stage_extension_v6/registration.json",
+          "sha256": "a4a977cc6e5dfbf643a6d58b9ca4d3d10c38162e714587c8adaf069a9e1d04c6"
+        },
+        "independent_stage_approval": {
+          "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_phase_A_metadata_audit_stage_extension_independent_review_v6/receipt.json",
+          "sha256": "3fab644428c5f780afa5f9ce772524540dd3df3265a239034da89a087f53ddcb"
+        },
+        "root_GO": {
+          "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_execution_v6/root_go.json",
+          "sha256": "35f96ba55846e4676a6e692df63e98b6710e7d39e156cdf319b99b947b932caa"
+        },
+        "code": {
+          "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_actual_metadata_audit_hold_v6/audit.py",
+          "sha256": "53f7f8a1c71aaced8354e082f2856608efe33b5a96a3147b078cae9d0bd4bd37"
+        },
+        "implementation_review": {
+          "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_independent_review_v6/receipt.json",
+          "sha256": "99f589ad91feb8e8e635c6f4b2dc6f373d901da54947a63731087d5f6595f864"
+        },
+        "internal_boundary_verify_returned": true,
+        "original_v77_five_target_guard_unchanged": true,
+        "failure": "All5 original v77 authorities/pointer required",
+        "missing_cohort_current_targets": 4,
+        "selected_pointer_already_current": true,
+        "missing_target_payloads_decoded_in_diagnostic": false,
+        "full_old_operational_union_completed": false,
+        "output_root_created": false,
+        "canonical_replacement_admitted": false,
+        "source_or_model_or_guard_change": false,
+        "retry_authorized": false
+      }
     }
   },
   "exact_authority_boundary_policy": {
-    "status": "adopted_exact_current_byte_and_historical_assertion_boundary_design_v2_verifier_HOLD_only",
+    "status": "design_adopted_verifier_v3_code_review_passed_actual_metadata_recovery_v6_failed",
     "actual_base_current_files": 1182,
     "failed_metadata_stage_additions": 18,
     "current_required_files": 1200,
@@ -1624,7 +1761,7 @@
     "historical_assertions_grant_runtime_or_used_leaf_authority": false,
     "unknown_authority_version_schema_keyset_or_map": "reject_pending_separate_exact_extension",
     "known_new_stage_extensions": "Independently pinned known table/policy/schema/registration/code; no self/future hashes, generic fallback, or typed-graph downgrade.",
-    "verifier_HOLD_implementation_only_authorized": true,
+    "verifier_HOLD_implementation_only_authorized": false,
     "new_metadata_auditor_graph_callback_controller_versions_authorized": false,
     "actual_metadata_audit_retry_authorized": false,
     "Phase_B_query_graph_pilot_history_admitted": false,
@@ -1634,7 +1771,22 @@
     "current_byte_set_sha256": "e9ed1a3a7055bbe16a7cbd2ec43af71704ef7d9822be1b851c4d6b47ac2556ed",
     "consumer_evidence_sha256": "1142c307826f23cacb60578211e8b9683a223b2a1012d0030820200d65500ae2",
     "independent_design_review_sha256": "9afdb889d9f3f2e420a5bcc351f515b2120b5f6fa77990406e314f2ba45dd727",
-    "root_adoption_sha256": "2b22a3e4d851f411f2d17dd893be9640fd5fb9979f456dd10f7fb7e26fd5a55e"
+    "root_adoption_sha256": "2b22a3e4d851f411f2d17dd893be9640fd5fb9979f456dd10f7fb7e26fd5a55e",
+    "implementation_and_actual_scope": "Code-only v3 review passed; one exact separately approved metadata-audit v6 invoked the internal boundary verifier and failed at the unchanged v77 target-membership guard. No final canonical replacement or further retry admitted.",
+    "verifier_v3_code": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_boundaries_hold_v3/exact_authority_boundaries.py",
+      "sha256": "2afe62ce7119d9b15627903edb57aebb95ce4f72cc94f999f7f7085ccfd17983"
+    },
+    "verifier_v3_review": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_boundaries_independent_review_v3/receipt.json",
+      "sha256": "23da4d16a7e55f103ff3730c852db5c22b8717873bc62383390016781c95239c"
+    },
+    "verifier_v3_fixture_scope": {
+      "author": 105,
+      "independent": 25,
+      "review_production_invocations": 0,
+      "scope": "Code/tiny fixtures and exact JSON-metadata compatibility, not source or graph admission."
+    }
   },
   "annual_native_adapter_design": {
     "status": "refined_v2_design_reviewed_root_authorized_pure_validator_and_scorer_HOLD_only",
@@ -1663,5 +1815,33 @@
     "bounded_three_system_stage_closes_full_original_task": false,
     "implementation_authorization_scope": "Only isolated pure packet-validator/annual scalar-frame/native-frame HOLD functions and tiny fixtures; no actual board producer/native-prefix/query/data decode/scoring.",
     "root_HOLD_adoption_sha256": "1141a0ad40155444b375b8cc417be5e76d0861cf005cca9c40e60fa2f8a30ae5"
+  },
+  "metadata_recovery_code_only_scopes": {
+    "verifier_v3": {
+      "author": 105,
+      "independent": 25,
+      "review": {
+        "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_exact_authority_boundaries_independent_review_v3/receipt.json",
+        "sha256": "23da4d16a7e55f103ff3730c852db5c22b8717873bc62383390016781c95239c"
+      }
+    },
+    "auditor_v6": {
+      "fixtures": 71,
+      "independent": 5,
+      "review": {
+        "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_producer_phase_A_metadata_audit_independent_review_v6/receipt.json",
+        "sha256": "99f589ad91feb8e8e635c6f4b2dc6f373d901da54947a63731087d5f6595f864"
+      }
+    },
+    "graph_v3": {
+      "fixtures": 113,
+      "additional_synthetic": 8,
+      "review": {
+        "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/full_feature_history_compact_graph_independent_review_v3/receipt.json",
+        "sha256": "ed998b1b39ee052c79f7554655a245e72ab85d81efbf0a860efaae47115cb794"
+      }
+    },
+    "counts_are_separate_not_full_suite": true,
+    "actual_canonical_replacement_or_Phase_B_graph_admission": false
   }
 }
