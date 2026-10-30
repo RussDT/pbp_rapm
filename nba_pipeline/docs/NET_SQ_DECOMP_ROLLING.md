@@ -65,9 +65,10 @@ Offline coverage: `tests/test_td550_rolling_season_rollover.py` (10 tests).
 the nightly chain passes it explicitly, so this is a known follow-up rather
 than a live bug.
 
-## 2027 state: blocked upstream
+## 2027 state: runnable up to one owner decision
 
-The compute cannot run yet. Chain, from the bottom:
+Nothing has produced a 2027 window, and the chain below is why. The first
+three links are stale rather than broken; the fourth is a decision.
 
 1. `master_results/net_sq_decomp_rolling` has no 2027 window — expected,
    nothing has produced one.
@@ -87,17 +88,73 @@ The compute cannot run yet. Chain, from the bottom:
 4. Producing 2027 EV means running the sibling `harness/chronological_sq.py`,
    whose `clean_sq.shot_source` is
    `results/pbp_shot_quality/pbp_shot_quality_1997_2026.parquet` — max
-   `season_end_year` 2026. The repo-owned PBP shot-quality table itself has no
-   2027 rows and would have to be extended first. Its `prepare()` also reads
-   `RAPM{yy}` and `RAPM{yy}_PS` unconditionally, so the no-playoffs-yet
-   problem recurs there.
+   `season_end_year` 2026. That table is merely **stale**, not blocked: it was
+   last built July 22, 2026, three months before `raw_data/NBA27.parquet`
+   landed on October 26 (815,808 bytes, 26,523 events), and
+   `build_pbp_shot_quality.py --years 2027` parses it cleanly — 9,298 shots
+   through all four estimation stages in about two seconds, no warnings.
+   Rebuild it **beside** the existing artifact, never over it: `--output-name`
+   defaults to `pbp_shot_quality_all`, so the `pbp_shot_quality_1997_2026`
+   name was passed explicitly and a rerun under a new name cannot clobber it.
+   Nothing should repoint a consumer off the 2026-named file as part of the
+   rebuild. 9,298 new shots against 6,327,218 existing is 0.15% of the corpus,
+   so the empirical-Bayes global prior re-fit shifts history only slightly —
+   measure that drift on the 1997-2026 overlap rather than assuming it.
+   `prepare()` also reads `RAPM{yy}` and `RAPM{yy}_PS` unconditionally, so the
+   no-playoffs-yet problem recurs there.
 5. `clean_sq.score_seasons` ends at 2026 and `clean_sq.protected_seasons` is
    `[2027]`; 2027 is also `confirmation_seasons` for `offseason_alpha` and
    `parent_baseline` and `protected_seasons` for `entrant_priors` and
-   `monthly`. Scoring 2027 through that lane touches the reserved confirmation
-   season the root instructions protect. Extending the PBP shot-quality table
-   and scoring 2027 is an owner decision, not a mechanical next step.
+   `monthly`. **This is the one genuine blocker.** Scoring 2027 through that
+   lane touches the reserved confirmation season the root instructions
+   protect, so it is an owner decision rather than a mechanical step. The
+   nightly below gates on exactly this and reports the stage BLOCKED instead
+   of editing a research config to get past it.
 
 Do not substitute a different lineage's output for the missing window:
 `a2000_4000` is a different model, and the published series name is part of
 the contract.
+
+## Nightly refresh
+
+`scripts/nightly_net_sq_td550_refresh.sh` runs the whole chain on a schedule,
+one gate per stage. It exists because nothing in this repo was scheduled: no
+launchd plist, no caller for `build_pbp_shot_quality.py`,
+`run_net_sq_decomp_rolling.py` or `publish_td550_rolling_archive.py`. That one
+gap is why the three surfaces are each stale at a different date — shot
+quality at July 22, the net-lane targets at September 6, the published archive
+at end year 2026 — while the raw 2027 season file landed October 26.
+
+A tick costs a handful of `stat()` calls and one JSON read, and runs nothing
+unless an upstream actually moved:
+
+| Stage | Gate |
+| --- | --- |
+| A shot quality | newest `raw_data/NBA*.parquet` is newer than `pbp_shot_quality_1997_{SEASON_YEAR}.parquet`, or that file is absent. Built beside the 2026-named artifact under a season-specific `--output-name`. |
+| B per-shot EV | `clean_ev.parquet` older than stage A's output, **and** the clean_sq config covers the season: target year in `score_seasons`, absent from `protected_seasons`. A season that fails the coverage half reports BLOCKED and takes C and D with it. |
+| C net lane | the three `{FIRST_CHANCE,SECOND_CHANCE_CLEAN,RAPM}{yy}.parquet` targets missing from the net-lane processed dir, or older than `clean_ev.parquet`. |
+| D rolling solve | any of the five td550 window CSVs for the release end year missing from `master_results`, or older than stage C's targets. Runs with `--allow-missing-playoffs`. |
+| E publish | **off by default.** Always validates without `--publish`; writes only when `PUBLISH=1` is set explicitly. |
+
+The gates are mtime-derived and so self-calibrating: a stage that fails leaves
+its output old, and the next tick retries rather than waiting out an interval.
+Stage E's success stamp (the sha256 of the staged `sources.json`, under
+`logs/nightly_net_sq/`) is the one piece of state, written only after the
+publish returns 0. A failure anywhere in A-D skips the publish entirely, since
+a failed C skips D and leaves the windows unresolved.
+
+The publish default is off because `nba_no_prior_vpm_td550_rolling` is live and
+feeds the site, and an unattended write to it has not been authorised. Env
+overrides: `SEASON_YEAR`, `FORCE`, `PUBLISH`, `ONLY`, `NIGHTLY_STUB`,
+`NIGHTLY_STUB_FAIL`, `NIGHTLY_PIPELINE_DIR`, `VPM_REPO`, `VPM_SQ_CONFIG`.
+`NIGHTLY_STUB=1` logs each stage's command instead of running it, which is how
+the gate and stamp logic was verified.
+
+It is deliberately **not installed** — no launchd plist, no cron entry. To
+start it:
+
+```bash
+# ~/Library/LaunchAgents/com.russellthomas.nba-net-sq-td550.plist
+# ProgramArguments: /bin/bash <repo>/nba_pipeline/scripts/nightly_net_sq_td550_refresh.sh
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.russellthomas.nba-net-sq-td550.plist
+```
