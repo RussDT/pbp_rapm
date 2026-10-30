@@ -114,7 +114,7 @@ def sort_raw_pbp_chronologically(df):
     """Sort PBP by period clock, using event number only within one clock.
 
     Corrected NBA V3 actions can be appended with a late action number at an
-    earlier clock.  Event-number-first ordering therefore is not chronological.
+    earlier clock. Event-number-first ordering therefore is not chronological.
     """
     if df.empty or 'game_id' not in df.columns:
         return df.reset_index(drop=True)
