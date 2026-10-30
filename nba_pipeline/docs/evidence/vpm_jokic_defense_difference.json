@@ -1,0 +1,164 @@
+{
+  "centered_prior_grouped_accounting": [
+    {
+      "difference": 0.19457469316732112,
+      "group": "Contested defensive rebounds",
+      "history": 1.6915864838634302,
+      "selected": 1.4970117906961091
+    },
+    {
+      "difference": 0.0910506082828389,
+      "group": "Steals",
+      "history": 0.4907586974286024,
+      "selected": 0.3997080891457635
+    },
+    {
+      "difference": 0.09738028679713773,
+      "group": "Minutes per game/context",
+      "history": 0.3819280922550327,
+      "selected": 0.284547805457895
+    },
+    {
+      "difference": -0.003631295422489092,
+      "group": "Blocks",
+      "history": 0.0716214104462427,
+      "selected": 0.0752527058687318
+    },
+    {
+      "difference": 0.16003386366634806,
+      "group": "Modern-only tracking fields",
+      "history": 0.0,
+      "selected": -0.16003386366634806
+    },
+    {
+      "difference": 0.0010445752469815384,
+      "group": "Other foul/fallback terms",
+      "history": 0.0016365487303282578,
+      "selected": 0.0005919734831847379
+    }
+  ],
+  "final_difference": 0.3409345805951731,
+  "fixed_geometry_historical_mapper_vintage": [
+    {
+      "def_center": 1.168361408717763,
+      "def_mapper": 2025,
+      "jokic_defense": 2.9088897093972577,
+      "jokic_offense": 7.40460058063683,
+      "jokic_raw_defense": 4.07725111811502,
+      "off_mapper": 2025,
+      "parent_relative_normal_error": 2.88195949825055e-15
+    },
+    {
+      "def_center": 1.1538465927422512,
+      "def_mapper": 2025,
+      "jokic_defense": 2.904556347347272,
+      "jokic_offense": 7.414813653008384,
+      "jokic_raw_defense": 4.058402940089524,
+      "off_mapper": 2026,
+      "parent_relative_normal_error": 3.68001164719044e-15
+    },
+    {
+      "def_center": 1.1859650185818449,
+      "def_mapper": 2026,
+      "jokic_defense": 2.939792750545794,
+      "jokic_offense": 7.409772144031504,
+      "jokic_raw_defense": 4.125757769127639,
+      "off_mapper": 2025,
+      "parent_relative_normal_error": 3.746547347725715e-15
+    },
+    {
+      "def_center": 1.1714502026063327,
+      "def_mapper": 2026,
+      "jokic_defense": 2.9354593884958122,
+      "jokic_offense": 7.419985216403071,
+      "jokic_raw_defense": 4.106909591102145,
+      "off_mapper": 2026,
+      "parent_relative_normal_error": 3.607854556069058e-15
+    }
+  ],
+  "historical_date": "2026-10-01",
+  "lane_accounting": [
+    {
+      "difference": 0.0468843086298109,
+      "history": 0.5086720559309323,
+      "lane": "rim_frequency",
+      "layer": "final",
+      "selected": 0.4617877473011214
+    },
+    {
+      "difference": 0.1483823459140613,
+      "history": -0.0444642242283588,
+      "lane": "rim_conversion",
+      "layer": "final",
+      "selected": -0.1928465701424201
+    },
+    {
+      "difference": 0.1167741296661684,
+      "history": 0.0615803441708648,
+      "lane": "mid_reference_conversion",
+      "layer": "final",
+      "selected": -0.0551937854953035
+    },
+    {
+      "difference": -0.0055497693292538,
+      "history": -0.3965041974208567,
+      "lane": "three_frequency",
+      "layer": "final",
+      "selected": -0.3909544280916028
+    },
+    {
+      "difference": 0.1633971306555537,
+      "history": -0.1002944945766411,
+      "lane": "three_conversion",
+      "layer": "final",
+      "selected": -0.2636916252321949
+    },
+    {
+      "difference": -0.1130624026073894,
+      "history": 0.7736249286071368,
+      "lane": "ft",
+      "layer": "final",
+      "selected": 0.8866873312145263
+    },
+    {
+      "difference": -0.0251677842667021,
+      "history": -0.4630171402000128,
+      "lane": "tov",
+      "layer": "final",
+      "selected": -0.4378493559333107
+    },
+    {
+      "difference": 0.0092766219331608,
+      "history": 2.595862116212806,
+      "lane": "second_chance",
+      "layer": "final",
+      "selected": 2.586585494279645
+    }
+  ],
+  "limits": [
+    "Lane and feature contribution differences are accounting, not isolated causal effects.",
+    "Frozen mapper-vintage counterfactuals change all-player own priors, retaining current historical lineups, pricing, SQ and TD exposure.",
+    "Those counterfactuals isolate within-history mapper vintage, not every difference from selected modern v61.",
+    "Different source definitions, missing-feature sets, preprocessing and training periods prohibit naive cross-family coefficient swaps."
+  ],
+  "minutes_context_qualification": {
+    "history_MPG": 34.8439,
+    "interpretation": "Both inputs observed; centered missing-flag/reference accounting, not more minutes or a different availability forecast.",
+    "missing_flag_reference_contribution_change": 0.115903,
+    "numeric_MPG_contribution_change": -0.018523,
+    "selected_MPG": 34.8577
+  },
+  "native_TD_centered_prior_difference": 0.5404527317381382,
+  "no_frozen_product_or_parameter_changes": true,
+  "player_id": 203999,
+  "raw_prior_difference": 1.2811410743060407,
+  "receipts": {
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/jokic_defense_difference_v1/receipt.json": "5230728f456f223031119845a6a1bb0a801b660ac427b58e755c4286e8afbd9c",
+    "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/jokic_defense_prior_attribution_v1/receipt.json": "0c85bf1ef07e22ee3ba623aacbc7aeea55b83d3d38a7319c29dfa79305b2ef18"
+  },
+  "saved_defense": {
+    "history": 2.9354593884958122,
+    "selected": 2.594524807900639
+  },
+  "selected_date": "2026-09-01"
+}

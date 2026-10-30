@@ -1,0 +1,67 @@
+{
+  "all_date_fresh_normals_recomputed": false,
+  "annual_checks": 30,
+  "backcast_dates": 742,
+  "dates": 6108,
+  "estimated_backcast_dates": 741,
+  "estimated_backcast_rows": 401574,
+  "estimated_dates": 6107,
+  "feature_queries": 9507828,
+  "fresh_native_batch_checks": 11,
+  "maximum_annual_saved_array_gap": 1.127773430198431e-10,
+  "maximum_fresh_normal_error": 8.915e-15,
+  "maximum_fresh_raw_coefficient_gap": 9.701e-15,
+  "maximum_prior_gap": 0,
+  "maximum_rating_reconstruction_gap": 3.552713678800501e-15,
+  "native_games": 37845,
+  "native_rows": 7108645,
+  "new_fits": 0,
+  "players": 2856,
+  "predictive_improvement_tested_for_this_history": false,
+  "producer_pending_marker_preserved": true,
+  "protected_2027_inputs": 0,
+  "publication_vintages_certified": false,
+  "qualifications": [
+    "Initial mapper backcasts before2000-10-01; first cold date empty.",
+    "Game/report date calendar, not every offseason day.",
+    "Uniform own-only priors; unidentified backgrounds/career weights remain missing.",
+    "Source-adapted history differs from selected modern v61 and separate daily-trained comparison.",
+    "Upstream2504fits:38converged;2466budget-limited;2476additionalbootstrap slots.",
+    "Independent fresh normal equations sampled11cuts; saved algebra checked all dates."
+  ],
+  "reader_race_fixed_in_separate_consumer": true,
+  "receipts": {
+    "browser": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/daily_history_1997_reader_full_browser_v2/receipt.json",
+      "sha256": "39bb4b1edd008d56cae3b8e7835fcfa9512e9dacb83a06ec3b853d6505c24303"
+    },
+    "consumer": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/daily_history_1997_reader_full_consumer_audit_v2/receipt.json",
+      "sha256": "d9d6f18c5fae636d38203df1415ea14cfbf3ad72b4287e6368981221a51e0ccb"
+    },
+    "math": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/daily_history_1997_full_artifact_audit_v2/receipt.json",
+      "sha256": "169ea2e3591c07fe166fe96464b60b046c4a58c182497e62c487be6408288374"
+    },
+    "math_closing": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/daily_history_1997_full_artifact_audit_v2/closing_binding.json",
+      "sha256": "a6a2e9132dc6ebe687e4b4f771308e93d232b5938b2da6792dc005d945b70e68"
+    },
+    "producer": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/vpm/vpm/results/harness/vpm_daily_1997_v1/manifest.json",
+      "sha256": "fa656b591aae87e4f44d0757e577a5fda8be1966b40f293d5029a39dee4fd74c"
+    },
+    "source": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/vpm_1997_daily_feature_export_audit_v1/receipt.json",
+      "sha256": "9a295a78c540dd6081b100dee184277bed623fab1e467556c78ba375a75ba687"
+    },
+    "workflow": {
+      "path": "/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline/results/estimated_skills/daily_history_1997_workflow_audit_v1/receipt.json",
+      "sha256": "64611d0cb76bc3adc87e0ea92fe060aaf8ce8b1ed7bde9c137874454dd2fa94b"
+    }
+  },
+  "recipe": "annual-trained forward365-day own-only prior; daily states and ratings",
+  "rows": 9416143,
+  "selected_pointer_sha256": "08e5882c463d2ac10eccc8161afd92f14650afd8585634b4008227fde75d05d5",
+  "status": "independently_verified_daily_historical_research_outputs"
+}
