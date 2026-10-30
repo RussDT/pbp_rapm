@@ -6,8 +6,15 @@ Reads a weighted_factors CSV from master_results, joins with player_stats
 for team/position info, calculates ranks and percentiles, then upserts
 to the timedecay_rapm table.
 
+The source filename is derived from the season year (N = 2027 means the 2026-27
+season) the same way `nba_pipeline/daily_rapm_update.sh` derives its own window
+tokens, so the nightly no longer has to be edited when the season rolls over.
+`--source-file` still overrides it for backfills.
+
 Usage:
-    python upload_timedecay_rapm.py                          # default: 21-26 file
+    python upload_timedecay_rapm.py                          # default season year
+    python upload_timedecay_rapm.py --year 2026              # backfill a past season
+    python upload_timedecay_rapm.py --dry-run                # report, upload nothing
     python upload_timedecay_rapm.py --source-file ../master_results/weighted_factors_14_18_all_rb_td700.csv
 """
 
@@ -20,6 +27,8 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 from supabase import create_client, Client
+
+from season_windows import default_season_year, window_token
 
 # Get the pipeline root directory
 SCRIPT_DIR = Path(__file__).parent
@@ -36,8 +45,15 @@ logging.basicConfig(
 # Load environment variables
 load_dotenv(PROJECT_ROOT / ".env")
 
-# Default source file
-DEFAULT_SOURCE_FILE = MASTER_RESULTS_DIR / "weighted_factors_21_26_all_rb_se_td700.csv"
+# The time-decay upload reads the 6-year rubberband + season-effects + td700
+# window produced by the nightly, e.g. 2027 -> weighted_factors_22_27_all_rb_se_td700.csv
+TIMEDECAY_WINDOW_LENGTH = 6
+
+
+def default_source_file(season_year: int) -> Path:
+    """Derive the td700 source filename for one season year."""
+    token = window_token(season_year, TIMEDECAY_WINDOW_LENGTH)
+    return MASTER_RESULTS_DIR / f"weighted_factors_{token}_all_rb_se_td700.csv"
 
 # Metrics that get ranks/percentiles (higher = better for all)
 RANKED_METRICS = [
@@ -113,11 +129,20 @@ def upload_to_supabase_records(supabase: Client, records: list, year: int) -> bo
 
 def main():
     parser = argparse.ArgumentParser(description="Upload time-decay RAPM to Supabase")
+    parser.add_argument('--year', type=int, default=default_season_year(),
+                        help='Season end year to upload (default %(default)s; 2027 = 2026-27)')
     parser.add_argument('--source-file', type=str, default=None,
-                        help='Path to weighted_factors CSV (default: weighted_factors_21_26_all_rb_se_td700.csv)')
+                        help='Path to weighted_factors CSV (default: derived from --year)')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Report what would be uploaded and exit without touching Supabase')
     args = parser.parse_args()
 
-    source_file = Path(args.source_file) if args.source_file else DEFAULT_SOURCE_FILE
+    season_year = args.year
+    source_file = Path(args.source_file) if args.source_file else default_source_file(season_year)
+
+    logging.info(f"Season year: {season_year} (season {season_year - 1}-{season_year})")
+    if args.dry_run:
+        logging.info("DRY RUN: nothing will be written to Supabase")
 
     # Validate source file
     if not source_file.exists():
@@ -125,13 +150,14 @@ def main():
         sys.exit(1)
 
     # Connect to Supabase
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
-    if not url or not key:
-        logging.error("SUPABASE_URL or SUPABASE_KEY missing in .env")
-        sys.exit(1)
-
-    supabase: Client = create_client(url, key)
+    supabase = None
+    if not args.dry_run:
+        url = os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SUPABASE_KEY")
+        if not url or not key:
+            logging.error("SUPABASE_URL or SUPABASE_KEY missing in .env")
+            sys.exit(1)
+        supabase = create_client(url, key)
 
     # Load weighted factors CSV
     logging.info(f"Loading {source_file.name}...")
@@ -142,8 +168,20 @@ def main():
     year = int(df['Latest_Year'].iloc[0])
     logging.info(f"  Latest year: {year}")
 
-    # Fetch player info from Supabase
-    player_info = fetch_player_info(supabase, year)
+    if args.source_file is None and year != season_year:
+        logging.error(
+            f"Latest_Year in {source_file.name} is {year} but --year is {season_year}; "
+            "refusing to upload a season the file does not describe"
+        )
+        sys.exit(1)
+
+    # Fetch player info from Supabase. A dry run does not read Supabase at all,
+    # so the team/position columns stay empty in the reported record shape.
+    if args.dry_run:
+        logging.info("DRY RUN: skipping the player_stats team/position join")
+        player_info = pd.DataFrame()
+    else:
+        player_info = fetch_player_info(supabase, year)
 
     # Rename CSV columns to match table schema
     df = df.rename(columns={
@@ -206,7 +244,13 @@ def main():
         clean_records.append(clean)
 
     # Upload to Supabase
-    upload_to_supabase_records(supabase, clean_records, year)
+    if args.dry_run:
+        logging.info(
+            f"DRY RUN: would replace timedecay_rapm rows for year={year} "
+            f"with {len(clean_records)} rows from {source_file.name}"
+        )
+    else:
+        upload_to_supabase_records(supabase, clean_records, year)
 
     # Summary
     logging.info("")

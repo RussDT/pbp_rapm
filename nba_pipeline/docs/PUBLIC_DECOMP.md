@@ -109,6 +109,49 @@ not run the former `sync_alt3_decomp_to_scposs.py` mapper: that external
 script was written for the Alt3 schema and must be audited against the new
 97-column DECOMP schema before player `csvs/scposs` files are refreshed.
 
+### scposs publish state (October 30, 2026)
+
+The `scposs` mapper is not merely skipped, it is absent. Commit `fc167b1f`
+("Restore DECOMP RAPM pipeline", July 21, 2026) removed the
+`DECOMP_SCPOSS_SCRIPT` pointer to
+`/Users/russellthomas/Docs/REPLIT_NBA_RAPM/scripts/sync_alt3_decomp_to_scposs.py`,
+and that directory no longer exists on disk. No replacement is in this repo.
+
+Published `csvs/scposs/{nba_id}.csv` on `origin/test-branch` carries a
+202-column DECOMP surface: `source_file`, `decomp_model`, possession counts,
+`oRAPM_DECOMP_*`, `oDECOMP_*`, and 66 `oALT_*`/`dALT_*`/`nALT_*` columns. For
+2026 the 1Y-5Y rows come from
+`weighted_factors_decomp_*_all_rb_se_a2000_4000.csv` under
+`decomp_model=RAPM_DECOMP_V2`, and the 6Y-30Y rows from
+`weighted_factors_alt3_efg_value_*` under
+`RAPM_DECOMP_ALT3_EFG_VALUE`.
+
+Two separate things block a 2027 publish:
+
+1. **No mapper.** `update_2026_scposs.py` is a season-parameterized
+   six-factor exporter writing 26 columns. It is *not* the producer of the
+   published surface and was never wired into the nightly. Running it against
+   `scposs` would append 2027 rows with roughly 175 columns null. It now
+   refuses to do that unless given `--allow-schema-downgrade`.
+2. **Partial inputs.** The five DECOMP windows needed for 1Y-5Y 2027 exist
+   (`weighted_factors_decomp_{27,26_27,25_27,24_27,23_27}_all_rb_se_a2000_4000.csv`),
+   but player-level `weighted_factors_alt3_efg_value_*` files exist for no
+   year in `master_results` (only the team audit bundle
+   `team_weighted_factors_alt3_efg_value_25_27_all_a25.csv`), and no `rapms`
+   checkout is mapped in `WORKSPACE.yaml`. The 6Y-30Y intervals therefore
+   have no local source.
+
+Reconstructability of the published schema from `decomp_27`, measured rather
+than assumed: 94 of 202 columns match by name, 108 do not. Of those 108, about
+25 are mechanical renames or derivations plus 10 rank columns, 15 are the
+`*RAPM_DECOMP_{SHOT,FT,TOV,SC,SCORING}` roll-ups (derivable, but the exact
+grouping has to be recovered from the lost mapper), and 66 are `ALT_*`. For
+2026, 1Y-5Y rows have 60 of 66 `ALT_*` columns populated under
+`RAPM_DECOMP_V2`, and spot checks suggest `ALT_*` is an alias view of
+`DECOMP_*` for that family (Jokic 2016 `oALT_EFG_VALUE` = `oDECOMP_EFG` =
+-0.236). That is inferred from the published data, not recovered from the
+mapper, so it is recorded here rather than implemented.
+
 ## Stabilized RAPM and VPM
 
 The private `alt3_3factor_research` repo is the canonical research package for
