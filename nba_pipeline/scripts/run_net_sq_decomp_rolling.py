@@ -130,12 +130,36 @@ def spec_id(profile: str, timedecay: bool, half_life: int) -> str:
     return f"{base}_td{half_life}" if timedecay else base
 
 
-def expected_input_paths(processed_dir: Path, window: Window) -> list[Path]:
+TARGET_FAMILIES = ("FIRST_CHANCE", "SECOND_CHANCE_CLEAN", "RAPM")
+
+
+def playoff_input_paths(processed_dir: Path, year: int) -> list[Path]:
+    """The three PS target parquets for one season."""
+    yy = year % 100
+    return [processed_dir / f"{family}{yy:02d}_PS.parquet" for family in TARGET_FAMILIES]
+
+
+def expected_input_paths(
+    processed_dir: Path,
+    window: Window,
+    *,
+    allow_missing_playoffs: bool = False,
+) -> list[Path]:
+    """Required target inputs for one window.
+
+    With ``allow_missing_playoffs`` the window's own end year is allowed to
+    have no PS half, for a season that is still in progress and has played no
+    playoffs yet. Every earlier year still requires both halves: a historical
+    season missing its playoffs is a broken target build, not an in-season
+    state, and must not be solved around silently.
+    """
     paths: list[Path] = []
     for year in range(window.start_year, window.end_year + 1):
         yy = year % 100
         for suffix in ("", "_PS"):
-            for family in ("FIRST_CHANCE", "SECOND_CHANCE_CLEAN", "RAPM"):
+            if suffix == "_PS" and allow_missing_playoffs and year == window.end_year:
+                continue
+            for family in TARGET_FAMILIES:
                 paths.append(processed_dir / f"{family}{yy:02d}{suffix}.parquet")
     return paths
 
@@ -363,6 +387,7 @@ def run_window(
     workers: int,
     cores_per_rapm: int,
     force: bool,
+    allow_missing_playoffs: bool = False,
 ) -> dict[str, object]:
     series = spec_id(profile, timedecay, half_life)
     window_root = output_root / series / window.compact
@@ -381,10 +406,33 @@ def run_window(
             "player_count": manifest["player_count"],
         }
 
-    missing_inputs = [path for path in expected_input_paths(processed_dir, window) if not path.exists()]
+    missing_inputs = [
+        path
+        for path in expected_input_paths(
+            processed_dir, window, allow_missing_playoffs=allow_missing_playoffs
+        )
+        if not path.exists()
+    ]
     if missing_inputs:
         raise FileNotFoundError(
             f"{window.compact} is missing {len(missing_inputs)} target inputs; first: {missing_inputs[:6]}"
+        )
+
+    end_year_playoffs = playoff_input_paths(processed_dir, window.end_year)
+    absent_playoffs = [path for path in end_year_playoffs if not path.exists()]
+    if absent_playoffs and len(absent_playoffs) != len(end_year_playoffs):
+        raise FileNotFoundError(
+            f"{window.compact} has a partial {window.end_year} playoff half: "
+            f"{len(end_year_playoffs) - len(absent_playoffs)} of {len(end_year_playoffs)} "
+            f"PS targets exist; missing {absent_playoffs}. A season that has played no "
+            "playoffs has none of them, so this is a broken target build rather than an "
+            "in-season state."
+        )
+    if absent_playoffs:
+        print(
+            f"  {window.compact}: no {window.end_year} playoff targets; solving "
+            "regular-season rows only for that season",
+            flush=True,
         )
 
     jobs = {"RAPM": PARENT_ALPHAS, **alpha_map(profile)}
@@ -411,6 +459,11 @@ def run_window(
 
     board, manifest = assemble_window(window, components_dir, profile, timedecay, half_life)
     manifest["solves"] = sorted(solve_records, key=lambda row: str(row["component"]))
+    # A window whose newest season has not played its playoffs is not comparable
+    # to the historical RS+PS windows; say so in the manifest rather than only
+    # in the log.
+    manifest["end_year_playoffs_included"] = not absent_playoffs
+    manifest["missing_playoff_inputs"] = [str(path) for path in absent_playoffs]
     window_root.mkdir(parents=True, exist_ok=True)
     board.to_csv(output_csv, index=False)
     board.to_parquet(output_parquet, index=False)
@@ -453,6 +506,13 @@ def main() -> int:
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--cores-per-rapm", type=int, default=2)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument(
+        "--allow-missing-playoffs",
+        action="store_true",
+        help="Permit each window's own end year to have no PS target half, for a "
+             "season still in progress. Earlier seasons still require both halves. "
+             "Affected windows record end_year_playoffs_included=false in their manifest.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -469,10 +529,24 @@ def main() -> int:
     print(f"series={series} windows={len(windows)}")
     if args.dry_run:
         for window in windows:
-            missing = len(
-                [path for path in expected_input_paths(args.processed_dir, window) if not path.exists()]
+            required = expected_input_paths(
+                args.processed_dir,
+                window,
+                allow_missing_playoffs=args.allow_missing_playoffs,
             )
-            print(f"PLAN {window.compact} components={len(COMPONENTS) + 1} missing_inputs={missing}")
+            missing = len([path for path in required if not path.exists()])
+            exempt = len(
+                [
+                    path
+                    for path in playoff_input_paths(args.processed_dir, window.end_year)
+                    if not path.exists()
+                ]
+            ) if args.allow_missing_playoffs else 0
+            suffix = f" exempt_playoff_inputs={exempt}" if exempt else ""
+            print(
+                f"PLAN {window.compact} components={len(COMPONENTS) + 1} "
+                f"missing_inputs={missing}{suffix}"
+            )
         return 0
 
     records: list[dict[str, object]] = []
@@ -490,6 +564,7 @@ def main() -> int:
                 args.workers,
                 args.cores_per_rapm,
                 args.force,
+                args.allow_missing_playoffs,
             )
         )
     summary = args.output_root / series / "run_manifest.json"

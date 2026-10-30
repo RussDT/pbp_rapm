@@ -16,10 +16,14 @@ SOURCE = ROOT / 'master_results/net_sq_decomp_rolling'
 OUTPUT = ROOT / 'results/td550_rolling_publication'
 
 
-def build_frame():
+def expected_windows(max_end_year):
+    """Every rolling 1Y-5Y window from 1997 through max_end_year."""
+    return {(start, end) for end in range(1997, max_end_year + 1)
+            for start in range(max(1997, end-4), end+1)}
+
+
+def build_frame(max_end_year=None):
     frames, receipts = [], []
-    expected = {(start, end) for end in range(1997, 2027)
-                for start in range(max(1997, end-4), end+1)}
     seen = set()
     alpha_contract = None
     for path in sorted(SOURCE.glob('weighted_factors_vpm_net_sq_resid_*_td550.csv')):
@@ -56,6 +60,14 @@ def build_frame():
         frame['source_sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
         frames.append(frame)
         receipts.append({'start_year':start,'end_year':end,'rows':len(frame),'source':str(path),'sha256':frame.source_sha256.iloc[0]})
+    # The newest end year is read off the archive rather than hardcoded, so a
+    # season rollover does not need a code edit; completeness is still exact,
+    # so a partially computed newest season fails instead of publishing half of
+    # it.
+    assert seen, f'No td550 window CSVs under {SOURCE}'
+    if max_end_year is None:
+        max_end_year = max(end for _, end in seen)
+    expected = expected_windows(max_end_year)
     assert seen == expected, (expected-seen,seen-expected)
     result = pd.concat(frames,ignore_index=True)
     assert not result.duplicated(['player_id','start_year','end_year']).any()
@@ -65,8 +77,11 @@ def build_frame():
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--publish',action='store_true')
+    parser.add_argument('--max-end-year',type=int,default=None,
+                        help='Pin the newest end year the archive must cover '
+                             '(default: the newest one present on disk).')
     args=parser.parse_args()
-    frame, receipts=build_frame()
+    frame, receipts=build_frame(args.max_end_year)
     OUTPUT.mkdir(parents=True,exist_ok=True)
     frame.to_parquet(OUTPUT/'rows.parquet',index=False)
     (OUTPUT/'sources.json').write_text(json.dumps(receipts,indent=2)+'\n')
