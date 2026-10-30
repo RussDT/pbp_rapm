@@ -1,0 +1,120 @@
+<div id="possession-shooter-filter">
+  <h3>Shot outcomes by shooter position</h3>
+  <div class="viz-controls">
+    <label class="form-label">Shooter group
+      <select class="form-select" id="psf-group">
+        <option value="All">All players</option>
+        <option value="Guards">Guards · PG / SG</option>
+        <option value="Forwards">Forwards · SF / PF</option>
+        <option value="Bigs">Bigs · C</option>
+        <option value="Unknown">Unclassified</option>
+      </select>
+    </label>
+  </div>
+  <div class="text-small text-muted" id="psf-status" aria-live="polite"></div>
+  <h4>Opponent's ensuing possession</h4>
+  <div id="psf-chart"></div>
+  <div id="psf-own-mobile" hidden>
+    <h4>Own continuation after missed FGAs</h4>
+    <table class="table table-sm"><thead><tr><th>Miss</th><th class="text-end">Own points / miss</th><th class="text-end">Misses</th></tr></thead><tbody id="psf-own-body"></tbody></table>
+  </div>
+  <h4>Make rates · all field-goal attempts</h4>
+  <table class="table table-sm"><thead><tr><th>Shot zone</th><th class="text-end">FG%</th><th class="text-end">Makes</th><th class="text-end">Attempts</th></tr></thead><tbody id="psf-fg-body"></tbody></table>
+  <div class="text-small text-muted" id="psf-coverage"></div>
+  <script type="application/json" id="psf-data">__POSITION_DATA__</script>
+</div>
+<style>
+#possession-shooter-filter svg text { fill:var(--foreground); font-size:12px; }
+#possession-shooter-filter .psf-svg { display:block; width:100%; }
+#possession-shooter-filter h4 { margin:18px 0 8px; }
+#possession-shooter-filter .psf-tooltip { position:absolute; pointer-events:none; background:var(--popover); color:var(--popover-foreground); padding:8px; border:1px solid var(--border); z-index:4; max-width:260px; font-size:12px; }
+#possession-shooter-filter { position:relative; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+(() => {
+  const root=document.getElementById('possession-shooter-filter');
+  const data=JSON.parse(root.querySelector('#psf-data').textContent);
+  const control=root.querySelector('#psf-group');
+  const chart=root.querySelector('#psf-chart');
+  const f3=v=>v==null?'—':v.toFixed(3);
+  const signed=v=>v==null?'—':`${v>=0?'+':''}${v.toFixed(3)}`;
+  const integer=v=>v==null?'—':v.toLocaleString('en-US');
+  const aliases={'At Rim Miss (Unblocked)':'Rim miss · no block','At Rim Block':'Rim block','Short Mid Range Miss':'Short-mid miss','Long Mid Range Miss':'Long-mid miss','Missed 2PT':'Missed two','Missed FG':'Any FG miss','Missed 3PT':'Missed three','Made Mid FG':'Made mid','Made Rim FG':'Made rim','Made 3FG':'Made three','Live Ball Turnover':'Live turnover','Deadball':'Dead turnover'};
+  const domain=d3.extent(['All','Guards','Forwards','Bigs'].flatMap(k=>data.groups[k].rows).filter(r=>r.delta!=null),r=>r.delta);
+  const span=domain[1]-domain[0];
+  const limits=[Math.min(0,domain[0])-span*.28,Math.max(0,domain[1])+span*.30];
+  const tip=document.createElement('div');tip.className='psf-tooltip';tip.setAttribute('role','tooltip');tip.hidden=true;root.appendChild(tip);
+  function showTip(event,r){
+    tip.textContent=`${r.category}: opponent ${f3(r.ppp)} PPP (${signed(r.delta)} vs league), ${integer(r.n)} possessions. Own continuation: ${f3(r.own)} points per miss; ${integer(r.misses)} misses.`;
+    tip.hidden=false;
+    const rect=root.getBoundingClientRect();
+    tip.style.left=Math.max(0,Math.min(event.clientX-rect.left+10,rect.width-270))+'px';
+    tip.style.top=(event.clientY-rect.top+16)+'px';
+  }
+  function draw(){
+    const group=data.groups[control.value];
+    const rows=[...group.rows].sort((a,b)=>(b.delta??-Infinity)-(a.delta??-Infinity));
+    const w=Math.floor(chart.getBoundingClientRect().width);
+    if(w<1)return;
+    const wide=w>=620;
+    const left=wide?150:132, right=wide?181:57, top=42, rowH=wide?34:42, bottom=57;
+    const h=top+rows.length*rowH+bottom;
+    const plotRight=w-right;
+    const visibleExtent=d3.extent(rows.filter(r=>r.delta!=null),r=>r.delta);
+    const activeLimits=control.value==='Unknown'?[Math.min(limits[0],visibleExtent[0]-.04),Math.max(limits[1],visibleExtent[1]+.07)]:limits;
+    const x=d3.scaleLinear().domain(activeLimits).range([left+8,plotRight-8]);
+    const svg=d3.select(chart).selectAll('svg').data([0]).join('svg').attr('class','psf-svg').attr('viewBox',`0 0 ${w} ${h}`).attr('role','img').attr('aria-label',`${control.value}: opponent PPP relative to league average, with actual rates and own continuation`);
+    svg.selectAll('*').remove();
+    svg.append('title').text(`${control.value} shot outcomes`);
+    svg.append('rect').attr('data-chart-frame','').attr('x',left).attr('y',top-16).attr('width',plotRight-left).attr('height',rows.length*rowH+20).attr('fill','none').attr('stroke','var(--border)');
+    const ticks=x.ticks(w<420?2:5);
+    ticks.forEach(t=>{
+      svg.append('line').attr('x1',x(t)).attr('x2',x(t)).attr('y1',top-16).attr('y2',h-bottom+4).attr('stroke','var(--border)');
+      svg.append('text').attr('x',x(t)).attr('y',h-bottom+23).attr('text-anchor','middle').text(t===0?'Avg':d3.format('+.2f')(t));
+    });
+    svg.append('line').attr('x1',x(0)).attr('x2',x(0)).attr('y1',top-16).attr('y2',h-bottom+4).attr('stroke','var(--foreground)');
+    svg.append('text').attr('class','axis-title').attr('data-axis','x').attr('x',(left+plotRight)/2).attr('y',h-8).attr('text-anchor','middle').text('PPP vs league average');
+    svg.append('text').attr('class','axis-title').attr('data-axis','y').attr('x',3).attr('y',14).text('Preceding event');
+    const pppX=wide?w-128:w-3, ownX=w-57, nX=w-2;
+    svg.append('text').attr('x',pppX).attr('y',14).attr('text-anchor','end').text('PPP');
+    if(wide){
+      svg.append('text').attr('data-tooltip','Own later points per all missed FGAs, including unrecovered misses; different denominator from opponent PPP.').attr('x',ownX).attr('y',14).attr('text-anchor','end').text('Own/miss');
+      svg.append('text').attr('x',nX).attr('y',14).attr('text-anchor','end').text('N');
+    }
+    rows.forEach((r,i)=>{
+      const y=top+i*rowH;
+      svg.append('text').attr('x',left-9).attr('y',y+4).attr('text-anchor','end').text(aliases[r.category]||r.category);
+      if(r.delta!=null){
+        const end=x(r.delta), origin=x(0);
+        svg.append('rect').attr('x',Math.min(end,origin)).attr('y',y-10).attr('width',Math.max(1,Math.abs(end-origin))).attr('height',20).attr('fill',r.delta>=0?'var(--viz-series-1)':'var(--viz-series-2)');
+        svg.append('text').attr('x',end+(r.delta>=0?5:-5)).attr('y',y+4).attr('text-anchor',r.delta>=0?'start':'end').text(signed(r.delta));
+      }
+      svg.append('text').attr('x',pppX).attr('y',y+4).attr('text-anchor','end').attr('font-weight','600').text(f3(r.ppp));
+      if(wide){
+        svg.append('text').attr('x',ownX).attr('y',y+4).attr('text-anchor','end').text(f3(r.own));
+        svg.append('text').attr('x',nX).attr('y',y+4).attr('text-anchor','end').text(r.n>=1000?`${(r.n/1000).toFixed(1)}k`:r.n);
+      }
+      svg.append('rect').attr('x',left).attr('y',y-rowH/2).attr('width',w-left).attr('height',rowH).attr('fill','transparent').attr('tabindex',0).attr('data-chart-hit','').attr('aria-label',`${r.category}: ${f3(r.ppp)} opponent PPP; own ${f3(r.own)} points per miss`).on('pointermove',e=>showTip(e,r)).on('pointerleave',()=>tip.hidden=true).on('click',e=>showTip(e,r)).on('focus',e=>{const b=e.target.getBoundingClientRect();showTip({clientX:b.left,clientY:b.top},r);}).on('blur',()=>tip.hidden=true);
+    });
+    root.querySelector('#psf-own-mobile').hidden=wide;
+    root.querySelector('#psf-own-body').innerHTML=rows.filter(r=>r.own!=null).map(r=>`<tr><td>${aliases[r.category]||r.category}</td><td class="text-end">${f3(r.own)}</td><td class="text-end">${integer(r.misses)}</td></tr>`).join('');
+    root.querySelector('#psf-fg-body').innerHTML=group.zones.map(r=>`<tr><td>${r.zone}</td><td class="text-end">${r.fg==null?'—':(r.fg*100).toFixed(1)+'%'}</td><td class="text-end">${integer(r.makes)}</td><td class="text-end">${integer(r.attempts)}</td></tr>`).join('');
+    root.querySelector('#psf-status').textContent=`${data.season} · fixed league baseline ${f3(data.baseline)} PPP · ${integer(group.players)} shooters`;
+    root.querySelector('#psf-coverage').textContent=`Position coverage: ${(data.coverage.pct*100).toFixed(2)}% of FGA · ${integer(data.coverage.unknown_players)} unclassified shooters · N = opponent possessions`;
+    // Remove optional delta labels if they collide with labels in the same row.
+    const textNodes=[...svg.node().querySelectorAll('text')];
+    for(let i=0;i<textNodes.length;i++)for(let j=i+1;j<textNodes.length;j++){
+      const a=textNodes[i],b=textNodes[j];if(!a.isConnected||!b.isConnected)continue;
+      const ra=a.getBoundingClientRect(),rb=b.getBoundingClientRect();
+      if(ra.width&&rb.width&&ra.left<rb.right+4&&ra.right+4>rb.left&&ra.top<rb.bottom&&ra.bottom>rb.top){
+        if(/^[+-]\d\.\d{3}$/.test(a.textContent))a.remove();
+        else if(/^[+-]\d\.\d{3}$/.test(b.textContent))b.remove();
+      }
+    }
+  }
+  control.addEventListener('change',()=>{tip.hidden=true;draw();});
+  new ResizeObserver(draw).observe(chart);
+  draw();
+})();
+</script>

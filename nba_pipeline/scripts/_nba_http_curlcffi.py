@@ -28,7 +28,7 @@ def _install():
         return False
 
     class _CurlCffiShim:
-        """Drop-in for the subset of `requests` that nba_api uses (.get)."""
+        """Drop-in for the subset of `requests` that nba_api uses (.get, .Session)."""
 
         @staticmethod
         def get(url=None, params=None, headers=None, proxies=None, timeout=None, **kwargs):
@@ -40,6 +40,13 @@ def _install():
                 timeout=timeout or 30,
                 impersonate=_IMPERSONATE,
             )
+
+        @staticmethod
+        def Session():
+            # nba_api >= 1.10 caches one class-level `requests.Session()` and
+            # calls `.get` on it from every worker thread. Return a stateless
+            # wrapper so each request gets its own curl_cffi handle.
+            return _CurlCffiShim
 
     # Only patch once.
     if getattr(_h.requests, "__curlcffi_shim__", False):

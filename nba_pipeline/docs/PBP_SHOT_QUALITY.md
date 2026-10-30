@@ -77,8 +77,8 @@ duplicate the primary defender. See
 The separate
 [Second-Chance Opportunity Prior](./SECOND_CHANCE_OPPORTUNITY_PRIOR.md) uses
 these pre-shot fields and make probabilities to price the miss/rebound branch.
-It remains a research explanation layer and does not change the SQ estimate or
-the active public DECOMP.
+It remains a research explanation layer and changes neither the SQ estimate nor
+forward Net DECOMP.
 
 The
 [Shot-Clock SQ and Grenade Burden](./SQ_SHOT_CLOCK_CHALLENGER.md) challenger

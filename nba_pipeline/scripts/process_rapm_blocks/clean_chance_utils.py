@@ -109,7 +109,6 @@ def _attach_rapm_scoring(nba_df_checked, file_path, year, label):
         if 'ThreePerc' not in nba_df_checked.columns:
             nba_df_checked['ThreePerc'] = np.nan
 
-    nba_df_checked['ExpFT'] = nba_df_checked['FTPerc'].fillna(0.75).astype(float)
     nba_df_checked['Exp3PT'] = nba_df_checked['ThreePerc'].fillna(0.35).astype(float)
 
     desc_all = (
@@ -139,6 +138,10 @@ def _attach_rapm_scoring(nba_df_checked, file_path, year, label):
     actual_score = (
         nba_df_checked['Home_Action_Score'] + nba_df_checked['Away_Action_Score']
     ).astype(float)
+    # Match the RAPM rebuild's missing-FT fallback in both the scoring parent
+    # and its FT children. Known shooter percentages remain expected values.
+    ft_perc = pd.to_numeric(nba_df_checked['FTPerc'], errors='coerce')
+    nba_df_checked['ExpFT'] = ft_perc.where(ft_perc.notna(), actual_score).astype(float)
 
     nba_df_checked['ActualNet'] = case_when(
         is_ft_event, nba_df_checked['ExpFT'],
@@ -201,7 +204,8 @@ def _attach_rapm_scoring(nba_df_checked, file_path, year, label):
     return nba_df_checked
 
 
-def build_clean_chance_base_py(file_path, year, season_str, label):
+def build_clean_chance_base_py(file_path, year, season_str, label, *, include_continuation_atoms=False,
+                               continuation_game_counts=None):
     """
     Build a shared possession-level clean first-/second-chance split.
 
@@ -563,6 +567,25 @@ def build_clean_chance_base_py(file_path, year, season_str, label):
         ['rim', 'mid', 'three'],
         default='',
     )
+    if include_continuation_atoms:
+        # Optional sufficient statistics for as-of continuation pricing. These
+        # are observed events/counts, independent of the file-level kappa.
+        for zone in ('rim', 'mid', 'three'):
+            nba_df_checked[f'FC_MISS_{zone.upper()}'] = (
+                pd.Series((miss_zone == zone).astype(float), index=nba_df_checked.index)
+                .groupby(poss_groupers, sort=False).transform('sum')
+            )
+        nba_df_checked['SC_AFTER_MISS_POINTS'] = sc_pts_poss
+    if continuation_game_counts is not None:
+        # The canonical kappa population includes raw first misses whose
+        # possession has no retained terminal row. Capture that population
+        # before EOP/lineup filtering so partial-date repricing is exact.
+        counts = nba_df_checked[['game_id']].copy()
+        for zone in ('rim', 'mid', 'three'):
+            mask = miss_zone == zone
+            counts[f'{zone}_misses'] = mask.astype(float)
+            counts[f'{zone}_points'] = np.where(mask, sc_pts_poss, 0.)
+        continuation_game_counts.extend(counts.groupby('game_id', as_index=False).sum().to_dict('records'))
     kappa_by_zone = {}
     for zone in ('rim', 'mid', 'three'):
         zone_mask = miss_zone == zone

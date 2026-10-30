@@ -24,6 +24,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from wnba_test.build_wnba_box_priors import (
+    DIRECT_TOV_DEF_ALPHA,
     DEFAULT_OUTPUT,
     build_annual_targets,
     build_box_priors_for_year,
@@ -106,7 +107,12 @@ def _load_selected_spec(output_dir: Path) -> dict[str, Any]:
     missing = required.difference(spec)
     if missing:
         raise ValueError(f"selected_spec is missing {sorted(missing)}")
-    return spec
+    return {
+        **spec,
+        "direct_tov_def_alpha": float(
+            spec.get("direct_tov_def_alpha", DIRECT_TOV_DEF_ALPHA)
+        ),
+    }
 
 
 def _add_reader_columns(
@@ -383,6 +389,7 @@ def main() -> int:
                 prior_results_by_prefix=priors_by_year[year],
                 prior_scale=float(spec["prior_scale"]),
                 output_label="box_trueprior_history_v1",
+                direct_tov_def_alpha=float(spec["direct_tov_def_alpha"]),
             )
         season_paths[year] = path
         season_frames.append(

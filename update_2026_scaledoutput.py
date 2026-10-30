@@ -1,21 +1,64 @@
 """
-Script to update 2026 data in SCALEDOUTPUT_SMALLER.csv
-Uses the same transformation as scposs but only for 3Y and 5Y data.
+Update the current-season slice of SCALEDOUTPUT_SMALLER.csv.
+
+Same transformation as scposs but only for the 3Y and 5Y windows. Despite the
+historical `2026` in this filename, the script is season parameterized: pass
+`--year 2027` (or set `NBA_RAPM_SEASON_YEAR=2027`). Season year N means season
+(N-1)-N; two-digit result tokens are derived from it.
+
+Paths:
+  NBA_RAPM_RESULTS_DIR  RAPM results root (default <repo>/nba_pipeline/results)
+  NBA_RAPM_CSVS_DIR     csvs repo checkout (default <repo>/../csvs)
 """
 
-import pandas as pd
+import argparse
 import os
+from pathlib import Path
+
+import pandas as pd
 
 # Configuration
-RESULTS_DIR = "nba_pipeline/results"
-TARGET_FILE = "../csvs/SCALEDOUTPUT_SMALLER.csv"
-LATEST_YEAR = 2026
+PROJECT_ROOT = Path(__file__).resolve().parent
 
-# Source files mapping: only 3Y and 5Y (folder, weighted_factors, year_interval)
-SOURCE_FILES = [
-    ("rapm_24_26_all_se", "weighted_factors_24_26_all_se.csv", "3Y"),
-    ("rapm_22_26_all_se", "weighted_factors_22_26_all_se.csv", "5Y"),
-]
+DEFAULT_LATEST_YEAR = int(os.environ.get("NBA_RAPM_SEASON_YEAR", "2027"))
+
+RESULTS_DIR = Path(
+    os.environ.get("NBA_RAPM_RESULTS_DIR", PROJECT_ROOT / "nba_pipeline" / "results")
+)
+CSVS_DIR = Path(os.environ.get("NBA_RAPM_CSVS_DIR", PROJECT_ROOT.parent / "csvs"))
+TARGET_FILE = CSVS_DIR / "SCALEDOUTPUT_SMALLER.csv"
+
+# Window lengths published here: 3Y and 5Y only
+WINDOW_LENGTHS = (3, 5)
+
+
+def two_digit(season_year: int) -> str:
+    """Two-digit season-end form used in result folder and file names."""
+    return f"{int(season_year) % 100:02d}"
+
+
+def range_token(latest_year: int, length: int) -> str:
+    """`26` for a single season, `24_26` for a 3-season window, etc."""
+    end_yy = two_digit(latest_year)
+    if length <= 1:
+        return end_yy
+    return f"{two_digit(latest_year - length + 1)}_{end_yy}"
+
+
+def build_source_files(latest_year: int):
+    """Build (folder, weighted_factors_file, year_interval) tuples."""
+    source_files = []
+    for length in WINDOW_LENGTHS:
+        token = range_token(latest_year, length)
+        source_files.append(
+            (
+                f"rapm_{token}_all_se",
+                f"weighted_factors_{token}_all_se.csv",
+                f"{length}Y",
+            )
+        )
+    return source_files
+
 
 # Target column order
 TARGET_COLUMNS = [
@@ -94,40 +137,40 @@ def calculate_ranks(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def main():
+def main(latest_year: int = DEFAULT_LATEST_YEAR):
     # Load and transform source files (3Y and 5Y only)
     all_new_data = []
-    for folder, wf_file, year_interval in SOURCE_FILES:
+    for folder, wf_file, year_interval in build_source_files(latest_year):
         df = load_and_transform(folder, wf_file, year_interval)
         all_new_data.append(df)
         print(f"  -> {len(df)} rows")
     
-    # Combine new 2026 data
-    new_2026_df = pd.concat(all_new_data, ignore_index=True)
-    print(f"\nTotal new 2026 rows before ranks: {len(new_2026_df)}")
+    # Combine new rows for the target season
+    new_season_df = pd.concat(all_new_data, ignore_index=True)
+    print(f"\nTotal new {latest_year} rows before ranks: {len(new_season_df)}")
     
     # Calculate ranks
-    new_2026_df = calculate_ranks(new_2026_df)
+    new_season_df = calculate_ranks(new_season_df)
     
     # Select and order columns
-    new_2026_df = new_2026_df[TARGET_COLUMNS]
+    new_season_df = new_season_df[TARGET_COLUMNS]
     
-    print(f"Total new 2026 rows: {len(new_2026_df)}")
+    print(f"Total new {latest_year} rows: {len(new_season_df)}")
     
     # Load existing data
     print(f"\nLoading existing {TARGET_FILE}...")
     existing_df = pd.read_csv(TARGET_FILE)
     print(f"  -> {len(existing_df)} total rows")
     
-    # Remove existing 2026 rows
-    existing_2026_count = (existing_df["Latest_Year"] == LATEST_YEAR).sum()
-    print(f"  -> {existing_2026_count} existing 2026 rows to replace")
+    # Remove existing rows for the target season
+    existing_season_count = (existing_df["Latest_Year"] == latest_year).sum()
+    print(f"  -> {existing_season_count} existing {latest_year} rows to replace")
     
-    non_2026_df = existing_df[existing_df["Latest_Year"] != LATEST_YEAR]
-    print(f"  -> {len(non_2026_df)} non-2026 rows to keep")
+    non_season_df = existing_df[existing_df["Latest_Year"] != latest_year]
+    print(f"  -> {len(non_season_df)} non-{latest_year} rows to keep")
     
     # Combine
-    final_df = pd.concat([non_2026_df, new_2026_df], ignore_index=True)
+    final_df = pd.concat([non_season_df, new_season_df], ignore_index=True)
     
     # Sort
     final_df = final_df.sort_values(["nba_id", "Latest_Year", "Year_Interval"])
@@ -138,11 +181,22 @@ def main():
     print(f"  -> {len(final_df)} total rows written")
     
     # Sample
-    print("\nSample of new 2026 data:")
-    sample = new_2026_df.head(5)
+    print(f"\nSample of new {latest_year} data:")
+    sample = new_season_df.head(5)
     print(sample[["nba_id", "player_name", "Year_Interval", "Off_RAPM", "Def_RAPM", "OVR_RAPM"]].to_string(index=False))
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--year",
+        type=int,
+        default=DEFAULT_LATEST_YEAR,
+        help="Season end year to rebuild (default %(default)s; 2027 = 2026-27)",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    main()
+    main(parse_args().year)
 

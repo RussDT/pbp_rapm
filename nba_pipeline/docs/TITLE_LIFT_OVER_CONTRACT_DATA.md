@@ -23,6 +23,22 @@ Every stored row should carry both `season_start` and `season_end`; all reader j
 
 ## Player-cost sources
 
+### Current Help Index research extract
+
+The deployed Help Index does not call a live salary API. Its current bundled
+contract input is Gabriel's `player_sheets` regular-season extract,
+`data/player_sheets/modern_selected_deduped.csv`, pinned to repository commit
+`cae13ad` and downloaded 2026-07-09. The reader uses `SALARY_PCT_CAP` when
+present and otherwise computes `salary / SALARY_CAP`; postseason records inherit
+the regular-season contract columns on `PLAYER_ID + year`. The pinned file has
+native 2026 coverage (537 of 582 player rows with salary share) and a
+2025-26 cap denominator of `$154,647,000`.
+
+This is still annual salary share, not audited CBA cap hit. The reader credits
+Steph Noh's NBA Salary Model as the public model behind the contract-value
+fields. Keep the pinned source/date in release metadata and never silently
+replace missing salary with zero.
+
 ### Modern primary source: BALLDONTLIE contracts
 
 The official [BDL API documentation](https://docs.balldontlie.io/) exposes annual player-contract rows with `player_id`, `season`, `team_id`, `cap_hit`, `total_cash`, and `base_salary`, plus contract-level type, status, guarantees, free-agency, and signing fields. These endpoints require the GOAT tier.
@@ -158,6 +174,108 @@ seasons use the destination salary peer's postseason workload, exactly like
 playoff seasons. Only actual-team context, teammate help, and additive team
 accounting require a focal postseason appearance and remain null otherwise.
 
+### Era-local, budget-neutral v2
+
+The full build also emits a research challenger that preserves the placement
+simulation while changing two assumptions:
+
+1. use destination playoff teams only from `focal season ± 4`, excluding the
+   focal season; and
+2. charge a signed opportunity cost when the closest salary peer is not an
+   exact cap-share match.
+
+For a destination peer:
+
+```text
+gap_pp = 100 * (focal_salary_share - peer_salary_share)
+
+v2_RS_shift = (focal_EPM - peer_EPM) * peer_RS_workload
+              - 0.067 * gap_pp
+
+v2_playoff_rating = original_team_rating
+                     - peer_EPM * peer_playoff_workload
+                     + focal_EPM * peer_playoff_workload
+                     - 0.078 * gap_pp
+```
+
+Positive gaps debit the focal player; negative gaps create the equal and
+opposite credit. The `0.067` regular-season and `0.078` playoff prices are
+robust within-season contribution slopes among playoff rotation players in the
+8%-20% cap band. Using team-rating contribution slopes avoids double-counting
+workload: the price already represents the expected team-rating value of one
+additional cap point.
+
+The export keeps `title_lift_over_contract` for the full-history production
+comparison and adds `title_lift_over_contract_v2`. Supporting columns retain
+the v2 placement count, actual and baseline title/qualification probabilities,
+fixed-bracket and seeding components, signed mean cap gap, median/p90 absolute
+gap, share of placements beyond five cap points, and mean RS/playoff debits.
+The exact v2 identity is:
+
+```text
+title_lift_over_contract_v2
+  = era_local_budget_fixed_bracket_title_lift
+  + era_local_budget_seeding_title_lift
+```
+
+### Playoff-prior challenger
+
+The build also exports an entering-playoffs EPM-prior sensitivity on the same
+era-local, cap-gap-priced placements. For target postseason `y`, fit player O/D
+translations from postseasons `[y-8, y-1]` only, centered on the frozen
+pre-playoff EPM lineup expectation and ridge-shrunk to zero at `alpha=24000`.
+Players with no earlier playoff possessions retain their exact pre-playoff EPM.
+
+Regular-season qualification and seeding still use pre-playoff EPM. The
+adjusted playoff rating is used for the focal player, removed salary peer,
+destination roster, and opponent field before calculating series and bracket
+odds. Supporting season columns are `playoff_adjusted_dpm`, the O/D/net
+translation and prior-evidence counts, adjusted actual/baseline bracket odds,
+and the fixed-bracket/seeding decomposition. Career columns sum those annual
+probability differences. The exact identity is:
+
+```text
+playoff_adjusted_title_lift_over_contract_v2
+  = playoff_adjusted_fixed_bracket_title_lift
+  + playoff_adjusted_seeding_title_lift
+```
+
+The 2007-2025 forward playoff gate has 1,586 games and 294,451 possessions.
+Adjusted minus pre-playoff-EPM MSE is `-31.53e-6`, where negative favors the
+challenger, with game-clustered 95% interval `[-84.90e-6, +23.97e-6]`.
+Because the interval crosses zero, this is a labeled research sensitivity, not
+a replacement for era-local v2. It raises LeBron's career result from `1.057`
+to `1.206` titles over contract; all peers, teammates, and opponents receive
+the same date-safe adjustment rule.
+
+### Lagged DARKO + playoff-prior challenger
+
+The Help Index also exposes a separate, explicitly lagged DARKO sensitivity.
+For target season `t`, it starts from the completed public DARKO row for season
+`t-1`; same-season DARKO is never used. It then estimates zero-centered O/D
+playoff residuals at `alpha=24000` using only the eight postseasons before `t`.
+Players without prior playoff evidence retain their lagged DARKO exactly.
+
+Every focal player, salary peer, destination teammate, and opponent is rebuilt
+under the same timing rule. The model then recalibrates the regular-season and
+playoff logistic game layers and runs the same era-local, cap-gap-priced
+qualification, seeding, and four-series bracket simulation as EPM TLOC. Its
+public coverage is 1998-2026: DARKO 1997 supplies the prior for 1998. The 2026
+salary-share rows come from the pinned `player_sheets` extract above.
+
+The build emits 11,256 player-seasons and 2,116 careers. Its 2006-2026 forward
+playoff gate contains 1,760 games and 326,805 possessions. Adjusted minus
+lagged-DARKO MSE is `-3.70e-6`, with a game-clustered 95% interval of
+`[-62.58e-6, +53.80e-6]`. The interval crosses zero, so the playoff update is a
+labeled research sensitivity—not evidence that it improves on lagged DARKO.
+
+Build and publish with:
+
+```bash
+.venv/bin/python nba_pipeline/scripts/build_darko_playoff_title_lift.py
+.venv/bin/python nba_pipeline/scripts/publish_darko_playoff_title_lift.py
+```
+
 Salary rows are annual cash salary, not cap hit. When a player has multiple
 team-stint rows in one season, sum them before calculating salary share; use the
 largest salary stint only as a display-team label for a nonplayoff row. This
@@ -284,6 +402,20 @@ actual regular-season and playoff workloads**. A separately labeled signing-date
 metric may later include availability and market pricing, but it must not be
 mixed into this retrospective result.
 
+The research-only [scalar challenger](./CONTRACT_TITLE_CURVE_CHALLENGER.md)
+tests the simpler `EPM surplus -> title-lift curve` summary with
+leave-one-season-out predictions. EPM surplus alone is materially incomplete;
+expected salary-slot workload is required to avoid granting small contract
+roles max-contract title leverage. The role-aware shortcut closely compresses
+the current result but is trained against it and therefore does not validate
+the underlying bracket model.
+
+The era-local, budget-neutral full-placement challenger is a different test:
+it keeps the nonlinear bracket integration rather than compressing it to one
+curve. On the rebuilt career board, LeBron is `1.057` titles, Curry `0.672`,
+and their gap is `0.385`; the corresponding full-history values are `1.417`,
+`1.235`, and `0.182`. Career correlation is `0.960` across 2,275 common rows.
+
 ## Release gate
 
 Before publishing 2002-2026 results:
@@ -296,8 +428,17 @@ Before publishing 2002-2026 results:
 5. Validate both game models by leave-one-season-out log loss; test seed
    monotonicity, series symmetry, bracket closure, exact swap-minus-peer
    identity, and exact full-season = fixed-bracket + seeding closure.
-6. Report peer-placement counts and salary-match gaps; do not hide thin max-
-   salary matches behind an average peer EPM.
+6. Report peer-placement counts, raw mean gap, median gap, p90 gap, and the
+   share outside 3- and 5-cap-point calipers; do not hide thin max-salary
+   matches behind an average peer EPM.
 7. Keep the signing-date market curve labeled prototype until its UFA,
    constrained, rookie/minimum, and max-censored regimes pass their own gate.
 8. Publish derived salary share and metric rows only until raw-data publication rights are confirmed.
+
+## Playoff injury extension (source audit, 2026-10-11)
+
+The focal player's own injury availability is not included in salary-peer lift: the swap inherits the destination peer workload. Actual-team exposure accounting reflects absences but does not label their medical causes. The [injury extension receipt](./PLAYOFF_INJURY_TITLE_LIFT.md) audits six historical cases and specifies a separate game-varying healthy-versus-injured title-chance comparison. Keep current metric fields unchanged; no injury-loss probability has been computed or published. [Primary-source evidence](./PLAYOFF_INJURY_SOURCE_RESEARCH.md) supports the pilot, while complete historical source coverage remains unverified.
+
+### Participation-scaled sensitivity (implemented)
+
+The owner-selected reader extension multiplies each season’s original lift by actual playoff participation (games appeared / actual team playoff games), or a shrunk other-career-season estimate for a known nonplayoff team. Nested leave-one-season-out tuning selects a 32-game league prior; the target season is excluded from player history, league baseline and tuning. Career values sum adjusted seasons with coverage counts. The new fields coexist with every original title model and do not modify their accounting identities. Zero-appearance roster proxies are explicitly labeled, unresolved assignments stay missing, and the estimate may use future career seasons retrospectively. See the [implementation and coverage receipt](./PLAYOFF_INJURY_TITLE_LIFT.md#implemented-participation-sensitivity-2026-10-11). This is signed participation scaling, not injury-only title-chance loss or a contract-cost penalty.

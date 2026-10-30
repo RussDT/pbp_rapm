@@ -50,7 +50,8 @@ Do not blend these model families in language or code.
 | Pure Six-Factor RAPM | Native TS%, TOV%, and OREB% lineup solves, no box prior | Lineup signal and structural analysis |
 | Hybrid Six-Factor RAPM | Post-solve empirical-Bayes blend of pure factors and box priors | Stabilized factor display |
 | True-Prior RAPM | Prior-centered ridge solve inside the lineup regression | Prior-informed impact estimation |
-| Public DECOMP | Eight point-valued additive components built from actual possession scoring | Current public mechanism breakdown |
+| Gross DECOMP | Eight point-valued additive components built from gross actual-possession scoring | Compatibility benchmark during Net DECOMP migration |
+| Net DECOMP | Continuation-priced first chance, turnover value, and second-chance conversion | Selected forward explanatory product |
 | VPM / Impact Monster | Ten point-valued components using frozen mid/three EV targets plus actual-minus-EV residuals | Predictive research and player board |
 | Alt3 EFG-value | Older atoms plus balancing-baseline family | Legacy reproduction and audits only |
 
@@ -96,9 +97,19 @@ Read
 [references/possession-structure-framing.md](references/possession-structure-framing.md)
 for public copy and factor explanations.
 
-## Active Public DECOMP
+## Forward Net DECOMP and Gross Compatibility
 
-Use these eight player-facing components:
+Owner decision 2026-09-03: use Net DECOMP for new explanatory products. Its
+five shot children are `DECOMP_NET_*`, with `ALT_FT`,
+`ALT_TOV_NET_VALUE`, and `SECOND_CHANCE_NET`. Preserve the isolated net lane,
+exact kappa/payback identities, and explicit `weighted_factors_decomp_net_*`
+filenames during the 1Y-5Y public migration. The owner-expanded artifact
+contract is all 140 available rolling 1Y-5Y windows from 1997 through 2026 for
+actual Net, common-alpha SQ Net, and component-alpha TD550 SQ VPM; consumer
+cutover remains pending and reversible.
+
+The former gross public surface remains the compatibility and rollback
+benchmark. For that surface, use these eight player-facing components:
 
 1. `DECOMP_RIM_FREQ`
 2. `DECOMP_RIM_FG`
@@ -113,7 +124,8 @@ The first five close exactly to first-chance EFG at the processed-row level.
 With FT and turnover value they close to `FIRST_CHANCE`; adding direct
 `SECOND_CHANCE_CLEAN` closes to the actual possession-scoring layer.
 
-Treat `weighted_factors_decomp_*` as active. Treat
+Treat `weighted_factors_decomp_net_*` as the selected forward family and
+`weighted_factors_decomp_*` as gross compatibility during migration. Treat
 `weighted_factors_alt3_efg_value_*` and `weighted_factors_alt3_*` as
 legacy/audit surfaces.
 

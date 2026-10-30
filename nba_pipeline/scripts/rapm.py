@@ -19,7 +19,8 @@ from __future__ import annotations
 import logging
 import numpy as np
 import pandas as pd
-from scipy.sparse import lil_matrix, csr_matrix, coo_matrix
+from scipy.sparse import lil_matrix, csr_matrix, coo_matrix, hstack, vstack
+from scipy.sparse.linalg import lsqr
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.model_selection import GroupKFold, KFold
 from collections import defaultdict
@@ -27,18 +28,28 @@ import multiprocessing as mp
 from functools import partial
 from pathlib import Path
 import os
+import re
 import shutil
 import subprocess
 
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
+try:
+    from .rubberband_model import build_rubberband_basis, compute_pre_possession_clock_state
+except ImportError:  # Direct script execution from nba_pipeline/scripts.
+    from rubberband_model import build_rubberband_basis, compute_pre_possession_clock_state
+
 # Get the pipeline root directory (parent of scripts/)
 SCRIPT_DIR = Path(__file__).parent
 PIPELINE_ROOT = SCRIPT_DIR.parent
 PROJECT_ROOT = PIPELINE_ROOT.parent
-PROCESSED_DIR = PIPELINE_ROOT / "processed"
-RESULTS_DIR = PIPELINE_ROOT / "results"
+PROCESSED_DIR = Path(
+    os.environ.get("NBA_PIPELINE_PROCESSED_DIR", PIPELINE_ROOT / "processed")
+)
+RESULTS_DIR = Path(
+    os.environ.get("NBA_PIPELINE_RESULTS_DIR", PIPELINE_ROOT / "results")
+)
 MASTER_RESULTS_DIR = PIPELINE_ROOT / "master_results"
 RAPMS_DIR = PROJECT_ROOT.parent / "rapms"
 RAPMS_MASTER_RESULTS_DIR = RAPMS_DIR / "master_results"
@@ -219,18 +230,22 @@ def build_output_suffix(
     season_suffix: str,
     pure: bool = False,
     rubberband: bool = False,
+    rubberband_model: str = 'smooth',
     season_effects: bool = False,
     fixed_season_effects: bool = False,
     ps_prior: bool = False,
     ps_prior_stage2: str = 'full',
     age_dummies: bool = False,
     age_poly_degree: int | None = None,
+    age_curve_values: bool = False,
     alpha_cv: bool = False,
     off_alpha: float = 3000,
     def_alpha: float = 3000,
     age_curve: bool = False,
     off_prior=None,
     def_prior=None,
+    prior_label: str | None = None,
+    penalty_label: str | None = None,
     timedecay: bool = False,
     half_life=None,
     strength_splits: bool = False,
@@ -243,6 +258,8 @@ def build_output_suffix(
         parts.append("pure")
     if rubberband:
         parts.append("rb")
+        if rubberband_model == 'legacy':
+            parts.append("legacy")
     if season_effects:
         parts.append("se")
     if fixed_season_effects:
@@ -253,6 +270,8 @@ def build_output_suffix(
         parts.append("agefe")
     if age_poly_degree is not None:
         parts.append(f"agepoly{int(age_poly_degree)}")
+    if age_curve_values:
+        parts.append("agevalues")
     if alpha_cv:
         parts.append("cv")
     if off_alpha != 3000 or def_alpha != 3000:
@@ -265,6 +284,10 @@ def build_output_suffix(
         parts.append("offprior")
     elif def_prior is not None and not age_curve:
         parts.append("prior")
+    if prior_label and (off_prior is not None or def_prior is not None):
+        parts.append(str(prior_label))
+    if penalty_label:
+        parts.append(str(penalty_label))
     if timedecay:
         td_half = half_life if half_life else 700
         parts.append(f"td{int(td_half)}")
@@ -275,6 +298,37 @@ def build_output_suffix(
     if strength_sensitivity:
         parts.append("strengthsens")
     return "_".join(parts)
+
+
+def load_player_penalty_multipliers(path) -> tuple[dict[str, float], dict[str, float]]:
+    """Load per-player generalized-ridge precision multipliers.
+
+    The CSV contract is ``player_id,off_multiplier,def_multiplier``. Missing
+    players retain multiplier 1.0; supplied values must be finite and at least
+    1.0 so this interface can only add shrinkage relative to the base alphas.
+    """
+
+    frame = pd.read_csv(path)
+    required = {"player_id", "off_multiplier", "def_multiplier"}
+    missing = required - set(frame.columns)
+    if missing:
+        raise ValueError(f"Player penalty multiplier file missing columns: {sorted(missing)}")
+    if frame["player_id"].isna().any():
+        raise ValueError("Player penalty multiplier file contains missing player_id values.")
+    frame = frame.copy()
+    frame["player_id"] = frame["player_id"].astype(str)
+    if frame["player_id"].duplicated().any():
+        raise ValueError("Player penalty multiplier file contains duplicate player_id values.")
+    for column in ["off_multiplier", "def_multiplier"]:
+        frame[column] = pd.to_numeric(frame[column], errors="coerce")
+        if frame[column].isna().any() or (~np.isfinite(frame[column])).any():
+            raise ValueError(f"Player penalty multiplier file contains invalid {column} values.")
+        if (frame[column] < 1.0).any():
+            raise ValueError(f"{column} values must be at least 1.0.")
+    return (
+        dict(zip(frame["player_id"], frame["off_multiplier"].astype(float))),
+        dict(zip(frame["player_id"], frame["def_multiplier"].astype(float))),
+    )
 
 
 def _decay_weights_from_parsed_dates(parsed_dates: pd.Series, decay_base: float) -> np.ndarray:
@@ -746,6 +800,57 @@ def load_age_poly_curves(age_poly_coefficients, prefix: str) -> tuple[dict[str, 
     if len(degrees) != 1:
         raise ValueError(f"Expected one polynomial degree for {prefix}, found {sorted(degrees)}")
     return curves, degrees.pop()
+
+
+class InterpolatedAgeCurve:
+    """Piecewise-linear frozen age curve with endpoint clipping."""
+
+    def __init__(self, ages, values):
+        self.ages = np.asarray(ages, dtype=float)
+        self.values = np.asarray(values, dtype=float)
+
+    def __call__(self, age_value):
+        return float(
+            np.interp(
+                float(age_value),
+                self.ages,
+                self.values,
+                left=float(self.values[0]),
+                right=float(self.values[-1]),
+            )
+        )
+
+
+def load_age_value_curves(age_curve_values) -> tuple[dict[str, InterpolatedAgeCurve], dict]:
+    """Load a frozen positive-good O-RAPM/D-RAPM age table for solver offsets."""
+    path = Path(age_curve_values)
+    values = pd.read_csv(path)
+    required = {"age", "orapm_age_effect", "drapm_age_effect"}
+    missing = required - set(values.columns)
+    if missing:
+        raise ValueError(f"Age curve value file missing columns: {sorted(missing)}")
+    values = values[list(required)].copy()
+    for column in required:
+        values[column] = pd.to_numeric(values[column], errors="coerce")
+    values = values.dropna().sort_values("age")
+    if len(values) < 2 or values["age"].duplicated().any():
+        raise ValueError("Age curve value file requires at least two unique ages.")
+    ages = values["age"].to_numpy(dtype=float)
+    curves = {
+        "off": InterpolatedAgeCurve(ages, values["orapm_age_effect"].to_numpy(dtype=float)),
+        # rapm.py's raw defense coefficient is points allowed, so flip the
+        # reader-facing positive-good D-RAPM curve exactly once here.
+        "def": InterpolatedAgeCurve(ages, -values["drapm_age_effect"].to_numpy(dtype=float)),
+    }
+    metadata = {
+        "source": str(path),
+        "age_min": float(ages.min()),
+        "age_max": float(ages.max()),
+        "rows": int(len(values)),
+        "defense_input_sign": "positive_good",
+        "defense_solver_sign": "raw_points_allowed",
+    }
+    return curves, metadata
 
 
 def compute_fixed_age_poly_offsets(
@@ -1625,6 +1730,7 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
     - PLAYTYPE_TS_MIX: has Playtype_Exp_PTS -> create Off_Diff, Def_Diff
     - TRANSITION_FREQ: has Is_Transition -> create Off_Diff, Def_Diff
     - TRANSITION_RIM: has Is_Transition_Rim -> create Off_Diff, Def_Diff
+    - TRANSITION_*_BACKCAST: frozen retrospective classifier labels, kept as distinct targets
     - INITIAL_EV: has Initial_EV -> create Off_Diff, Def_Diff
     - RUSSELL_SHOTQUALITY / CONTEXT_SHOTQUALITY: has Off_Diff, Def_Diff from processed possession parquet
     - TS: has Net_Diff -> create Off_Diff, Def_Diff
@@ -1647,6 +1753,14 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
         scoring_tov = df['Is_Turnover'] - df.get('Is_BadPass_TOV', 0)
         df['Off_Diff'] = -scoring_tov
         df['Def_Diff'] = scoring_tov
+        return df
+    elif prefix == 'SECOND_CHANCE_NET' and 'SC_NET_CONT_Diff' in df.columns:
+        logging.info("Detected SECOND_CHANCE_NET (net-continuation second-chance value)")
+        net_cont = pd.to_numeric(df['SC_NET_CONT_Diff'], errors='coerce')
+        if net_cont.isna().any():
+            raise ValueError("SECOND_CHANCE_NET found missing SC_NET_CONT_Diff values.")
+        df['Off_Diff'] = net_cont
+        df['Def_Diff'] = -net_cont
         return df
     elif prefix == 'ALT_TOV_NET_VALUE' and 'Is_Turnover' in df.columns:
         if alt_baselines is None or prefix not in alt_baselines:
@@ -1794,7 +1908,25 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
         df['Def_Diff'] = -df['Off_Diff']
         return df
 
-    if 'Off_Diff' in df.columns and 'Def_Diff' in df.columns:
+    if prefix == 'PLAYTYPE_PROXY_PTS_BACKCAST':
+        if 'Playtype_Proxy_PTS_Backcast' not in df.columns:
+            raise ValueError("PLAYTYPE_PROXY_PTS_BACKCAST input lacks its target column.")
+        logging.info("Detected PLAYTYPE_PROXY_PTS_BACKCAST file")
+        df['Off_Diff'] = df['Playtype_Proxy_PTS_Backcast']
+        df['Def_Diff'] = -df['Playtype_Proxy_PTS_Backcast']
+    elif prefix == 'TRANSITION_FREQ_BACKCAST':
+        if 'Is_Transition_Backcast' not in df.columns:
+            raise ValueError("TRANSITION_FREQ_BACKCAST input lacks its target column.")
+        logging.info("Detected TRANSITION_FREQ_BACKCAST file")
+        df['Off_Diff'] = df['Is_Transition_Backcast']
+        df['Def_Diff'] = -df['Is_Transition_Backcast']
+    elif prefix == 'TRANSITION_RIM_BACKCAST':
+        if 'Is_Transition_Rim_Backcast' not in df.columns:
+            raise ValueError("TRANSITION_RIM_BACKCAST input lacks its target column.")
+        logging.info("Detected TRANSITION_RIM_BACKCAST file")
+        df['Off_Diff'] = df['Is_Transition_Rim_Backcast']
+        df['Def_Diff'] = -df['Is_Transition_Rim_Backcast']
+    elif 'Off_Diff' in df.columns and 'Def_Diff' in df.columns:
         if pure and 'Net_Diff' in df.columns:
             logging.info("Detected RAPM file - PURE mode (using Net_Diff, ignoring luck adjustments)")
             # Use Net_Diff instead of adjusted Off_Diff/Def_Diff
@@ -1866,10 +1998,22 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
         logging.info("Detected PLAYTYPE_TS_MIX file (has Playtype_Exp_PTS)")
         df['Off_Diff'] = df['Playtype_Exp_PTS']
         df['Def_Diff'] = -df['Playtype_Exp_PTS']
+    elif 'Playtype_Proxy_PTS_Backcast' in df.columns:
+        logging.info("Detected PLAYTYPE_PROXY_PTS_BACKCAST file")
+        df['Off_Diff'] = df['Playtype_Proxy_PTS_Backcast']
+        df['Def_Diff'] = -df['Playtype_Proxy_PTS_Backcast']
     elif 'Playtype_Proxy_PTS' in df.columns:
         logging.info("Detected PLAYTYPE_PROXY_PTS file (has Playtype_Proxy_PTS)")
         df['Off_Diff'] = df['Playtype_Proxy_PTS']
         df['Def_Diff'] = -df['Playtype_Proxy_PTS']
+    elif 'Is_Transition_Backcast' in df.columns:
+        logging.info("Detected TRANSITION_FREQ_BACKCAST file")
+        df['Off_Diff'] = df['Is_Transition_Backcast']
+        df['Def_Diff'] = -df['Is_Transition_Backcast']
+    elif 'Is_Transition_Rim_Backcast' in df.columns:
+        logging.info("Detected TRANSITION_RIM_BACKCAST file")
+        df['Off_Diff'] = df['Is_Transition_Rim_Backcast']
+        df['Def_Diff'] = -df['Is_Transition_Rim_Backcast']
     elif 'Is_Transition' in df.columns:
         logging.info("Detected TRANSITION_FREQ file (has Is_Transition)")
         # For transition frequency: offense plays in transition (good), defense allows transition (bad)
@@ -1899,6 +2043,118 @@ def detect_file_type_and_prepare(df, pure=False, prefix=None, alt_baselines=None
 ###############################################################################
 # 2) TRANSFORM O/D FORMAT TO HOME/AWAY FORMAT
 ###############################################################################
+def reconstruct_cumulative_game_scores(df):
+    """Recover cumulative home/away scores from dense or sparse score snapshots.
+
+    Modern processed possessions carry the current score on nearly every row,
+    while older files often use ``0-0`` as a placeholder on non-scoring rows.
+    Treat a nonzero score pair as an observed scoreboard snapshot and carry the
+    pair forward within game.  Rows before the first score remain tied at zero.
+    """
+
+    required = {'game_id', 'away_score', 'home_score'}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Score-state reconstruction missing columns: {sorted(missing)}")
+
+    game_ids = df['game_id'].astype(str)
+    away_raw = pd.to_numeric(df['away_score'], errors='coerce').fillna(0.0)
+    home_raw = pd.to_numeric(df['home_score'], errors='coerce').fillna(0.0)
+    observed = away_raw.ne(0.0) | home_raw.ne(0.0)
+
+    away_score = away_raw.where(observed).groupby(game_ids, sort=False).ffill().fillna(0.0)
+    home_score = home_raw.where(observed).groupby(game_ids, sort=False).ffill().fillna(0.0)
+    return (
+        away_score.to_numpy(dtype=np.float64),
+        home_score.to_numpy(dtype=np.float64),
+        observed.to_numpy(dtype=bool),
+    )
+
+
+def infer_home_offense_from_score_state(
+    game_ids,
+    offense_players,
+    defense_players,
+    away_score,
+    home_score,
+):
+    """Infer possession venue side from exclusive score changes and lineups.
+
+    Historical score snapshots can skip intervening scoring, so a later row may
+    show both team scores increasing.  Only exclusive score changes seed venue
+    identity.  Teammate/opponent lineup co-occurrence then propagates that
+    identity to every player in the game.
+    """
+
+    game_ids = np.asarray(game_ids)
+    offense_players = np.asarray(offense_players, dtype=np.int64)
+    defense_players = np.asarray(defense_players, dtype=np.int64)
+    n_rows = len(game_ids)
+    if n_rows == 0:
+        return np.zeros(0, dtype=bool), np.zeros(0, dtype=bool)
+
+    game_starts = np.empty(n_rows, dtype=bool)
+    game_starts[0] = True
+    game_starts[1:] = game_ids[1:] != game_ids[:-1]
+    away_delta = np.empty(n_rows, dtype=np.float64)
+    home_delta = np.empty(n_rows, dtype=np.float64)
+    away_delta[0] = away_score[0]
+    home_delta[0] = home_score[0]
+    away_delta[1:] = away_score[1:] - away_score[:-1]
+    home_delta[1:] = home_score[1:] - home_score[:-1]
+    away_delta[game_starts] = away_score[game_starts]
+    home_delta[game_starts] = home_score[game_starts]
+
+    off_is_home = np.zeros(n_rows, dtype=bool)
+    resolved = np.zeros(n_rows, dtype=bool)
+    boundaries = np.r_[np.flatnonzero(game_starts), n_rows]
+    for start, end in zip(boundaries[:-1], boundaries[1:]):
+        home_players: set[int] = set()
+        away_players: set[int] = set()
+
+        for row in range(start, end):
+            offense = {int(value) for value in offense_players[row] if value > 0}
+            defense = {int(value) for value in defense_players[row] if value > 0}
+            if home_delta[row] > 0 and away_delta[row] <= 0:
+                home_players.update(offense)
+                away_players.update(defense)
+            elif away_delta[row] > 0 and home_delta[row] <= 0:
+                away_players.update(offense)
+                home_players.update(defense)
+
+        # Extend the score-seeded identities through substitutions and lineup
+        # co-occurrence. Contradictory already-seeded players are never moved.
+        for _ in range(6):
+            changed = False
+            for row in range(start, end):
+                offense = {int(value) for value in offense_players[row] if value > 0}
+                defense = {int(value) for value in defense_players[row] if value > 0}
+                home_votes = len(offense & home_players) + len(defense & away_players)
+                away_votes = len(offense & away_players) + len(defense & home_players)
+                before = len(home_players) + len(away_players)
+                if home_votes > away_votes:
+                    home_players.update(offense - away_players)
+                    away_players.update(defense - home_players)
+                elif away_votes > home_votes:
+                    away_players.update(offense - home_players)
+                    home_players.update(defense - away_players)
+                changed |= len(home_players) + len(away_players) > before
+            if not changed:
+                break
+
+        for row in range(start, end):
+            offense = offense_players[row]
+            defense = defense_players[row]
+            home_votes = sum(int(value) in home_players for value in offense if value > 0)
+            home_votes += sum(int(value) in away_players for value in defense if value > 0)
+            away_votes = sum(int(value) in away_players for value in offense if value > 0)
+            away_votes += sum(int(value) in home_players for value in defense if value > 0)
+            resolved[row] = home_votes != away_votes
+            off_is_home[row] = home_votes > away_votes
+
+    return off_is_home, resolved
+
+
 def transform_to_home_away_format(df):
     """
     Transform O/D format (O1-O5, D1-D5) to home/away format (a1-a5, h1-h5).
@@ -1918,87 +2174,37 @@ def transform_to_home_away_format(df):
     D = df[d_cols].values.astype(np.float64)
 
     # Compute per-row score deltas
-    away_score = df['away_score'].values.astype(np.float64)
-    home_score = df['home_score'].values.astype(np.float64)
+    away_score, home_score, observed_score = reconstruct_cumulative_game_scores(df)
     game_ids = df['game_id'].values
+    sparse_score_share = float((~observed_score).mean()) if len(df) else 0.0
+    if sparse_score_share > 0.01:
+        logging.info(
+            "  Reconstructed sparse cumulative score state on %.1f%% of possession rows",
+            100.0 * sparse_score_share,
+        )
 
     # Detect game boundaries
     game_starts = np.empty(len(df), dtype=bool)
     game_starts[0] = True
     game_starts[1:] = game_ids[1:] != game_ids[:-1]
 
-    # Score deltas: for first row of each game, delta = score itself; otherwise diff
-    away_delta = np.empty(len(df), dtype=np.float64)
-    home_delta = np.empty(len(df), dtype=np.float64)
-    away_delta[0] = away_score[0]
-    home_delta[0] = home_score[0]
-    away_delta[1:] = away_score[1:] - away_score[:-1]
-    home_delta[1:] = home_score[1:] - home_score[:-1]
-    # Reset at game boundaries
-    away_delta[game_starts] = away_score[game_starts]
-    home_delta[game_starts] = home_score[game_starts]
-
-    # First pass: build home AND away player sets per game
-    # When away scores (away_delta > 0): O players are away, D players are home
-    # When home scores (home_delta > 0): O players are home, D players are away
-    logging.info("  Building home/away player sets per game...")
-    game_home_players = {}
-    game_away_players = {}
-
-    away_scored = away_delta > 0
-    home_scored = (home_delta > 0) & ~away_scored  # prioritize away if both
-
-    # Rows where away scored -> D players are home, O players are away
-    for idx in np.where(away_scored)[0]:
-        gid = game_ids[idx]
-        if gid not in game_home_players:
-            game_home_players[gid] = set()
-            game_away_players[gid] = set()
-        game_home_players[gid].update(pid for pid in D[idx] if pid > 0)
-        game_away_players[gid].update(pid for pid in O[idx] if pid > 0)
-
-    # Rows where home scored -> O players are home, D players are away
-    for idx in np.where(home_scored)[0]:
-        gid = game_ids[idx]
-        if gid not in game_home_players:
-            game_home_players[gid] = set()
-            game_away_players[gid] = set()
-        game_home_players[gid].update(pid for pid in O[idx] if pid > 0)
-        game_away_players[gid].update(pid for pid in D[idx] if pid > 0)
-
-    # Second pass: determine off_is_home using 5-player majority vote
-    # For each row, count how many of O1-O5 overlap with home vs away sets
-    logging.info("  Determining offense direction per row (majority vote)...")
-    home_lookup = set()
-    away_lookup = set()
-    for gid, home_set in game_home_players.items():
-        for pid in home_set:
-            home_lookup.add((gid, pid))
-    for gid, away_set in game_away_players.items():
-        for pid in away_set:
-            away_lookup.add((gid, pid))
-
-    # Count O1-O5 overlap with home and away sets per row
-    home_count = np.zeros(len(df), dtype=int)
-    away_count = np.zeros(len(df), dtype=int)
-    for j in range(5):
-        o_vals = O[:, j]
-        home_count += np.array(
-            [(game_ids[i], o_vals[i]) in home_lookup for i in range(len(df))],
-            dtype=int
-        )
-        away_count += np.array(
-            [(game_ids[i], o_vals[i]) in away_lookup for i in range(len(df))],
-            dtype=int
-        )
-    # Majority vote: off_is_home when more O players match home than away
-    # Ties (e.g. 5 vs 5) resolve to False (same as old code's > operator)
-    off_is_home = home_count > away_count
+    logging.info("  Inferring venue side from score changes and lineup continuity...")
+    off_is_home, home_orientation_resolved = infer_home_offense_from_score_state(
+        game_ids,
+        O,
+        D,
+        away_score,
+        home_score,
+    )
+    unresolved_share = float((~home_orientation_resolved).mean())
+    logging.info(
+        "  Venue orientation resolved on %.2f%% of possession rows",
+        100.0 * (1.0 - unresolved_share),
+    )
 
     # Pre-possession score margin (use previous row's margin, 0 at game start)
     logging.info("  Computing pre-possession score margins...")
-    sm_series = df['score_margin'].astype(str).str.upper().replace('TIE', '0')
-    home_margin = pd.to_numeric(sm_series, errors='coerce').fillna(0).values.astype(np.float64)
+    home_margin = home_score - away_score
 
     # Shift margin by 1 within each game (pre-possession = previous row's margin)
     prev_margin = np.zeros(len(df), dtype=np.float64)
@@ -2006,7 +2212,12 @@ def transform_to_home_away_format(df):
     prev_margin[game_starts] = 0  # Game starts at 0
 
     # Convert to offensive-team-relative score_diff
-    score_diff = np.where(off_is_home, prev_margin, -prev_margin)
+    score_diff = np.where(
+        home_orientation_resolved,
+        np.where(off_is_home, prev_margin, -prev_margin),
+        0.0,
+    )
+    clock_state = compute_pre_possession_clock_state(df)
 
     # Build output arrays
     logging.info("  Building output dataframe...")
@@ -2022,6 +2233,7 @@ def transform_to_home_away_format(df):
 
     result_df = pd.DataFrame({
         'home_poss': home_poss,
+        'home_orientation_resolved': home_orientation_resolved.astype(np.int8),
         'pts': pts,
         'season': normalize_season_series(season_source),
         'season_phase': df['season_phase'].astype(str).values if 'season_phase' in df.columns else np.repeat('RS', len(df)),
@@ -2029,6 +2241,11 @@ def transform_to_home_away_format(df):
         'period': df['period'].values.astype(int),
         'gameid': df['game_id'].astype(str).values,
         'score_diff': score_diff,
+        'pre_period_clock_seconds': clock_state['pre_period_clock_seconds'].to_numpy(),
+        'seconds_remaining_game': clock_state['seconds_remaining_game'].to_numpy(),
+        'regulation_progress': clock_state['regulation_progress'].to_numpy(),
+        'is_overtime': clock_state['is_overtime'].to_numpy(),
+        'overtime_progress': clock_state['overtime_progress'].to_numpy(),
         'h1': h[:, 0], 'h2': h[:, 1], 'h3': h[:, 2], 'h4': h[:, 3], 'h5': h[:, 4],
         'a1': a[:, 0], 'a2': a[:, 1], 'a3': a[:, 2], 'a4': a[:, 3], 'a5': a[:, 4],
     })
@@ -2549,7 +2766,45 @@ def build_design_matrix_with_rubberband(
         'age_dummies': age_effect_meta,
         'strength_splits': strength_effect_meta,
         'strength_sensitivity': strength_sensitivity_meta,
+        'rubberband': {'model': 'legacy', 'feature_names': rb_feature_names},
     }
+
+
+def build_design_matrix_with_smooth_rubberband(
+    df,
+    player_to_col,
+    season_effects=False,
+    age_dummy_payload=None,
+    strength_split_payload=None,
+    strength_sensitivity_payload=None,
+    strength_sensitivity_feature_scale=1.0,
+):
+    """Append the selected continuous margin-by-clock nuisance surface."""
+
+    X, pts, feature_meta = build_simple_design_matrix(
+        df,
+        player_to_col,
+        season_effects=season_effects,
+        age_dummy_payload=age_dummy_payload,
+        strength_split_payload=strength_split_payload,
+        strength_sensitivity_payload=strength_sensitivity_payload,
+        strength_sensitivity_feature_scale=strength_sensitivity_feature_scale,
+    )
+    basis = build_rubberband_basis(df, "smooth")
+    start_idx = X.shape[1]
+    for offset, feature_name in enumerate(basis.feature_names):
+        player_to_col[feature_name] = start_idx + offset
+    X = hstack([X, basis.matrix], format="csr")
+    feature_meta['rubberband'] = {
+        'model': 'smooth',
+        'feature_names': list(basis.feature_names),
+    }
+    logging.info(
+        "Added %d continuous rubberband features; design matrix shape: %s",
+        len(basis.feature_names),
+        X.shape,
+    )
+    return X, pts, feature_meta
 
 ###############################################################################
 # 4) SIMPLIFIED ALTERNATING RIDGE REGRESSION
@@ -2745,9 +3000,147 @@ def simplified_alternating_rapm(X, y, player_to_col, all_players,
     return beta
 
 
+def joint_generalized_rapm(
+    X,
+    y,
+    player_to_col,
+    all_players,
+    alpha_offense=3000,
+    alpha_defense=3000,
+    off_prior=None,
+    def_prior=None,
+    off_penalty_multipliers=None,
+    def_penalty_multipliers=None,
+    weights=None,
+    rubberband=False,
+    alpha_rb=None,
+):
+    """Solve the full different-penalty RAPM objective in one LSQR system.
+
+    This is the production solver for the continuous rubberband surface.  It
+    avoids blockwise oscillation while preserving offense/defense priors,
+    time-decay row weights, and unpenalized nuisance fixed effects.
+    """
+
+    del all_players  # The feature mapping fully defines this joint system.
+    X_work = X.tocsr()
+    y_work = np.asarray(y, dtype=np.float64)
+    if weights is not None:
+        sqrt_weights = np.sqrt(np.asarray(weights, dtype=np.float64))
+        X_work = X_work.multiply(sqrt_weights[:, None]).tocsr()
+        y_work = y_work * sqrt_weights
+
+    actual_alpha_rb = alpha_rb if alpha_rb is not None else 100.0
+    penalties = np.zeros(X_work.shape[1], dtype=np.float64)
+    prior_centers = np.zeros(X_work.shape[1], dtype=np.float64)
+    col_to_feature = {index: name for name, index in player_to_col.items()}
+
+    for index in range(X_work.shape[1]):
+        feature_name = col_to_feature.get(index, "")
+        if feature_name.endswith('_off'):
+            player_id = feature_name[:-4]
+            multiplier = (
+                float(off_penalty_multipliers.get(player_id, 1.0))
+                if off_penalty_multipliers is not None and '_facing_' not in feature_name
+                else 1.0
+            )
+            penalties[index] = float(alpha_offense) * multiplier
+            if off_prior is not None and '_facing_' not in feature_name:
+                prior_centers[index] = float(off_prior.get(player_id, 0.0))
+        elif feature_name.endswith('_def'):
+            player_id = feature_name[:-4]
+            multiplier = (
+                float(def_penalty_multipliers.get(player_id, 1.0))
+                if def_penalty_multipliers is not None and '_facing_' not in feature_name
+                else 1.0
+            )
+            penalties[index] = float(alpha_defense) * multiplier
+            if def_prior is not None and '_facing_' not in feature_name:
+                prior_centers[index] = float(def_prior.get(player_id, 0.0))
+        elif feature_name.startswith('rb_'):
+            if not rubberband:
+                raise ValueError("Rubberband feature found while rubberband mode is disabled.")
+            penalties[index] = float(actual_alpha_rb)
+        # Season and age fixed effects intentionally remain unpenalized.
+
+    penalized = np.where(penalties > 0)[0]
+    penalty_matrix = coo_matrix(
+        (
+            np.sqrt(penalties[penalized]),
+            (np.arange(len(penalized), dtype=np.int32), penalized.astype(np.int32)),
+        ),
+        shape=(len(penalized), X_work.shape[1]),
+        dtype=np.float64,
+    ).tocsr()
+    penalty_target = np.sqrt(penalties[penalized]) * prior_centers[penalized]
+    augmented_X = vstack([X_work, penalty_matrix], format='csr')
+    augmented_y = np.concatenate([y_work, penalty_target])
+    solution = lsqr(
+        augmented_X,
+        augmented_y,
+        atol=1e-7,
+        btol=1e-7,
+        iter_lim=1000,
+        show=False,
+    )
+    if int(solution[1]) == 7:
+        raise RuntimeError("Joint generalized RAPM reached the LSQR iteration limit.")
+    logging.info(
+        "Joint generalized RAPM converged: stop=%d iterations=%d residual_norm=%.6f",
+        int(solution[1]),
+        int(solution[2]),
+        float(solution[3]),
+    )
+    return np.asarray(solution[0], dtype=np.float64)
+
+
+def solve_rapm_coefficients(
+    X,
+    y,
+    player_to_col,
+    all_players,
+    *,
+    rubberband_model='legacy',
+    **kwargs,
+):
+    """Route smooth rubberband solves to the exact joint ridge objective."""
+
+    use_joint = (
+        (kwargs.get('rubberband', False) and rubberband_model == 'smooth')
+        or kwargs.get('off_penalty_multipliers') is not None
+        or kwargs.get('def_penalty_multipliers') is not None
+    )
+    if use_joint:
+        return joint_generalized_rapm(
+            X,
+            y,
+            player_to_col,
+            all_players,
+            **{
+                key: value
+                for key, value in kwargs.items()
+                if key in {
+                    'alpha_offense', 'alpha_defense', 'off_prior', 'def_prior',
+                    'off_penalty_multipliers', 'def_penalty_multipliers',
+                    'weights', 'rubberband', 'alpha_rb',
+                }
+            },
+        )
+    alternating_kwargs = dict(kwargs)
+    alternating_kwargs.pop('off_penalty_multipliers', None)
+    alternating_kwargs.pop('def_penalty_multipliers', None)
+    return simplified_alternating_rapm(
+        X,
+        y,
+        player_to_col,
+        all_players,
+        **alternating_kwargs,
+    )
+
+
 def select_cv_alphas(X, y_centered, groups, player_to_col, all_players,
                      off_prior=None, def_prior=None, weights=None,
-                     rubberband=False, alpha_rb=None,
+                     rubberband=False, alpha_rb=None, rubberband_model='legacy',
                      season_effects=False,
                      age_dummies=False,
                      off_alpha_seed=3000, def_alpha_seed=3000,
@@ -2770,7 +3163,7 @@ def select_cv_alphas(X, y_centered, groups, player_to_col, all_players,
         fold_losses = []
         for fold_idx, (train_idx, val_idx) in enumerate(splits, start=1):
             train_weights = weights[train_idx] if weights is not None else None
-            beta = simplified_alternating_rapm(
+            beta = solve_rapm_coefficients(
                 X[train_idx],
                 y_centered[train_idx],
                 player_to_col,
@@ -2786,6 +3179,7 @@ def select_cv_alphas(X, y_centered, groups, player_to_col, all_players,
                 alpha_rb=alpha_rb,
                 season_effects=season_effects,
                 age_dummies=age_dummies,
+                rubberband_model=rubberband_model,
             )
             y_pred = X[val_idx] @ beta
             val_weights = weights[val_idx] if weights is not None else None
@@ -2927,7 +3321,13 @@ def _load_files_sequential(input_files, pure, prefix=None):
 ###############################################################################
 # HELPER: RUBBERBAND ANALYSIS OUTPUT
 ###############################################################################
-def save_rubberband_analysis(beta, player_to_col, output_dir, prefix):
+def save_rubberband_analysis(
+    beta,
+    player_to_col,
+    output_dir,
+    prefix,
+    rubberband_model='smooth',
+):
     """
     Save rubberband coefficients and effects analysis.
 
@@ -2937,55 +3337,106 @@ def save_rubberband_analysis(beta, player_to_col, output_dir, prefix):
         output_dir: Directory to save results
         prefix: Filename prefix (e.g., 'rapm_26_all_pure_rb')
     """
-    # Extract rubberband coefficients
     rb_data = []
-    for k, v in player_to_col.items():
-        if k.startswith('rb_'):
-            # Parse bin and period from feature name like "rb_neg3_period1"
-            parts = k.rsplit('_period', 1)
+    for feature_name, index in player_to_col.items():
+        if not feature_name.startswith('rb_'):
+            continue
+        bin_name = ''
+        period = np.nan
+        if rubberband_model == 'legacy':
+            parts = feature_name.rsplit('_period', 1)
             bin_name = parts[0]
             period = int(parts[1])
-            coef = beta[v] * 100  # Scale to per-100-possessions
-            rb_data.append({
-                'feature': k,
-                'bin': bin_name,
-                'period': period,
-                'coefficient': round(coef, 4)
-            })
+        rb_data.append({
+            'feature': feature_name,
+            'model': rubberband_model,
+            'bin': bin_name,
+            'period': period,
+            'coefficient': round(beta[index] * 100, 6),
+        })
 
     rb_df = pd.DataFrame(rb_data)
-    rb_df = rb_df.sort_values(['period', 'bin']).reset_index(drop=True)
+    rb_df = rb_df.sort_values(['period', 'feature'], na_position='last').reset_index(drop=True)
 
     # Save coefficients
     coef_file = output_dir / f"{prefix}_rubberband_coefficients.csv"
     rb_df.to_csv(coef_file, index=False)
     logging.info(f"Saved rubberband coefficients to {coef_file}")
 
-    # Build effects summary: predicted effect at representative margins for each period
     margins = [-25, -20, -15, -12, -8, -3, 0, 3, 8, 12, 15, 20, 25]
     effects_rows = []
-    for margin in margins:
-        for period in range(1, 5):
-            # Determine which bin this margin falls into
-            effect = 0.0
-            for bin_name, low, high in RUBBERBAND_BINS:
-                in_bin = False
-                if low is None:
-                    in_bin = margin <= high
-                elif high is None:
-                    in_bin = margin > low
-                else:
-                    in_bin = margin > low and margin <= high
-                if in_bin:
-                    feat_name = f"{bin_name}_period{period}"
-                    if feat_name in player_to_col:
+    if rubberband_model == 'legacy':
+        for margin in margins:
+            for period in range(1, 5):
+                effect = 0.0
+                for bin_name, low, high in RUBBERBAND_BINS:
+                    if low is None:
+                        in_bin = margin <= high
+                    elif high is None:
+                        in_bin = margin > low
+                    else:
+                        in_bin = margin > low and margin <= high
+                    if in_bin:
+                        feat_name = f"{bin_name}_period{period}"
                         effect = beta[player_to_col[feat_name]] * 100
-                    break
-            effects_rows.append({
-                'score_margin': margin,
-                'period': period,
-                'effect_per_100': round(effect, 4)
-            })
+                        break
+                effects_rows.append({
+                    'score_margin': margin,
+                    'period': period,
+                    'seconds_remaining_game': np.nan,
+                    'effect_per_100': round(effect, 6),
+                })
+    else:
+        midpoint_seconds = {1: 2520.0, 2: 1800.0, 3: 1080.0, 4: 360.0}
+        states = []
+        for margin in margins:
+            for period, seconds_remaining in midpoint_seconds.items():
+                states.append({
+                    'score_diff': float(margin),
+                    'period': period,
+                    'seconds_remaining_game': seconds_remaining,
+                    'regulation_progress': 1.0 - seconds_remaining / 2880.0,
+                    'is_overtime': 0,
+                    'overtime_progress': 0.0,
+                })
+        state_df = pd.DataFrame(states)
+        basis = build_rubberband_basis(state_df, 'smooth')
+        rb_coefficients = np.array(
+            [beta[player_to_col[name]] for name in basis.feature_names],
+            dtype=np.float64,
+        )
+        state_df['effect_per_100'] = np.asarray(basis.matrix @ rb_coefficients).ravel() * 100.0
+        effects_rows = [
+            {
+                'score_margin': int(row.score_diff),
+                'period': int(row.period),
+                'seconds_remaining_game': float(row.seconds_remaining_game),
+                'effect_per_100': round(float(row.effect_per_100), 6),
+            }
+            for row in state_df.itertuples(index=False)
+        ]
+
+        surface_times = [2880, 2520, 2160, 1800, 1440, 1080, 720, 600, 360, 120, 60, 30]
+        surface_states = []
+        for margin in range(-30, 31, 2):
+            for seconds_remaining in surface_times:
+                period = min(4, max(1, 4 - int(max(seconds_remaining - 1, 0) // 720)))
+                surface_states.append({
+                    'score_diff': float(margin),
+                    'period': period,
+                    'seconds_remaining_game': float(seconds_remaining),
+                    'regulation_progress': 1.0 - seconds_remaining / 2880.0,
+                    'is_overtime': 0,
+                    'overtime_progress': 0.0,
+                })
+        surface_df = pd.DataFrame(surface_states)
+        surface_basis = build_rubberband_basis(surface_df, 'smooth')
+        surface_df['effect_per_100'] = (
+            np.asarray(surface_basis.matrix @ rb_coefficients).ravel() * 100.0
+        )
+        surface_file = output_dir / f"{prefix}_rubberband_surface.csv"
+        surface_df.to_csv(surface_file, index=False)
+        logging.info(f"Saved continuous rubberband surface to {surface_file}")
 
     effects_df = pd.DataFrame(effects_rows)
     effects_file = output_dir / f"{prefix}_rubberband_effects.csv"
@@ -3260,11 +3711,14 @@ def build_player_name_map(player_ids, name_map_file):
 ###############################################################################
 def run_simplified_rapm(input_files, name_map_file=None, pure=False,
                         off_prior_file=None, def_prior_file=None,
+                        prior_label=None,
+                        player_penalty_multipliers_file=None,
+                        penalty_label=None,
                         def_alpha=None, off_alpha=None,
                         cv_alpha=False, cv_folds=5, cv_passes=2, cv_alpha_grid=None,
                         publish_to_rapms=False, publish_name=None,
                         timedecay=False, half_life=None,
-                        rubberband=False, alpha_rb=None,
+                        rubberband=False, alpha_rb=None, rubberband_model='smooth',
                         season_effects=False,
                         fixed_season_baselines=None,
                         ps_prior=False,
@@ -3272,6 +3726,8 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
                         age_dummies=False,
                         age_poly_coefficients=None,
                         age_poly_reference_age=AGE_DUMMY_REFERENCE,
+                        age_curve_values=None,
+                        age_curve_reference_age=AGE_DUMMY_REFERENCE,
                         age_curve=False,
                         strength_splits=False,
                         strength_legacy_scale=False,
@@ -3289,6 +3745,9 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
         pure: If True, use Net_Diff for RAPM files (removes 3pt/FT luck adjustments)
         off_prior_file: Path to CSV with offense prior values (player_id, prior_value)
         def_prior_file: Path to CSV with defense prior values (player_id, prior_value)
+        prior_label: Optional filesystem-safe label appended to prior-informed outputs
+        player_penalty_multipliers_file: Optional CSV of player-specific O/D precision multipliers
+        penalty_label: Optional filesystem-safe label appended to adaptive-penalty outputs
         def_alpha: Override defense alpha (default: 3000)
         off_alpha: Override offense alpha (default: 3000)
         cv_alpha: If True, cross-validate separate offense/defense alphas
@@ -3299,6 +3758,8 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
         publish_name: Optional published filename override
         timedecay: If True, apply time decay weighting
         half_life: Half-life in days for time decay (default: 700)
+        rubberband_model: 'smooth' for the selected clock-aware surface or
+            'legacy' for the historical score-bin-by-period adjustment
         season_effects: If True, add season fixed effects for multi-season runs
         fixed_season_baselines: Optional dict of season end year -> fixed row baseline to subtract from y
         ps_prior: If True, run a two-stage playoff-aware solve: stage 1 fits the
@@ -3313,6 +3774,8 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
         age_dummies: If True, add signed age fixed effects for the requested metric
         age_poly_coefficients: Optional polynomial age curve CSV. Values are applied as fixed row offsets.
         age_poly_reference_age: Reference age for fixed age-poly offsets
+        age_curve_values: Optional frozen positive-good O-RAPM/D-RAPM age table applied as fixed row offsets
+        age_curve_reference_age: Reference age for frozen age-table offsets
         age_curve: If True, build RAPM priors by shrinking toward age mean
         strength_splits: If True, add DARKO opponent strong/not-strong player interactions
         strength_legacy_scale: If True, target-scale strength-split overall offense/defense like the legacy script
@@ -3350,7 +3813,9 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
     if pure:
         mode_str += " - PURE MODE"
     if rubberband:
-        mode_str += " - RUBBERBAND"
+        if rubberband_model not in {'smooth', 'legacy'}:
+            raise ValueError(f"Unsupported rubberband model: {rubberband_model}")
+        mode_str += f" - RUBBERBAND ({rubberband_model.upper()})"
     if season_effects:
         mode_str += " - SEASON FE"
     if fixed_season_baselines is not None:
@@ -3361,6 +3826,8 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
         mode_str += " - AGE FE"
     if age_poly_coefficients is not None:
         mode_str += " - FIXED AGE POLY"
+    if age_curve_values is not None:
+        mode_str += " - FIXED AGE VALUES"
     if age_curve:
         mode_str += " - AGE CURVE"
     if strength_splits:
@@ -3432,6 +3899,20 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
     # Load priors if specified
     off_prior = load_prior(off_prior_file, "offense")
     def_prior = load_prior(def_prior_file, "defense")
+    off_penalty_multipliers = None
+    def_penalty_multipliers = None
+    if player_penalty_multipliers_file:
+        logging.info(
+            "Loading player penalty multipliers from %s...",
+            player_penalty_multipliers_file,
+        )
+        off_penalty_multipliers, def_penalty_multipliers = load_player_penalty_multipliers(
+            player_penalty_multipliers_file
+        )
+        logging.info(
+            "Loaded adaptive O/D penalty multipliers for %d players",
+            len(off_penalty_multipliers),
+        )
 
     # Transform data to home/away format
     df_transformed = transform_to_home_away_format(df)
@@ -3492,8 +3973,18 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
         idx += 1
     
     # Build design matrix
-    if rubberband:
+    if rubberband and rubberband_model == 'legacy':
         X, y, feature_meta = build_design_matrix_with_rubberband(
+            df_transformed,
+            player_to_col,
+            season_effects=season_effects,
+            age_dummy_payload=age_dummy_payload,
+            strength_split_payload=strength_split_payload,
+            strength_sensitivity_payload=strength_sensitivity_payload,
+            strength_sensitivity_feature_scale=strength_sensitivity_feature_scale,
+        )
+    elif rubberband:
+        X, y, feature_meta = build_design_matrix_with_smooth_rubberband(
             df_transformed,
             player_to_col,
             season_effects=season_effects,
@@ -3582,6 +4073,52 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
             int(age_summary["missing_slots"]),
         )
 
+    if age_curve_values is not None:
+        if prefix != "RAPM":
+            raise ValueError("age_curve_values is only supported for RAPM.")
+        if end_year is None:
+            raise ValueError("age_curve_values requires an explicit end_year.")
+        curves, value_meta = load_age_value_curves(age_curve_values)
+        age_source_df = fetch_age_source_darko(
+            normalize_season_end_year(end_year),
+            darko_history_path if darko_history_path else DEFAULT_DARKO_HISTORY_PATH,
+        )
+        age_lookup = build_age_lookup_from_source(age_source_df)
+        age_offsets, age_summary = compute_fixed_age_poly_offsets(
+            df_transformed,
+            curves,
+            age_lookup,
+            reference_age=float(age_curve_reference_age),
+            min_age=float(value_meta["age_min"]),
+            max_age=float(value_meta["age_max"]),
+        )
+        total_fixed_offset += age_offsets
+        fixed_offset_rows.append({
+            "offset_type": "fixed_age_curve_values",
+            "rows": int(age_summary["rows"]),
+            "missing_rows": int(age_summary["missing_slots"]),
+            "mean_offset_per_100": float(age_summary["mean_offset_per_100"]),
+            "min_offset_per_100": float(age_summary["min_offset_per_100"]),
+            "max_offset_per_100": float(age_summary["max_offset_per_100"]),
+            "reference": f"frozen curve(age)-curve({float(age_curve_reference_age):g}) summed across O/D slots",
+            "mapped_slots": int(age_summary["mapped_slots"]),
+            "missing_slots": int(age_summary["missing_slots"]),
+            "clipped_slots": int(age_summary["clipped_slots"]),
+            "reference_age": float(age_summary["reference_age"]),
+            "source": str(value_meta["source"]),
+            "defense_input_sign": str(value_meta["defense_input_sign"]),
+            "defense_solver_sign": str(value_meta["defense_solver_sign"]),
+        })
+        logging.info(
+            "Applied frozen age-value offsets: ref_age=%.1f mean=%.4f pts/100 min=%.4f max=%.4f mapped_slots=%d missing_slots=%d",
+            float(age_curve_reference_age),
+            age_summary["mean_offset_per_100"],
+            age_summary["min_offset_per_100"],
+            age_summary["max_offset_per_100"],
+            int(age_summary["mapped_slots"]),
+            int(age_summary["missing_slots"]),
+        )
+
     if fixed_offset_rows:
         y = y - total_fixed_offset
         fixed_offset_rows.append({
@@ -3611,10 +4148,15 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
     logging.info(f"Centered outcome, mean={y_mean:.3f}")
     
     cv_summary = None
-    # Run alternating Ridge regression
+    # Select penalties, then solve with the model-appropriate ridge engine.
     actual_off_alpha = off_alpha if off_alpha is not None else 3000
     actual_def_alpha = def_alpha if def_alpha is not None else 3000
+    actual_alpha_rb = alpha_rb
+    if rubberband and actual_alpha_rb is None:
+        actual_alpha_rb = 100.0 if rubberband_model == 'smooth' else 10.0
     if cv_alpha:
+        if off_penalty_multipliers is not None or def_penalty_multipliers is not None:
+            raise ValueError("cv_alpha cannot be combined with player penalty multipliers; freeze base alphas first.")
         actual_off_alpha, actual_def_alpha, cv_summary = select_cv_alphas(
             X,
             y_centered,
@@ -3625,7 +4167,8 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
             def_prior=def_prior,
             weights=weights,
             rubberband=rubberband,
-            alpha_rb=alpha_rb,
+            alpha_rb=actual_alpha_rb,
+            rubberband_model=rubberband_model,
             season_effects=season_effects,
             age_dummies=age_dummies,
             off_alpha_seed=actual_off_alpha,
@@ -3671,17 +4214,20 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
             y_rs_mean = np.average(y_rs, weights=weights_rs)
         else:
             y_rs_mean = np.mean(y_rs)
-        beta_rs = simplified_alternating_rapm(
+        beta_rs = solve_rapm_coefficients(
             X[rs_mask], y_rs - y_rs_mean, player_to_col, all_players,
             alpha_offense=actual_off_alpha, alpha_defense=actual_def_alpha,
             max_iter=200, tol=1e-4,
             off_prior=None,
             def_prior=None,
+            off_penalty_multipliers=off_penalty_multipliers,
+            def_penalty_multipliers=def_penalty_multipliers,
             weights=weights_rs,
             rubberband=rubberband,
-            alpha_rb=alpha_rb,
+            alpha_rb=actual_alpha_rb,
             season_effects=season_effects,
             age_dummies=age_dummies,
+            rubberband_model=rubberband_model,
         )
 
         home_poss_arr = df_transformed['home_poss'].values
@@ -3748,30 +4294,36 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
             int(ps_mask.sum()),
             y_ps_mean,
         )
-        beta = simplified_alternating_rapm(
+        beta = solve_rapm_coefficients(
             X[ps_mask], y_ps - y_ps_mean, player_to_col, all_players,
             alpha_offense=actual_off_alpha, alpha_defense=actual_def_alpha,
             max_iter=200, tol=1e-4,
             off_prior=ps_off_prior,
             def_prior=ps_def_prior,
+            off_penalty_multipliers=off_penalty_multipliers,
+            def_penalty_multipliers=def_penalty_multipliers,
             weights=weights_ps,
             rubberband=rubberband,
-            alpha_rb=alpha_rb,
+            alpha_rb=actual_alpha_rb,
             season_effects=season_effects,
             age_dummies=age_dummies,
+            rubberband_model=rubberband_model,
         )
     else:
-        beta = simplified_alternating_rapm(
+        beta = solve_rapm_coefficients(
             X, y_centered, player_to_col, all_players,
             alpha_offense=actual_off_alpha, alpha_defense=actual_def_alpha,
             max_iter=200, tol=1e-4,
             off_prior=ps_off_prior if ps_prior else off_prior,
             def_prior=ps_def_prior if ps_prior else def_prior,
+            off_penalty_multipliers=off_penalty_multipliers,
+            def_penalty_multipliers=def_penalty_multipliers,
             weights=weights,
             rubberband=rubberband,
-            alpha_rb=alpha_rb,
+            alpha_rb=actual_alpha_rb,
             season_effects=season_effects,
             age_dummies=age_dummies,
+            rubberband_model=rubberband_model,
         )
     
     # Calculate player possessions (total, offensive, defensive)
@@ -4068,18 +4620,22 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
             season_suffix,
             pure=pure,
             rubberband=rubberband,
+            rubberband_model=rubberband_model,
             season_effects=season_effects,
             fixed_season_effects=fixed_season_baselines is not None,
             ps_prior=ps_prior,
             ps_prior_stage2=ps_prior_stage2,
             age_dummies=age_dummies,
             age_poly_degree=age_poly_degree,
+            age_curve_values=age_curve_values is not None,
             alpha_cv=cv_alpha,
             off_alpha=actual_off_alpha,
             def_alpha=actual_def_alpha,
             age_curve=age_curve,
             off_prior=off_prior,
             def_prior=def_prior,
+            prior_label=prior_label,
+            penalty_label=penalty_label,
             timedecay=timedecay,
             half_life=half_life,
             strength_splits=strength_splits,
@@ -4099,18 +4655,22 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
             season_suffix,
             pure=pure,
             rubberband=rubberband,
+            rubberband_model=rubberband_model,
             season_effects=season_effects,
             fixed_season_effects=fixed_season_baselines is not None,
             ps_prior=ps_prior,
             ps_prior_stage2=ps_prior_stage2,
             age_dummies=age_dummies,
             age_poly_degree=age_poly_degree,
+            age_curve_values=age_curve_values is not None,
             alpha_cv=cv_alpha,
             off_alpha=actual_off_alpha,
             def_alpha=actual_def_alpha,
             age_curve=age_curve,
             off_prior=off_prior,
             def_prior=def_prior,
+            prior_label=prior_label,
+            penalty_label=penalty_label,
             timedecay=timedecay,
             half_life=half_life,
             strength_splits=strength_splits,
@@ -4146,7 +4706,13 @@ def run_simplified_rapm(input_files, name_map_file=None, pure=False,
     if rubberband:
         rb_output_dir = output_file.parent
         rb_prefix = output_file.stem.replace("_results", "")
-        save_rubberband_analysis(beta, player_to_col, rb_output_dir, rb_prefix)
+        save_rubberband_analysis(
+            beta,
+            player_to_col,
+            rb_output_dir,
+            rb_prefix,
+            rubberband_model=rubberband_model,
+        )
     if season_effects and feature_meta['season_effects'].get('enabled'):
         se_output_dir = output_file.parent
         se_prefix = output_file.stem.replace("_results", "")
@@ -4235,17 +4801,20 @@ Examples:
     )
     
     parser.add_argument('prefix',
-                       choices=['RAPM', 'TOV', 'REB', 'TS', 'RIM_FREQ', 'RIM_FG_PCT', 'LA_RAPM', 'MIDRANGE_FREQ',
+                       choices=['RAPM', 'TOV', 'STOP', 'REB', 'TS', 'RIM_FREQ', 'RIM_FG_PCT', 'LA_RAPM', 'MIDRANGE_FREQ',
                                 'MIDRANGE_FG_PCT',
                                 'ASSIST_POINTS', 'RIM_ASSIST', 'DUNK', 'DUNK_ASSIST',
                                 'SCORING_PARENT',
                                 'BLOCK_RECOVERY',
                                 'THREE_FREQ', 'THREE_FG_PCT', 'PLAYTYPE_TS_MIX',
-                                'PLAYTYPE_PROXY_PTS',
-                                'TRANSITION_FREQ', 'TRANSITION_RIM', 'INITIAL_EV', 'INITIAL_EV_BETA', 'SPECIAL_RAPM', 'EV_RAPM',
+                                'PLAYTYPE_PROXY_PTS', 'PLAYTYPE_PROXY_PTS_BACKCAST',
+                                'TRANSITION_FREQ', 'TRANSITION_RIM',
+                                'TRANSITION_FREQ_BACKCAST', 'TRANSITION_RIM_BACKCAST',
+                                'INITIAL_EV', 'INITIAL_EV_BETA', 'SPECIAL_RAPM', 'EV_RAPM',
                                 'RUSSELL_SHOTQUALITY', 'CONTEXT_SHOTQUALITY',
                                'SQ_POSS', 'FT_PREMIUM', 'CONTEST', 'SECOND_CHANCE', 'FIRST_CHANCE',
-                               'FIRST_CHANCE_CLEAN', 'SECOND_CHANCE_CLEAN', 'BADPASS_TOV', 'SCORING_TOV',
+                               'FIRST_CHANCE_CLEAN', 'SECOND_CHANCE_CLEAN', 'SECOND_CHANCE_NET',
+                               'BADPASS_TOV', 'SCORING_TOV',
                               'ALT_TS', 'ALT_EFG', 'ALT_SQ', 'ALT_MAKE', 'ALT_FT',
                               'ALT_FT_FREQ', 'ALT_FT_SEVERITY',
                               'ALT_EFG_VALUE',
@@ -4303,6 +4872,21 @@ Examples:
                        default=None,
                        help='CSV file with offense prior values (player_id, prior_value). Shrinks offense coefficients toward prior instead of zero.')
 
+    parser.add_argument('--prior-label',
+                       type=str,
+                       default=None,
+                       help='Filesystem-safe label appended to prior-informed output filenames.')
+
+    parser.add_argument('--player-penalty-multipliers',
+                       type=str,
+                       default=None,
+                       help='CSV with player_id, off_multiplier, and def_multiplier. Values multiply the base ridge penalties and must be >= 1.')
+
+    parser.add_argument('--penalty-label',
+                       type=str,
+                       default=None,
+                       help='Filesystem-safe label appended to adaptive-penalty output filenames.')
+
     parser.add_argument('--def-alpha',
                        type=float,
                        default=None,
@@ -4352,12 +4936,17 @@ Examples:
 
     parser.add_argument('--rubberband', '-rb',
                        action='store_true',
-                       help='Enable rubberband effect (score-margin x period adjustment)')
+                       help='Enable the selected game-state rubberband adjustment')
+
+    parser.add_argument('--rubberband-model',
+                       choices=['smooth', 'legacy'],
+                       default='smooth',
+                       help='Rubberband model: selected continuous margin-by-clock surface (default) or legacy margin-bin-by-period dummies.')
 
     parser.add_argument('--alpha-rb',
                        type=float,
                        default=None,
-                       help='Rubberband regularization alpha (default: 10). Lower = less regularization.')
+                       help='Rubberband regularization alpha (default: 100 smooth, 10 legacy).')
 
     parser.add_argument('--season-effects', '-se',
                        action='store_true',
@@ -4390,6 +4979,16 @@ Examples:
                        type=float,
                        default=float(AGE_DUMMY_REFERENCE),
                        help='Reference age for --age-poly-coefficients fixed offsets (default: 27).')
+
+    parser.add_argument('--age-curve-values',
+                       type=str,
+                       default=None,
+                       help='Frozen positive-good O-RAPM/D-RAPM age table. Applies piecewise-linear curve(age)-curve(reference) offsets before solving.')
+
+    parser.add_argument('--age-curve-reference-age',
+                       type=float,
+                       default=float(AGE_DUMMY_REFERENCE),
+                       help='Reference age for --age-curve-values fixed offsets (default: 27).')
 
     parser.add_argument('--age-curve',
                        action='store_true',
@@ -4427,6 +5026,24 @@ Examples:
         parser.error("--age-dummies cannot be combined with --age-curve.")
     if args.age_dummies and args.age_poly_coefficients:
         parser.error("--age-dummies cannot be combined with --age-poly-coefficients.")
+    if args.age_dummies and args.age_curve_values:
+        parser.error("--age-dummies cannot be combined with --age-curve-values.")
+    if args.age_poly_coefficients and args.age_curve_values:
+        parser.error("--age-poly-coefficients cannot be combined with --age-curve-values.")
+    if args.age_curve and args.age_curve_values:
+        parser.error("--age-curve cannot be combined with --age-curve-values.")
+    if args.age_curve_values and args.prefix != 'RAPM':
+        parser.error("--age-curve-values is only supported for RAPM.")
+    if args.prior_label and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", args.prior_label):
+        parser.error("--prior-label must contain only letters, numbers, underscores, or hyphens.")
+    if args.prior_label and not (args.off_prior or args.def_prior):
+        parser.error("--prior-label requires --off-prior or --def-prior.")
+    if args.penalty_label and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", args.penalty_label):
+        parser.error("--penalty-label must contain only letters, numbers, underscores, or hyphens.")
+    if args.penalty_label and not args.player_penalty_multipliers:
+        parser.error("--penalty-label requires --player-penalty-multipliers.")
+    if args.player_penalty_multipliers and not args.penalty_label:
+        parser.error("--player-penalty-multipliers requires --penalty-label so outputs remain distinct.")
     if args.age_curve and args.prefix != 'RAPM':
         parser.error("--age-curve is only supported for RAPM.")
     if args.age_curve and (args.off_prior or args.def_prior):
@@ -4480,6 +5097,7 @@ Examples:
     PREFIX_FILE_MAP = {
         'BADPASS_TOV': 'TOV',
         'SCORING_TOV': 'TOV',
+        'SECOND_CHANCE_NET': 'SECOND_CHANCE_CLEAN',
         'ALT_TS': 'FIRST_CHANCE',
         'ALT_EFG': 'FIRST_CHANCE',
         'ALT_SQ': 'FIRST_CHANCE',
@@ -4585,6 +5203,9 @@ Examples:
     results = run_simplified_rapm(input_files, pure=args.pure,
                                   off_prior_file=args.off_prior,
                                   def_prior_file=args.def_prior,
+                                  prior_label=args.prior_label,
+                                  player_penalty_multipliers_file=args.player_penalty_multipliers,
+                                  penalty_label=args.penalty_label,
                                   def_alpha=args.def_alpha,
                                   off_alpha=args.off_alpha,
                                   cv_alpha=args.cv_alpha,
@@ -4597,6 +5218,7 @@ Examples:
                                   half_life=args.half_life,
                                   rubberband=args.rubberband,
                                   alpha_rb=args.alpha_rb,
+                                  rubberband_model=args.rubberband_model,
                                   season_effects=args.season_effects,
                                   fixed_season_baselines=fixed_season_baselines,
                                   ps_prior=args.ps_prior,
@@ -4604,6 +5226,8 @@ Examples:
                                   age_dummies=args.age_dummies,
                                   age_poly_coefficients=args.age_poly_coefficients,
                                   age_poly_reference_age=args.age_poly_reference_age,
+                                  age_curve_values=args.age_curve_values,
+                                  age_curve_reference_age=args.age_curve_reference_age,
                                   age_curve=args.age_curve,
                                   strength_splits=args.strength_splits,
                                   strength_legacy_scale=args.strength_legacy_scale,

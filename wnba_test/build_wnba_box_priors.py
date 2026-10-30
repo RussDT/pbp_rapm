@@ -69,6 +69,7 @@ ADDITIVE_PREFIXES = [
     "SECOND_CHANCE_CLEAN",
 ]
 RIDGE_ALPHAS = [0.1, 1.0, 10.0, 100.0]
+DIRECT_TOV_DEF_ALPHA = 10000.0
 
 
 def _numeric(frame: pd.DataFrame, column: str) -> pd.Series:
@@ -134,6 +135,10 @@ def load_box_features(year: int) -> pd.DataFrame:
     mid_fgm = _numeric(raw, "ShortMidRangeFGM") + _numeric(raw, "LongMidRangeFGM")
     three_fga = fg3a
     three_fgm = _numeric(raw, "FG3M")
+    assisted_two_points = _numeric(raw, "PtsAssisted2s")
+    unassisted_two_points = _numeric(raw, "PtsUnassisted2s")
+    assisted_three_points = _numeric(raw, "PtsAssisted3s")
+    unassisted_three_points = _numeric(raw, "PtsUnassisted3s")
 
     offense_counts = {
         "points100": _numeric(raw, "Points"),
@@ -146,6 +151,13 @@ def load_box_features(year: int) -> pd.DataFrame:
         "assists100": _numeric(raw, "Assists"),
         "assist_points100": _numeric(raw, "AssistPoints"),
         "rim_assists100": _numeric(raw, "AtRimAssists"),
+        # These are points scored by the focal player, unlike AssistPoints and
+        # AtRimAssists, which describe chances the player creates for others.
+        # They add a directional self-creation signal to the shot priors.
+        "assisted_two_points100": assisted_two_points,
+        "unassisted_two_points100": unassisted_two_points,
+        "assisted_three_points100": assisted_three_points,
+        "unassisted_three_points100": unassisted_three_points,
         "turnovers100": _numeric(raw, "Turnovers"),
         "badpass_tov100": _numeric(raw, "BadPassTurnovers"),
         "lostball_tov100": _numeric(raw, "LostBallTurnovers"),
@@ -181,6 +193,19 @@ def load_box_features(year: int) -> pd.DataFrame:
     out["rim_pct"] = _smoothed_share(rim_fgm, rim_fga, prior_attempts=50.0)
     out["mid_pct"] = _smoothed_share(mid_fgm, mid_fga, prior_attempts=50.0)
     out["three_pct"] = _smoothed_share(three_fgm, three_fga, prior_attempts=75.0)
+    # PBP Stats' assisted scoring fields describe made shots, not all shot
+    # attempts. Smooth them heavily and use them as role/difficulty proxies,
+    # not as a complete zTS or shot-quality adjustment.
+    out["two_assisted_share"] = _smoothed_share(
+        assisted_two_points,
+        assisted_two_points + unassisted_two_points,
+        prior_attempts=100.0,
+    )
+    out["three_assisted_share"] = _smoothed_share(
+        assisted_three_points,
+        assisted_three_points + unassisted_three_points,
+        prior_attempts=100.0,
+    )
     out["ft_pct"] = _smoothed_share(
         _numeric(raw, "FtPoints"),
         fta,
@@ -198,14 +223,27 @@ def load_box_features(year: int) -> pd.DataFrame:
 
 
 def feature_columns(prefix: str, side: str) -> list[str]:
+    net_to_gross = {
+        "ALT_EFG_NET_RIM_FREQ": "ALT_EFG_RIM_FREQ",
+        "ALT_EFG_NET_RIM_FG": "ALT_EFG_RIM_FG",
+        "ALT_EFG_NET_MID_FREQ": "ALT_EFG_MID_FREQ",
+        "ALT_EFG_NET_MID_FG": "ALT_EFG_MID_FG",
+        "ALT_EFG_NET_THREE_FREQ": "ALT_EFG_THREE_FREQ",
+        "ALT_EFG_NET_THREE_FG": "ALT_EFG_THREE_FG",
+        "ALT_FC_NET_COMPLETION": "ALT_FC_COMPLETION",
+        "ALT_TOV_NET_VALUE": "ALT_TOV_VALUE",
+        "ALT_BADPASS_TOV_NET_VALUE": "ALT_BADPASS_TOV_VALUE",
+        "SECOND_CHANCE_NET": "SECOND_CHANCE_CLEAN",
+    }
+    prefix = net_to_gross.get(prefix, prefix)
     if side == "off":
         mapping = {
-            "ALT_EFG_RIM_FREQ": ["rim_freq", "rim_fga100", "fga100", "usage_proxy", "rim_assists100"],
-            "ALT_EFG_RIM_FG": ["rim_pct", "rim_fga100", "rim_assists100", "assist_points100"],
+            "ALT_EFG_RIM_FREQ": ["rim_freq", "rim_fga100", "fga100", "usage_proxy", "rim_assists100", "two_assisted_share", "unassisted_two_points100"],
+            "ALT_EFG_RIM_FG": ["rim_pct", "rim_fga100", "rim_assists100", "assist_points100", "assisted_two_points100", "unassisted_two_points100", "two_assisted_share"],
             "ALT_EFG_MID_FREQ": ["mid_freq", "mid_fga100", "fga100", "usage_proxy"],
-            "ALT_EFG_MID_FG": ["mid_pct", "mid_fga100", "usage_proxy"],
-            "ALT_EFG_THREE_FREQ": ["three_freq", "three_fga100", "fga100", "assist_points100"],
-            "ALT_EFG_THREE_FG": ["three_pct", "three_fga100", "assist_points100"],
+            "ALT_EFG_MID_FG": ["mid_pct", "mid_fga100", "usage_proxy", "assisted_two_points100", "unassisted_two_points100", "two_assisted_share"],
+            "ALT_EFG_THREE_FREQ": ["three_freq", "three_fga100", "fga100", "assist_points100", "three_assisted_share", "unassisted_three_points100"],
+            "ALT_EFG_THREE_FG": ["three_pct", "three_fga100", "assist_points100", "assisted_three_points100", "unassisted_three_points100", "three_assisted_share"],
             "ALT_FT": ["fta100", "ft_pct", "shooting_fouls_drawn100", "fouls_drawn100", "usage_proxy"],
             "ALT_FT_FREQ": ["fta100", "shooting_fouls_drawn100", "fouls_drawn100", "usage_proxy"],
             "ALT_FC_COMPLETION": ["turnovers100", "badpass_tov100", "lostball_tov100", "liveball_tov100", "assists100", "assist_tov_ratio", "usage_proxy"],
@@ -240,10 +278,12 @@ def build_annual_targets(
     rebuild: bool,
     target_off_alpha: float,
     target_def_alpha: float,
+    target_prefixes: list[str] | None = None,
 ) -> None:
+    prefixes = TARGET_PREFIXES if target_prefixes is None else target_prefixes
     name_map = _load_name_map()
     for year in range(2022, 2026):
-        for prefix in TARGET_PREFIXES:
+        for prefix in prefixes:
             path = target_path(output_dir, year, prefix)
             if path.exists() and not rebuild:
                 continue
@@ -391,27 +431,40 @@ def select_box_model(
 
 def _derive_additive_priors(
     base_priors: dict[str, pd.DataFrame],
+    additive_prefixes: list[str] | None = None,
 ) -> dict[str, pd.DataFrame]:
     """Add exact derived children and the additive total prior."""
     priors = {prefix: frame.copy() for prefix, frame in base_priors.items()}
+    prefixes = ADDITIVE_PREFIXES if additive_prefixes is None else additive_prefixes
 
     ft_severity = priors["ALT_FT"].copy()
     ft_severity["off"] = priors["ALT_FT"]["off"] - priors["ALT_FT_FREQ"]["off"]
     ft_severity["def"] = priors["ALT_FT"]["def"] - priors["ALT_FT_FREQ"]["def"]
     priors["ALT_FT_SEVERITY"] = ft_severity
 
-    scoring_tov = priors["ALT_TOV_VALUE"].copy()
-    scoring_tov["off"] = (
-        priors["ALT_TOV_VALUE"]["off"] - priors["ALT_BADPASS_TOV_VALUE"]["off"]
+    tov_prefix = (
+        "ALT_TOV_NET_VALUE"
+        if "ALT_TOV_NET_VALUE" in priors
+        else "ALT_TOV_VALUE"
     )
-    scoring_tov["def"] = (
-        priors["ALT_TOV_VALUE"]["def"] - priors["ALT_BADPASS_TOV_VALUE"]["def"]
+    badpass_prefix = (
+        "ALT_BADPASS_TOV_NET_VALUE"
+        if "ALT_BADPASS_TOV_NET_VALUE" in priors
+        else "ALT_BADPASS_TOV_VALUE"
     )
-    priors["ALT_SCORING_TOV_VALUE"] = scoring_tov
+    scoring_prefix = (
+        "ALT_SCORING_TOV_NET_VALUE"
+        if tov_prefix == "ALT_TOV_NET_VALUE"
+        else "ALT_SCORING_TOV_VALUE"
+    )
+    scoring_tov = priors[tov_prefix].copy()
+    scoring_tov["off"] = priors[tov_prefix]["off"] - priors[badpass_prefix]["off"]
+    scoring_tov["def"] = priors[tov_prefix]["def"] - priors[badpass_prefix]["def"]
+    priors[scoring_prefix] = scoring_tov
 
-    total = priors[ADDITIVE_PREFIXES[0]].copy()
+    total = priors[prefixes[0]].copy()
     total[["off", "def"]] = 0.0
-    for prefix in ADDITIVE_PREFIXES:
+    for prefix in prefixes:
         total["off"] += priors[prefix]["off"]
         total["def"] += priors[prefix]["def"]
     priors["RAPM"] = total
@@ -478,7 +531,10 @@ def build_box_priors_for_year(
     target_year: int,
     train_years: list[int],
     universe: list[str],
+    target_prefixes: list[str] | None = None,
+    additive_prefixes: list[str] | None = None,
 ) -> tuple[dict[str, pd.DataFrame], pd.DataFrame, list[dict[str, Any]]]:
+    prefixes = TARGET_PREFIXES if target_prefixes is None else target_prefixes
     current = box_by_year[target_year].copy()
     previous = box_by_year.get(target_year - 1)
     universe_frame = pd.DataFrame({"player_id": list(map(str, universe))})
@@ -496,7 +552,7 @@ def build_box_priors_for_year(
     priors: dict[str, pd.DataFrame] = {}
     metadata: list[dict[str, Any]] = []
 
-    for prefix in TARGET_PREFIXES:
+    for prefix in prefixes:
         result = universe_frame.copy()
         result["player_name"] = result["player_id"].map(
             dict(zip(current["player_id"], current["player_name"]))
@@ -545,7 +601,10 @@ def build_box_priors_for_year(
         priors[prefix] = result
 
     # Preserve exact child identities instead of fitting redundant child models.
-    priors = _derive_additive_priors(priors)
+    priors = _derive_additive_priors(
+        priors,
+        additive_prefixes=additive_prefixes,
+    )
 
     for prefix, frame in priors.items():
         if prefix == "RAPM":
@@ -594,6 +653,12 @@ def load_frozen_spec(report_path: Path) -> dict[str, Any]:
         "box_target_off_alpha": float(spec["box_target_off_alpha"]),
         "box_target_def_alpha": float(spec["box_target_def_alpha"]),
         "selection_folds": selection_folds,
+        # Selected on the 2023->2024 and 2024->2025 direct turnover-loss
+        # possession folds. This affects only the explanatory TOV split; the
+        # completion solve and headline VPM retain the frozen total alphas.
+        "direct_tov_def_alpha": float(
+            spec.get("direct_tov_def_alpha", DIRECT_TOV_DEF_ALPHA)
+        ),
     }
 
 
@@ -638,6 +703,7 @@ def build_current_board(
         prior_results_by_prefix=priors,
         prior_scale=spec["prior_scale"],
         output_label=output_label,
+        direct_tov_def_alpha=spec["direct_tov_def_alpha"],
     )
     current_report = {
         "target_year": target_year,
@@ -807,6 +873,11 @@ def main() -> int:
         "selection_folds": [2024, 2025],
         "selection_metric": "mean next-season game-margin RMSE",
         "tie_break": "highest correlation within 0.005 RMSE of the minimum",
+        "direct_tov_def_alpha": DIRECT_TOV_DEF_ALPHA,
+        "direct_tov_alpha_selection_folds": [2024, 2025],
+        "direct_tov_alpha_selection_metric": (
+            "mean next-season direct turnover-loss possession MSE"
+        ),
     }
 
     frozen_2025 = _solve_direct_ridge_problem(
@@ -842,6 +913,7 @@ def main() -> int:
             prior_results_by_prefix=priors_by_year[2026],
             prior_scale=spec["prior_scale"],
             output_label="box_trueprior_selected",
+            direct_tov_def_alpha=spec["direct_tov_def_alpha"],
         )
         report["current_2026_output"] = str(current_path)
     (args.output_dir / "report.json").write_text(

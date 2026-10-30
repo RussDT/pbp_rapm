@@ -35,6 +35,14 @@ Because every possession has five offensive players and five defensive players, 
 
 So the solver omits age `27` as the computational reference bucket for both offense and defense.
 
+That omission resolves the categorical reference only. If player fixed effects,
+age effects, and freely fitted calendar-season effects are present together,
+their linear age-period-cohort tilt is still unidentified. Do not interpret the
+linear slope from that specification without an explicit identifying constraint.
+The 1997-2026 career parent uses fixed RS scoring baselines and no fitted season
+dummies while learning the age bins; see
+[`THIRTY_YEAR_AGE_ADJUSTED_RAPM.md`](./THIRTY_YEAR_AGE_ADJUSTED_RAPM.md).
+
 The exported `*_age_effects.csv` file then recenters the offense and defense curves separately to weighted mean zero across observed age slots, and reports net as `off_centered - def_centered`.
 
 ## Age Source

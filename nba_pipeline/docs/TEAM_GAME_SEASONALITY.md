@@ -1,0 +1,15 @@
+# Predictive team-game-number seasonality
+
+September14,2026 protocol: test a smooth cubic of known team regular-season game number (G1–G82, centered at41) as a context term for next-game3P%. Reconstruct the strongest simple volume+FT prior filter from the completed fusion harness and require exact baseline closure. Build schedule counts from all player/game rows, not shooter observations; count completed earlier team games plus current scheduled game. Team rest is prior team-game gap. Playoffs have a separate intercept, not an extrapolated G83+ curve. Shortened2020/2021 retain actual game count; no completed-season length used as a predictor.
+
+Control: prior-season ridge context with intercept, home, B2B,3+days rest and playoff flag. Challenger: same plus RS game-number cubic. Fixed standardized ridge alpha10; strengths0,.5,1, earliest-simple paired one-SE selection on2021–22 and joint3PM/100 noninferiority. Context coefficients for S train on2020 through S−1 baseline forecast residuals; subtract the offset in filter innovations to avoid absorbing predictable context into the player state. Base parameters selected2019 only; fitted volume+FT priors use prior seasons. Report2023–25 as spent historical stress,2026 unscored,2027 untouched. No table replacement without predictive evidence. No claims about EPM internals; all existing cached EPM snapshots are game-agnostic mode0.
+
+Runner `research_team_game_seasonality.py`; ignored receipts under `results/estimated_skills/team_game_seasonality/`. Forecasts and latent pregame estimates are exported separately. Context-free does not mean causally identified neutral talent. Regular-season game number may proxy changes in opponents, rotation, selection or effort; this first test does not separately control opponent quality.
+
+## Results
+
+The one-SE rule selects exactly zero game-number increment. Development logloss gains are only+.00250% at half strength and+.00258% at full strength; the null is within paired uncertainty. Preserve no seasonal curve.
+
+The simpler context control versus no-context volume+FT filter improves2023–2025 logloss+.00898%, percentageMSE+.05382%, and3PM/100MSE+.07660%, with positive paired intervals. However a diagnostic comparison on2021–2022 shows logloss−.00240% and percentageMSE−.01275%, both inconclusive; joint makes+.02360% also inconclusive. It therefore is not a consistently validated improvement over no context, and must not be promoted based on later stress. Its later-period benefit is stronger in playoffs (percentageMSE+.45990%, makes+.63642%) than RS (+.02832%,+.03983%). This does not identify which individual control term contributes.
+
+The useful engineering result is an exactly reconstructed baseline and explicit pregame latent/context decomposition with dates, schedule counts and context curves. No predictive seasonal correction or table update is admitted from this run. Two tests verify team-game numbering through player absences and removal of known context from state updates; exported forecast=clipped(neutral+context) verified for all strengths. All snapshots stop2025.

@@ -1,0 +1,34 @@
+# Playoff injury evidence for title lift
+
+Research receipt, 2026-10-11. This is a source-feasibility audit and six-case pilot, not a complete 1997–2026 injury ledger or a causal estimate of championships lost.
+
+## Findings
+
+An injury adjustment is feasible, but games missed and injury attribution need separate evidence. The parent investigation independently counted absences by joining each team's actual playoff schedule to local PBP appearances. The counts below use that local audit; linked primary NBA/team material establishes the injury reasons. A player not appearing in PBP is not automatically injured.
+
+| Player / postseason | Full games missed in actual team run (local audit) | Missed games | Injury attribution / primary evidence |
+|---|---:|---|---|
+| Kevin Love, 2015 CLE | 16 | CHI 1–6; ATL 1–4; GSW 1–6 | Left shoulder dislocation. [Cavaliers injury release](https://www.nba.com/cavaliers/releases/status-update-love-150426); [team recap confirms season-ending shoulder surgery](https://www.nba.com/cavaliers/news/features/recap-bulls-150504). |
+| Kyrie Irving, 2015 CLE | 7 | ATL 2–3; GSW 2–6 | Left knee tendinitis before Atlanta absences; fractured left kneecap after Finals opener. [May 22 team release](https://www.nba.com/cavaliers/releases/status-irving-150522); [June 5 team release](https://www.nba.com/cavaliers/releases/status-irving-150605); [Finals Game 6 official scorer report](https://statsdmz.nba.com/pdfs/20150616/20150616_GSWCLE_book.pdf). |
+| Kawhi Leonard, 2017 SAS | 4 | HOU 6; GSW 2–4 | Sprained left ankle. [Houston Game 6 exclusion](https://www.nba.com/news/san-antonio-spurs-will-sit-kawhi-leonard-game-six); [WCF Game 4 exclusion and continuing absence](https://www.nba.com/news/kawhi-leonard-ruled-out-game-4). |
+| Kevin Durant, 2019 GSW | 10 | HOU 6; POR 1–4; TOR 1–4, 6 | Nine games before return with right calf strain; Finals 6 with right Achilles rupture. [Return announcement](https://www.nba.com/news/durant-game-time-decision-game-5-finals); [Toronto's Game 6 preview](https://www.nba.com/raptors/news/game-6-preview-raptors-vs-warriors). |
+| Kawhi Leonard, 2021 LAC | 8 | UTA 5–6; PHX 1–6 | Contemporaneous right knee sprain; later confirmed partial right ACL tear. [Utah Game 6 report](https://cdn-uat.nba.com/news/clippers-f-kawhi-leonard-listed-as-out-for-fridays-game-6-vs-utah); [WCF Game 6 exclusion](https://www.nba.com/news/kawhi-leonard-knee-ruled-out-for-game-6); [surgery update](https://www.nba.com/news/kawhi-leonard-has-surgery-to-repair-partially-torn-acl). |
+| Giannis Antetokounmpo, 2024 MIL | 6 | IND 1–6 | Left soleus strain. [Official April 26 report](https://ak-static.cms.nba.com/referee/injury/Injury-Report_2024-04-26_05PM.pdf); [official May 2 report](https://ak-static.cms.nba.com/referee/injury/Injury-Report_2024-05-02_05PM.pdf). |
+
+These are full-game counts only. Early exits (Love BOS4, Irving Finals1, Leonard 2017 HOU5/WCF1, Durant HOU5/Finals5, Leonard 2021 UTA4) need a separate partial-game lost-exposure calculation. The current source audit has not measured those minutes. The counts cover games the team actually played, not invented later rounds after elimination.
+
+## Source contract and coverage limits
+
+1. **Official scorer game books:** preserve played minutes, DNP reasons, and inactive names. The verified 2015 Finals Game 6 PDF distinguishes coach decisions from Irving's injury-related absence. Love is listed inactive without a medical reason; a separate injury release is therefore necessary. Fetch only the final-box page for absence classification, because quarterly boxes repeat names and must not become duplicated absence records.
+2. **Official dated injury PDFs:** the verified 2024 files contain game date, matchup, team, player, current status and reason. They also show available players with injuries, questionable statuses, personal absences and unsubmitted teams. An injury-report appearance alone cannot mean a game missed; join to final participation. Select the latest valid pre-tip report for an as-of design and retain the exact report time.
+3. **Team releases, game previews, recaps and media guides:** primary supplementary evidence for older seasons and inactive rows whose final box omits medical reasons. Retain the contemporaneous reason separately from later diagnosis (especially Leonard 2021).
+4. **Historical completeness is unverified:** this audit has not established that every playoff game book or injury-report PDF from 1997–2026 is available. Several guessed game-book URLs failed through the fetch tool; that does not establish absence at the source. A season-by-season retrieval/coverage inventory is required before promising all-era results. Team games, roster eligibility and absences can be audited locally; unresolved medical reasons should remain `unknown`, never be guessed from zero minutes.
+5. **Landing URLs are mutable:** opening [the old 2023–24 injury-report landing URL](https://official.nba.com/nba-injury-report-2023-24-season/) redirected to [the current 2025–26 page](https://official.nba.com/nba-injury-report-2025-26-season/) in this audit. Archive dated PDF URLs and content hashes; do not cite a seasonal landing page as immutable historical evidence.
+
+Suggested ledger fields: season, game_id, game_date, team_id, nba_id, playoff_round, series_game, roster_eligible, actual_minutes, absence_class (`injury`, `illness`, `rest`, `suspension`, `personal`, `coach_decision`, `unknown`), injury_reason_as_reported, later_confirmed_diagnosis, source_url, source_published_at, report_timestamp, evidence_tier, partial_exit_clock, adjudication_note. Match exact NBA identity and team-date eligibility; medical-source names require an explicit audited crosswalk.
+
+## How this supports title lift
+
+The source ledger identifies injury exposure; it does not identify healthy performance or replacement quality. Recompute the existing title-lift model under two explicit scenarios: actual availability and a healthy expected rotation. Missing minutes should be filled by the actual substitute rotation in the former and a frozen pre-injury minute expectation in the latter, preserving team minute mass. Use a pre-injury impact estimate rather than a post-injury/postseason estimate contaminated by the event being valued.
+
+Report healthy title lift, available title lift, and their difference as **modeled title lift unavailable due to injury**. Label the difference a counterfactual, not evidence that a title would have been won. Full-bracket championship odds require modeling advancement and availability in simulated later rounds; multiplying per-player lift by games-missed share describes lost exposure during the observed run and cannot recover the elimination effect. When several players are injured, evaluate the joint counterfactual first; individual loss allocations need a specified order-independent attribution (for example Shapley), because championship probability is nonlinear.

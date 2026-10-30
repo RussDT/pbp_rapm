@@ -3,12 +3,36 @@
 Use these names in owner-facing discussions. Experiment numbers identify saved
 runs; they do not identify new architectures or establish a release order.
 
+The [game and season impact architecture](VPM_ACTUAL_IMPACT_ARCHITECTURE.md)
+proposes a separate descriptive product: player-game impact and exact Net DECOMP,
+with game values aggregating into season rates and total value. It is an
+architecture recommendation with validation gates, not another selected rating
+or an alias for the existing annual predictive snapshots.
+
 | Plain name | Construction | Current role |
 |---|---|---|
 | **Component VPM / Impact Monster** | Ten component types solved separately on offense and defense; components sum to O/D/total | Existing product architecture; the component launch candidate still needs a correctly scoped comparison |
 | **Parent VPM** | One O/D parent with strongly shrunk midrange/three-point residual corrections | Research alternative; this is the family tested in the recent long-SPM/defense/FT runs |
 
 ## Selected model — owner decision, October 20
+
+For an accessible account of this selected Parent model, see the
+[three-page explainer](../../../output/documents/predictive_vpm_three_pager.docx)
+and [PDF](../../../output/pdf/predictive_vpm_three_pager.pdf). Source prose and
+layout live in `nba_pipeline/scripts/create_predictive_vpm_explainer.py`.
+Owner requested a conceptual visual explanation, without the exact feature
+inventory. The opening starts with the scoreboard, defines impact and why it
+matters, then credits ideas from DARKO (evolving skill estimates) and EPM
+(skill-informed adjusted lineup modeling), with primary-methodology sources.
+Owner terminology is **predictive box-score and advanced stats**, not
+"estimated skills" in this explainer. Seven figures cover the scoreboard,
+additive O/D/total units, evidence combination, recency weights, decomposition
+lanes, historical RMSE and paired-error uncertainty. Results distinguish the
+earlier forward/SQ experiments from the selected clean calibration; scorecard
+values load from the curated clean receipt. Illustrations are
+labeled and have descriptive alt text. It covers the current method and
+qualified historical evidence; it makes no new predictive or live-readiness
+claim. Generated documents stay outside Git.
 
 **Reader consolidation:** ratings.html and net-decomposition.html now open the same selected-model O/D/total overview. Main rows show all three; player details compare every Net lane across all three columns. Priors are separately labeled values. The experimental model/convention controls remain at net-decomposition-research.html. This is one data view, not another model or refit.
 
@@ -180,3 +204,20 @@ Both remains current, with residual12000/48000 for each zone. Owner explicitly
 retains D3 at48000; completed higher-penalty explorations are set aside.
 The [predictive-results page](http://127.0.0.1:8767/sq-ablation.html) is an
 ablation of this Parent, not a new prior family or Component VPM release.
+### Forward-training emphasis in the visual explainer
+
+The owner asked to foreground the stats-to-impact **training target** as the
+central methodological distinction from EPM. EPM's published SPM description
+pairs statistics with multi-season RAPM from the same historical seasons;
+selected VPM learns from dated predictive box-score/advanced stats to actual
+possession scoring in the following365 days, with regularized player deviations
+profiled jointly. Both systems produce predictive ratings. VPM pools many fully
+matured cohorts; this is not one year of total training history. Neither the
+forward direction nor the one-year horizon is independently proven superior.
+
+The three-page explainer now uses a court-to-scoreboard illustration, a
+proportionate points-for/against example, a prominent training-window comparison,
+separate recency weighting, exact lane hierarchy and source-backed EPM-relative
+RMSE/paired-interval plots. Explicit illustrative labels, units, uncertainty,
+preferred terminology and noncausal lane interpretation remain. Source builder:
+`nba_pipeline/scripts/create_predictive_vpm_explainer.py`. No model change.

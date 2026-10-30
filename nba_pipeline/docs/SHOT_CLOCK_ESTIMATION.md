@@ -230,6 +230,17 @@ The calibrated model is validated on one historical season. Applying it to
 modern seasons is a portable research backfill, not proof that timing latency
 is stationary across eras or PBP providers.
 
+## Player shot-clock difficulty
+
+`scripts/analyze_shot_clock_difficulty_ots.py` converts the endpoint clock into
+a player-season context statistic. It cross-fits a monotone TSx2 curve by game,
+season, and reset family, then defines positive difficulty as the league TS%
+reference minus the TS% expected from that player's clock mix. Raw TS% plus
+difficulty equals clock-adjusted TS% exactly. The raw rule clock is primary;
+the FGA-calibrated sensitivity clock is floored at four seconds. A two-transition
+season-forward oTS test is directionally promising but remains research-only.
+See [Shot-Clock Difficulty and Clock-Adjusted TS](./SHOT_CLOCK_DIFFICULTY_OTS.md).
+
 ## ShotQuality challenger
 
 `scripts/train_sq_shot_clock_challenger.py` joins the calibrated 2026 RS clock
@@ -239,3 +250,79 @@ join is complete, and clock improves both grouped-OOF and chronological losses.
 It also combines conditioned shot EV with the current second-chance opportunity
 prior to produce expected possession value at release. See
 [Shot-Clock SQ and Grenade Burden](./SQ_SHOT_CLOCK_CHALLENGER.md).
+
+## Turnover timing diagnostic
+
+`scripts/analyze_turnover_by_shot_clock.py` uses the same state machine to
+describe turnover risk within live shot-clock cycles. It inserts observation
+markers immediately before turnovers and fouls that directly produce free
+throws; the original raw event remains in place and still applies the normal
+clock reset. Decision endpoints are therefore FGA, turnover, or a live
+FT-producing foul. Offensive fouls without a companion turnover event are
+included explicitly.
+
+```bash
+PYTHONPATH=. .venv/bin/python \
+  nba_pipeline/scripts/analyze_turnover_by_shot_clock.py \
+  --seasons 24 25 26 \
+  --season-types RS PS \
+  --output-dir nba_pipeline/results/turnover_shot_clock/2024_2026
+```
+
+The output includes endpoint-level parquet, 4-second-bin summaries, a discrete
+survival-style hazard table, shooting-outcome parquet, TSx2 shot-value summary,
+an FT-join audit, and a continuous-grid remaining-possession-value summary.
+Interpret the quantities separately:
+
+- `share_of_turnovers` describes where turnover events occur.
+- `turnover_hazard` divides turnovers at a clock second by observed decision
+  cycles that survived to that second.
+- `tsx2_points_per_shot` is actual points divided by
+  `FGA + 0.44 * FTA`. Ordinary live-ball FT attempts map backward to the
+  immediately preceding same-clock foul; and-one FTs map to the made FGA.
+  Technical, flagrant, clear-path, defensive-three-second, and transition-take
+  FTs are excluded from this descriptive live-ball curve.
+- `remaining_possession_value` is
+  `E[FIRST_CHANCE.Net_Diff + SECOND_CHANCE_CLEAN.Net_Diff | the initial
+  24-second cycle is still alive at clock t]`. The output also retains the two
+  components separately, so the rebound-continuation cushion is visible rather
+  than folded into shot value.
+
+The 2024-2026 RS+PS run contains 886,202 decision endpoints and 111,224
+turnovers across 24- and 14-second reset families. On 24-second starts, 97,697
+turnovers appear among 761,730 endpoints. The main qualitative result is
+robust to raw versus calibrated clock: turnover incidence increases as a cycle
+survives deeper into the clock. Exact bin placement is not equally robust. The
+residual calibrator was trained and validated on FGA labels, not turnover
+events; use raw and calibrated turnover locations as a sensitivity range, and
+do not describe the calibrated turnover second as arena-clock ground truth.
+The final 0-4-second bin should also be shown both with and without explicit
+shot-clock violations.
+
+The same 2024-2026 run maps `170,236 / 170,907` ordinary FT attempts (`99.61%`)
+to a shooting endpoint. On calibrated 24-second starts, actual TSx2 declines
+monotonically from `1.433` with 20-24 seconds remaining to `0.876` with 0-4
+seconds remaining. The raw rule clock gives the same direction (`1.468` to
+`0.992`). This is a descriptive state curve: early-clock attempts are selected
+for transition and immediate rim pressure, while late-clock attempts are
+selected difficult states. Do not interpret the full decline as a causal effect
+of deliberately waiting.
+
+The possession-value mapping connects each initial 24-second decision cycle to
+the canonical processed terminal possession row. The 2024-2026 RS+PS run has
+`755,570` unique mapped cycles; duplicate terminal mappings are removed, and
+`first_chance_value + second_chance_value = remaining_possession_value` closes
+exactly at the row level. On the calibrated curve, total remaining value falls
+from `1.160` points at 24 seconds to `1.007` at 4 seconds. First-chance value
+falls from `1.009` to `0.850`, while second-chance value remains roughly
+`0.15-0.17` points (`0.151` at 24 seconds and `0.157` at 4 seconds). The
+second-chance term therefore cushions, but does not erase, the late-clock loss.
+
+The CSV is evaluated on a quarter-second grid to provide a smooth conditional
+curve. That grid is not quarter-second observed data: raw PBP time is whole
+seconds, and the calibrated clock is a continuous model estimate with practical
+resolution closer to roughly 1-3 seconds. The calibrated tail below 4 seconds
+is unstable because the FGA-trained residual correction is being extrapolated
+onto a small, clipped sample. Use the raw whole-second curve there as the honest
+sensitivity reference; it declines smoothly from `1.160` at 24 seconds to
+`1.037` at 0 seconds.

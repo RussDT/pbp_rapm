@@ -91,7 +91,15 @@ def process_russell_shotquality_py(
     start_time = time.time()
 
     source_file = os.path.basename(file_path)
-    sq = _load_shot_quality_values(source_file, shot_quality_path, shot_quality_column)
+    try:
+        sq = _load_shot_quality_values(source_file, shot_quality_path, shot_quality_column)
+    except ValueError as exc:
+        # The SQ artifact is a full-history fit; a new season has no rows until
+        # build_pbp_shot_quality.py is rerun. Skip rather than synthesize, like
+        # the other SQ-dependent processors (reprocess_metric treats None as a
+        # failure, so targeted rebuilds stay strict).
+        print(f"      Warning: {exc}. Returning None.")
+        return None
     print(
         f"      Loaded {len(sq):,} {shot_quality_column} rows for {source_file} "
         f"from {shot_quality_path}"

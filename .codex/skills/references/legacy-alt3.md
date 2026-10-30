@@ -6,7 +6,8 @@ Load this reference only when a task explicitly names
 
 ## Status
 
-- Treat `weighted_factors_decomp_*` as the active public family.
+- Treat `weighted_factors_decomp_net_*` as the selected forward family and
+  gross `weighted_factors_decomp_*` as compatibility/rollback during migration.
 - Treat `weighted_factors_alt3_efg_value_*` as a legacy EFG-value display and
   audit surface.
 - Treat `weighted_factors_alt3_*` as the older legacy/audit surface.

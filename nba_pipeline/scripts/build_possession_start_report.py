@@ -34,7 +34,7 @@ RESULTS_DIR = PIPELINE_DIR / "results"
 CATEGORY_ORDER = [
     "Live Ball Turnover",
     "At Rim Block",
-    "At Rim Miss",
+    "At Rim Miss (Unblocked)",
     "Missed 2PT",
     "Missed FG",
     "Short Mid Range Miss",
@@ -44,6 +44,9 @@ CATEGORY_ORDER = [
     "Corner 3 Miss",
     "Deadball",
     "Made FG",
+    "Made Rim FG",
+    "Made Mid FG",
+    "Made 3FG",
     "FT Make",
     "FT Miss",
     "Timeout",
@@ -117,6 +120,7 @@ def build_possession_rows(year: int, season_type: str) -> pd.DataFrame:
         "time_quarter",
         "poss_offense",
         "event_type",
+        "event_action_type",
         "event_text",
         "home_team_abbr",
         "away_team_abbr",
@@ -134,6 +138,7 @@ def build_possession_rows(year: int, season_type: str) -> pd.DataFrame:
     terminal = terminal.sort_values(["game_id", "poss_group"], kind="stable").reset_index(drop=True)
     previous_cols = [
         "terminal_event_type",
+        "event_action_type",
         "terminal_event_text",
         "Prev_Event",
         "Prev_home_desc",
@@ -201,6 +206,17 @@ def build_possession_rows(year: int, season_type: str) -> pd.DataFrame:
     poss["Live Ball Turnover"] = prev_type.eq("Turnover") & prev_text_upper.str.contains("STEAL", regex=False, na=False)
     poss["Deadball"] = prev_type.eq("Turnover") & ~poss["Live Ball Turnover"]
     poss["Made FG"] = prev_type.eq("MAKE")
+    made_three = poss["Made FG"] & prev_text_upper.str.contains("3PT", regex=False, na=False)
+    made_distance = pd.to_numeric(prev_text.str.extract(r"(?:^|\s)(\d+)'", expand=False), errors="coerce")
+    made_action = pd.to_numeric(poss["previous_event_action_type"], errors="coerce")
+    made_rim = poss["Made FG"] & ~made_three & (
+        made_action.isin(RIM_ACTION_TYPES)
+        | prev_text.str.contains(r"layup|dunk| tip ", case=False, regex=True, na=False)
+        | made_distance.le(4)
+    )
+    poss["Made Rim FG"] = made_rim
+    poss["Made Mid FG"] = poss["Made FG"] & ~made_three & ~made_rim
+    poss["Made 3FG"] = made_three
     poss["FT Make"] = prev_type.eq("FreeThrow") & ~prev_text_upper.str.contains(r"\bMISS\b", regex=True, na=False)
     poss["FT Miss"] = (
         (prev_type.eq("FreeThrow") & prev_text_upper.str.contains(r"\bMISS\b", regex=True, na=False))
@@ -209,7 +225,7 @@ def build_possession_rows(year: int, season_type: str) -> pd.DataFrame:
     poss["Missed FG"] = is_missed_fg
     poss["Missed 2PT"] = is_missed_2
     poss["Missed 3PT"] = is_missed_3
-    poss["At Rim Miss"] = is_rim
+    poss["At Rim Miss (Unblocked)"] = is_rim & ~is_blocked
     poss["At Rim Block"] = is_rim & is_blocked
     poss["Short Mid Range Miss"] = is_missed_2 & ~is_rim & distance.between(5, 14, inclusive="both")
     poss["Long Mid Range Miss"] = is_missed_2 & ~is_rim & distance.ge(15)
@@ -304,74 +320,47 @@ def render_chart(
     compare_col: str,
     min_possessions: int,
 ) -> None:
-    plot_df = summary.copy()
-    plot_df = plot_df[plot_df["possessions"].ge(min_possessions)].copy()
-    plot_df["category"] = pd.Categorical(plot_df["category"], categories=CATEGORY_ORDER, ordered=True)
-    plot_df = plot_df.sort_values("category", ascending=True)
-    plot_df = plot_df.dropna(subset=[compare_col])
+    # Retain aggregate/audit categories in CSVs, but show one missed-three bar.
+    hidden = {"Corner 3 Miss", "Above The Break 3 Miss", "Made FG"}
+    plot_df = summary.loc[~summary["category"].isin(hidden)].copy()
+    plot_df = plot_df.loc[plot_df["possessions"].ge(min_possessions)].dropna(subset=[compare_col])
+    plot_df = plot_df.sort_values(compare_col, ascending=False).reset_index(drop=True)
     if plot_df.empty:
         raise ValueError("No categories meet the minimum possession threshold")
-
-    values = plot_df[compare_col].to_numpy()
-    colors = np.where(values >= 0, "#52c8bd", "#ff858c")
-    edge_colors = np.where(values >= 0, "#007f78", "#b83443")
-
-    fig_height = max(7.0, 0.42 * len(plot_df) + 2.2)
-    fig, ax = plt.subplots(figsize=(10.8, fig_height), dpi=180)
-    fig.patch.set_facecolor("#faf7ec")
-    ax.set_facecolor("#faf7ec")
-
-    y_pos = np.arange(len(plot_df))
-    ax.barh(y_pos, values, color=colors, edgecolor=edge_colors, linewidth=1.4, height=0.78)
-    ax.axvline(0, color="#b83a48", linewidth=1.4)
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels(plot_df["category"], fontsize=10.5)
+    values = plot_df[compare_col] / 100.0
+    baseline_col = "scope_avg_ortg" if compare_col == "delta_vs_scope" else "league_avg_ortg"
+    baseline = float(plot_df[baseline_col].iloc[0]) / 100.0
+    bg = "#faf7ec"
+    fig, ax = plt.subplots(figsize=(12, max(9, 0.43 * len(plot_df) + 2.2)), dpi=180)
+    fig.patch.set_facecolor(bg)
+    ax.set_facecolor(bg)
+    ax.barh(range(len(plot_df)), values, color=np.where(values >= 0, "#198e83", "#ca6471"), height=.63, zorder=3)
+    ax.set_yticks(range(len(plot_df)))
+    ax.set_yticklabels(plot_df["category"])
     ax.invert_yaxis()
-
-    max_abs = max(5.0, float(np.nanmax(np.abs(values))) + 1.0)
-    max_abs = min(max_abs, 24.0)
-    ax.set_xlim(-max_abs, max_abs)
-    ax.grid(axis="x", color="#dedbd2", linewidth=1.0)
-    ax.grid(axis="y", color="#e7e2d6", linewidth=0.9)
+    for i, row in plot_df.iterrows():
+        value = row[compare_col] / 100.0
+        ax.text(value + (.004 if value >= 0 else -.004), i, f"{value:+.3f}", va="center", ha="left" if value >= 0 else "right", fontsize=11, fontweight="bold")
+        ax.text(1.03, i, f"{row['ortg']/100:.3f}", transform=ax.get_yaxis_transform(), va="center", ha="right", fontsize=12, fontweight="bold")
+        ax.text(1.19, i, f"{row['possessions']:,.0f}", transform=ax.get_yaxis_transform(), va="center", ha="right", fontsize=11, color="#666666")
+    for x, label in [(1.03, "ACTUAL PPP"), (1.19, "POSS.")]:
+        ax.text(x, 1.037, label, transform=ax.transAxes, ha="right", fontsize=10, color="#555555", fontweight="bold")
+    ax.axvline(0, color="#333333", linewidth=1.4, zorder=2)
+    ax.set_xlim(min(-.10, values.min() - .05), max(.25, values.max() + .075))
+    ax.xaxis.set_major_formatter(lambda v, _: "Avg" if abs(v) < 1e-8 else f"{v:+.2f}")
+    ax.set_xlabel("PPP above / below comparison average", fontsize=12, labelpad=14)
+    ax.tick_params(axis="both", labelsize=11, length=0, pad=8)
     ax.set_axisbelow(True)
-    ax.tick_params(axis="both", length=0, colors="#222")
-    ax.xaxis.set_major_formatter(lambda x, _: f"{x:+.0f}" if x else "0")
-    ax.set_xlabel("Points Per 100 Possessions Above/Below Comparison Average", fontsize=12)
-
+    ax.xaxis.grid(True, color="#dedbd2", linewidth=.8)
     for spine in ax.spines.values():
         spine.set_visible(False)
-
-    fig.text(0.055, 0.965, title, fontsize=18, fontweight="bold", ha="left", va="top")
-    fig.text(0.055, 0.92, subtitle, fontsize=12, color="#85827b", ha="left", va="top")
-
-    positive_y = max(1, min(len(plot_df) - 1, 3))
-    negative_y = max(positive_y + 4, min(len(plot_df) - 2, len(plot_df) - 4))
-    ax.text(
-        max_abs * 0.35,
-        positive_y,
-        "Possessions that start\nwith these events lead to\nBETTER outcomes than\nthe comparison possession",
-        color="#52bfb6",
-        fontsize=10.5,
-        fontweight="bold",
-        va="center",
-        ha="center",
-        bbox={"boxstyle": "square,pad=0.35", "fc": "#faf7ec", "ec": "#52bfb6", "lw": 1.0},
-    )
-    ax.text(
-        max_abs * 0.32,
-        negative_y,
-        "Possessions that start\nwith these events lead to\nWORSE outcomes than\nthe comparison possession",
-        color="#ee7e86",
-        fontsize=10.5,
-        fontweight="bold",
-        va="center",
-        ha="center",
-        bbox={"boxstyle": "square,pad=0.35", "fc": "#faf7ec", "ec": "#ee7e86", "lw": 1.0},
-    )
-
+    fig.text(.035, .955, title.replace("Offensive Rating", "PPP"), fontsize=22, fontweight="bold")
+    fig.text(.035, .914, subtitle.split(" | ")[0] + f" • Full ensuing possession • Comparison average: {baseline:.3f} PPP", fontsize=12, color="#555555")
+    fig.text(.035, .052, "Miss categories require a defensive rebound. Rim-miss and rim-block bars are separate; other miss aggregates overlap.", fontsize=10, color="#555555")
+    fig.text(.035, .03, "Made shots are split into rim, other two-pointers (mid), and threes. Descriptive associations.", fontsize=10, color="#555555")
+    fig.subplots_adjust(left=.265, right=.85, top=.835, bottom=.145)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.subplots_adjust(left=0.29, right=0.97, top=0.86, bottom=0.12)
-    fig.savefig(output_path, bbox_inches="tight")
+    fig.savefig(output_path)
     plt.close(fig)
 
 

@@ -44,9 +44,10 @@ The repository currently contains three related but different decompositions.
 
 | Surface | Player-facing structure | Current status |
 | --- | --- | --- |
-| **Active public RAPM DECOMP** | Five first-chance shot children + FT value + TOV value + second-chance value | Current `weighted_factors_decomp_*` family |
+| **Forward Net DECOMP** | Five continuation-priced shot children + FT value + net TOV value + second-chance conversion | Selected `weighted_factors_decomp_net_*` family; 1Y-5Y migration in progress |
+| **Gross compatibility DECOMP** | Five gross first-chance shot children + FT value + TOV value + physical second-chance value | Rollback and matched-comparison `weighted_factors_decomp_*` family |
 | **Current VPM board** | `TS + TOV + SC` on offense and defense; `TS` has eight EV-target children, for ten components per side | Current frozen EPM12 x2 research board in `vpm-explorer/public/data/` |
-| **Older six-factor weighted factors** | `oTS/oTOV/oREB` and `dTS/dTOV/dREB`, fitted to RAPM with a second-stage weighted regression and a residual | Legacy/supporting surface, not the active public DECOMP |
+| **Older six-factor weighted factors** | `oTS/oTOV/oREB` and `dTS/dTOV/dREB`, fitted to RAPM with a second-stage weighted regression and a residual | Legacy/supporting surface, not the forward Net DECOMP |
 
 The active public RAPM tree is declared in
 [PUBLIC_DECOMP.md](./PUBLIC_DECOMP.md#public-tree) and assembled by
@@ -133,7 +134,7 @@ coaching, a specific assigned defender, tracking-based spacing, injuries, or
 nonlinear five-player chemistry unless such information is explicitly in that
 model.
 
-## The active public RAPM DECOMP: eight components
+## The gross compatibility RAPM DECOMP: eight components
 
 The active public RAPM output uses the following player-facing components on
 both offense and defense:
@@ -339,7 +340,7 @@ These names are not interchangeable.
   player-level WLS regression.
 - `SHOOTER_OREB`, shooter miss recoverability, and the game-held-out
   second-chance opportunity prior are separate research surfaces. They do not
-  enter the current public DECOMP or VPM total.
+  enter the forward Net DECOMP or VPM total.
 
 [REB target/signs](../scripts/rapm.py#L1717-L1722),
 [legacy WLS mapping](../scripts/03_run_rapm_analysis.py#L493-L630), and

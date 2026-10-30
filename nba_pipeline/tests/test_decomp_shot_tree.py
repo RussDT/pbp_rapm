@@ -115,3 +115,15 @@ def test_solver_recenters_each_side_with_its_own_possession_weights():
 
     assert abs(beta[0] * 90 + beta[1] * 10) < 1e-12
     assert abs(beta[2] * 20 + beta[3] * 80) < 1e-12
+
+
+def test_second_chance_net_alias_uses_net_continuation_target():
+    frame = pd.DataFrame(
+        {
+            "SC_NET_CONT_Diff": [0.25, -0.4],
+            "Net_Diff": [0.7, -0.1],
+        }
+    )
+    prepared = detect_file_type_and_prepare(frame, prefix="SECOND_CHANCE_NET")
+    np.testing.assert_allclose(prepared["Off_Diff"], [0.25, -0.4])
+    np.testing.assert_allclose(prepared["Def_Diff"], [-0.25, 0.4])

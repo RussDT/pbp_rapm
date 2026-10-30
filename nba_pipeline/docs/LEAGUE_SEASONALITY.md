@@ -1,0 +1,9 @@
+# Descriptive league shooting seasonality
+
+`analyze_league_seasonality.py` compares player-season-adjusted shooting rates and residuals versus saved v1 pregame estimates. Six equal elapsed-calendar fractions of the completed regular season, plus separate playoffs; attempts weight the player-season fixed-effect regression. Player-cluster bootstrap1000 draws. Main2019,2022–2025 excludes pandemic seasons2020/2021; all-season sensitivity saved. These retrospective calendar fractions are descriptive, not live forecast features. The predictive follow-up uses known team game number instead: TEAM_GAME_SEASONALITY.md.
+
+Compared with the first sixth of the regular season, the last sixth has observed3P%+0.81pp [+.29,+1.27], FT%+.91pp, rimFG%+1.97pp, non-rim2P%+1.21pp. Playoff3P% is−1.82pp vs first sixth; postseason selection/opponents/shot mix remain confounders despite player-season controls. Most of this pattern remains in the original model residuals. This does not identify a causal calendar effect or justify applying the fitted retrospective coefficients live.
+
+All inspected EPM caches are game_optimized=0, the game-agnostic mode. Fixed-player cohorts across available within-season snapshots yield epm_fixed_player_series.csv; these files cannot identify the optimized-minus-agnostic layer shown by game-specific chart dots. Previous suggestions that our comparison board necessarily used game-optimized EPM were incorrect. No paired mode1 snapshots were fetched in this analysis. Provider values remain local private research outputs.
+
+Ignored output directory: results/estimated_skills/league_seasonality, including controlled_effects.csv, season_phase_rates.csv, seasonality.png and epm_fixed_player_series.csv. One synthetic regression test verifies recovery of phase effects despite differing player levels and phase weights. No model/table change.

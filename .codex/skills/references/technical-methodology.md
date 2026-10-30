@@ -107,7 +107,7 @@ That's not a decomposition -- it's a discovery. It tells you something about the
 ## ShotQuality TS Decomposition Methodology
 
 This section describes the historical `SQ + Contest + FT` shot-only research
-surface. Do not confuse it with active public eight-component DECOMP or the
+surface. Do not confuse it with forward Net DECOMP, gross compatibility DECOMP, or the
 ten-component ShotQuality-EV VPM. Read `decomp-and-vpm.md` for those models.
 
 ### The Exact-Sum Insight

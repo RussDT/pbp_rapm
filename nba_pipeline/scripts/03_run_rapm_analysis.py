@@ -90,6 +90,30 @@ def normalize_season_end_year(year_value: int) -> int:
     return year_value
 
 
+def sq_first_chance_supported(start_year: int, end_year: int) -> bool:
+    """True when every RS season in the window carries ShotQuality enrichment.
+
+    ALT_SQ/ALT_MAKE and the first-chance transition/half-court splits read
+    FC_SQ_Diff and Is_FC_Transition_Possession, which exist only on seasons
+    enriched by 01b_enrich_pbp_shotquality.py. A season without that source
+    (e.g. a new season before SQ files land) must drop these optional splits
+    rather than abort the whole weighted-factor run.
+    """
+    import pyarrow.parquet as pq
+
+    start, end = normalize_season_end_year(start_year), normalize_season_end_year(end_year)
+    if start < 2024:
+        return False
+    for season in range(start, end + 1):
+        path = PROCESSED_DIR / f"FIRST_CHANCE{season % 100:02d}.parquet"
+        try:
+            if 'FC_SQ_Diff' not in pq.read_schema(path).names:
+                return False
+        except Exception:
+            return False
+    return True
+
+
 def build_result_suffix(season_suffix: str, pure: bool = False, rubberband: bool = False,
                         season_effects: bool = False, age_curve: bool = False,
                         age_dummies: bool = False, timedecay: bool = False, half_life=None,
@@ -216,7 +240,7 @@ def run_regression_analysis(year_range, season_suffix, output_dir, start_year, e
     import pandas as pd
     import numpy as np
     import statsmodels.api as sm
-    alt_ts_decomp_supported = normalize_season_end_year(start_year) >= 2024
+    alt_ts_decomp_supported = sq_first_chance_supported(start_year, end_year)
 
     def center_alt3_public_columns(df):
         """Center published alt3 factor columns by possession weight in-place."""
@@ -1195,7 +1219,11 @@ def organize_results(year_range, season_suffix, start_year, end_year, season_typ
             ],
         ]
         for rb_prefix in rb_prefixes:
-            for rb_file_suffix in ['_rubberband_coefficients.csv', '_rubberband_effects.csv']:
+            for rb_file_suffix in [
+                '_rubberband_coefficients.csv',
+                '_rubberband_effects.csv',
+                '_rubberband_surface.csv',
+            ]:
                 rb_filename = f"{rb_prefix}{rb_file_suffix}"
                 source = source_dir / rb_filename
                 if source.exists():
@@ -1334,11 +1362,11 @@ Examples:
                        help='Half-life in days for time decay (default: 700). Implies --timedecay.')
     parser.add_argument('--rubberband', '-rb',
                        action='store_true',
-                       help='Enable rubberband effect (score-margin x period adjustment)')
+                       help='Enable the selected continuous margin-by-clock rubberband adjustment')
     parser.add_argument('--alpha-rb',
                        type=float,
                        default=None,
-                       help='Rubberband regularization alpha (default: 10)')
+                       help='Rubberband regularization alpha (default: 100)')
     parser.add_argument('--season-effects', '-se',
                        action='store_true',
                        help='Pass --season-effects through to every RAPM solve and suffix downstream outputs with _se.')
@@ -1393,7 +1421,7 @@ Examples:
         td_half = args.half_life if args.half_life else 700
         logging.info(f"Time Decay: ENABLED (half-life={td_half} days)")
     if args.rubberband:
-        logging.info(f"Rubberband: ENABLED (alpha_rb={args.alpha_rb if args.alpha_rb else 10})")
+        logging.info(f"Rubberband: ENABLED (smooth clock-aware model, alpha_rb={args.alpha_rb if args.alpha_rb else 100})")
     if args.season_effects:
         logging.info("Season Effects: ENABLED")
     if args.age_curve:
@@ -1418,7 +1446,10 @@ Examples:
         *[metric_type for metric_type, _, _ in AUXILIARY_FACTOR_METRICS],
         'FIRST_CHANCE', 'ALT_TS', 'ALT_EFG', 'ALT_FT', 'ALT_TOV', 'ALT_BADPASS_TOV', 'ALT_SCORING_TOV', 'SECOND_CHANCE_CLEAN'
     ]
-    if normalize_season_end_year(args.start_year) >= 2024:
+    sq_supported = sq_first_chance_supported(args.start_year, args.end_year)
+    if not sq_supported and normalize_season_end_year(args.start_year) >= 2024:
+        logging.warning("ShotQuality enrichment missing for part of this window; skipping ALT_SQ/ALT_MAKE and first-chance transition splits.")
+    if sq_supported:
         rapm_types.extend(['ALT_SQ', 'ALT_MAKE'])
         rapm_types.extend([metric_type for metric_type, _ in FIRST_CHANCE_MODE_METRICS])
 
@@ -1514,7 +1545,7 @@ Examples:
     logging.info(f"  - ft_premium_{year_range}_{other_suffix}_results.csv")
     for _, file_stem, _ in AUXILIARY_FACTOR_METRICS:
         logging.info(f"  - {file_stem}_{year_range}_{other_suffix}_results.csv")
-    if normalize_season_end_year(args.start_year) >= 2024:
+    if sq_supported:
         for _, file_stem in FIRST_CHANCE_MODE_METRICS:
             logging.info(f"  - {file_stem}_{year_range}_{other_suffix}_results.csv")
     logging.info(f"  - first_chance_{year_range}_{other_suffix}_results.csv")

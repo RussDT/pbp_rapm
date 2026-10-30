@@ -55,6 +55,16 @@ ALT_VALUE_COLUMNS = {
     "ALT_EFG_VALUE": "FC_EFG_VALUE_Diff",
 }
 
+NET_VALUE_COLUMNS = {
+    "ALT_EFG_NET_RIM_FREQ": "FC_NET_RIM_EFG_FREQ_Diff",
+    "ALT_EFG_NET_RIM_FG": "FC_NET_RIM_EFG_FG_Diff",
+    "ALT_EFG_NET_MID_FREQ": "FC_NET_MID_EFG_FREQ_Diff",
+    "ALT_EFG_NET_MID_FG": "FC_NET_MID_EFG_FG_Diff",
+    "ALT_EFG_NET_THREE_FREQ": "FC_NET_THREE_EFG_FREQ_Diff",
+    "ALT_EFG_NET_THREE_FG": "FC_NET_THREE_EFG_FG_Diff",
+    "ALT_EFG_NET_VALUE": "FC_NET_EFG_VALUE_Diff",
+}
+
 DISPLAY_PREFIXES = [
     "ALT_EFG_RIM_FREQ",
     "ALT_EFG_RIM_FG",
@@ -70,6 +80,23 @@ DISPLAY_PREFIXES = [
     "ALT_BADPASS_TOV_VALUE",
     "ALT_SCORING_TOV_VALUE",
     "SECOND_CHANCE_CLEAN",
+]
+
+NET_DISPLAY_PREFIXES = [
+    "ALT_EFG_NET_RIM_FREQ",
+    "ALT_EFG_NET_RIM_FG",
+    "ALT_EFG_NET_MID_FREQ",
+    "ALT_EFG_NET_MID_FG",
+    "ALT_EFG_NET_THREE_FREQ",
+    "ALT_EFG_NET_THREE_FG",
+    "ALT_FT",
+    "ALT_FT_FREQ",
+    "ALT_FT_SEVERITY",
+    "ALT_FC_NET_COMPLETION",
+    "ALT_TOV_NET_VALUE",
+    "ALT_BADPASS_TOV_NET_VALUE",
+    "ALT_SCORING_TOV_NET_VALUE",
+    "SECOND_CHANCE_NET",
 ]
 
 WNBA_SEASON_DATE_BOUNDS = {
@@ -177,9 +204,13 @@ def _attach_clean_scoring(
     label: str,
     season_year: int,
     is_playoffs: bool,
+    *,
+    actual_fts: bool = False,
 ) -> pd.DataFrame:
     """Attach expected-FT scoring and first-chance component action scores."""
-    out = _attach_wnba_ft_pct(df, season_year, is_playoffs, label)
+    out = df.copy() if actual_fts else _attach_wnba_ft_pct(df, season_year, is_playoffs, label)
+    if "FTPerc" not in out:
+        out["FTPerc"] = np.nan
     if "ThreePerc" not in out.columns:
         out["ThreePerc"] = np.nan
 
@@ -211,6 +242,8 @@ def _attach_clean_scoring(
         series_contains(out["visitor_description"], "3PT", case=False)
     )
     actual_score = (out["Home_Action_Score"] + out["Away_Action_Score"]).astype(float)
+    if actual_fts:
+        out["ExpFT"] = actual_score.where(is_ft_event, 0.0)
 
     out["ActualNet"] = case_when(
         is_ft_event, out["ExpFT"],
@@ -250,6 +283,8 @@ def build_clean_chance_base(
     season_str: str,
     label: str,
     is_playoffs: bool,
+    *,
+    actual_fts: bool = False,
 ) -> pd.DataFrame | None:
     """Build WNBA clean first-/second-chance possession rows."""
     logging.info("Starting %s base processing for %s", label, season_str)
@@ -258,7 +293,7 @@ def build_clean_chance_base(
         return None
 
     checked, group_cols = prepare_wnba_standard_possession_df(raw, label)
-    checked = _attach_clean_scoring(checked, label, year, is_playoffs)
+    checked = _attach_clean_scoring(checked, label, year, is_playoffs, actual_fts=actual_fts)
 
     if group_cols:
         checked["poss_group"] = checked.groupby(group_cols)["End_of_Possession"].transform(
@@ -289,6 +324,11 @@ def build_clean_chance_base(
     is_three = is_fga & shot_flags["is_3pt"].astype(bool)
     is_mid = is_fga & ~is_rim & ~is_three
     first_chance_fga = is_fga & ~checked["after_miss"]
+    if actual_fts:
+        # Preserve the exact possession grouping before terminal/lineup filters.
+        # A rejected terminal must never donate its first shot to the next row.
+        checked["first_fga_event"] = checked["event_num"].where(first_chance_fga)
+        checked["first_fga_event"] = checked.groupby(poss_group_key)["first_fga_event"].transform("first")
 
     fc_efg_avg = (
         float(checked.loc[first_chance_fga, "ActualNet"].mean())
@@ -384,6 +424,103 @@ def build_clean_chance_base(
     checked["First_Chance_Net"] = np.where(checked["after_miss"], 0.0, checked["ActualNet"])
     checked["Second_Chance_Net"] = np.where(checked["after_miss"], checked["ActualNet"], 0.0)
 
+    # Net-continuation (kappa) pricing.  A first-chance miss does not destroy
+    # the possession with certainty: it retains the zone-specific expected
+    # downstream second-chance value.  Grant that value to the miss in the
+    # shot tree and pay the identical amount back out of second chance.  The
+    # complete possession target therefore remains unchanged row by row.
+    fc_missed_fga = first_chance_fga & checked["off_miss"].astype(bool)
+    second_chance_points = (
+        pd.Series(
+            np.where(checked["after_miss"], checked["ActualNet"], 0.0),
+            index=checked.index,
+        )
+        .groupby([checked[col] for col in poss_group_key], sort=False)
+        .transform("sum")
+    )
+    miss_zone = np.select(
+        [
+            fc_missed_fga & is_rim,
+            fc_missed_fga & is_mid,
+            fc_missed_fga & is_three,
+        ],
+        ["RIM", "MID", "THREE"],
+        default="",
+    )
+    kappa_by_zone: dict[str, float] = {}
+    for zone in ("RIM", "MID", "THREE"):
+        mask = miss_zone == zone
+        kappa_by_zone[zone] = (
+            float(second_chance_points[mask].mean()) if mask.any() else 0.0
+        )
+    kappa_event = np.select(
+        [miss_zone == "RIM", miss_zone == "MID", miss_zone == "THREE"],
+        [
+            kappa_by_zone["RIM"],
+            kappa_by_zone["MID"],
+            kappa_by_zone["THREE"],
+        ],
+        default=0.0,
+    )
+    net_actual = (
+        pd.to_numeric(checked["ActualNet"], errors="coerce").fillna(0.0)
+        + kappa_event
+    )
+    net_efg_avg = (
+        float(net_actual[first_chance_fga].mean())
+        if first_chance_fga.any()
+        else fc_efg_avg
+    )
+    net_zone_avgs = {
+        zone: (
+            float(net_actual[first_chance_fga & mask].mean())
+            if (first_chance_fga & mask).any()
+            else net_efg_avg
+        )
+        for zone, mask in zone_masks.items()
+    }
+    net_component_cols: list[str] = []
+    for zone, mask in zone_masks.items():
+        avg = net_zone_avgs[zone]
+        freq_col = f"FC_NET_{zone}_EFG_FREQ_Action_Score"
+        fg_col = f"FC_NET_{zone}_EFG_FG_Action_Score"
+        checked[freq_col] = np.where(mask, avg - net_efg_avg, 0.0)
+        checked[fg_col] = np.where(mask, net_actual - avg, 0.0)
+        net_component_cols.extend([freq_col, fg_col])
+    checked["FC_NET_EFG_VALUE_Action_Score"] = checked[net_component_cols].sum(axis=1)
+    checked["FC_CONT_KAPPA_Action_Score"] = kappa_event
+    checked["Second_Chance_Net_Cont"] = checked["Second_Chance_Net"] - kappa_event
+    for zone in ("RIM", "MID", "THREE"):
+        checked[f"FC_KAPPA_{zone}"] = kappa_by_zone[zone]
+
+    net_value_expected = np.where(
+        is_fga,
+        net_actual - net_efg_avg,
+        0.0,
+    )
+    net_action_gap = float(
+        np.nanmax(
+            np.abs(
+                checked["FC_NET_EFG_VALUE_Action_Score"] - net_value_expected
+            )
+        )
+    )
+    if net_action_gap > 1e-9:
+        raise ValueError(
+            "WNBA net-continuation shot identity failed at action grain: "
+            f"max gap={net_action_gap:.12f}"
+        )
+    logging.info(
+        "%s net continuation kappa: rim %.4f, mid %.4f, three %.4f; "
+        "first-chance misses %d; action gap %.12f",
+        label,
+        kappa_by_zone["RIM"],
+        kappa_by_zone["MID"],
+        kappa_by_zone["THREE"],
+        int(fc_missed_fga.sum()),
+        net_action_gap,
+    )
+
     component_pairs = [
         ("FC_FT_Action_Score", "First_Chance_FT_Net"),
         ("FC_FT_FREQ_Action_Score", "First_Chance_FT_FREQ_Net"),
@@ -399,6 +536,14 @@ def build_clean_chance_base(
         ("FC_MID_EFG_FG_Action_Score", "First_Chance_MID_EFG_FG_Net"),
         ("FC_THREE_EFG_FREQ_Action_Score", "First_Chance_THREE_EFG_FREQ_Net"),
         ("FC_THREE_EFG_FG_Action_Score", "First_Chance_THREE_EFG_FG_Net"),
+        ("FC_NET_EFG_VALUE_Action_Score", "First_Chance_NET_EFG_VALUE_Net"),
+        ("FC_NET_RIM_EFG_FREQ_Action_Score", "First_Chance_NET_RIM_EFG_FREQ_Net"),
+        ("FC_NET_RIM_EFG_FG_Action_Score", "First_Chance_NET_RIM_EFG_FG_Net"),
+        ("FC_NET_MID_EFG_FREQ_Action_Score", "First_Chance_NET_MID_EFG_FREQ_Net"),
+        ("FC_NET_MID_EFG_FG_Action_Score", "First_Chance_NET_MID_EFG_FG_Net"),
+        ("FC_NET_THREE_EFG_FREQ_Action_Score", "First_Chance_NET_THREE_EFG_FREQ_Net"),
+        ("FC_NET_THREE_EFG_FG_Action_Score", "First_Chance_NET_THREE_EFG_FG_Net"),
+        ("FC_CONT_KAPPA_Action_Score", "First_Chance_CONT_KAPPA_Net"),
     ]
     for source, target in component_pairs:
         checked[target] = np.where(checked["after_miss"], 0.0, checked[source])
@@ -425,6 +570,7 @@ def build_clean_chance_base(
         ("Actual_Total", "ActualNet"),
         ("First_Chance_Total", "First_Chance_Net"),
         ("Second_Chance_Total", "Second_Chance_Net"),
+        ("Second_Chance_Net_Cont_Total", "Second_Chance_Net_Cont"),
         *[(target.replace("_Net", "_Total"), target) for _, target in component_pairs],
     ]
     for total, net in cumulative_pairs:
@@ -441,6 +587,7 @@ def build_clean_chance_base(
         ("Actual_Diff", "Actual_Total"),
         ("First_Chance_Diff", "First_Chance_Total"),
         ("Second_Chance_Diff", "Second_Chance_Total"),
+        ("SC_NET_CONT_Diff", "Second_Chance_Net_Cont_Total"),
         ("FC_FT_Diff", "First_Chance_FT_Total"),
         ("FC_FT_FREQ_Diff", "First_Chance_FT_FREQ_Total"),
         ("FC_FT_SEVERITY_Diff", "First_Chance_FT_SEVERITY_Total"),
@@ -455,6 +602,14 @@ def build_clean_chance_base(
         ("FC_MID_EFG_FG_Diff", "First_Chance_MID_EFG_FG_Total"),
         ("FC_THREE_EFG_FREQ_Diff", "First_Chance_THREE_EFG_FREQ_Total"),
         ("FC_THREE_EFG_FG_Diff", "First_Chance_THREE_EFG_FG_Total"),
+        ("FC_NET_EFG_VALUE_Diff", "First_Chance_NET_EFG_VALUE_Total"),
+        ("FC_NET_RIM_EFG_FREQ_Diff", "First_Chance_NET_RIM_EFG_FREQ_Total"),
+        ("FC_NET_RIM_EFG_FG_Diff", "First_Chance_NET_RIM_EFG_FG_Total"),
+        ("FC_NET_MID_EFG_FREQ_Diff", "First_Chance_NET_MID_EFG_FREQ_Total"),
+        ("FC_NET_MID_EFG_FG_Diff", "First_Chance_NET_MID_EFG_FG_Total"),
+        ("FC_NET_THREE_EFG_FREQ_Diff", "First_Chance_NET_THREE_EFG_FREQ_Total"),
+        ("FC_NET_THREE_EFG_FG_Diff", "First_Chance_NET_THREE_EFG_FG_Total"),
+        ("FC_CONT_KAPPA_Diff", "First_Chance_CONT_KAPPA_Total"),
     ]
     for diff, total in diff_pairs:
         if group_cols:
@@ -479,6 +634,10 @@ def build_clean_chance_base(
         pd.to_numeric(filt["First_Chance_Diff"], errors="coerce").fillna(0.0) -
         pd.to_numeric(filt["FC_FT_Diff"], errors="coerce").fillna(0.0)
     )
+    filt["FC_TS_NET_Diff"] = (
+        pd.to_numeric(filt["First_Chance_Diff"], errors="coerce").fillna(0.0)
+        + pd.to_numeric(filt["FC_CONT_KAPPA_Diff"], errors="coerce").fillna(0.0)
+    )
 
     identity_gap = (filt["First_Chance_Diff"] + filt["Second_Chance_Diff"] - filt["Actual_Diff"]).abs().max()
     value_cols = [
@@ -495,12 +654,46 @@ def build_clean_chance_base(
         pd.to_numeric(filt["FC_FT_FREQ_Diff"], errors="coerce").fillna(0.0) -
         pd.to_numeric(filt["FC_FT_SEVERITY_Diff"], errors="coerce").fillna(0.0)
     ).abs().max()
+    net_value_cols = [
+        "FC_NET_RIM_EFG_FREQ_Diff",
+        "FC_NET_RIM_EFG_FG_Diff",
+        "FC_NET_MID_EFG_FREQ_Diff",
+        "FC_NET_MID_EFG_FG_Diff",
+        "FC_NET_THREE_EFG_FREQ_Diff",
+        "FC_NET_THREE_EFG_FG_Diff",
+    ]
+    net_value_gap = (
+        pd.to_numeric(filt["FC_NET_EFG_VALUE_Diff"], errors="coerce").fillna(0.0)
+        - filt[net_value_cols].apply(pd.to_numeric, errors="coerce").fillna(0.0).sum(axis=1)
+    ).abs().max()
+    sc_bridge_gap = (
+        pd.to_numeric(filt["SC_NET_CONT_Diff"], errors="coerce").fillna(0.0)
+        + pd.to_numeric(filt["FC_CONT_KAPPA_Diff"], errors="coerce").fillna(0.0)
+        - pd.to_numeric(filt["Second_Chance_Diff"], errors="coerce").fillna(0.0)
+    ).abs().max()
+    grand_net_gap = (
+        pd.to_numeric(filt["FC_TS_NET_Diff"], errors="coerce").fillna(0.0)
+        + pd.to_numeric(filt["SC_NET_CONT_Diff"], errors="coerce").fillna(0.0)
+        - pd.to_numeric(filt["Actual_Diff"], errors="coerce").fillna(0.0)
+    ).abs().max()
+    worst_net_gap = max(net_value_gap, sc_bridge_gap, grand_net_gap)
+    if worst_net_gap > 1e-9:
+        raise ValueError(
+            "WNBA net-continuation possession closure failed: "
+            f"shot children={net_value_gap:.12f}, "
+            f"second-chance bridge={sc_bridge_gap:.12f}, "
+            f"grand={grand_net_gap:.12f}"
+        )
     logging.info(
-        "%s identity gap %.8f; FT split gap %.8f; EFG value component gap %.8f",
+        "%s identity gap %.8f; FT split gap %.8f; EFG value component gap %.8f; "
+        "net shot gap %.8f; net SC bridge %.8f; net grand gap %.8f",
         label,
         identity_gap,
         ft_gap,
         value_gap,
+        net_value_gap,
+        sc_bridge_gap,
+        grand_net_gap,
     )
     return filt
 
@@ -516,6 +709,7 @@ def process_first_chance(
         return None
     filt = filt.copy()
     filt["Net_Diff"] = filt["First_Chance_Diff"]
+    validate_net_first_chance_alias_identity(filt)
     cols = [
         "Net_Diff",
         "Is_Turnover",
@@ -535,6 +729,18 @@ def process_first_chance(
         "FC_MID_EFG_FG_Diff",
         "FC_THREE_EFG_FREQ_Diff",
         "FC_THREE_EFG_FG_Diff",
+        "FC_TS_NET_Diff",
+        "FC_CONT_KAPPA_Diff",
+        "FC_NET_EFG_VALUE_Diff",
+        "FC_NET_RIM_EFG_FREQ_Diff",
+        "FC_NET_RIM_EFG_FG_Diff",
+        "FC_NET_MID_EFG_FREQ_Diff",
+        "FC_NET_MID_EFG_FG_Diff",
+        "FC_NET_THREE_EFG_FREQ_Diff",
+        "FC_NET_THREE_EFG_FG_Diff",
+        "FC_KAPPA_RIM",
+        "FC_KAPPA_MID",
+        "FC_KAPPA_THREE",
     ]
     return _finalize_df(filt, cols, year)
 
@@ -552,7 +758,20 @@ def process_second_chance_clean(
     filt["Net_Diff"] = filt["Second_Chance_Diff"]
     filt["Off_Diff"] = filt["Second_Chance_Diff"]
     filt["Def_Diff"] = -filt["Second_Chance_Diff"]
-    return _finalize_df(filt, ["Net_Diff", "Off_Diff", "Def_Diff"], year)
+    return _finalize_df(
+        filt,
+        [
+            "Net_Diff",
+            "Off_Diff",
+            "Def_Diff",
+            "SC_NET_CONT_Diff",
+            "FC_CONT_KAPPA_Diff",
+            "FC_KAPPA_RIM",
+            "FC_KAPPA_MID",
+            "FC_KAPPA_THREE",
+        ],
+        year,
+    )
 
 
 def process_raw_file(raw_file: Path) -> list[Path]:
@@ -581,7 +800,12 @@ def process_raw_file(raw_file: Path) -> list[Path]:
 
 
 def _files_for_metric(prefix: str, years: Iterable[int], season_type: str) -> list[Path]:
-    source = "FIRST_CHANCE" if prefix.startswith("ALT_") else prefix
+    if prefix.startswith("ALT_"):
+        source = "FIRST_CHANCE"
+    elif prefix == "SECOND_CHANCE_NET":
+        source = "SECOND_CHANCE_CLEAN"
+    else:
+        source = prefix
     files: list[Path] = []
     for year in years:
         if season_type in {"RS", "ALL"}:
@@ -634,6 +858,14 @@ def _prepare_metric_df(df: pd.DataFrame, prefix: str) -> pd.DataFrame:
         return out
     if prefix == "SECOND_CHANCE_CLEAN":
         return out
+    if prefix == "SECOND_CHANCE_NET":
+        if "SC_NET_CONT_Diff" not in out.columns:
+            raise ValueError("SECOND_CHANCE_NET requires SC_NET_CONT_Diff")
+        out["Off_Diff"] = pd.to_numeric(
+            out["SC_NET_CONT_Diff"], errors="coerce"
+        ).fillna(0.0)
+        out["Def_Diff"] = -out["Off_Diff"]
+        return out
     if not prefix.startswith("ALT_"):
         return out
 
@@ -645,13 +877,23 @@ def _prepare_metric_df(df: pd.DataFrame, prefix: str) -> pd.DataFrame:
 
     baselines = {
         alias: float(pd.to_numeric(out.loc[non_tov, col], errors="coerce").mean())
-        for alias, col in ALT_VALUE_COLUMNS.items()
+        for alias, col in {**ALT_VALUE_COLUMNS, **NET_VALUE_COLUMNS}.items()
         if col in out.columns
     }
     fc_non_tov_avg = float(pd.to_numeric(out.loc[non_tov, "Net_Diff"], errors="coerce").mean())
+    fc_net_non_tov_avg = (
+        float(
+            pd.to_numeric(
+                out.loc[non_tov, "FC_TS_NET_Diff"], errors="coerce"
+            ).mean()
+        )
+        if "FC_TS_NET_Diff" in out.columns
+        else np.nan
+    )
 
-    if prefix in ALT_VALUE_COLUMNS:
-        col = ALT_VALUE_COLUMNS[prefix]
+    all_value_columns = {**ALT_VALUE_COLUMNS, **NET_VALUE_COLUMNS}
+    if prefix in all_value_columns:
+        col = all_value_columns[prefix]
         target = np.where(out["Is_Turnover"].astype(int).eq(1), baselines[prefix], out[col])
     elif prefix == "ALT_FC_COMPLETION":
         efg = np.where(out["Is_Turnover"].astype(int).eq(1), baselines["ALT_EFG_VALUE"], out["FC_EFG_VALUE_Diff"])
@@ -665,12 +907,94 @@ def _prepare_metric_df(df: pd.DataFrame, prefix: str) -> pd.DataFrame:
     elif prefix == "ALT_SCORING_TOV_VALUE":
         is_scoring = out["Is_Turnover"].astype(int).eq(1) & out["Is_BadPass_TOV"].astype(int).eq(0)
         target = np.where(is_scoring, out["Net_Diff"] - fc_non_tov_avg, 0.0)
+    elif prefix == "ALT_FC_NET_COMPLETION":
+        if "FC_TS_NET_Diff" not in out.columns:
+            raise ValueError("ALT_FC_NET_COMPLETION requires FC_TS_NET_Diff")
+        net_aliases = [
+            "ALT_EFG_NET_RIM_FREQ",
+            "ALT_EFG_NET_RIM_FG",
+            "ALT_EFG_NET_MID_FREQ",
+            "ALT_EFG_NET_MID_FG",
+            "ALT_EFG_NET_THREE_FREQ",
+            "ALT_EFG_NET_THREE_FG",
+        ]
+        efg = sum(
+            np.where(
+                out["Is_Turnover"].astype(int).eq(1),
+                baselines[alias],
+                out[NET_VALUE_COLUMNS[alias]],
+            )
+            for alias in net_aliases
+        )
+        ft = np.where(
+            out["Is_Turnover"].astype(int).eq(1),
+            baselines["ALT_FT"],
+            out["FC_FT_Diff"],
+        )
+        target = (
+            pd.to_numeric(out["FC_TS_NET_Diff"], errors="coerce")
+            .fillna(0.0)
+            .to_numpy()
+            - efg
+            - ft
+        )
+    elif prefix in {
+        "ALT_TOV_NET_VALUE",
+        "ALT_BADPASS_TOV_NET_VALUE",
+        "ALT_SCORING_TOV_NET_VALUE",
+    }:
+        if not np.isfinite(fc_net_non_tov_avg):
+            raise ValueError(f"{prefix} requires FC_TS_NET_Diff")
+        is_turnover = out["Is_Turnover"].astype(int).eq(1)
+        if prefix == "ALT_BADPASS_TOV_NET_VALUE":
+            is_turnover &= out["Is_BadPass_TOV"].astype(int).eq(1)
+        elif prefix == "ALT_SCORING_TOV_NET_VALUE":
+            is_turnover &= out["Is_BadPass_TOV"].astype(int).eq(0)
+        target = np.where(
+            is_turnover,
+            pd.to_numeric(out["FC_TS_NET_Diff"], errors="coerce").fillna(0.0)
+            - fc_net_non_tov_avg,
+            0.0,
+        )
     else:
         raise ValueError(f"Unsupported WNBA clean metric prefix: {prefix}")
 
     out["Off_Diff"] = pd.to_numeric(pd.Series(target, index=out.index), errors="coerce").fillna(0.0)
     out["Def_Diff"] = -out["Off_Diff"]
     return out
+
+
+def validate_net_first_chance_alias_identity(
+    frame: pd.DataFrame,
+    tolerance: float = 1e-9,
+) -> float:
+    """Prove that the solved net first-chance children close row by row."""
+    prefixes = [
+        "ALT_EFG_NET_RIM_FREQ",
+        "ALT_EFG_NET_RIM_FG",
+        "ALT_EFG_NET_MID_FREQ",
+        "ALT_EFG_NET_MID_FG",
+        "ALT_EFG_NET_THREE_FREQ",
+        "ALT_EFG_NET_THREE_FG",
+        "ALT_FT",
+        "ALT_FC_NET_COMPLETION",
+    ]
+    child_sum = sum(
+        pd.to_numeric(
+            _prepare_metric_df(frame, prefix)["Off_Diff"], errors="coerce"
+        ).fillna(0.0)
+        for prefix in prefixes
+    )
+    parent = pd.to_numeric(
+        frame["FC_TS_NET_Diff"], errors="coerce"
+    ).fillna(0.0)
+    gap = float((child_sum - parent).abs().max())
+    if gap > tolerance:
+        raise ValueError(
+            "WNBA net first-chance alias identity failed: "
+            f"max gap={gap:.12f}"
+        )
+    return gap
 
 
 def _time_decay_weights(transformed: pd.DataFrame, half_life_days: float | None) -> np.ndarray:
@@ -984,6 +1308,7 @@ def build_clean_weighted_factors(
     prior_results_by_prefix: dict[str, pd.DataFrame] | None = None,
     prior_scale: float = 1.0,
     output_label: str | None = None,
+    direct_tov_def_alpha: float | None = None,
 ) -> Path:
     years = list(range(start_year, end_year + 1))
     name_map = _load_name_map()
@@ -991,13 +1316,23 @@ def build_clean_weighted_factors(
     results = {}
     for prefix in prefixes:
         logging.info("Solving WNBA %s", prefix)
+        prefix_def_alpha = def_alpha
+        if (
+            direct_tov_def_alpha is not None
+            and prefix in {
+                "ALT_TOV_VALUE",
+                "ALT_BADPASS_TOV_VALUE",
+                "ALT_SCORING_TOV_VALUE",
+            }
+        ):
+            prefix_def_alpha = float(direct_tov_def_alpha)
         results[prefix] = run_metric(
             prefix,
             years,
             season_type,
             name_map,
             off_alpha=off_alpha,
-            def_alpha=def_alpha,
+            def_alpha=prefix_def_alpha,
             time_decay_days=time_decay_days,
             prior_results=(
                 prior_results_by_prefix.get(prefix)

@@ -26,6 +26,7 @@ from process_rapm_blocks import (
     process_reb_py,
     process_shooter_oreb_py,
     process_block_recovery_py,
+    process_stop_py,
     process_rim_freq_py,
     process_rim_fg_pct_py,
     process_midrange_freq_py,
@@ -154,6 +155,7 @@ Examples:
     reb_df = process_reb_py(file_to_process, processing_year, processing_season)
     shooter_oreb_df = process_shooter_oreb_py(file_to_process, processing_year, processing_season)
     block_recovery_df = process_block_recovery_py(file_to_process, processing_year, processing_season)
+    stop_df = process_stop_py(file_to_process, processing_year, processing_season)
     tov_df = process_tov_py(file_to_process, processing_year, processing_season)
     rim_freq_df = process_rim_freq_py(file_to_process, processing_year, processing_season)
     rim_fg_pct_df = process_rim_fg_pct_py(file_to_process, processing_year, processing_season)
@@ -236,6 +238,7 @@ Examples:
         "REB": reb_df,
         "SHOOTER_OREB": shooter_oreb_df,
         "BLOCK_RECOVERY": block_recovery_df,
+        "STOP": stop_df,
         "TOV": tov_df,
         "RIM_FREQ": rim_freq_df,
         "RIM_FG_PCT": rim_fg_pct_df,

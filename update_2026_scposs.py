@@ -1,27 +1,62 @@
 """
-Script to update 2026 scposs data in individual player CSV files.
-Reads weighted_factors.csv and pure_results.csv from Results folders,
-transforms data, and updates ../csvs/scposs/{nba_id}.csv files.
+Update the current-season scposs rows in the per-player CSV files.
+
+Reads `weighted_factors_<window>_all.csv` from the per-window
+`nba_pipeline/results/rapm_<window>_all` folders, transforms them, and updates
+`<csvs>/scposs/{nba_id}.csv`. Despite the historical `2026` in this filename,
+the script is season parameterized: pass `--year 2027` (or set
+`NBA_RAPM_SEASON_YEAR=2027`). Season year N means season (N-1)-N; two-digit
+result tokens are derived from it.
+
+Paths:
+  NBA_RAPM_RESULTS_DIR  RAPM results root (default <repo>/nba_pipeline/results)
+  NBA_RAPM_CSVS_DIR     csvs repo checkout (default <repo>/../csvs)
 """
 
-import pandas as pd
+import argparse
 import os
 from pathlib import Path
 
-# Configuration
-RESULTS_DIR = "nba_pipeline/results"
-TARGET_DIR = "../csvs/scposs"
-LATEST_YEAR = 2026
+import pandas as pd
 
-# Source files mapping: (folder, weighted_factors, year_interval)
-SOURCE_FILES = [
-    ("rapm_26_all", "weighted_factors_26_all.csv", "1Y"),
-    ("rapm_25_26_all", "weighted_factors_25_26_all.csv", "2Y"),
-    ("rapm_24_26_all", "weighted_factors_24_26_all.csv", "3Y"),
-    ("rapm_23_26_all", "weighted_factors_23_26_all.csv", "4Y"),
-    ("rapm_22_26_all", "weighted_factors_22_26_all.csv", "5Y"),
-    ("rapm_21_26_all", "weighted_factors_21_26_all.csv", "6Y"),
-]
+# Configuration
+PROJECT_ROOT = Path(__file__).resolve().parent
+
+DEFAULT_LATEST_YEAR = int(os.environ.get("NBA_RAPM_SEASON_YEAR", "2027"))
+
+RESULTS_DIR = Path(
+    os.environ.get("NBA_RAPM_RESULTS_DIR", PROJECT_ROOT / "nba_pipeline" / "results")
+)
+CSVS_DIR = Path(os.environ.get("NBA_RAPM_CSVS_DIR", PROJECT_ROOT.parent / "csvs"))
+TARGET_DIR = CSVS_DIR / "scposs"
+
+# Window lengths published to scposs
+WINDOW_LENGTHS = (1, 2, 3, 4, 5, 6)
+
+
+def two_digit(season_year: int) -> str:
+    """Two-digit season-end form used in result folder and file names."""
+    return f"{int(season_year) % 100:02d}"
+
+
+def range_token(latest_year: int, length: int) -> str:
+    """`26` for a single season, `24_26` for a 3-season window, etc."""
+    end_yy = two_digit(latest_year)
+    if length <= 1:
+        return end_yy
+    return f"{two_digit(latest_year - length + 1)}_{end_yy}"
+
+
+def build_source_files(latest_year: int):
+    """Build (folder, weighted_factors_file, year_interval) tuples."""
+    source_files = []
+    for length in WINDOW_LENGTHS:
+        token = range_token(latest_year, length)
+        source_files.append(
+            (f"rapm_{token}_all", f"weighted_factors_{token}_all.csv", f"{length}Y")
+        )
+    return source_files
+
 
 # Target column order
 TARGET_COLUMNS = [
@@ -102,28 +137,28 @@ def calculate_ranks(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def main():
+def main(latest_year: int = DEFAULT_LATEST_YEAR):
     # Load and transform all source files
     all_new_data = []
-    for folder, wf_file, year_interval in SOURCE_FILES:
+    for folder, wf_file, year_interval in build_source_files(latest_year):
         df = load_and_transform(folder, wf_file, year_interval)
         all_new_data.append(df)
         print(f"  -> {len(df)} rows")
     
-    # Combine all new 2026 data
-    new_2026_df = pd.concat(all_new_data, ignore_index=True)
-    print(f"\nTotal new 2026 rows before ranks: {len(new_2026_df)}")
+    # Combine all new rows for the target season
+    new_season_df = pd.concat(all_new_data, ignore_index=True)
+    print(f"\nTotal new {latest_year} rows before ranks: {len(new_season_df)}")
     
     # Calculate ranks
-    new_2026_df = calculate_ranks(new_2026_df)
+    new_season_df = calculate_ranks(new_season_df)
     
     # Select and order columns
-    new_2026_df = new_2026_df[TARGET_COLUMNS]
+    new_season_df = new_season_df[TARGET_COLUMNS]
     
-    print(f"Total new 2026 rows: {len(new_2026_df)}")
+    print(f"Total new {latest_year} rows: {len(new_season_df)}")
     
     # Get unique player IDs
-    unique_players = new_2026_df["nba_id"].unique()
+    unique_players = new_season_df["nba_id"].unique()
     print(f"Unique players to update: {len(unique_players)}")
     
     # Ensure target directory exists
@@ -136,16 +171,16 @@ def main():
     # Process each player
     for nba_id in unique_players:
         player_file = os.path.join(TARGET_DIR, f"{nba_id}.csv")
-        player_new_data = new_2026_df[new_2026_df["nba_id"] == nba_id]
+        player_new_data = new_season_df[new_season_df["nba_id"] == nba_id]
         
         if os.path.exists(player_file):
             # Load existing data
             existing_df = pd.read_csv(player_file)
             
-            # Remove existing 2026 rows
-            existing_df = existing_df[existing_df["Latest_Year"] != LATEST_YEAR]
+            # Remove existing rows for the target season
+            existing_df = existing_df[existing_df["Latest_Year"] != latest_year]
             
-            # Append new 2026 data
+            # Append the rebuilt season rows
             combined_df = pd.concat([existing_df, player_new_data], ignore_index=True)
             
             # Sort by Latest_Year and Year_Interval
@@ -153,7 +188,7 @@ def main():
             
             updated_files += 1
         else:
-            # Create new file with just the 2026 data
+            # Create new file with just the target-season rows
             combined_df = player_new_data.sort_values(["Latest_Year", "Year_Interval"])
             created_files += 1
         
@@ -164,11 +199,22 @@ def main():
     print(f"Created {created_files} new player files")
     
     # Print sample of new data
-    print("\nSample of new 2026 data (first 5 rows from 2Y):")
-    sample = new_2026_df[new_2026_df["Year_Interval"] == "2Y"].head(5)
+    print(f"\nSample of new {latest_year} data (first 5 rows from 2Y):")
+    sample = new_season_df[new_season_df["Year_Interval"] == "2Y"].head(5)
     print(sample[["nba_id", "player_name", "Year_Interval", "Off_RAPM", "Def_RAPM", "OVR_RAPM", "sc_POSS"]].to_string(index=False))
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--year",
+        type=int,
+        default=DEFAULT_LATEST_YEAR,
+        help="Season end year to rebuild (default %(default)s; 2027 = 2026-27)",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    main()
+    main(parse_args().year)
 

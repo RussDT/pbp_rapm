@@ -1,0 +1,13 @@
+# Current homegrown skill comparison
+
+Build with `nba_pipeline/scripts/build_current_skill_comparison.py`. Local ignored HTML and CSV outputs live in `results/estimated_skills/current_player_table/epm_comparison.*`; inputs are that directory’s current_players_provenance.csv, the existing index.html styling, and the cached EPM June 15, 2026 snapshot. This is a private local comparison of our saved v1 export, not v4, against predictive EPM skills. All 582 archive-current players match by exact player ID. Sixteen categories yield 9,312 rows; unavailable individual skill states remain missing. No provider values are committed or published.
+
+Counting rates are per100; percent-scale shooting and usage differences are percentage points. Usage is approximate, not an exact definition match; shot-zone and possession definitions may differ. Our feature-specific observation dates, EPM effective dates and requested date are retained. These dates are not necessarily identical, and our states are not forecast forward to September. No predictive superiority is inferred from correlation or differences. Deflections and fouls lack matching fields in this snapshot.
+
+The table supports player search, category selection, and sorting all columns. Arithmetic identities, unique provider IDs and row count are asserted by the builder.
+
+September 14 owner-authorized table update: `export_three_pct_volume_prior.py` exports the frozen strength0.5 challenger through 2026 shooting observations without scoring 2026. Both current-player and EPM comparison tables now use it for 3P% only; other PBP skills remain v1. Original v1 percentage is retained in provenance as p_three_pct_v1 and the canonical v1 export is unchanged. Capela moves from 35.48% to 28.63%. This is a research display change, not VPM admission. Dates remain last shooting observation; exported variance excludes fitted-curve uncertainty. Rebuild the EPM comparison after running the exporter.
+
+## DARKO upload
+
+Owner supplied `/Users/russ/Downloads/darko-dpm-leaderboard (2).csv`. The builder now adds DARKO and pairwise differences for points/100, assists/100, 3P%, FT%. 516 of 530 uploaded names match the 582-player archive cohort using unique normalized exact names (case/accent/punctuation normalization only). Fourteen unmatched names remain in darko_unmatched.csv; no fuzzy aliases or roster assumptions. The upload has no snapshot date or player IDs, and the table explicitly marks its date unspecified. Overall FG% is not mapped to rim_pct. Percent strings are converted to percent-scale values, matching the existing display. Private local outputs only; no provider/model retraining.

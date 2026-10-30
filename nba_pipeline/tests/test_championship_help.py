@@ -6,6 +6,7 @@ import pandas as pd
 from nba_pipeline.scripts.build_championship_help import (
     CONTRACT_REPLACEMENT_SALARY_SHARE,
     add_title_lift_over_contract,
+    attach_playoff_adjusted_ratings,
     attach_salary_share,
     attach_neutral_playoff_baseline,
     attribute_team_probabilities,
@@ -28,6 +29,55 @@ from nba_pipeline.scripts.build_championship_help import (
     summarize_team_lineup_exposures,
 )
 from nba_pipeline.scripts.build_darko_teammate_help import PlayerRatingHistory
+
+
+def test_playoff_adjusted_team_rating_sums_adjusted_rotation_contributions() -> None:
+    seasons = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "team_id": 1,
+                "player_id": 10,
+                "own_dpm": 2.0,
+                "playoff_workload_share": 0.60,
+            },
+            {
+                "season": 2025,
+                "team_id": 1,
+                "player_id": 11,
+                "own_dpm": 1.0,
+                "playoff_workload_share": 0.40,
+            },
+        ]
+    )
+    teams = pd.DataFrame([{"season": 2025, "team_id": 1, "team_dpm": 1.60}])
+    ratings = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "player_id": 10,
+                "playoff_adjusted_dpm": 3.0,
+                "playoff_translation_dpm": 1.0,
+                "playoff_prior_possessions": 1000,
+            },
+            {
+                "season": 2025,
+                "player_id": 11,
+                "playoff_adjusted_dpm": 0.5,
+                "playoff_translation_dpm": -0.5,
+                "playoff_prior_possessions": 800,
+            },
+        ]
+    )
+
+    adjusted_seasons, adjusted_teams = attach_playoff_adjusted_ratings(
+        seasons, teams, ratings
+    )
+
+    assert np.isclose(adjusted_teams.loc[0, "playoff_adjusted_team_dpm"], 2.0)
+    assert np.allclose(
+        adjusted_seasons["playoff_adjusted_team_contribution_dpm"], [1.8, 0.2]
+    )
 
 
 def test_epm_history_uses_latest_monthly_snapshot_before_postseason(tmp_path) -> None:
