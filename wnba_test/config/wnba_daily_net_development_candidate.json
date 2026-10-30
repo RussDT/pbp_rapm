@@ -1,0 +1,33 @@
+{
+  "status": "development_candidate_not_promoted",
+  "selected_as_of": "2026-08-26",
+  "selection_input_seasons": [2022, 2023, 2024, 2025, 2026],
+  "validation_seasons": [2024, 2025, 2026],
+  "next_untouched_confirmation": 2027,
+  "solver_family": "pure_zero_centered",
+  "target_family": "net_structural_10",
+  "base": {
+    "off_alpha": 2000.0,
+    "def_alpha": 5000.0,
+    "half_life_days": null,
+    "mean_game_weighted_possession_mse": 1.2253058987943113
+  },
+  "unconstrained_base_minimum": {
+    "off_alpha": 2000.0,
+    "def_alpha": 5000.0,
+    "half_life_days": 1100.0,
+    "mean_game_weighted_possession_mse": 1.225265654578043
+  },
+  "sq_context_challenger": {
+    "enabled": false,
+    "ev_column": "shot_context_ev",
+    "residual_off_alpha": 40000.0,
+    "residual_def_alpha": 160000.0,
+    "mean_game_weighted_possession_mse": 1.2251885861807352,
+    "gain_vs_unsplit_x1e6": 117.31261357605938,
+    "reason_not_enabled": "Development interval crosses zero; 2026 is spent and current SQ coverage is stale."
+  },
+  "selection_rule": "Most-shrunk then longest-history candidate within paired one-SE of the grid minimum.",
+  "daily_backfill_requirement": "Rebuild continuation kappa from information available at each cutoff; never reuse completed-season kappa for an earlier same-season date.",
+  "methodology_doc": "nba_pipeline/docs/WNBA_DAILY_NET_ALPHA_TUNING.md"
+}

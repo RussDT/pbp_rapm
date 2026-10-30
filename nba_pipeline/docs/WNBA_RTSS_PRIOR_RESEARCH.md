@@ -8,8 +8,16 @@ Research-only. The frozen live WNBA rating remains the box-prior
 
 ## Question
 
-Can 2023-2025 RTSS tracking mechanisms improve the factor-specific WNBA priors
-beyond the current public box-only models?
+Can RTSS tracking mechanisms improve the factor-specific WNBA priors beyond
+the current public box-only models?
+
+Local mirror coverage is 2023-2026: 161/240 (2023 RS), 235/240 (2024 RS),
+286/286 (2025 RS), 229/229 (2026 RS), plus playoffs for 2023-2025. 2026
+arrived in the August 6, 2026 sync and is the untouched confirmation season —
+`build_wnba_rtss_prior_features.py` fences it out by default and only emits
+2026 rows under `--include-confirmation-season` with an explicit `--output`
+path. Development remains 2023-2025 only. Seasons 2020-2022 exist remotely
+and have never been pulled.
 
 This is a prior experiment, not a lineup-repair or lineup-alpha experiment.
 The annual component RAPMs remain the training targets and the current-season
@@ -214,8 +222,9 @@ The audit finds 56,899 potential-assisted shots, including 32,672 misses, and
 
 ### Cross-validation result
 
-The best compact tracking lane lowers pooled RMSE and raises correlation for
-15 of 24 component-sides. The largest gains are:
+Superseded by the August 10, 2026 defensive feature expansion below. The
+original compact tracking lane lowered pooled RMSE and raised correlation for
+15 of 24 component-sides, led by:
 
 | Component | Side | RMSE change | R2 change | Correlation change | Winning folds |
 |---|---:|---:|---:|---:|---:|
@@ -251,13 +260,127 @@ catch-and-shoot mix. Raw `q` fields do not improve MID finishing beyond that
 compact creation model. They help THREE frequency modestly but do not rescue
 THREE finishing.
 
+### Defensive feature expansion (August 10, 2026)
+
+The defensive arms were previously built only from *activity* counts —
+rotations, closeouts, contests, matchup segments — plus one pooled `mid3`
+allowed-shot-quality average. Three families were missing entirely and are now
+built in `build_wnba_rtss_prior_features.py`:
+
+1. **Foul markings.** The `fouls` table was never read. On an offensive foul
+   the provider records the offensive player as `foulerId` and the defender
+   who absorbed it as `fouledId`, so offensive fouls drawn and charges drawn
+   are defensive credits. Also added: shooting and non-shooting fouls
+   committed, and offensive fouls drawn/committed on the offensive side.
+2. **Zone-split allowed shot quality.** `def_mid3_qsq_epv` pooled two
+   different defensive skills. MID and THREE now carry separate allowed
+   `qSQ`/`qSP` and closest-defender distance.
+3. **Closest-defender dFGA.** `shots.closestDefId` is fully populated, so
+   defenders now carry dFGA volume, points allowed, allowed FG%, and
+   contest-level mix, each split by RIM/MID/THREE.
+
+That is 29 new features (75 -> 105). Re-running the same three-season CV on
+the same 412 qualified player-seasons, with the new features added only to
+defensive arms:
+
+| Component | Side | RMSE before | RMSE after | Winning folds |
+|---|---|---:|---:|---:|
+| THREE finishing | defense | +0.06% | **-4.92%** | 3/3 |
+| RIM frequency | defense | -0.73% | **-4.58%** | 2/3 |
+| MID finishing | defense | -0.46% | **-3.27%** | 3/3 |
+| MID frequency | defense | -1.31% | **-3.62%** | 3/3 |
+| TOV value | defense | +0.03% | **-1.51%** | 3/3 |
+| Bad-pass TOV | defense | -0.24% | **-1.05%** | 3/3 |
+| THREE frequency | defense | -5.81% | **-6.59%** | 3/3 |
+| FT frequency | defense | -2.54% | **-3.18%** | 3/3 |
+
+Nine of twelve defensive sides improved; RIM finishing regressed (-0.32% ->
++0.61%) and now selects box-only, and second chance defense is unchanged.
+Offense is materially unchanged, as expected — the new features were wired to
+defensive arms only. Pooled totals move from 15/24 to 17/24 improved
+component-sides and from 8 to 9 three-fold sweeps.
+
+The two turnover results are the notable qualitative change: defensive TOV
+value and bad-pass TOV were previously *worse* than box-only, and adding
+charges/offensive fouls drawn flips both to consistent 3/3 wins. That is the
+first defensive turnover signal in this lane that the box layer does not
+already carry through steals.
+
 ### Development decision
 
-Retain box-only for offensive RIM finishing and THREE finishing. Freeze the
-four offensive shot-frequency/MID-finishing tracking candidates and the
-stronger defensive/second-chance candidates for a later as-of cutoff harness.
-Because every 2023-2025 season now participated in model development, none is
-a fresh confirmation set.
+Retain box-only for offensive RIM finishing and THREE finishing, and now also
+for defensive RIM finishing. Freeze the four offensive shot-frequency/MID-
+finishing tracking candidates and the expanded defensive/second-chance
+candidates for a later as-of cutoff harness. Every 2023-2025 season has
+participated in model development, so none is a fresh confirmation set; 2026
+is the untouched holdout and is fenced out of this surface by default.
+
+### RTSS-augmented board, 2025 (August 10, 2026)
+
+`wnba_test/build_wnba_rtss_augmented_board.py` answers the separate question
+"what do the ratings actually look like with RTSS in the prior?" in points per
+100 instead of component RMSE. It solves the nine additive components on 2025
+through the frozen live objective (`5000/40000`, prior scale `1.5`) twice —
+once around the box-only prior, once around the same prior plus the RTSS
+corrections — and reports per-player deltas. It is hard-fenced at
+`MAX_DEVELOPMENT_YEAR = 2025` and cannot be pointed at the confirmation
+season.
+
+Candidate lanes are read at runtime from the v2 `best_by_component.csv` rather
+than hard-coded, then filtered twice. `ALT_TOV_VALUE` and
+`ALT_BADPASS_TOV_VALUE` win the CV on defense but are not additive children of
+this tree, and inventing a parent for them would be an unearned modeling
+claim, so they are dropped and recorded as excluded. When a parent and its
+exact child both win on the same side — `ALT_FT` and `ALT_FT_FREQ` on defense
+— only the parent is applied, because applying both would add one defensive
+free-throw signal to one prior twice. Thirteen corrections survive.
+
+Corrections must be applied to the fitted twelve priors and the derived
+identities rebuilt with `_derive_additive_priors`; correcting only the nine
+additive components leaves `ALT_FT_SEVERITY`, the turnover-value trio, and the
+total `RAPM` prior stale, which breaks exact closure (observed display
+residual up to `5.28` before the fix, `0.0000` after).
+
+Descriptive result on the 129 players at 1,500+ possessions: net correlation
+`0.971`, mean absolute net move `0.53`, max `1.69`; mean absolute rank shift
+`7.6` places, max `37`. The movement is concentrated on defense exactly as
+intended — defensive correlation is only `0.874` against `0.971` for net, and
+the defensive spread widens from `0.863` to `1.094` standard deviations, a
+`27%` increase in separation. Largest defensive moves are Lexie Hull
+(`+1.36`), Aaliyah Edwards (`+1.23`), Chelsea Gray (`+1.20`), and Julie
+Allemand (`-1.18`).
+
+The `--forward-check` fold is the honest counterweight and does not support
+promotion: rating 2024, scoring actual 2025 possessions, RTSS loses by
+`+9.9e-6` joint MSE with a paired game-clustered CI of
+`[-120.4, +153.6] e-6` — indistinguishable from zero in both directions. Note
+this fold fits corrections on 2023 alone, so it is the weakest available
+version of the test; the 2025 -> 2026 confirmation fold fits on 2023-2024.
+Read the board deltas as "RTSS changes the ratings, mostly on defense, and has
+not yet been shown to improve them."
+
+### Carry-forward 2026 board (August 10, 2026)
+
+The fence is on RTSS *consumption*, not on the board year: `--year 2026
+--rtss-feature-year 2025` fits corrections on 2023-2024, applies them to 2025
+tracking, then carries them onto the 2026 box prior by player id. No
+season-2026 tracking is read, so the confirmation mirror is untouched, and the
+script additionally refuses to run at all if the feature file has been rebuilt
+with `--include-confirmation-season`. `--forward-check` is refused in this
+mode because scoring the 2026 fold is the harness's job. This is also the
+construction a live deployment needs before the current season has accumulated
+tracking.
+
+Validation worth keeping: the box-only arm of this run reproduces the live
+`wnba_current_metrics.csv` board to `max |diff| = 0.0`, so the comparison
+isolates the prior change and nothing else.
+
+Result on the 119 qualified players (2026 RS through the current cutoff, all
+119 carry a 2025 tracking row): net correlation `0.969`, defensive correlation
+`0.845`, mean absolute net move `0.42`, mean rank shift `6.1`, defensive
+spread `0.779 -> 0.941` (+21%). Same signature as 2025 — the movement is
+overwhelmingly defensive. There is no predictive claim attached to this board;
+the 2025 forward fold above is the only forward evidence, and it is null.
 
 ## Direct low-alpha ORAPM/DRAPM prior experiment
 
@@ -421,12 +544,41 @@ requires fresh 2026-or-later RTSS confirmation, additive prior construction,
 and a final comparison against the existing box-only prior inside the frozen
 single-season solve.
 
+## Interim 2026 ratings snapshot (August 10; descriptive only)
+
+`build_wnba_rtss_interim_snapshot.py` answers the operator-only ratings
+question without firing the season-end confirmation. The August 10 snapshot
+uses the preserved 242-game box-prior board and possession surface through
+game `1022600242`, plus the fenced season-2026 RTSS feature build from the
+August 6 mirror sync (`229` ended regular-season RTSS games). It fits the
+already-selected residual corrections on pre-2026 seasons, solves only the
+RTSS-induced linear coefficient change on the dated lineups, and adds that
+change to the preserved dated box-only board.
+
+This artifact is **not** predictive evidence: it scores no 2026 outcome,
+selects no candidates, changes no live metric, and does not touch
+`Results/rtss_confirmation/FIRED`. The 224-player output has 119 players at the
+1,500-possession research floor; mean absolute net movement is `0.525`, the
+maximum is `2.387`, and box/RTSS net correlation is `0.954`. The export
+re-derives every parent from its atomic children after rounding, and all
+offense, defense, net, prior, update, and factor identities close at machine
+precision.
+
 ## Artifacts
 
 - `wnba_test/build_wnba_rtss_prior_features.py`
 - `wnba_test/evaluate_wnba_rtss_priors.py`
 - `wnba_test/cross_validate_wnba_rtss_priors.py`
 - `wnba_test/cross_validate_wnba_rtss_total_priors.py`
+- `wnba_test/build_wnba_rtss_augmented_board.py`
+- `wnba_test/build_wnba_rtss_interim_snapshot.py`
+- `wnba_test/Results/rtss_interim_snapshot_20260810/wnba_vpm_rtss_interim_20260810.csv`
+- `wnba_test/Results/rtss_interim_snapshot_20260810/board_comparison_20260810.csv`
+- `wnba_test/Results/rtss_interim_snapshot_20260810/manifest.json`
+- `wnba_test/Results/rtss_augmented_board/board_comparison_2025.csv`
+- `wnba_test/Results/rtss_augmented_board/manifest_2025.json`
+- `wnba_test/Results/rtss_augmented_board/board_comparison_2026_rtss2025.csv`
+- `wnba_test/Results/rtss_augmented_board/manifest_2026_rtss2025.json`
 - `nba_pipeline/tests/test_wnba_rtss_total_priors.py`
 - `nba_pipeline/tests/test_wnba_rtss_prior_features.py`
 - `wnba_test/Results/rtss_prior_research/player_season_features.csv`

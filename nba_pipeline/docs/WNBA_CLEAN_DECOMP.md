@@ -44,6 +44,14 @@ The display columns mirror the newest NBA EFG-value bundle:
 - direct `SECOND_CHANCE_CLEAN`
 - `oFC`, `dFC`, display sums, and residual checks
 
+The generated clean file retains those legacy audit names. The reader-facing
+WNBA VPM publisher applies a semantic reallocation: direct
+`ALT_TOV_LOSS_VALUE` becomes published TOV, while the exact
+`ALT_FC_COMPLETION - ALT_TOV_LOSS_VALUE` complement moves into the
+midrange/base shot-value child. This preserves every total and zone/display
+identity while preventing the completion prior from being described as
+turnover creation.
+
 ## Commands
 
 Fetch the current completed WNBA regular season from the static liveData CDN:
@@ -229,6 +237,69 @@ The July 29 candidate gained `276.984e-6` MSE on development versus uniform
 `5000/40000`, then lost `418.799e-6` on 2026. It is not promoted. Use its
 `factor_trust.csv` only as a marginal lineup-signal diagnostic; keep the live
 box-prior solve at `5000/40000/1.5`.
+
+## Net-Continuation Single-Season Research Board
+
+`clean_decomp_wnba.py` now also writes the WNBA analogue of the NBA kappa
+tree. For each season/type file, a missed first-chance FGA receives the mean
+downstream second-chance points following a miss from the same zone. The same
+amount is removed from `SECOND_CHANCE_NET`, so the complete possession target
+is unchanged on every row:
+
+```text
+gross first chance + gross second chance
+= net-priced first chance + opportunity-adjusted second chance
+```
+
+Turnovers use the corresponding mean non-turnover net first-chance value.
+This makes TOV the value of deleting the whole expected possession, while net
+second chance measures conversion relative to the rebound opportunity created.
+The processor hard-fails above `1e-9` on action, shot-child, second-chance
+bridge, grand-possession, and solver-alias identities.
+
+Build the isolated current board after refreshing the WNBA source:
+
+```bash
+.venv/bin/python wnba_test/build_wnba_net_decomp.py --rebuild-targets
+```
+
+Later current-season refreshes reuse the frozen 2022-2025 annual labels:
+
+```bash
+.venv/bin/python wnba_test/build_wnba_net_decomp.py \
+  --gross-board wnba_test/Results/current/wnba_current_metrics.csv
+```
+
+The builder refits factor-specific public box priors to the net labels, using
+only seasons before 2026, while retaining the already frozen WNBA likelihood
+alphas `5000/40000`, direct-TOV defense alpha `10000`, and prior scale `1.5`.
+It does not overwrite or publish the live gross board. Outputs are:
+
+```text
+wnba_test/Results/wnba_net_decomp/
+  wnba_single_season_vpm_netcont_2026.csv
+  gross_vs_netcont_2026.csv
+  box_priors_netcont_2026.csv
+  manifest.json
+```
+
+The August 24, 2026 run covers `281` games and `229` players (`153` at 1,000+
+possessions). Current RS kappas are rim `0.4009`, mid `0.2960`, and three
+`0.3105` points per miss. Board closure is machine precision (maximum net
+residual `1.71e-13`). Net VPM correlates `0.99698` with the same-date gross
+board; median absolute player movement is `0.115`, mean `0.131`, and maximum
+`0.623` points per 100.
+
+A'ja Wilson is `+4.902` offense, `+2.553` defense, and `+7.455` net. Relative
+to the same-date gross board, her shot-value buckets compress while opportunity-
+adjusted second chance rises: `oTS 3.425 -> 2.984`, `oTOV 0.802 -> 0.914`,
+`oSC 0.646 -> 1.004`; `dTS 1.600 -> 1.226`, `dTOV 0.439 -> 0.500`, and
+`dSC 0.338 -> 0.828`.
+
+Status: research only. The accounting and current board are validated, but no
+predeclared future-possession comparison of refit net priors versus gross priors
+has run. Do not replace the published WNBA VPM board based on current-season
+rankings or decomposition aesthetics.
 
 ## Play-by-Play Shot-Quality Research
 

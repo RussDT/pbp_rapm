@@ -1,6 +1,6 @@
 # WNBA Metric Build Status
 
-Last updated: July 29, 2026
+Last updated: August 24, 2026
 
 This is the canonical status page for the WNBA player-metric work in this
 repository. It answers four questions:
@@ -34,11 +34,14 @@ failed its 2026 confirmation and was not promoted.
 | Proprietary comparison data | Audited locally | DPM, PI RAPM, and NPI RAPM daily histories |
 | Frozen 2026 validation | Built | 202 games, 33,745 possessions |
 | Historical 2010-2021 RAPM | Not ready | Event lineups still need reconstruction |
+| LUMA-compatible historical RAPM | Built, retrospective candidate | 2003-2026 aggregate stints plus exact 2009+ PBP Stats component priors; 5,623 games and 3,922 player-seasons |
 | Historical-state prior metric | Built and walk-forward selected | Annual 2022-2025 RAPM state plus live 2026 update |
 | Factor-specific box priors | Built and walk-forward selected | Public 2022-2026 box/PBP Stats features |
 | Single-season box-prior RAPM/decomp | Built | Reader-ready 2022-2026 player-season history |
+| Net-continuation single-season VPM | Built, research only | 2022-2025 prior labels plus current 2026 RS board |
 | Joint component-alpha coordinate descent | Built, not promoted | Improved development; worse than uniform alphas on 2026 |
 | PBP shot-quality expected points | Built, research only | 112,383 modern mid/three FGA; historical expansion rejected |
+| RTSS-to-PBP ShotQuality student | Built, research only | 61,521 exact teacher shots; complementary blend positive on 2025 development |
 | Frozen rookie/no-history prior | Not built | Current live model can use 2026 box stats; preseason model cannot |
 
 ## Metric Taxonomy
@@ -199,6 +202,7 @@ The final pre-2026 selection uses only the 2024 and 2025 next-season folds:
 | Offensive lineup alpha | 5,000 |
 | Defensive lineup alpha | 40,000 |
 | Box-prior scale | 1.50 |
+| Direct-TOV explanatory defense alpha | 10,000 |
 | Annual box-target offensive alpha | 750 |
 | Annual box-target defensive alpha | 1,000 |
 | Pre-2026 mean game-margin RMSE | 12.844 |
@@ -206,9 +210,28 @@ The final pre-2026 selection uses only the 2024 and 2025 next-season folds:
 
 After the deterministic lineup repair and full pre-2026 rebuild, `40,000` was
 selected on the prespecified rule of best correlation within `0.005` RMSE of
-the minimum. Because that is now the edge of the audited grid, the next
-development run should extend the defensive range again without using 2026 to
-choose it.
+the minimum. Both selected alphas originally sat on the edge of the audited
+`true_prior_grid.csv` sweep — offense `5,000` was its lowest tested value and
+defense `40,000` its highest — so neither edge had been probed. Both are now
+resolved on development folds only, scored with the joint component-sum
+future-possession objective and 2026 excluded:
+
+| Extension | Grid | Result |
+| --- | --- | --- |
+| Defense (`extend_wnba_defense_alpha_grid.py`) | 40k, 60k, 80k, 120k, 160k | `40,000` held; best challenger `60,000` lost by `6.33e-6` |
+| Offense (`extend_wnba_offense_alpha_grid.py`) | 1k-5k, then 6k-20k | `5,000` held; `4,000` lost by `2.85e-6`, `6,000` by `3.56e-6` |
+
+The offense sweep had to be two-sided. A downward-only grid cannot close the
+edge, because pooled MSE falls monotonically as alpha rises toward `5,000`;
+the upward arm is what shows `5,000` is an interior minimum rather than a new
+boundary. Pooled development MSE rises monotonically in both directions away
+from it (`1.22016` at `5,000` versus `1.22057` at `1,000` and `1.22027` at
+`30,000`), so the live pair is confirmed rather than merely unfalsified.
+
+Note the scale: every gap here is in the `1e-6` range on possession MSE. The
+original game-margin grid was similarly flat — nine of 27 combinations fell
+inside the `0.005` RMSE tie-break band — so these decisions are correctly read
+as "no evidence to move", not as sharp optima.
 
 For 2026, `221` players receive stabilized current-season box priors and one
 unresolved player receives zero. Current eligibility requires positive PBP
@@ -232,6 +255,14 @@ The live output exposes `prior_*`, `delta_*`, and final `off`, positive-good
 `def`, and `net_rapm`. It uses only the 2026 possession likelihood, so it is a
 single-season RAPM with a genuine box prior rather than a multi-season RAPM or
 post-hoc blend.
+
+The Databallr publication surface no longer labels the legacy
+first-chance-completion baseline as TOV. It publishes the direct
+`ALT_TOV_LOSS_VALUE` family at defense alpha `10000` and reallocates
+`completion - direct TOV` into the midrange/base shot-value child. The
+transformation is exact and leaves headline impact unchanged. The direct alpha
+was selected on 2023->2024 and 2024->2025 turnover-possession MSE; 2026 is
+report-only. Canonical runner: `wnba_test/tune_wnba_direct_tov_alpha.py`.
 
 ### 6. Joint Factor-Alpha Coordinate Descent
 
@@ -273,7 +304,51 @@ These labels are marginal diagnostics around a jointly failed configuration,
 not permission to publish the selected alpha vector. The report lives under
 `wnba_test/Results/box_prior_true_prior/component_alpha_tuning/`.
 
-### 7. WNBA Play-by-Play Shot Quality
+### 7. Net-Continuation Single-Season VPM
+
+The isolated `wnba_test/build_wnba_net_decomp.py` lane now ports the NBA
+net-continuation accounting to the WNBA single-season box-prior model. It adds
+zone-specific expected continuation to first-chance misses, removes the same
+amount from second chance, reprices direct turnovers at the full net
+non-turnover counterfactual, and refits all factor box priors on 2022-2025 net
+labels. The live gross board and its frozen selection are not overwritten.
+
+August 24, 2026 receipt:
+
+| Field | Result |
+| --- | ---: |
+| Current games | 281 |
+| Players | 229 |
+| 1,000-possession qualifiers | 153 |
+| 2026 rim / mid / three kappa | 0.4009 / 0.2960 / 0.3105 |
+| Max additive board residual | `1.71e-13` |
+| Correlation with same-date gross VPM | 0.99698 |
+| Median / mean absolute VPM movement | 0.115 / 0.131 |
+| Maximum absolute VPM movement | 0.623 |
+
+Top qualified values are A'ja Wilson `+7.455`, Olivia Miles `+5.336`, Jackie
+Young `+4.636`, Aliyah Boston `+4.495`, Kelsey Mitchell `+4.425`, and Veronica
+Burton `+4.297`. These are descriptive current-season estimates, not a forward
+validation result.
+
+The main interpretation gain is composition. Miss-forcing no longer receives
+the full value of a dead possession unless the defense secures the miss, TOV
+deletes the full expected possession, and `SECOND_CHANCE_NET` reads as
+opportunity-adjusted conversion. A'ja's same-date split illustrates it:
+
+```text
+gross: oTS 3.425 + oTOV 0.802 + oSC 0.646 = +4.875 offense
+net:   oTS 2.984 + oTOV 0.914 + oSC 1.004 = +4.902 offense
+
+gross: dTS 1.600 + dTOV 0.439 + dSC 0.338 = +2.378 defense
+net:   dTS 1.226 + dTOV 0.500 + dSC 0.828 = +2.553 defense
+```
+
+Promotion state: research only. The row algebra, prior provenance, and current
+board close, but the net-prior lane must beat the gross-prior lane on a
+predeclared future actual-possession sample before publication is considered.
+
+### 8. WNBA Play-by-Play Shot Quality
 
 `build_wnba_pbp_shot_quality.py` builds expected points for midrange and
 three-point attempts from the normalized Gabriel play-by-play. Rim is excluded
@@ -309,6 +384,19 @@ folds, but its 2026 RMSE was `1.249319` versus `1.249239` for modern-only. The
 full 2010 expansion was worse at `1.251520`. Historical windows remain opt-in
 comparisons; the canonical output stays modern-only until a larger window wins
 on an independent future season.
+
+#### RTSS-to-PBP teacher/student result
+
+The separate `train_wnba_rtss_pbp_student.py` lane uses calibrated RTSS `qSQ`
+as a soft expected-points teacher on 61,521 exact 2023-2025 game/event matches,
+then scores every MID/THREE shot using only PBP-observable inputs. The student
+beats an identical same-row outcome learner, but it does not beat the mature
+PBP model standalone. A blend selected on 2024 and frozen for 2025 improves the
+context-only incumbent by `+0.001247 [+0.000151,+0.002282]` MSE; the
+shooter-inclusive blend is inconclusive. Keep the result development-only,
+leave RTSS 2026 sealed, and require exact EV/residual possession closure plus a
+future summed-factor gate before VPM admission. See
+[WNBA RTSS-to-PBP ShotQuality Student](./WNBA_RTSS_PBP_SHOT_QUALITY.md).
 
 ### Daily Current-Season Update
 
@@ -641,6 +729,14 @@ Benchmark artifacts:
   --off-alphas 5000,7500,10000 \
   --def-alphas 20000,30000,40000 \
   --prior-scales 1.25,1.5,1.75
+
+# 10. Build the separate aggregate-stint historical bridge
+.venv/bin/python wnba_test/build_luma_historical_metrics.py \
+  --luma-root /path/to/LUMA/WNBA \
+  --start-year 2003 \
+  --end-year 2026 \
+  --season-type ALL \
+  --output-dir wnba_test/Results/luma_historical_our_priors
 ```
 
 Repeat processing for all nine available clean RS/PS files before building the
@@ -661,6 +757,7 @@ full reference windows.
 | `wnba_test/benchmark_wnba_metrics.py` | Frozen/live held-out comparison and cluster bootstrap |
 | `wnba_test/build_prior_informed_wnba.py` | Annual prior-centered solve, walk-forward selection, and current clean component build |
 | `wnba_test/build_wnba_box_priors.py` | Stabilized factor-specific box priors, nested forward selection, and single-season true-prior clean build |
+| `wnba_test/build_luma_historical_metrics.py` | Strict LUMA stint ingest, exact 2009+ modern-contract PBP Stats component priors, annual pure/true-prior RAPM, and aggregate-compatible component history |
 | `wnba_test/wnba_names.py` | Shared player-id/name fallback |
 
 ## Verified Guardrails
@@ -691,6 +788,7 @@ full reference windows.
 - Keep proprietary inputs and all generated player artifacts out of git.
 - Rebuild all six processed CSV families after possession-logic changes.
 - Keep native `oREB`/`dREB` distinct from clean direct `oSC`/`dSC`.
+- Keep LUMA aggregate `OREB_OPPORTUNITY_VALUE` distinct from event-sequenced `SECOND_CHANCE_CLEAN`; aggregate stints cannot recover first-chance, ShotQuality, or net-continuation targets.
 
 ## Next Modeling Gates
 

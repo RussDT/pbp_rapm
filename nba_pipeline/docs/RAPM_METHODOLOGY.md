@@ -68,6 +68,12 @@ At the processed-row level, `FC_MODE_MIX + FC_TRANSITION_VALUE + FC_HALFCOURT_VA
 
 This mode changes the interpretation of the player coefficients from "relative to the pooled multi-year mean" toward "relative to the season-adjusted baseline inside the run window."
 
+### Optional Clock-Aware Rubberband Adjustment
+
+`rapm.py --rubberband` removes systematic game-state scoring effects with a continuous offensive-margin-by-game-clock nuisance surface. The default smooth model uses separate leading and trailing piecewise-linear surfaces, exact start-of-possession clock, a tie-state zero anchor, and separate overtime terms. Its 80 coefficients are estimated jointly with the player coefficients in one generalized ridge solve at default `alpha_rb=100`; season and age fixed effects remain unpenalized, and time-decay weights and player priors are supported in the same objective.
+
+Rolling five-season to next-season development selected the smooth model before a frozen 2022-2026 stress readout. It improved possession MSE over both no adjustment and the legacy 24 buckets in all five stress seasons, with game-clustered intervals clearing zero, while player net ratings retained `0.9975` correlation with legacy. Historical 2002-2026 forward tests show that the mechanism persists but its fitted curve drifts: rolling five-season surfaces beat one fixed 1997-2001 surface, especially in 2018-2026. One surface is fitted per solve, so a 1997-2026 run is pooled rather than era-specific. The old buckets remain reproducible with `--rubberband-model legacy` and use a distinct `_rb_legacy` filename token. See [Clock-Aware Rubberband Adjustment](./RUBBERBAND_ADJUSTMENT.md) and [Rubberband Era Stability](./RUBBERBAND_ERA_STABILITY.md) for the exact basis, validation, interpretation limits, and commands.
+
 ### Optional Playoff Prior (`--ps-prior`)
 
 `rapm.py` supports a two-stage playoff-aware solve for `ALL` runs.
@@ -97,6 +103,16 @@ Gate status (August 2026): both stage-2 modes failed the `evaluate_ps_handling.p
 - the exported `*_age_effects.csv` file recenters offense and defense curves separately to weighted mean zero across observed age slots, then reports net as `off - def`
 
 This mode estimates separate offense and defense age-effect curves inside the RAPM solve itself, which is distinct from `--age-curve` prior mode.
+
+For the 1997-2026 career parent, do not combine freely fitted season dummies
+with age dummies and interpret the linear age tilt: player cohort, calendar
+period, and linear age are not separately identified. The historical age-27
+surface instead subtracts fixed RS scoring baselines, estimates joint
+possession-level age bins, smooths supported ages 20-38, and freezes the table
+through `--age-curve-values`. That flag expects positive-good columns
+`age`, `orapm_age_effect`, and `drapm_age_effect`; it applies piecewise-linear,
+endpoint-clipped `curve(age)-curve(27)` offsets before the final RAPM solve.
+See [1997-2026 Age-Adjusted O-RAPM / D-RAPM](./THIRTY_YEAR_AGE_ADJUSTED_RAPM.md).
 
 ### Optional DARKO Strength Splits
 
@@ -648,6 +664,158 @@ Run the standard solver with:
 ```bash
 python nba_pipeline/scripts/rapm.py BLOCK_RECOVERY 21 26 ALL
 ```
+
+---
+
+## 4d. STOP (Guaranteed-Zero Possession Rate)
+
+**Function**: `process_stop_py()`
+
+**What it measures**: Lineup-adjusted possession frequency for the two event
+families that guarantee the offense scores zero points: an offensive turnover,
+or a blocked field-goal attempt recovered by the defense.
+
+### Observation Definition
+
+Each observation is one row from the shared standard possession parser. The
+denominator is all offensive possessions, not only turnovers, shots, or blocked
+shots. Turnovers and recovered blocks are resolved anywhere inside the same
+`game_id + poss_group`, then attached to that possession's terminal row.
+
+### Numerator
+
+```python
+Is_Turnover_Stop = 1 if the possession contains a turnover or offensive foul
+Is_Recovered_Block_Stop = 1 if the defense gets the first live resolution after a blocked FGA
+Is_Stop = max(Is_Turnover_Stop, Is_Recovered_Block_Stop)
+```
+
+The union rule counts the rare possession containing both flags only once.
+Administrative events are skipped when resolving a blocked shot. Rebounds,
+jump balls, immediate shots, and turnovers can resolve possession; on a
+turnover resolution, the recovering side is the opposite of the team credited
+with the turnover event.
+
+**Output columns**: `Is_Stop`, `Is_Turnover_Stop`,
+`Is_Recovered_Block_Stop`, `Off_Diff`, `Def_Diff`
+
+```python
+Off_Diff = -Is_Stop
+Def_Diff = Is_Stop
+```
+
+The standard CSV export is percentage points per 100 possessions. Positive
+`off` means the player's offensive lineups avoid guaranteed-zero possessions.
+Because the raw solver retains `net_rapm = off - def`, negative `def` means the
+player's defensive lineups create more guaranteed-zero possessions; flip it
+once for a positive-good reader-facing defensive STOP value.
+
+The prepared 2024-2026 ALL build uses RS+PS season effects and game-grouped
+five-fold alpha selection:
+
+```bash
+python nba_pipeline/scripts/reprocess_metric.py STOP 24 26 --season-types all
+python nba_pipeline/scripts/rapm.py STOP 24 26 ALL --season-effects --cv-alpha
+```
+
+The August 22, 2026 build contains 779,798 possessions and 133,921 STOPs
+(111,224 turnover possessions, 22,748 recovered-block possessions, 51 overlap
+possessions counted once). Cross-validation selected offense alpha 2,000 and
+defense alpha 2,000. The canonical generated result is
+`results/stop_24_26_all_se_cv_a2000_2000_results.csv`; the alpha receipt is the
+matching `_alpha_cv.csv` file. Run `scripts/build_stop_display.py` to write the
+reader-ready `_display.csv` with `oSTOP`, positive-good `dSTOP`, and the exact
+`STOP = oSTOP + dSTOP` identity.
+
+### Personal STOP% Prior Experiment
+
+`scripts/tune_stop_personal_prior.py` tests the canonical individual defensive
+STOP rate as a true defensive prior:
+
+```text
+personal STOP% = (steals + offensive fouls drawn + recovered blocks)
+                 / defensive possessions
+```
+
+The script pools implied credited STOP counts across each trailing three-year
+regular-season window, subtracts the pooled league rate, converts the result to
+the solver's negative-good defensive sign, and centers it on the actual
+training defensive exposure. Offense remains zero-prior. Alpha selection is
+season-forward rather than same-window: 2021-2023 predicts 2024, 2022-2024
+predicts 2025, and 2023-2025 predicts 2026, with equal weight per validation
+season.
+
+The first August 22, 2026 coordinate search selected offense alpha 3,000 and
+defense alpha 5,000 while fixing the raw personal-rate scale at 1.0. That
+uncalibrated prior narrowly lost to zero-prior. A direct scale check corrected
+the interpretation: 0.50 times the raw relative personal STOP rate improved all
+three forward seasons. The raw rate contained signal; the one-for-one anchor
+was overconfident.
+
+`scripts/tune_stop_feature_prior.py` is the fuller nested experiment. Within
+each outer fold, it trains an expanding historical player-season ridge to map
+trailing-three-year features to next-season relative personal STOP%. Candidate
+arms add, in order, exposure reliability, position/defensive-role context,
+`dfga/100` and rim assignment volume, steals/offensive fouls/blocks/block
+recovery, then deflection and contest activity. No mapper target from the outer
+validation season is admitted.
+
+The selected development specification was the full activity arm at prior
+scale 0.75, offense alpha 3,000, and defense alpha 10,000. It recorded equal-
+season future possession MSE 0.14187838, versus 0.14188122 for the independently
+retuned personal-only mapper and 0.14189483 for independently optimized zero-
+prior (3,000/3,000). The selected feature prior beat both comparators in each of
+2024, 2025, and 2026. The extra variables' incremental gain over personal-only
+was small (0.00000283 mean MSE); personal STOP and reliability remain the main
+signal. Because feature arm, scale, and alphas were selected on these three
+outer seasons, this is development evidence rather than untouched confirmation.
+
+Receipts are `results/stop_feature_prior_forward_cv.csv` and
+`results/stop_feature_prior_model_comparison.csv`. The enhanced prior is
+`results/stop_feature_prior_24_26.csv`; the research board is
+`results/stop_24_26_all_se_a3000_10000_prior_results.csv`, with positive-good
+display in `results/stop_24_26_all_se_a3000_10000_feature_prior_display.csv`.
+
+### Time-Decayed EPM-Skill Prior
+
+`scripts/tune_stop_td_epm_prior.py` is the preferred predictive STOP-prior
+prototype. It uses a TD700 possession solve and only date-correct season-end
+EPM expected-skill fields: `p_stl_100` and `p_blk_100`. The 2023-06-30 snapshot
+predicts 2024, 2024-06-30 predicts 2025, and 2025-06-30 predicts 2026. Complete
+EPM, D-EPM, and eWINS are not inputs.
+
+The non-EPM mechanisms are estimated before each cut:
+
+- total offensive fouls drawn are forecast from time-decayed `OFFD_100`, with
+  repeated above-league seasons, exposure, position/role, and charges drawn as
+  an auxiliary subtype signal. OFFD remains the target because the PBP does not
+  separate moving-screen drawing and other non-charge offensive fouls;
+- block recovery uses time-decayed recovered-block and block counts with a
+  beta-binomial-style league prior. Historical-only selection chose a 1,000-day
+  half-life and 100 pseudo-blocks, indicating weak player-specific recovery
+  persistence.
+
+Historical targets through 2023 selected a 550-day OFFD half-life and mapper
+alpha 0.1. Coordinate development on the already-spent 2024-2026 possession
+folds selected this relative prior:
+
+```text
+1.25 * p_stl_100
++ 0.50 * expected_OFFD_100
++ 0.10 * (p_blk_100 * expected_block_recovery_rate)
+```
+
+With offense alpha 2,000 and defense alpha 10,000, mean future STOP possession
+MSE is 0.14185727, versus 0.14185948 for expected steals alone and 0.14189368
+for independently optimized TD700 zero-prior. The structured candidate beats
+zero-prior in all three seasons; its incremental gain over expected steals
+alone is only 0.00000221. Treat the component weights as development evidence,
+not promotion, until an untouched cut confirms them.
+
+The 2027-ready as-of prior is `results/stop_td_epm_prior_2027.csv`. Receipts are
+`results/stop_td_mechanism_hyperparameters.csv`,
+`results/stop_td_epm_component_grid.csv`, and
+`results/stop_td_epm_prior_model_comparison.csv`.
 
 ---
 
@@ -1204,6 +1372,7 @@ allowed values mean suppressing those buckets.
 | **REB** | Rebound opportunities only | `Offensive_Rebound` | 0 or 1 | More OREBs | Fewer OREBs allowed |
 | **SHOOTER_OREB** | Missed FGA with next-event rebound | `Offensive_Rebound`, `Self_Offensive_Rebound` | 0 or 1 | More teammate/self recovery after misses | Fewer OREBs allowed |
 | **BLOCK_RECOVERY** | Blocked FGA | `Block_Recovered_By_Defense` | 0 or 1 | Avoids losing blocked shots | More recovered blocks |
+| **STOP** | Standard EOP | `Is_Stop = turnover OR defense-recovered block` | 0 or 1 | Avoids guaranteed-zero possessions | Creates guaranteed-zero possessions |
 | **RIM_FREQ** | Every FGA | `Is_Rim_Attempt` | 0 or 1 | More rim attacks | Fewer rim attempts allowed |
 | **RIM_FG_PCT** | Rim attempts only | `Is_Rim_Make` | 0 or 1 | Better rim finishing | Better rim protection |
 | **ASSIST_POINTS** | Standard EOP | `Assist_Points` | Usually 0, 2, 3 | More assisted scoring | Allows less assisted scoring |

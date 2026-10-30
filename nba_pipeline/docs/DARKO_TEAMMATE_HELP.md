@@ -12,7 +12,7 @@ The possession-level quantity is:
 
 ```text
 teammate_help(player, possession, metric)
-  = sum(as_of_DARKO(teammate, game_date, metric) for the other four teammates)
+  = sum(same_season_DARKO(teammate, season, metric) for the other four teammates)
 ```
 
 The supported metrics are `dpm`, `o_dpm`, and `d_dpm`. A player-season value is
@@ -48,26 +48,27 @@ or that his own impact was lower.
 The builder refuses a processed file whose `game_date` coverage is below
 `99.9%`. It does not silently substitute a season-end date.
 
-## Historical as-of rule
+## Same-season retrospective rule
 
-The public DARKO history is not a daily archive. It has one dated snapshot per
-player-season. For every game, the builder selects the player's latest DARKO
-row whose snapshot date is less than or equal to `game_date`.
+The public DARKO history is not a daily archive. It has one dated row per
+player-season. The canonical Help Index applies that same-season row to every
+regular-season and playoff exposure in the matching season, including games
+before the row's source date.
 
-- A prior-season snapshot may carry forward when it is the latest information
-  available.
-- A future snapshot is never pulled backward.
-- A rookie or previously uncovered player has no rating until his first
-  snapshot date.
-- `prior_snapshot_pct` compares the chosen DARKO season label to the processed
-  file's season-ending year, not the game date's calendar year. This distinction
-  matters for October-December games.
-- `avg_rating_lag_days` exposes the possession-weighted age of the four
-  teammate snapshots used.
+- A player's 1997 DARKO value applies to his full 1997 season, so 1997 is no
+  longer an artificial low-coverage boundary.
+- A prior-season value is not carried into the next season.
+- A player without a DARKO row for the matching season remains missing; missing
+  ratings are never zero-filled.
+- The same-season value is used for both the regular season and playoffs.
+- This is deliberate hindsight. It describes season-level teammate talent and
+  must not be presented as a pregame or date-correct forecast.
 
-The strict rule protects against look-ahead bias but limits coverage. The
-1997 regular season has almost no earlier DARKO snapshot history and should be
-treated as a boundary season rather than a normal fully covered result.
+The legacy strict game-date contract remains available through
+`--rating-timing asof` for audit reproduction. In that mode only, the builder
+carries the latest prior row forward, never uses a future row, and populates
+`avg_rating_lag_days` and `prior_snapshot_pct`. Those diagnostics are blank or
+zero in the canonical same-season build.
 
 ## Exposure and pair contracts
 
@@ -121,25 +122,23 @@ value. Combined always pools the RS and playoff numerators and denominators.
 The app labels these two quantities separately and puts the player's own
 impact first in Lineup Company:
 
-- **DPM impact** is the teammate's own possession-weighted as-of rating during
+- **DPM impact** is the teammate's own same-season rating during
   fully rated shared exposures. This is the large value on the teammate row.
 - **Help contribution** is that teammate's weighted contribution to the focal player's
   four-teammate sum. It reflects both teammate quality and how often the pair
   shared the floor, so it is normally smaller in magnitude than DPM impact and
   appears in the supporting row detail.
 
-Each teammate row also exposes its own DPM coverage. Historical as-of coverage
-is genuinely incomplete: `18.62%` of RS, `10.35%` of playoff, and `17.89%` of
-combined career pair rows have no fully rated shared exposure. Those rows show
-`DPM unavailable` instead of substituting a future or season-end rating.
+Each teammate row also exposes its own DPM coverage. Coverage can still be
+incomplete when a lineup player has no DARKO row for that season. Those rows
+show `DPM unavailable`; the builder never substitutes a different season or
+zero.
 
-The full 1997-2026 RS+PS build has `20,660` player-season rows and `300,944`
-oriented player/teammate-season rows. Overall fully rated anchor exposure
-coverage is `69.40%`. Maximum reconciliation gaps are:
-
-- DPM: `3.55e-15`
-- O-DPM: `3.55e-15`
-- D-DPM: `1.78e-15`
+The rebuilt 1997-2026 RS+PS surface has `20,660` player-season rows and
+`300,944` oriented player/teammate-season rows. Overall fully rated anchor
+exposure coverage is `99.98%`; 1997 coverage is `99.37%` in the regular season
+and `99.98%` in the playoffs. Maximum pair-to-player reconciliation gaps are
+`3.55e-15` for DPM and O-DPM and `1.78e-15` for D-DPM.
 
 ## Build
 
@@ -148,9 +147,12 @@ coverage is `69.40%`. Maximum reconciliation gaps are:
   --start-year 1997 \
   --end-year 2026 \
   --season-types all \
+  --rating-timing same-season \
   --darko nba_pipeline/.cache/teammate_help/dpm_history.csv \
   --app-data-dir teammate-help-app/public/data
 ```
+
+Use `--rating-timing asof` only to reproduce the older strict dated audit.
 
 The canonical generated analysis artifacts are:
 
@@ -342,7 +344,7 @@ Product behavior:
   stubs;
 - Lineup Company is a shareable card headed by the focal player and an explicit
   period label; rows order by frequency rank and show share together, the
-  teammate's actual as-of DPM impact as the primary number, shared possessions,
+  teammate's same-season DPM impact as the primary number, shared possessions,
   help contribution, and pair-level rated coverage; rows open that teammate's
   profile; the card opens with 10 teammates and expands by 10; Share preserves
   player, metric, view, schedule, season, and type in the URL;
@@ -359,7 +361,7 @@ Product behavior:
   seasons) uses the fixed qualification thresholds: 50% rated coverage plus
   `10,000` exposures for RS/combined or `1,000` for playoffs; percentile is
   `(field_size - rank + 1) / field_size`;
-- missing as-of DARKO stays visibly missing (em-dash impact, "no as-of DARKO on
+- missing same-season DARKO stays visibly missing (em-dash impact, "no same-season DARKO on
   shared floor", 0% rated) — never zero-filled;
 - interaction states never change geometry (hover/selection recolor only), data
   loads into fixed-height skeleton rows, and the mobile layout condenses lineup

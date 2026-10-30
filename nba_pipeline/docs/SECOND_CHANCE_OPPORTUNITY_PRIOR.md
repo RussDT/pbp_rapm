@@ -6,7 +6,8 @@ particular zone. It bridges repo-owned Shot Quality and the existing
 `SHOOTER_OREB` miss-recovery surface.
 
 This is a retrospective research artifact. It does not replace or modify
-`SECOND_CHANCE_CLEAN`, the active public `weighted_factors_decomp_*` family, or
+`SECOND_CHANCE_CLEAN`, forward `weighted_factors_decomp_net_*`, gross
+compatibility `weighted_factors_decomp_*`, or
 any published player rating. Both Alt3 families remain legacy/audit surfaces
 and are not targets or balancing buckets for this model.
 

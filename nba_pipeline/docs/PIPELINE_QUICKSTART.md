@@ -294,7 +294,7 @@ Both `rapm.py` and `03_run_rapm_analysis.py` accept two-digit windows that cross
 Use `--publish-to-rapms` when a completed weighted-factors run should copy its standard and alt3 CSVs into `/Users/russellthomas/Docs/rapms/master_results/`, commit only those files, and push the downstream `rapms` repo if they changed.
 The master weighted-factors runner also solves and exports seven auxiliary shot-profile RAPMs in both standard and alt3 CSVs: `RIM_FREQ`, `RIM_FG_PCT`, `THREE_FREQ`, `THREE_FG_PCT`, `MIDRANGE_FREQ`, `MIDRANGE_FG_PCT`, and `ASSIST_POINTS`. These columns are pass-through diagnostics (`o*` raw offense, `d*` sign-flipped so positive means good defense); they are not part of the six-factor or alt3 additive reconstruction.
 
-Both `weighted_factors_alt3_efg_value_*` and `weighted_factors_alt3_*` are legacy/audit families. The active public output is `weighted_factors_decomp_*`, built by `scripts/run_decomp_rolling.py`; see [Public Eight-Component DECOMP](./PUBLIC_DECOMP.md).
+Both `weighted_factors_alt3_efg_value_*` and `weighted_factors_alt3_*` are legacy/audit families. Owner decision 2026-09-03 selects `weighted_factors_decomp_net_*` as the forward public output; its 1Y-5Y release migration is still in progress. Gross `weighted_factors_decomp_*`, built by `scripts/run_decomp_rolling.py`, remains the compatibility/rollback surface. See [Net-Continuation DECOMP](./NET_CONTINUATION_DECOMP.md) and [Gross Eight-Component DECOMP](./PUBLIC_DECOMP.md).
 
 The daily job rebuilds the active DECOMP rolling files (`26`, `25_26`, `24_26`, `23_26`, `22_26` with `all_rb_se_a2000_4000`) and syncs both CSV and parquet artifacts. The team-level Alt3 bundle is retained as an audit artifact.
 

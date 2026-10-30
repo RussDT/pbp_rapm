@@ -106,6 +106,88 @@ the gap between raw lift and Title Lift over Contract is the title value already
 supplied by the removed salary peer. Actual-context title lift remains a separate
 question on the focal player's real team.
 
+### Era-local, budget-neutral challenger
+
+The build now retains **Title Lift over Contract v2** beside the existing
+full-history result. It uses only realized playoff teams from the four seasons
+before and four seasons after the focal year, excluding the focal year. A
+middle-season row therefore has at most `8 * 16 = 128` placements; edge years
+use the complete neighboring seasons that are available and report the smaller
+placement count.
+
+The closest-salary peer rule is unchanged, but a non-exact salary match is no
+longer treated as budget neutral. Let `gap_pp = 100 * (focal salary share -
+peer salary share)`. The v2 team-rating changes are:
+
+```text
+regular-season change = (focal EPM - peer EPM) * peer RS workload
+                        - 0.067 * gap_pp
+
+playoff change = (focal EPM - peer EPM) * peer playoff workload
+                 - 0.078 * gap_pp
+```
+
+The prices are robust within-season slopes estimated on actual playoff rotation
+players earning 8%-20% of the cap. They are in team-rating points per one
+percentage point of cap, not EPM-rate points. A more expensive focal player is
+debited and a cheaper player receives the symmetric credit. The subtraction is
+made before the nonlinear qualification, seed, series, and bracket calculation.
+The public reader shows v2 and full-history v1 simultaneously in the player
+header and league table. A shareable selector controls which model drives the
+season spike and detailed actual-versus-baseline explanation; neither result is
+discarded or hidden.
+
+### Entering-playoffs EPM-prior challenger
+
+The reader also exposes a research **Playoff prior** model. It starts from each
+player's frozen pre-postseason O-EPM and D-EPM, then adds a persistent playoff
+translation learned only from that player's earlier postseasons. The O/D
+translation is a zero-centered ridge solve with `alpha=24000`, using the
+previous eight postseasons; a player without earlier playoff possessions gets
+exactly zero adjustment. This is an entering-playoffs prior, not a fit using the
+postseason being valued.
+
+Regular-season qualification and seeding remain unchanged on pre-playoff EPM.
+Inside the playoff bracket, adjusted impact is used consistently for the focal
+player, the salary peer, every destination teammate, and every opponent field.
+The model therefore asks whether persistent playoff translation changes value
+over the contract slot; it does not give the focal star a one-sided postseason
+bonus while leaving peers and opponents at regular-season ratings.
+
+On the 2007-2025 held-out playoff gate, the adjusted ratings improve possession
+MSE by `31.53e-6` versus pre-playoff EPM across 1,586 games and 294,451
+possessions. The game-clustered 95% interval is `[-84.90e-6, +23.97e-6]`, so it
+crosses zero. The point estimate is encouraging but not a validated promotion.
+The public reader therefore labels it a research challenger and retains v2 as
+the default. LeBron's career total moves from `1.057` under v2 to `1.206` with
+the playoff prior, rather than receiving an assumed fixed postseason boost.
+
+#### Dynamic prior-informed residual prototype
+
+`build_dynamic_playoff_epm_ratings` tests the single-season prior-informed RAPM
+analogy directly. It fits one positive-good net playoff residual after each
+completed postseason, centers the next postseason's residual ridge on that
+posterior, and mean-reverts the carried state annually. The entering rating is
+always emitted before the current postseason update, so the valued postseason
+cannot leak into its own prior. The net update is split evenly across the O-EPM
+and D-EPM communication fields; only their exact sum is interpreted.
+
+An exploratory grid used 2007-2015 as development and did not inspect player
+rankings for selection. The best point row was `alpha=4000` with annual
+persistence `0.25`, improving possession MSE by `12.56e-6`; the exact zero
+adjustment remained within one standard error and is therefore the formal
+one-standard-error selection. With the point-best row frozen, the 2016-2025
+report window improved MSE by `40.16e-6` across 834 games and 159,340
+possessions, with game-clustered 95% interval `[-89.29e-6, +11.23e-6]`, and
+improved 7 of 10 individual postseasons.
+
+The existing eight-year model improved the same report window by `64.10e-6`
+and 5 of 10 postseasons. Dynamic minus existing MSE was `+23.94e-6`
+`[-46.23e-6, +95.88e-6]`; over the full 2007-2025 walk-forward period it was
+`+4.03e-6 [-43.05e-6, +51.96e-6]`. The models are empirically tied. The
+dynamic version is retained as a reproducible research prototype, not added to
+the public reader and not promoted into official Title Lift over Contract.
+
 Regular-season qualification and seed use 2,048 reproducible common-random
 draws from each schedule-implied Poisson-binomial win distribution, using its
 exact mean and variance. A fitted regular-season game logit uses 30,064 games,
@@ -159,6 +241,14 @@ a transparent sensitivity pending a signing-date market model. Data/licensing
 and no-leakage requirements are documented in
 [Title Lift over Contract: data and method](./TITLE_LIFT_OVER_CONTRACT_DATA.md).
 
+The research-only [scalar Title Lift over Contract challenger](./CONTRACT_TITLE_CURVE_CHALLENGER.md)
+tests whether the realized placement result can be compressed to expected
+contract EPM plus one title curve. The literal EPM-only version is inadequate;
+adding the expected workload attached to the salary slot raises held-out-season
+correlation with the full model from `0.902` to `0.987`. This is a
+compressibility diagnostic trained against the placement output, not
+independent validation and not a reader-facing replacement.
+
 ## Reader contract
 
 The public player page leads with Title Lift over Contract and shows actual EPM,
@@ -174,6 +264,14 @@ actual-context lift, raw title lift, and teammate help. The league comparison is
 one sortable table with salary-peer title lift, context title lift, raw title
 lift, teammate title lift, and team title odds visible together. Compact
 two-line headers keep each counterfactual name above the quantity.
+
+The player page also ranks non-overlapping five-year Title Lift over Contract
+peaks for the selected contract model. Only complete runs of five consecutive
+seasons with finite model values qualify. The reader selects the highest summed
+five-season lift first, then greedily selects the highest remaining window that
+shares no season with an already selected window, continuing while another
+complete window exists. Values are expected titles added over contract across
+the five seasons; they are not percentage points or a new simulation.
 
 ## Current validation
 
@@ -192,6 +290,16 @@ points from qualification/seeding. Across careers, LeBron rises from `1.28` to
 seeding/qualification components are `0.14` and `0.12` titles, respectively. The median
 placement's absolute salary-share gap across covered player-seasons is about
 `0.57` cap points; the median 90th-percentile gap is `1.64` cap points.
+
+The v2 rebuild uses 64-128 era-local placements per covered row (median 128).
+LeBron's career result is `1.057` titles and Curry's is `0.672`, widening their
+gap from `0.182` under the full-history metric to `0.385`. LeBron's 2008-09
+season is `+17.53` percentage points, split into `+15.59` fixed-bracket points
+and `+1.93` qualification/seeding points. Its average signed salary gap is only
+`+0.62` cap points, producing average regular-season and playoff rating debits
+of `0.042` and `0.049`. The old and v2 career totals correlate `0.960` across
+2,275 common careers. These are sensitivity results, not a validation against
+realized championships.
 
 Validation maxima:
 

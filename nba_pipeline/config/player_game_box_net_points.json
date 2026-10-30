@@ -1,0 +1,80 @@
+{
+  "version": "box_pbp_game_v2",
+  "status": "research: season-trained coefficients applied to completed games",
+  "feature_source": "traditional box plus outcome-invariant PBP playtype proxy",
+  "development_years": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022
+  ],
+  "historical_report_years": [
+    2023,
+    2024,
+    2025
+  ],
+  "alphas": [
+    0.1,
+    1,
+    10,
+    100,
+    1000,
+    10000
+  ],
+  "alpha_rule": "largest alpha within one paired-season standard error of minimum chronological development MSE",
+  "minimum_training_seasons": 4,
+  "minimum_season_possessions": 250,
+  "features": {
+    "oTS": [
+      "PTS",
+      "FGA",
+      "FTA",
+      "FG3A",
+      "AST"
+    ],
+    "oTOV": [
+      "TOV",
+      "FGA",
+      "FTA",
+      "AST"
+    ],
+    "oSC": [
+      "OREB",
+      "MISSED_FG"
+    ],
+    "dTS": [
+      "BLK",
+      "PF"
+    ],
+    "dTOV": [
+      "STL"
+    ],
+    "dSC": [
+      "DREB",
+      "BLK"
+    ]
+  },
+  "normalization": "100 * season event count / side-specific canonical Net DECOMP possessions; game points cancel that normalization",
+  "training_weight": "sqrt(side possessions), normalized to mean one within training fold",
+  "historical_player_rating_input": false,
+  "observed_tracking_input": false,
+  "estimated_potential_assists": "not included: existing backcast also requires assist points, bad-pass turnovers and PBP role fields; ordinary AST is explicit",
+  "pbp_prior_pseudo_fga": 20,
+  "pbp_shrinkage_status": "explicit provisional 20-FGA sensitivity; not tuned or validated",
+  "candidate_features": {
+    "oTS": [
+      "PTS",
+      "FGA",
+      "FTA",
+      "FG3A",
+      "AST",
+      "PBP_ROLE_POINTS"
+    ]
+  },
+  "headline": "traditional-box coefficients; PBP role shown as explicit candidate and zTS diagnostic"
+}

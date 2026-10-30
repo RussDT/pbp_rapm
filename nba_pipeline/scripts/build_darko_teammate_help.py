@@ -3,11 +3,11 @@
 Build possession-weighted DARKO teammate-help artifacts for 1997-present NBA play.
 
 For every valid five-player team exposure in processed RAPM possessions, each
-player's teammate help is the sum of the other four players' DARKO values as of
-that game's date. Historical DARKO is a season-snapshot feed, so the lookup is
-strictly backward-looking: the latest player snapshot dated on or before the
-game is used, including a prior-season snapshot when no current-season snapshot
-yet exists. Future values are never backfilled.
+player's teammate help is the sum of the other four players' DARKO values. The
+canonical descriptive build applies each player's same-season DARKO value to
+every exposure in that season, including games before the row's source date.
+This deliberately uses hindsight to represent season-level teammate talent.
+Strict game-date as-of lookup remains available as an audit mode.
 
 The pair contribution contract is exact on fully rated exposures:
 
@@ -150,6 +150,32 @@ def lookup_asof_ratings(
     return values, source_dates, source_seasons
 
 
+def lookup_same_season_ratings(
+    player_ids: np.ndarray,
+    season_end_year: int,
+    histories: dict[int, PlayerRatingHistory],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return each player's DARKO row for the requested season, regardless of date."""
+    player_ids = np.asarray(player_ids, dtype=np.int64)
+    values = np.full((len(player_ids), len(METRICS)), np.nan, dtype=float)
+    source_dates = np.full(len(player_ids), np.datetime64("NaT"), dtype="datetime64[D]")
+    source_seasons = np.full(len(player_ids), -1, dtype=np.int16)
+
+    for player_id in np.unique(player_ids):
+        history = histories.get(int(player_id))
+        if history is None or player_id <= 0:
+            continue
+        matches = np.flatnonzero(history.seasons == season_end_year)
+        if not len(matches):
+            continue
+        selected = int(matches[-1])
+        positions = np.flatnonzero(player_ids == player_id)
+        values[positions] = history.values[selected]
+        source_dates[positions] = history.dates[selected]
+        source_seasons[positions] = history.seasons[selected]
+    return values, source_dates, source_seasons
+
+
 def collapse_team_exposures(possessions: pd.DataFrame) -> pd.DataFrame:
     """Collapse offense and defense lineup appearances to dated team exposures."""
     required = {"game_date", *LINEUP_COLS, *OPPONENT_COLS}
@@ -190,6 +216,7 @@ def summarize_lineup_exposures(
     exposures: pd.DataFrame,
     histories: dict[int, PlayerRatingHistory],
     season_end_year: int | None = None,
+    rating_timing: str = "same-season",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Summarize player and oriented-pair help for one season/season type.
@@ -209,12 +236,21 @@ def summarize_lineup_exposures(
         calendar_months = pd.DatetimeIndex(game_dates).month.to_numpy()
         inferred = calendar_years + (calendar_months >= 7).astype(int)
         season_end_year = int(pd.Series(inferred).mode().iloc[0])
+    if rating_timing not in {"same-season", "asof"}:
+        raise ValueError(f"Unknown rating timing: {rating_timing}")
 
     rating_values = np.empty((len(exposures), 5, len(METRICS)), dtype=float)
     source_dates = np.empty((len(exposures), 5), dtype="datetime64[D]")
     source_seasons = np.empty((len(exposures), 5), dtype=np.int16)
     for slot in range(5):
-        values, dates, seasons = lookup_asof_ratings(lineups[:, slot], game_dates, histories)
+        if rating_timing == "same-season":
+            values, dates, seasons = lookup_same_season_ratings(
+                lineups[:, slot], season_end_year, histories
+            )
+        else:
+            values, dates, seasons = lookup_asof_ratings(
+                lineups[:, slot], game_dates, histories
+            )
         rating_values[:, slot, :] = values
         source_dates[:, slot] = dates
         source_seasons[:, slot] = seasons
@@ -232,16 +268,22 @@ def summarize_lineup_exposures(
         anchor_valid = missing_count - anchor_is_missing.astype(int) == 0
         help_values = lineup_sums - finite_values[:, anchor_slot, :]
 
-        teammate_source_dates = np.delete(source_dates, anchor_slot, axis=1)
-        source_lag_days = (
-            game_dates[:, None] - teammate_source_dates
-        ).astype("timedelta64[D]").astype(float)
-        mean_lag = np.nanmean(source_lag_days, axis=1)
-        prior_snapshot = np.any(
-            np.delete(source_seasons, anchor_slot, axis=1)
-            < season_end_year,
-            axis=1,
-        )
+        if rating_timing == "asof":
+            teammate_source_dates = np.delete(source_dates, anchor_slot, axis=1)
+            source_lag_days = (
+                game_dates[:, None] - teammate_source_dates
+            ).astype("timedelta64[D]").astype(float)
+            mean_lag = np.nanmean(source_lag_days, axis=1)
+            prior_snapshot = np.any(
+                np.delete(source_seasons, anchor_slot, axis=1)
+                < season_end_year,
+                axis=1,
+            )
+            lag_is_defined = anchor_valid
+        else:
+            mean_lag = np.zeros(len(exposures), dtype=float)
+            prior_snapshot = np.zeros(len(exposures), dtype=bool)
+            lag_is_defined = np.zeros(len(exposures), dtype=bool)
 
         player_part = pd.DataFrame(
             {
@@ -251,7 +293,8 @@ def summarize_lineup_exposures(
                 "weighted_help_dpm": np.where(anchor_valid, weights * help_values[:, 0], 0.0),
                 "weighted_help_o_dpm": np.where(anchor_valid, weights * help_values[:, 1], 0.0),
                 "weighted_help_d_dpm": np.where(anchor_valid, weights * help_values[:, 2], 0.0),
-                "weighted_rating_lag_days": np.where(anchor_valid, weights * mean_lag, 0.0),
+                "weighted_rating_lag_days": np.where(lag_is_defined, weights * mean_lag, 0.0),
+                "rating_lag_exposures": np.where(lag_is_defined, weights, 0.0),
                 "prior_snapshot_exposures": np.where(anchor_valid & prior_snapshot, weights, 0.0),
             }
         )
@@ -310,7 +353,7 @@ def summarize_lineup_exposures(
 
     player["coverage_pct"] = 100.0 * player["rated_exposures"] / player["total_exposures"]
     player["avg_rating_lag_days"] = (
-        player["weighted_rating_lag_days"] / player["rated_exposures"].replace(0, np.nan)
+        player["weighted_rating_lag_days"] / player["rating_lag_exposures"].replace(0, np.nan)
     )
     player["prior_snapshot_pct"] = (
         100.0 * player["prior_snapshot_exposures"] / player["rated_exposures"].replace(0, np.nan)
@@ -625,6 +668,7 @@ def write_split_app_data(
 def process_files(
     paths: Iterable[Path],
     histories: dict[int, PlayerRatingHistory],
+    rating_timing: str = "same-season",
 ) -> tuple[pd.DataFrame, pd.DataFrame, list[dict]]:
     player_frames: list[pd.DataFrame] = []
     pair_frames: list[pd.DataFrame] = []
@@ -642,7 +686,12 @@ def process_files(
                 f"{path} game_date coverage is {date_coverage:.2%}; refusing a leaky season-end fallback"
             )
         exposures = collapse_team_exposures(possessions)
-        player, pair = summarize_lineup_exposures(exposures, histories, season_end_year=season)
+        player, pair = summarize_lineup_exposures(
+            exposures,
+            histories,
+            season_end_year=season,
+            rating_timing=rating_timing,
+        )
         player.insert(0, "season_type", season_type)
         player.insert(0, "season", season)
         pair.insert(0, "season_type", season_type)
@@ -683,6 +732,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--season-types", choices=["all", "rs", "ps"], default="all")
     parser.add_argument("--processed-dir", type=Path, default=PROCESSED_DIR)
     parser.add_argument("--darko", default=str(DEFAULT_DARKO_PATH))
+    parser.add_argument(
+        "--rating-timing",
+        choices=["same-season", "asof"],
+        default="same-season",
+        help=(
+            "DARKO timing contract. same-season applies the season's final value to all "
+            "games (canonical descriptive build); asof preserves strict dated lookup."
+        ),
+    )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
         "--app-json",
@@ -713,7 +771,11 @@ def main() -> None:
         darko_source = DARKO_HISTORY_URL
     darko, histories = load_darko_history(darko_source)
     names = load_name_map(darko)
-    player, pair, file_reports = process_files(paths, histories)
+    player, pair, file_reports = process_files(
+        paths,
+        histories,
+        rating_timing=args.rating_timing,
+    )
     if player.empty:
         raise RuntimeError("No player help rows were generated")
 
@@ -727,6 +789,27 @@ def main() -> None:
     pair["frequency_rank"] = pair.groupby(["season", "season_type", "player_id"]).cumcount() + 1
     reconciliation = validate_reconciliation(player, pair)
 
+    if args.rating_timing == "same-season":
+        method = (
+            "Possession-weighted sum of the other four same-team players' same-season "
+            "DARKO values, applied retrospectively to every game in that season."
+        )
+        historical_snapshot_note = (
+            "The public DARKO history contains one row per player-season. The canonical "
+            "descriptive build applies that row to the full season regardless of source "
+            "date; it measures season-level teammate talent and is not an as-of forecast."
+        )
+    else:
+        method = (
+            "Possession-weighted sum of the other four same-team players' latest DARKO "
+            "snapshot dated on or before each game."
+        )
+        historical_snapshot_note = (
+            "The public DARKO history contains one dated snapshot per player-season, "
+            "not a daily archive. Strict as-of lookup carries the latest prior snapshot "
+            "forward and never uses a future value."
+        )
+
     metadata = {
         "title": "DARKO Teammate Help",
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -737,15 +820,9 @@ def main() -> None:
         "oriented_player_teammate_seasons": int(len(pair)),
         "darko_source": DARKO_HISTORY_URL,
         "darko_rows": int(len(darko)),
-        "method": (
-            "Possession-weighted sum of the other four same-team players' latest DARKO "
-            "snapshot dated on or before each game."
-        ),
-        "historical_snapshot_note": (
-            "The public DARKO history contains one dated snapshot per player-season, "
-            "not a daily archive. Strict as-of lookup carries the latest prior snapshot "
-            "forward and never uses a future value."
-        ),
+        "rating_timing": args.rating_timing,
+        "method": method,
+        "historical_snapshot_note": historical_snapshot_note,
         "coverage_pct": float(
             100.0 * player["rated_exposures"].sum() / player["total_exposures"].sum()
         ),

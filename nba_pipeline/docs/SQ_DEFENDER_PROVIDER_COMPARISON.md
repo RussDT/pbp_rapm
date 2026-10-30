@@ -145,8 +145,9 @@ expected possession value at release
 That downstream attachment uses the cross-fitted player-zone opportunity prior.
 It has not yet been recomputed with defender geometry or NBA matchup assignment
 inside the OREB model. Canonical `RUSSELL_SHOTQUALITY` also remains immediate
-shot value; active public DECOMP carries physical realized second-chance value
-separately through `SECOND_CHANCE_CLEAN`.
+shot value; forward Net DECOMP carries continuation-priced opportunity and
+second-chance conversion separately, while gross compatibility DECOMP retains
+physical realized `SECOND_CHANCE_CLEAN`.
 
 ## Run
 

@@ -1,7 +1,17 @@
 # VPM Reproduction and Recovery Status
 
+October15 follow-up: the [new SQ temporal repair and paired rerun](VPM_SQ_TEMPORAL_REPAIR.md)
+is complete in sibling v39/v40. The original artifacts described here remain
+preserved; their identified leakage warning is not retroactively erased.
+
+The October 15 field benchmark adds the seven LOKI-style preseason game/season
+comparisons for the monthly own-SQ history (v37 harness config), against EPM
+and lagged annual DARKO/LEBRON/MAMBA. See [protocol, results and limitations](VPM_FIELD_BENCHMARK.md).
+This does not change the original model/target recipes below.
+
 This document records the reproducible VPM foundation recovered on
-2026-07-23. It is deliberately separate from the active public DECOMP build.
+2026-07-23. It is deliberately separate from both the forward Net DECOMP build
+and the gross compatibility DECOMP build.
 
 ## Predictive north star
 
@@ -15,7 +25,9 @@ system separately so those layers cannot conceal a weaker player estimate.
 
 ## Model-family boundary
 
-- **Active public NBA factor family:** `weighted_factors_decomp_*`.
+- **Selected forward NBA factor family:** `weighted_factors_decomp_net_*`;
+  gross `weighted_factors_decomp_*` remains compatibility/rollback during the
+  1Y-5Y migration.
   It is the exact eight-component actual-points decomposition documented in
   [Public Eight-Component DECOMP](./PUBLIC_DECOMP.md).
 - **Legacy/audit families:** `weighted_factors_alt3_efg_value_*` and
@@ -144,7 +156,7 @@ Current clock experiment:
 - The exact `results/three_priors/` as-of-date 12-prior files referenced by
   the private VPM replication guide did not survive in either checkout.
   Other prior research outputs do exist, but they are not drop-in substitutes.
-- Only the 2022-26 active public DECOMP rolling artifact is present locally;
+- Only the 2022-26 gross compatibility DECOMP rolling artifact is present locally;
   the current 1Y-4Y public DECOMP rolling files need rebuilding.
 
 These gaps block a from-scratch rebuild of the historical licensed
@@ -255,6 +267,38 @@ PYTHONPATH=. .venv/bin/python \
 ```
 
 Generated outputs remain gitignored research artifacts.
+
+## 1997-2015 Russell v2 historical bridge
+
+`scripts/build_russell_v2_historical_bridge.py` now supplies a separately
+labeled, outcome-safe historical EV source for a 1997-2026 no-prior VPM. It
+does not overwrite the frozen native-v2 files used from 2016 onward.
+
+The chronological native-overlap gate selects the calibrated v2-distilled
+stack for midrange and rejects it for threes, where the portable-v3 fallback
+remains better on held-out 2023-2026 outcomes. The resulting 1997-2015 parquet
+contains 2,583,850 unique shots over 23,851 games and closes
+`ev_pts = p_make * shot_value` exactly. Historical safe-crossfit probabilities
+remain audit-only because fold predictions are not a production VPM target.
+
+The 2015/2016 handoff is not level-seamless: mean probability changes by
+`+0.024857` for midrange and `-0.007360` for threes, versus actual-rate changes
+of `+0.005920` and `+0.004126`. A combined 1997-2026 VPM must therefore use
+fixed season effects or an explicitly audited equivalent season-centering
+treatment. Do not erase the seam with outcome-informed post-hoc calibration.
+
+Canonical methods and receipts:
+[Russell ShotQuality v2 Historical Bridge](./RUSSELL_V2_HISTORICAL_BRIDGE.md).
+The generated EV parquet is:
+
+```text
+nba_pipeline/results/historical_shot_quality/russell_v2_historical_bridge/
+russell_v2_historical_bridge_ev_1997_2015.parquet
+```
+
+The bridge makes target preparation possible; it does not itself run or
+validate the full historical VPM. In a no-prior run, player prior means are
+zero while the registered ridge penalties and ten-component closure remain.
 
 ## Current validation
 
@@ -389,6 +433,220 @@ and closes all ten-component, three-factor, and net identities within
 - `../vpm/vpm/results/harness/vpm_hardened_dev_v3_epm12/player_estimates_epm12_x2_2026-07-24.csv`;
 - matching `.manifest.json`.
 
+### EPM12 direct-parent simplicity baseline
+
+The sibling immutable config
+`vpm/configs/research_harness_v12_epm12_parent_baseline.json` tests whether
+the component architecture adds predictive value beyond a strong parent. It
+maps the exact side-wise union of the EPM12 date-safe `p_*` fields directly to
+matured 365-day future pure O/D RAPM labels and fits one prior-centred parent
+solve. Development is restricted to 2020-2022; 2023-2026 is frozen historical
+stress and 2027 remains untouched.
+
+The one-SE development choice is mapper alpha `0.1`, offense/defense solve
+alphas `4000/8000`, and prior scale `1.5`. On 406,110 common 2023-2026 stress
+possessions across 4,181 games:
+
+- parent versus plain RAPM: `+254.11e-6 [171.85,336.95]`;
+- parent versus complete EPM: `+386.16e-6 [241.80,531.66]`;
+- selected decomposed VPM versus parent: `+41.55e-6 [-82.46,165.29]`;
+- parent versus the selected 25% post-solve pull: `+53.80e-6 [1.43,105.91]`.
+
+The parent preserves about 86% of selected VPM's gain over plain RAPM. Thus
+the strong prior and shrinkage do most of the predictive work; the remaining
+component gain is unresolved rather than disproven. Keep the decomposed
+incumbent pending untouched confirmation, reject the extra post-solve pull,
+and require future component challengers to beat this parent as well as RAPM.
+Canonical details and commands live in the sibling
+`vpm/docs/EPM12_PARENT_BASELINE.md`.
+
+### EPM12 counting-rate correction
+
+The original shooting recipes combined raw predictive percentage and attempt
+rate only as separate additive mapper columns. The corrected immutable sibling
+configs are `research_harness_v13_epm12_makes_netcont.json` and
+`research_harness_v14_epm12_makes_parent_baseline.json`. They derive
+`3FGM/100`, rim `FGM/100`, midrange `FGM/100`, and `FTM/100` as exact
+attempt-rate times predictive-percentage products, then pair makes with
+attempts.
+
+Coefficients remain learned as-of each cut from fully matured 365-day labels:
+minimum 500 future possessions, `min(possessions,5000)` player weights,
+equalized label-cut weight, weighted feature standardization, and standardized
+ridge/OLS. The generated `prior_models.json` is the coefficient receipt.
+
+On the identical 406,110-possession 2023-2026 stress universe, corrected
+decomposition is only `+13.95e-6 [-116.41,+140.69]` better than its parent.
+The corrected parent beats RAPM by `+259.66e-6 [+177.61,+342.11]` and the
+post-solve blend by `+58.64e-6 [+5.58,+111.32]`. Corrected decomposition loses
+to the old misspecified lane by `22.05e-6 [4.32,39.69]` on spent stress, so
+neither representation may be newly selected from that comparison. Preserve
+the public board and use 2027 as the protected test of the corrected lane.
+Canonical sibling receipt: `vpm/docs/EPM12_COUNTING_RATE_CORRECTION.md`.
+
+### Preseason position-allocation audit
+
+The sibling VPM command `run_harness.py offseason-position-audit` audits the
+preseason alpha lane without creating another selection surface. For each
+target season it assigns returning players their latest listed `Pos2` strictly
+before the preseason snapshot, rebuilds the exact realized lineups behind the
+saved evaluation rows, and groups held-out errors by offensive and defensive
+lineup size. The primary buckets count listed centers (`0`, `1`, `2+`); a
+frontcourt sensitivity counts listed PF/C players (`0-1`, `2`, `3+`). Scores
+use equal season weight and paired game-clustered bootstrap intervals.
+
+The report-only 2023-2026 stress sample contains 404,986 position-complete
+possessions across 4,198 games. Selected x2 versus selected no-prior produces:
+
+- defensive zero-center: `+330.92e-6`, 95% interval
+  `[+130.59,+529.94]`;
+- defensive one-center: `+51.09e-6`, interval `[-26.98,+129.75]`;
+- defensive two-plus-center: `-146.07e-6`, interval
+  `[-419.04,+112.87]`, with a negative point estimate in all four seasons;
+- defensive three-plus PF/C sensitivity: `-127.30e-6`, interval
+  `[-296.91,+43.96]`;
+- offensive two-plus-center falsification: `+282.36e-6`, interval
+  `[+13.62,+537.12]`.
+
+The current selected-alpha inspection board is also less center-skewed than
+the same-date v4 board: listed-center mean defensive VPM falls from `+1.360`
+to `+1.029`, while mean center net VPM falls by `0.430`. The selected prior
+still carries a strong mechanism-level positional tilt (listed-center mean
+defensive prior `+0.932` versus point-guard `-0.374`), led by rim protection
+and second chance; dTOV partially offsets it.
+
+The correct interpretation is narrow: the prior is useful overall and helps
+perimeter-heavy defenses, but appears to over-credit jumbo defense. This is
+not evidence that every center is overrated, and the selected alphas already
+mitigate the problem relative to v4. Never recenter positions or tune a
+correction on the spent 2023-2026 rows. Any correction candidate belongs in
+2019-2022 development and must be frozen before the untouched 2027 receipt.
+The canonical implementation and full report live in the sibling VPM repo at
+`vpm/harness/position_audit.py` and
+`vpm/docs/OFFSEASON_POSITION_BIAS_AUDIT.md`.
+
+### Defensive prior scale and allocation follow-up
+
+The sibling `offseason-prior-scale` lane holds offense at x2 and varies only
+the defensive prior-center multiplier. On 2020-2022 development, x1.5 is the
+empirical best and the one-standard-error lowest-scale rule selects x1; x1
+through x2 are all statistically tied. In the frozen 2023-2026 historical
+replay, however, x1 loses to x2 by `-17.75e-6 [-32.86,-2.37]` overall. The
+position slices show why: x1 improves the 2+ center and 3+ PF/C point estimates
+but clearly hurts zero-center defenses.
+
+The separate `offseason-defense-allocation` falsification keeps x2 and offense
+unchanged, fits one defensive parent from `p_stl_100`, `p_blk_100`, and
+`p_drb_100`, and projects the four existing defensive child priors to that
+exact budget. Parent/child closure is exact, but the candidate loses to the
+current EPM12 x2 row on 2020-2022 development by
+`-7.72e-6 [-15.09,-0.33]`; it is rejected before stress.
+
+Neither a global defense haircut nor a single player-level parent is the
+proper fix. The evidence identifies lineup-dependent rim-protection
+redundancy, which belongs in a separate interaction estimated jointly with
+the additive player coefficients. Do not change the accepted board or open
+2027. Full report:
+`vpm/docs/DEFENSIVE_PRIOR_SCALE_AND_ALLOCATION.md` in the sibling repo.
+
+The first joint interaction candidate uses pairwise overlap among positive
+preseason-standardized `p_blk_100` signals as a separate block in all ten
+component solves. It wins all three 2020-2022 seasons but fails the clustered
+admission interval (`+6.31e-6 [-1.48,+14.12]`). Its sign is also wrong for the
+diagnosed problem: it rewards overlap and shifts two-plus-center defenses
+another `-0.18` points per 100 stronger, losing
+`-91.68e-6 [-217.70,+38.29]` in that development bucket. The candidate is
+rejected without opening stress.
+
+Minutes and possessions remain reliability/availability candidates rather
+than direct per-possession quality features. On the August 21 board, absolute
+defensive-prior magnitude has `r=0.003` with accumulated defensive
+possessions, so there is no support for a blanket exposure multiplier. The
+canonical box panel has MPG and possessions but no height or wingspan.
+Databallr's separate Supabase `measurements_master` table is a valid
+`nba_id`-keyed source for no-shoes height and wingspan. The sibling legacy
+`decomp_prior_harness.py --physical-features` lane already tested those fields
+and wingspan-minus-height as direct player-prior features and rejected the
+candidate at the possession gate (commit `b0ac33e`); its gitignored cached CSV
+is currently absent. A lineup-length redundancy interaction remains a
+different, untested specification and cannot be inferred from that direct
+feature result.
+
+### Matchup/BAM parent-prior audit
+
+The sibling `offseason-constrained-priors` command recovers and tests the
+regular-season BAM matchup archive without admitting raw matchup rows to VPM.
+The legacy pair formula is held fixed; a lag-safe 2019-2022 grid selects only
+exposure shrinkage, season decay, and history length. The one-SE
+most-regularized row is `K=8000` partial possessions, a two-season maximum
+window, and a 0.5-season half-life.
+
+Against the recovered annual dRAPM sensitivity target, this specification has
+a highly stable coefficient: standardized mean/SD `0.152/0.013` on 2019-2022
+LOYO and `0.142/0.008` on the 2023-2025 expanding replay, with positive gains
+in every year. That screen is mechanism evidence, not admission.
+
+The decisive test maps positive-good BAM into the native negative-good defense
+coefficient convention, centers it on common effective defensive exposure,
+and introduces it only through an independent parent actual-points solve at
+alphas 2000/4000. Adding that parent delta to selected EPM12 x2 yields:
+
+- 2020-2022 development: `+6.84e-6 [-6.93,+20.05]`, only 2/3 positive;
+- 2023-2026 all-lineup stress: `+1.44e-6 [-8.98,+11.97]`;
+- returning-lineup stress: `-2.29e-6 [-18.75,+14.26]`;
+- common-EPM stress: `-2.05e-6 [-18.19,+14.52]`.
+
+The all-lineup effect reverses to `-15.72e-6` in 2026. The candidate therefore
+fails the parent-information gate and the closed family stops before child
+allocation. Keep TD-BAM as a benchmark/mechanism feature, not a VPM prior.
+Future matchup work should separate assignment burden, opponent strength,
+suppression, and turnover creation inside a jointly trained parent-defense
+bank. The 2026 matchup source is incomplete, and 2027 remains both untouched
+and source-blocked. The canonical report is the sibling
+`vpm/docs/MATCHUP_BAM_PARENT_PRIOR.md`.
+
+### Completed-season parent ORAPM/DRAPM priors
+
+The sibling VPM command `build-parent-rapm-priors` implements that jointly
+trained parent bank without changing public RAPM or the accepted VPM board.
+Its primary labels are exact annual regular-season direct parent solves from
+this repository:
+
+```bash
+.venv/bin/python nba_pipeline/scripts/rapm.py RAPM YY YY RS \
+  --pure --rubberband --season-effects \
+  --off-alpha 2000 --def-alpha 4000 --cores 2
+```
+
+The canonical target files are
+`nba_pipeline/results/rapm_YY_rs_pure_rb_se_a2000_4000_results.csv`. Raw `off`
+is positive-good offense; raw `def` is points allowed, so the sibling feature
+model publishes positive-good DRAPM as `-def` and flips it back exactly once
+for solver-native defense prior files. The repo's `pure` convention still uses
+shooter-expected FT value where available.
+
+The registered season-forward panel uses completed 2018 features for 2019
+targets through completed 2022 features for 2023 targets, then emits a 2024
+prior from completed 2023. Group selection requires 4/5 conditional MSE wins
+plus pairwise coefficient-vector and emitted-contribution stability. Complete
+EPM is benchmark-only. Matchup burden uses cross-fitted `p_*`-skill opponent
+strength weighted by NBA partial possessions; legacy BAM and matchup outcome
+suppression are forbidden candidate fields.
+
+The selected development bank beats a lag-parent-plus-role ridge 5/5 on both
+sides. Frozen replay on 2024-2026 also wins 3/3: mean parent-target MSE gains
+are `+0.1625 [+0.0540,+0.2794]` offense and
+`+0.0764 [+0.0509,+0.1028]` defense under a player-cluster bootstrap. The
+isolated matchup-assignment increment is much smaller and inconclusive:
+`+0.00301 [-0.00341,+0.00955]`, positive in 2/3 stress seasons. These intervals
+do not include RAPM target-estimation covariance, and the bank has not cleared
+a summed future-possession VPM gate. Status remains development-only.
+
+Canonical sibling config/report:
+`vpm/configs/research_harness_v8_parent_rapm_priors_2018_2023.json` and
+`vpm/docs/PARENT_RAPM_PRIORS_2018_2023.md`. The 2026 matchup source remains
+incomplete, so the command does not emit a 2027 prior.
+
 ### Accepted x2 player board
 
 The harness now converts the frozen standalone v2 x2 candidate into an as-of
@@ -485,7 +743,7 @@ at a mutable research artifact.
    that source; the current 2026-only player summary remains blocked.
 5. Freeze the winning development config, absence rule, and prior scale before
    the next untouched 2026-27 confirmation.
-6. Rebuild the missing 1Y-4Y active public DECOMP rolling artifacts
+6. Build the missing 1Y-4Y forward Net DECOMP rolling artifacts
    independently of VPM:
 
 ```bash

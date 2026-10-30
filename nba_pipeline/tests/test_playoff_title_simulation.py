@@ -336,6 +336,97 @@ def test_salary_peer_title_lift_swaps_into_every_historical_playoff_team() -> No
     assert result.loc[0, "title_lift_over_contract"] > 0
 
 
+def test_era_local_salary_peer_lift_uses_only_the_four_neighboring_seasons() -> None:
+    series_2025 = _four_round_series()
+    series_2019 = series_2025.assign(season=2019)
+    nodes = build_bracket_nodes(pd.concat([series_2019, series_2025], ignore_index=True))
+    teams = pd.DataFrame(
+        [
+            {"season": season, "team_id": team_id, "team_dpm": 0.0}
+            for season in (2019, 2025)
+            for team_id in range(1, 17)
+        ]
+    )
+    peers = pd.DataFrame(
+        [
+            {
+                "season": season,
+                "team_id": team_id,
+                "player_id": season * 100 + team_id,
+                "salary_share": 0.20,
+                "own_dpm": 0.0,
+                "own_team_contribution_dpm": 0.0,
+                "playoff_workload_share": 0.75,
+            }
+            for season in (2019, 2025)
+            for team_id in range(1, 17)
+        ]
+    )
+    focal = pd.DataFrame(
+        [{"season": 2026, "player_id": 999, "own_dpm": 4.0, "salary_share": 0.20}]
+    )
+
+    result = add_salary_peer_title_lift(
+        focal,
+        peers,
+        teams,
+        nodes,
+        PlayoffGameModel(home_advantage=0.20, epm_coefficient=0.12),
+    )
+
+    assert result.loc[0, "salary_peer_placement_count"] == 32
+    assert result.loc[0, "era_local_salary_peer_placement_count"] == 16
+    assert np.isclose(
+        result.loc[0, "title_lift_over_contract_v2"],
+        result.loc[0, "title_lift_over_contract"],
+    )
+
+
+def test_era_local_salary_peer_lift_debits_expensive_players_and_credits_cheap_ones() -> None:
+    nodes = build_bracket_nodes(_four_round_series())
+    teams = pd.DataFrame(
+        [
+            {"season": 2025, "team_id": team_id, "team_dpm": 0.0}
+            for team_id in range(1, 17)
+        ]
+    )
+    peers = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "team_id": team_id,
+                "player_id": 100 + team_id,
+                "salary_share": 0.20,
+                "own_dpm": 0.0,
+                "own_team_contribution_dpm": 0.0,
+                "playoff_workload_share": 0.75,
+            }
+            for team_id in range(1, 17)
+        ]
+    )
+    focal = pd.DataFrame(
+        [
+            {"season": 2026, "player_id": 1, "own_dpm": 0.0, "salary_share": 0.27},
+            {"season": 2026, "player_id": 2, "own_dpm": 0.0, "salary_share": 0.13},
+        ]
+    )
+
+    result = add_salary_peer_title_lift(
+        focal,
+        peers,
+        teams,
+        nodes,
+        PlayoffGameModel(home_advantage=0.20, epm_coefficient=0.12),
+    ).set_index("player_id")
+
+    assert np.isclose(result.loc[1, "era_local_budget_mean_playoff_debit"], 0.546)
+    assert np.isclose(result.loc[2, "era_local_budget_mean_playoff_debit"], -0.546)
+    assert result.loc[1, "title_lift_over_contract_v2"] < 0
+    assert result.loc[2, "title_lift_over_contract_v2"] > 0
+    assert np.isclose(result.loc[1, "title_lift_over_contract"], 0.0)
+    assert np.isclose(result.loc[2, "title_lift_over_contract"], 0.0)
+
+
 def test_salary_peer_title_lift_adds_regular_season_seeding_credit() -> None:
     nodes = build_bracket_nodes(_four_round_series())
     teams = pd.DataFrame(
@@ -418,4 +509,63 @@ def test_salary_peer_title_lift_adds_regular_season_seeding_credit() -> None:
         result.loc[0, "title_lift_over_contract"],
         result.loc[0, "salary_peer_fixed_bracket_title_lift"]
         + result.loc[0, "salary_peer_seeding_title_lift"],
+    )
+
+
+def test_playoff_adjusted_salary_peer_lift_changes_series_but_not_regular_season_seed() -> None:
+    nodes = build_bracket_nodes(_four_round_series())
+    teams = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "team_id": team_id,
+                "team_dpm": 0.0,
+                "playoff_adjusted_team_dpm": 0.0,
+            }
+            for team_id in range(1, 17)
+        ]
+    )
+    peers = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "team_id": team_id,
+                "player_id": 100 + team_id,
+                "salary_share": 0.20,
+                "own_dpm": 0.0,
+                "playoff_adjusted_dpm": 0.0,
+                "own_team_contribution_dpm": 0.0,
+                "playoff_adjusted_team_contribution_dpm": 0.0,
+                "playoff_workload_share": 0.75,
+                "regular_season_workload_share": 0.75,
+            }
+            for team_id in range(1, 17)
+        ]
+    )
+    focal = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "player_id": 999,
+                "own_dpm": 0.0,
+                "playoff_adjusted_dpm": 2.0,
+                "salary_share": 0.20,
+            }
+        ]
+    )
+
+    result = add_salary_peer_title_lift(
+        focal,
+        peers,
+        teams,
+        nodes,
+        PlayoffGameModel(home_advantage=0.20, epm_coefficient=0.12),
+    )
+
+    assert np.isclose(result.loc[0, "title_lift_over_contract_v2"], 0.0)
+    assert result.loc[0, "playoff_adjusted_title_lift_over_contract_v2"] > 0.0
+    assert np.isclose(
+        result.loc[0, "playoff_adjusted_title_lift_over_contract_v2"],
+        result.loc[0, "playoff_adjusted_fixed_bracket_title_lift"]
+        + result.loc[0, "playoff_adjusted_seeding_title_lift"],
     )

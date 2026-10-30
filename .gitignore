@@ -59,6 +59,8 @@ nba_pipeline/autoresearch_drl_shapley/cache/
 nba_pipeline/autoresearch_drl_shapley/latest_summary.json
 nba_pipeline/autoresearch_drl_shapley/outputs/
 nba_pipeline/docs/videos/decomp-rapm/.thumbnails/
+nba_pipeline/docs/supabase_database_catalog.html
+nba_pipeline/docs/supabase_database_catalog.json
 
 # WNBA generated artifacts
 wnba_test/Processed/
@@ -75,3 +77,39 @@ randle_strong_weak/*browser.html
 
 # Nested clone of the private unified-rapm repo (separate git project)
 /unified-rapm/
+
+# Recovered raw matchup snapshots; audit documented in FreshDocs.
+/nba_pipeline/external/matchup_daily_recovered_v1/
+/nba_pipeline/external/matchup_bpm_v1/
+# Generated two-page VPM explainer; authoring source is versioned.
+/output/documents/predictive_vpm_two_pager.docx
+/output/pdf/predictive_vpm_two_pager.pdf
+/output/documents/predictive_vpm_three_pager.docx
+/output/pdf/predictive_vpm_three_pager.pdf
+
+# Local environments, caches and agent scratch. None of this is source and
+# together it is roughly 28 GB, so it must never reach a commit.
+/.venv/
+/.claude/
+/tmp/
+/output/
+/screenlog.0
+nba_pipeline/.cache/
+nba_pipeline/tmp/
+nba_pipeline/processed_netcont_lane/
+supabase/.temp/
+
+# Built explainer and lab front-ends: node_modules plus dist, rebuilt from
+# their own sources, 4 GB between them.
+/five-man-fit-lab/
+/shot-continuation-explainer/
+/teammate-help-app/
+/usage-140-explainer/
+/vpm-explorer/
+/vpm-actuals-site/
+
+# Generated player sheet exports, 22 GB.
+/player_sheets/
+
+# Loose RAPM rating dumps at the repo root.
+/*.parq

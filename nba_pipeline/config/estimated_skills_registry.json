@@ -1,0 +1,1289 @@
+{
+ "schema_version": 1,
+ "registry_id": "nba_estimated_skills",
+ "title": "NBA predictive box-score stats registry",
+ "owner": "Russell Thomas",
+ "as_of": "2026-09-14",
+ "builder": "nba_pipeline/scripts/build_estimated_skills_registry.py",
+ "doc": "nba_pipeline/docs/NBA_PREDICTIVE_BOX_STATS_REGISTRY.md",
+ "family_map": "nba_pipeline/docs/NBA_ESTIMATED_SKILLS.md#lane-inventory",
+ "results_root": "nba_pipeline/results/estimated_skills",
+ "contract": {
+  "role": "research/forecast lane only; nothing here is a rating prior, a solve prior, or a VPM input",
+  "objective": "next-game exposure-weighted squared error (per 100 possessions for rates, per attempt for percentages); rest-of-season aggregates are secondary",
+  "pre_tip_rule": "every feature must be constructible before tip from information available live (completed-game rosters, schedule, prior-game residuals)",
+  "observations": "measured observations only; *_filled values, inferred zeros and estimates are never observations; an unmeasured game is NaN, never zero",
+  "holdout": {
+   "2026": "export-only or spent limited evidence; never next-game scored by v4 or any lab recipe; v1 was scored once against naive baselines on 2026-08-27 and the v3 forward confirmation ran once",
+   "2027": "untouched"
+  },
+  "providers": "EPM, DARKO, DPM and eWINS are never features, targets or tuning inputs, and provider values are never copied into published or committed artifacts",
+  "artifacts": "everything under nba_pipeline/results/estimated_skills/ is generated and stays out of git; this registry and its builder are the checked-in source"
+ },
+ "status_vocabulary": {
+  "live": "a dated current per-player estimate is exported and appears on the values table; the model is frozen and 2026 is export-only",
+  "development": "a model is selected on development seasons but has no current-state export, so the table still shows the incumbent",
+  "increment": "an increment that passed development and frozen stress but is not exported to any table",
+  "measurement": "a measurement layer only (retrospective baseline); not a forecast",
+  "imputation": "a postgame repair layer that prepares inputs; its filled values are never observations",
+  "diagnostic": "descriptive or comparison output only; nothing is estimated for the next game",
+  "failed": "tested against a pre-declared gate and rejected; nothing on any table changed"
+ },
+ "families": {
+  "pbp_pct": {
+   "label": "PBP shooting percentages",
+   "lane": 1,
+   "exposure": "attempts",
+   "display_scale": 100,
+   "display_units": "%",
+   "pbp_value_pattern": "p_{skill}"
+  },
+  "pbp_offense_rate": {
+   "label": "PBP offensive rates",
+   "lane": 1,
+   "exposure": "off_poss",
+   "display_scale": 1,
+   "display_units": "per 100 offensive possessions",
+   "pbp_value_pattern": "p_{skill}_per100"
+  },
+  "pbp_defense_rate": {
+   "label": "PBP defensive rates",
+   "lane": 1,
+   "exposure": "def_poss",
+   "display_scale": 1,
+   "display_units": "per 100 defensive possessions",
+   "pbp_value_pattern": "p_{skill}_per100"
+  },
+  "pbp_both_rate": {
+   "label": "PBP two-way rates",
+   "lane": 1,
+   "exposure": "off_poss + def_poss",
+   "display_scale": 1,
+   "display_units": "per 100 possessions (both sides)",
+   "pbp_value_pattern": "p_{skill}_per100"
+  },
+  "hustle": {
+   "label": "Hustle game-log filter",
+   "lane": 2,
+   "exposure": "def_poss",
+   "display_scale": 1,
+   "display_units": "per 100 defensive possessions"
+  },
+  "tracking_offense": {
+   "label": "Tracking game-log filters (offense)",
+   "lane": 19,
+   "exposure": "off_poss",
+   "display_scale": 1,
+   "display_units": "per 100 offensive possessions"
+  },
+  "tracking_defense": {
+   "label": "Tracking game-log filters (defense)",
+   "lane": 19,
+   "exposure": "def_poss",
+   "display_scale": 1,
+   "display_units": "per 100 defensive possessions"
+  },
+  "fouls_drawn": {
+   "label": "CDN fouls-drawn filters",
+   "lane": 20,
+   "exposure": "off_poss or def_poss",
+   "display_scale": 1,
+   "display_units": "per 100 possessions"
+  },
+  "rim_defense": {
+   "label": "Rolling rim defense",
+   "lane": 9,
+   "exposure": "def_poss",
+   "display_scale": 1,
+   "display_units": "points per 100 defensive possessions"
+  }
+ },
+ "pbp_panel": {
+  "table_model": "v1 scalar Kalman random walk (build 2026-08-26, receipts eval_report.json and hyperparams.json)",
+  "dev_selected_model": "v4: OU state with population attractor + debut/age/early-season corrections + pre-tip context (build_nba_estimated_skills_v4.py; v4_nextgame.json)",
+  "lab_recipes": {
+   "D": {
+    "variant": "ctxplus+ctxmult+xusg+jump",
+    "description": "playoff term + minutes trend, multiplicative context, usage-form cross-skill feature, team-change jump"
+   },
+   "F": {
+    "variant": "ctxplus+ctxmult+xall+jump",
+    "description": "same as D with the full 16-skill cross-skill form block"
+   },
+   "G": {
+    "variant": "ctxps+ctxmult+xusg+jump",
+    "description": "D without the minutes trend (playoff term only)"
+   }
+  },
+  "lab_receipt": "nextgame_lab/round3.json",
+  "builder_note": "v4 has no current-state export and there is no v5 builder; assemble() in research_skills_nextgame_lab.py is the specification of the recipe",
+  "export": {
+   "path": "current_player_table/current_players_provenance.csv",
+   "id_column": "player_id",
+   "date_pattern": "{skill}_last_date",
+   "season_pattern": "{skill}_last_season",
+   "obs_pattern": "{skill}_n_obs",
+   "universe": "582 players with latest-season PBP participation",
+   "value_source": "families[<family>].pbp_value_pattern formatted with the skill id, times display_scale"
+  },
+  "receipts": {
+   "eval_report": "eval_report.json",
+   "hyperparams": "hyperparams.json",
+   "v4": "v4_nextgame.json",
+   "lab_round3": "nextgame_lab/round3.json",
+   "confirmation_2026_v3": "confirmation_2026.json",
+   "current_states_all_players": "current_states.csv"
+  },
+  "split": {
+   "warmup": 2019,
+   "development": [
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+   ],
+   "stress": null,
+   "holdout": 2026,
+   "protected": 2027
+  }
+ },
+ "stats": [
+  {
+   "stat_id": "rim_pct",
+   "label": "Rim FG%",
+   "family": "pbp_pct",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "rim_fgm",
+   "exposure": "rim_fga",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "G",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "rim_pct"
+   },
+   "notes": "On the table as v1. The only percentage the lab moves: the playoff term is worth about +0.05% on dev. The rim blocked-shot feature (lane 10) failed and changed nothing.",
+   "next_step": "Promote with the rest of the panel when a v5 builder exists; no stat-specific work pending."
+  },
+  {
+   "stat_id": "mid_pct",
+   "label": "Mid-range FG%",
+   "family": "pbp_pct",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "mid_fgm",
+   "exposure": "mid_fga",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": null,
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "mid_pct"
+   },
+   "notes": "On the table as v1. No lab recipe: every extra feature is null for mid-range percentage, so v4 is the ceiling under the current feature set.",
+   "next_step": "None beyond the panel-wide v5 build."
+  },
+  {
+   "stat_id": "three_pct",
+   "label": "3P%",
+   "family": "pbp_pct",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "three_fgm",
+   "exposure": "three_fga",
+   "status": "live",
+   "table_model": "v1 + three-point volume prior (lane 11, strength 0.5)",
+   "lab_recipe": null,
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "three_pct",
+    "extra": "volume_prior"
+   },
+   "export_override": {
+    "value_column": "p_three_pct",
+    "companion_columns": {
+     "three_pct_v1": "p_three_pct_v1"
+    }
+   },
+   "notes": "On the table as v1 blended with the owner-authorized volume prior (low-volume shooters are pulled toward the population curve for their attempt rate). The plain v1 value is kept beside it. No lab recipe helps 3P%; the untested idea is a volume-dependent attractor inside the filter.",
+   "next_step": "Test a volume-dependent attractor as a lab option; keep the volume prior on the table until then."
+  },
+  {
+   "stat_id": "ft_pct",
+   "label": "FT%",
+   "family": "pbp_pct",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "ftm",
+   "exposure": "fta",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "D",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "ft_pct"
+   },
+   "notes": "On the table as v1. Recipe D is worth about +0.02% on dev (mostly the team-change jump); effectively at the ceiling.",
+   "next_step": "None beyond the panel-wide v5 build."
+  },
+  {
+   "stat_id": "rim_fga_rate",
+   "label": "Rim FGA /100",
+   "family": "pbp_offense_rate",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "rim_fga",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "F",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "rim_fga_rate"
+   },
+   "notes": "On the table as v1. Recipe F (all-skill form + jump) adds +0.29% on dev over re-tuned v4. Same-day 2026 comparison vs EPM was inconclusive; next appearance within 7 days favoured v1 by +1.5% (lane 15, spent).",
+   "next_step": "Build v5 with recipe F; do not rerun the 2026 EPM comparison until the owner pre-registers one pass."
+  },
+  {
+   "stat_id": "mid_fga_rate",
+   "label": "Mid FGA /100",
+   "family": "pbp_offense_rate",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "mid_fga",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "F",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "mid_fga_rate"
+   },
+   "notes": "On the table as v1. The biggest lab gainer: v4 context is worth +1.64% over OU and recipe F a further +0.71% on dev. The gap between the table (v1) and the best known model is largest here.",
+   "next_step": "First stat to promote once a v5 builder exists."
+  },
+  {
+   "stat_id": "three_fga_rate",
+   "label": "3PA /100",
+   "family": "pbp_offense_rate",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "three_fga",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "F",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "three_fga_rate"
+   },
+   "notes": "On the table as v1. v4 context +1.06% over OU; recipe F +0.30% more on dev. The minutes trend is worth keeping here (+0.03%).",
+   "next_step": "Build v5 with recipe F."
+  },
+  {
+   "stat_id": "fta_rate",
+   "label": "FTA /100",
+   "family": "pbp_offense_rate",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "fta",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "F",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "fta_rate"
+   },
+   "notes": "On the table as v1. Recipe F +0.30% on dev; usage form and minutes trend both matter for free-throw rate. Personal fouls drawn (lane 20) is the CDN-measured companion stat.",
+   "next_step": "Build v5 with recipe F; later test PFD as a cross-family form feature."
+  },
+  {
+   "stat_id": "pts_rate",
+   "label": "PTS /100",
+   "family": "pbp_offense_rate",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "pts",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "F",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "pts_rate"
+   },
+   "notes": "On the table as v1. Recipe F +0.50% on dev, 6/6 seasons; the all-skill form block is worth +0.17% of that.",
+   "next_step": "Build v5 with recipe F."
+  },
+  {
+   "stat_id": "ast_rate",
+   "label": "AST /100",
+   "family": "pbp_offense_rate",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "ast",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "D",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "ast_rate"
+   },
+   "notes": "On the table as v1. Recipe D +0.44% on dev; the playoff term carries most of it and the full form block does not help assists. Potential assists (lane 19) is the tracking companion.",
+   "next_step": "Build v5 with recipe D."
+  },
+  {
+   "stat_id": "tov_rate",
+   "label": "TOV /100",
+   "family": "pbp_offense_rate",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "tov",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "F",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "tov_rate"
+   },
+   "notes": "On the table as v1. Recipe F +0.32% on dev; the all-skill form block alone is +0.23%.",
+   "next_step": "Build v5 with recipe F."
+  },
+  {
+   "stat_id": "oreb_rate",
+   "label": "OREB /100",
+   "family": "pbp_offense_rate",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "oreb",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "F",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "oreb_rate"
+   },
+   "notes": "On the table as v1. Recipe F +0.11% on dev but only 4/6 seasons; D, F and G are within each other's intervals, so one rebound recipe (G) is acceptable.",
+   "next_step": "Build v5; use the rebound recipe."
+  },
+  {
+   "stat_id": "usg_pct",
+   "label": "Usage %",
+   "family": "pbp_offense_rate",
+   "lane": 1,
+   "side": "offense",
+   "numerator": "usg_events",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "F",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "usg_pct"
+   },
+   "notes": "On the table as v1. v4 adds pre-tip teammate absence (+0.30 pp fair increment; the withdrawn realised-roster version was inflated) and recipe F a further +0.27% on dev. Team-change jump is worth +0.12% here.",
+   "next_step": "Build v5 with recipe F."
+  },
+  {
+   "stat_id": "dreb_rate",
+   "label": "DREB /100",
+   "family": "pbp_defense_rate",
+   "lane": 1,
+   "side": "defense",
+   "numerator": "dreb",
+   "exposure": "def_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "G",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "dreb_rate"
+   },
+   "notes": "On the table as v1. Recipe G +0.06% on dev; absence features are null for rebounds. Contested DREB (lane 19) is the tracking companion.",
+   "next_step": "Build v5 with the rebound recipe."
+  },
+  {
+   "stat_id": "stl_rate",
+   "label": "STL /100",
+   "family": "pbp_defense_rate",
+   "lane": 1,
+   "side": "defense",
+   "numerator": "stl",
+   "exposure": "def_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "D",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "stl_rate"
+   },
+   "notes": "On the table as v1. Recipe D +0.04% on dev. The bigger known gain is outside the panel: pregame deflections add +0.41% on stress (lane 5) and are not exported.",
+   "next_step": "In v5, feed deflections into steals as a context feature inside the filter instead of the post-hoc ridge."
+  },
+  {
+   "stat_id": "blk_rate",
+   "label": "BLK /100",
+   "family": "pbp_defense_rate",
+   "lane": 1,
+   "side": "defense",
+   "numerator": "blk",
+   "exposure": "def_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "D",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "blk_rate"
+   },
+   "notes": "On the table as v1. Recipe D +0.36% on dev; the all-skill form block hurts blocks (-0.09%), so usage form only. Rim points saved (lane 9) is not yet clearly better than blocks alone.",
+   "next_step": "Build v5 with recipe D; keep the blocks-vs-rim-saved pair reported on every rim rerun."
+  },
+  {
+   "stat_id": "pf_committed_rate",
+   "label": "PF committed /100",
+   "family": "pbp_both_rate",
+   "lane": 1,
+   "side": "both",
+   "numerator": "pf",
+   "exposure": "off_poss + def_poss",
+   "status": "live",
+   "table_model": "v1",
+   "lab_recipe": "F",
+   "evidence": {
+    "kind": "pbp_skill",
+    "skill": "pf_committed_rate"
+   },
+   "notes": "On the table as v1. Recipe F +0.29% on dev; the playoff term is worth +0.20%. Fouls committed is the repo-PBP side; fouls drawn (lane 20) is the CDN side.",
+   "next_step": "Build v5 with recipe F."
+  },
+  {
+   "stat_id": "deflections",
+   "label": "Deflections /100 def",
+   "family": "hustle",
+   "lane": 2,
+   "side": "defense",
+   "numerator": "hustle deflections (measured only)",
+   "exposure": "def_poss",
+   "status": "live",
+   "table_model": "next_ou (plain OU, no corrections, no context)",
+   "builder": "nba_pipeline/scripts/build_deflections_next_game.py",
+   "doc": "nba_pipeline/docs/NBA_DEFLECTIONS_NEXT_GAME.md",
+   "export": {
+    "path": "deflections_next_game/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_deflections_per100",
+    "date_column": "game_date",
+    "name_column": "player_name",
+    "companion_columns": {
+     "deflections_observed_games": "observed_games"
+    }
+   },
+   "receipts": {
+    "frozen": "deflections_next_game/frozen.json",
+    "stress": "deflections_next_game/stress_report.json"
+   },
+   "split": {
+    "warmup": 2019,
+    "development": [
+     2020,
+     2021,
+     2022
+    ],
+    "stress": [
+     2023,
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "deflections_next_game"
+   },
+   "notes": "Live and dated. OU beat the re-tuned random walk on frozen stress and beats every naive baseline by 5-11%. The longer-horizon comparator (lane 3) and the playoff offset (lane 4) are preserved but not used. Stress is spent, so any lab work must declare 2020-2025 as development and lean on 2027.",
+   "next_step": "Direct port of the lab winners (multiplicative opponent/own-team residuals, playoff term, jump, cross-skill form) with 2020-2025 declared as development."
+  },
+  {
+   "stat_id": "potential_assists",
+   "label": "Potential assists /100 off",
+   "family": "tracking_offense",
+   "lane": 19,
+   "side": "offense",
+   "numerator": "potential_ast_observed (measured only)",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "next_ou (plain OU)",
+   "builder": "nba_pipeline/scripts/build_tracking_next_game.py",
+   "doc": "nba_pipeline/docs/NBA_TRACKING_NEXT_GAME.md",
+   "export": {
+    "path": "tracking_next_game/potential_assists/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_potential_assists_per100",
+    "date_column": "game_date",
+    "name_column": "player_name"
+   },
+   "receipts": {
+    "summary": "tracking_next_game/summary.json",
+    "frozen": "tracking_next_game/potential_assists/frozen.json"
+   },
+   "split": {
+    "warmup": 2019,
+    "development": [
+     2020,
+     2021,
+     2022
+    ],
+    "stress": [
+     2023,
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "tng_summary",
+    "family": "tracking",
+    "stat": "potential_assists"
+   },
+   "notes": "Live and dated. Held on stress 3/3 seasons vs the random walk. Uses only measured game logs; the backfill's repaired values (lane 6) are never observations.",
+   "next_step": "Playoff term first (top-quartile PA drops -1.68 in the playoffs per lane 7), then the rest of the lab winners, with 2020-2025 declared as development."
+  },
+  {
+   "stat_id": "drives",
+   "label": "Drives /100 off",
+   "family": "tracking_offense",
+   "lane": 19,
+   "side": "offense",
+   "numerator": "DRIVES",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "next_ou (plain OU)",
+   "builder": "nba_pipeline/scripts/build_tracking_next_game.py",
+   "doc": "nba_pipeline/docs/NBA_TRACKING_NEXT_GAME.md",
+   "export": {
+    "path": "tracking_next_game/drives/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_drives_per100",
+    "date_column": "game_date",
+    "name_column": "player_name"
+   },
+   "receipts": {
+    "summary": "tracking_next_game/summary.json",
+    "frozen": "tracking_next_game/drives/frozen.json"
+   },
+   "split": {
+    "warmup": 2019,
+    "development": [
+     2020,
+     2021,
+     2022
+    ],
+    "stress": [
+     2023,
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "tng_summary",
+    "family": "tracking",
+    "stat": "drives"
+   },
+   "notes": "Live and dated. Second-largest OU gain in the tracking family; held on stress 3/3.",
+   "next_step": "Same lab port as potential assists."
+  },
+  {
+   "stat_id": "possession_minutes",
+   "label": "Possession minutes /100 off",
+   "family": "tracking_offense",
+   "lane": 19,
+   "side": "offense",
+   "numerator": "TIME_OF_POSS (minutes)",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "next_ou (plain OU)",
+   "builder": "nba_pipeline/scripts/build_tracking_next_game.py",
+   "doc": "nba_pipeline/docs/NBA_TRACKING_NEXT_GAME.md",
+   "export": {
+    "path": "tracking_next_game/possession_minutes/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_possession_minutes_per100",
+    "date_column": "game_date",
+    "name_column": "player_name"
+   },
+   "receipts": {
+    "summary": "tracking_next_game/summary.json",
+    "frozen": "tracking_next_game/possession_minutes/frozen.json"
+   },
+   "split": {
+    "warmup": 2019,
+    "development": [
+     2020,
+     2021,
+     2022
+    ],
+    "stress": [
+     2023,
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "tng_summary",
+    "family": "tracking",
+    "stat": "possession_minutes"
+   },
+   "notes": "Live and dated. Largest OU gain in the family (+2.5% on stress vs the random walk) because on-ball time is the most persistent tracking stat.",
+   "next_step": "Same lab port; this is the stat most likely to benefit from the usage-form feature."
+  },
+  {
+   "stat_id": "contested_shots",
+   "label": "Contested shots /100 def",
+   "family": "tracking_defense",
+   "lane": 19,
+   "side": "defense",
+   "numerator": "hustle_CONTESTED_SHOTS",
+   "exposure": "def_poss",
+   "status": "live",
+   "table_model": "next_ou (plain OU; frozen despite a stress reversal)",
+   "builder": "nba_pipeline/scripts/build_tracking_next_game.py",
+   "doc": "nba_pipeline/docs/NBA_TRACKING_NEXT_GAME.md",
+   "export": {
+    "path": "tracking_next_game/contested_shots/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_contested_shots_per100",
+    "date_column": "game_date",
+    "name_column": "player_name"
+   },
+   "receipts": {
+    "summary": "tracking_next_game/summary.json",
+    "frozen": "tracking_next_game/contested_shots/frozen.json"
+   },
+   "split": {
+    "warmup": 2019,
+    "development": [
+     2020,
+     2021,
+     2022
+    ],
+    "stress": [
+     2023,
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "tng_summary",
+    "family": "tracking",
+    "stat": "contested_shots"
+   },
+   "notes": "Live and dated, with a caveat: OU won on dev but lost to the random walk on stress (about -0.1%, 0/3 seasons). It was frozen rather than switched, so treat OU and the random walk as equivalent here. Still beats the naive baselines.",
+   "next_step": "First tracking stat to re-examine in a lab (opponent shot-volume context is the obvious pre-tip feature)."
+  },
+  {
+   "stat_id": "dfga",
+   "label": "Defended FGA /100 def",
+   "family": "tracking_defense",
+   "lane": 19,
+   "side": "defense",
+   "numerator": "dfga_observed (measured only)",
+   "exposure": "def_poss",
+   "status": "live",
+   "table_model": "next_ou (plain OU)",
+   "builder": "nba_pipeline/scripts/build_tracking_next_game.py",
+   "doc": "nba_pipeline/docs/NBA_TRACKING_NEXT_GAME.md",
+   "export": {
+    "path": "tracking_next_game/dfga/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_dfga_per100",
+    "date_column": "game_date",
+    "name_column": "player_name"
+   },
+   "receipts": {
+    "summary": "tracking_next_game/summary.json",
+    "frozen": "tracking_next_game/dfga/frozen.json"
+   },
+   "split": {
+    "warmup": 2019,
+    "development": [
+     2020,
+     2021,
+     2022
+    ],
+    "stress": [
+     2023,
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "tng_summary",
+    "family": "tracking",
+    "stat": "dfga"
+   },
+   "notes": "Live and dated. Held on stress 3/3. DFGA nulls mix omitted zeros with outages; only measured games are observations (inferred zeros from lane 6 are excluded).",
+   "next_step": "Same lab port as the other tracking stats."
+  },
+  {
+   "stat_id": "contested_dreb",
+   "label": "Contested DREB /100 def",
+   "family": "tracking_defense",
+   "lane": 19,
+   "side": "defense",
+   "numerator": "DREB_CONTEST",
+   "exposure": "def_poss",
+   "status": "live",
+   "table_model": "next_ou (plain OU)",
+   "builder": "nba_pipeline/scripts/build_tracking_next_game.py",
+   "doc": "nba_pipeline/docs/NBA_TRACKING_NEXT_GAME.md",
+   "export": {
+    "path": "tracking_next_game/contested_dreb/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_contested_dreb_per100",
+    "date_column": "game_date",
+    "name_column": "player_name"
+   },
+   "receipts": {
+    "summary": "tracking_next_game/summary.json",
+    "frozen": "tracking_next_game/contested_dreb/frozen.json"
+   },
+   "split": {
+    "warmup": 2019,
+    "development": [
+     2020,
+     2021,
+     2022
+    ],
+    "stress": [
+     2023,
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "tng_summary",
+    "family": "tracking",
+    "stat": "contested_dreb"
+   },
+   "notes": "Live and dated. Smallest positive OU gain in the family but held 3/3 on stress.",
+   "next_step": "Same lab port; the playoff decline for top-quartile contested rebounders (-0.44 per lane 7) makes the playoff term the first candidate."
+  },
+  {
+   "stat_id": "off_fouls_drawn",
+   "label": "Offensive fouls drawn /100 def",
+   "family": "fouls_drawn",
+   "lane": 20,
+   "side": "defense",
+   "numerator": "CDN offensive fouls drawn (charges + non-charge screens/push-offs; technicals excluded)",
+   "exposure": "def_poss",
+   "status": "live",
+   "table_model": "next_ou (plain OU; near-equivalent to the random walk)",
+   "builder": "nba_pipeline/scripts/build_tracking_next_game.py --family fouls_drawn",
+   "doc": "nba_pipeline/docs/NBA_FOULS_DRAWN_NEXT_GAME.md",
+   "export": {
+    "path": "fouls_drawn_next_game/off_fouls_drawn/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_off_fouls_drawn_per100",
+    "date_column": "game_date",
+    "name_column": "player_name"
+   },
+   "receipts": {
+    "summary": "fouls_drawn_next_game/summary.json",
+    "frozen": "fouls_drawn_next_game/off_fouls_drawn/frozen.json",
+    "ledger": "fouls_drawn/fetch_summary.json"
+   },
+   "split": {
+    "warmup": 2020,
+    "development": [
+     2021,
+     2022
+    ],
+    "stress": [
+     2023,
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "tng_summary",
+    "family": "fouls_drawn",
+    "stat": "off_fouls_drawn"
+   },
+   "notes": "Live and dated. This is the superset: charges plus illegal screens and push-offs (the feed cannot split screens from push-offs). The dev gate barely cleared, so OU and the random walk are near-equivalent; both beat the naive baselines by 7-8%. Measured from the NBA live CDN feed, 2019-20 onward only.",
+   "next_step": "Multiplicative opponent term (the fouling team's tendency is known before tip), then the playoff term; 2021-2025 declared as development."
+  },
+  {
+   "stat_id": "charges_drawn",
+   "label": "Charges drawn /100 def",
+   "family": "fouls_drawn",
+   "lane": 20,
+   "side": "defense",
+   "numerator": "CDN offensive fouls with descriptor=charge",
+   "exposure": "def_poss",
+   "status": "live",
+   "table_model": "next_ou (plain OU; near-equivalent to the random walk)",
+   "builder": "nba_pipeline/scripts/build_tracking_next_game.py --family fouls_drawn",
+   "doc": "nba_pipeline/docs/NBA_FOULS_DRAWN_NEXT_GAME.md",
+   "export": {
+    "path": "fouls_drawn_next_game/charges_drawn/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_charges_drawn_per100",
+    "date_column": "game_date",
+    "name_column": "player_name"
+   },
+   "receipts": {
+    "summary": "fouls_drawn_next_game/summary.json",
+    "frozen": "fouls_drawn_next_game/charges_drawn/frozen.json"
+   },
+   "split": {
+    "warmup": 2020,
+    "development": [
+     2021,
+     2022
+    ],
+    "stress": [
+     2023,
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "tng_summary",
+    "family": "fouls_drawn",
+    "stat": "charges_drawn"
+   },
+   "notes": "Live and dated. The charge-descriptor subset of offensive fouls drawn; rare (about 0.13 per 100 in the warm-up season), so estimates are heavily shrunk. OU and the random walk are near-equivalent.",
+   "next_step": "Same lab port as offensive fouls drawn."
+  },
+  {
+   "stat_id": "pfd",
+   "label": "Personal fouls drawn /100 off",
+   "family": "fouls_drawn",
+   "lane": 20,
+   "side": "offense",
+   "numerator": "CDN non-technical fouls drawn",
+   "exposure": "off_poss",
+   "status": "live",
+   "table_model": "next_ou (plain OU)",
+   "builder": "nba_pipeline/scripts/build_tracking_next_game.py --family fouls_drawn",
+   "doc": "nba_pipeline/docs/NBA_FOULS_DRAWN_NEXT_GAME.md",
+   "export": {
+    "path": "fouls_drawn_next_game/pfd/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_pfd_per100",
+    "date_column": "game_date",
+    "name_column": "player_name"
+   },
+   "receipts": {
+    "summary": "fouls_drawn_next_game/summary.json",
+    "frozen": "fouls_drawn_next_game/pfd/frozen.json"
+   },
+   "split": {
+    "warmup": 2020,
+    "development": [
+     2021,
+     2022
+    ],
+    "stress": [
+     2023,
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "tng_summary",
+    "family": "fouls_drawn",
+    "stat": "pfd"
+   },
+   "notes": "Live and dated. The clearest fouls-drawn result: OU beat the random walk on dev and held 3/3 on stress. Reconciles with box PFD on every measured game.",
+   "next_step": "Same lab port; also a candidate cross-family feature for the FTA-rate filter."
+  },
+  {
+   "stat_id": "rim_points_saved",
+   "label": "Rim points saved /100 def",
+   "family": "rim_defense",
+   "lane": 9,
+   "side": "defense",
+   "numerator": "2*(rim FGA*league-relative normal% - rim FGM) on <6 ft contests",
+   "exposure": "def_poss",
+   "status": "live",
+   "table_model": "exponential decay (730-day half-life, K=100 prior attempts), not the OU engine",
+   "builder": "nba_pipeline/scripts/build_predictive_rim_saved.py",
+   "doc": "nba_pipeline/docs/PREDICTIVE_RIM_SAVED.md",
+   "export": {
+    "path": "predictive_rim_saved/current_2026.csv",
+    "id_column": "player_id",
+    "value_column": "estimated_rim_points_saved100",
+    "date_column": "game_date",
+    "name_column": "tracking_name",
+    "companion_columns": {
+     "rim_contests100": "post_contests100",
+     "rim_suppression": "post_suppression",
+     "rim_observed_games": "observed_games"
+    }
+   },
+   "receipts": {
+    "frozen": "predictive_rim_saved/frozen.json",
+    "stress": "predictive_rim_saved/stress_report.json",
+    "blocks_control": "predictive_rim_saved/blocks_control.json"
+   },
+   "split": {
+    "warmup": null,
+    "development": [
+     2023
+    ],
+    "stress": [
+     2024,
+     2025
+    ],
+    "holdout": 2026,
+    "protected": 2027
+   },
+   "evidence": {
+    "kind": "rim_saved"
+   },
+   "notes": "Live and dated, but the weakest live lane: one development season (2023, because pre-2023 source fields were season totals), a different estimator from every other lane, and it is not yet clearly better than blocks alone (interval crosses zero). Blocks plus rim saved does beat blocks alone. Saved points combine a contest rate and a finishing suppression, exported beside the headline.",
+   "next_step": "Re-express contest rate and suppression as OU states on the shared engine before any context work; report the blocks-only pair on every rerun."
+  }
+ ],
+ "lanes": [
+  {
+   "lane": 1,
+   "name": "PBP Kalman panel (17 skills)",
+   "status": "live",
+   "stats": "the 17 pbp_* stats above",
+   "doc": "nba_pipeline/docs/NBA_ESTIMATED_SKILLS.md",
+   "scripts": [
+    "build_nba_estimated_skills.py",
+    "build_nba_estimated_skills_v4.py",
+    "research_skills_nextgame_lab.py"
+   ],
+   "state": "Table shows v1 (Aug 26, 2026 build). v4 is dev-selected (17/17 skills, 101/102 seasons vs OU, median +0.56%) but has no current-state export. Lab round 3 fixes a per-skill recipe worth a further median +0.29% (15/17 CI above zero); there is no v5 builder. 2026 is partially exposed (v1 naive-baseline holdout scored once; v3 forward confirmation scored once) and has never been next-game scored by v4 or a recipe."
+  },
+  {
+   "lane": 2,
+   "name": "Next-game deflections OU",
+   "status": "live",
+   "stats": [
+    "deflections"
+   ],
+   "doc": "nba_pipeline/docs/NBA_DEFLECTIONS_NEXT_GAME.md",
+   "scripts": [
+    "build_deflections_next_game.py"
+   ],
+   "state": "Live; stress spent."
+  },
+  {
+   "lane": 3,
+   "name": "Longer-horizon estimated deflections",
+   "status": "diagnostic",
+   "stats": [],
+   "doc": "nba_pipeline/docs/NBA_ESTIMATED_DEFLECTIONS.md",
+   "scripts": [
+    "build_estimated_deflections.py",
+    "audit_estimated_deflections.py"
+   ],
+   "receipts": {
+    "stress": "deflections/stress_report.json"
+   },
+   "state": "Rest-of-season objective, rejected by the owner in favour of next-game error. Kept only as the comparator for lane 2 (its forward-horizon OU beats the random walk by 1.66% on stress). Not on any table."
+  },
+  {
+   "lane": 4,
+   "name": "Deflections playoff offset",
+   "status": "failed",
+   "stats": [],
+   "doc": "nba_pipeline/docs/NBA_DEFLECTIONS_PLAYOFF_CONTEXT.md",
+   "scripts": [
+    "analyze_deflections_playoff_context.py",
+    "analyze_deflections_playoff_elite.py"
+   ],
+   "receipts": {
+    "report": "deflections_playoff_context/report.json"
+   },
+   "evidence": {
+    "kind": "playoff_context"
+   },
+   "state": "An additive prior-season playoff offset (-0.18 to -0.39 per 100) did not clear development and went slightly negative on stress. Lane 2 unchanged. The lab's multiplicative playoff term is a different form and is still a candidate."
+  },
+  {
+   "lane": 5,
+   "name": "Deflections-to-steals increment",
+   "status": "increment",
+   "stats": [],
+   "doc": "nba_pipeline/docs/DEFLECTIONS_STEALS_INCREMENT.md",
+   "scripts": [
+    "test_deflections_steals_increment.py",
+    "compare_enhanced_steals_epm.py"
+   ],
+   "receipts": {
+    "report": "deflections_steals_increment/report.json",
+    "epm_2026": "enhanced_steals_epm/report.json"
+   },
+   "evidence": {
+    "kind": "steals_increment"
+   },
+   "state": "Pregame deflections add a real increment to next-game steals (dev and stress both positive, coefficient 0.23-0.28 extra steals per deflection). Not exported to any table. The same-day 2026 EPM comparison was inconclusive and is spent."
+  },
+  {
+   "lane": 6,
+   "name": "Tracking game-log backfill",
+   "status": "imputation",
+   "stats": [],
+   "doc": "nba_pipeline/docs/NBA_TRACKING_BACKFILL.md",
+   "scripts": [
+    "build_tracking_backfill.py"
+   ],
+   "receipts": {
+    "audit": "tracking_backfill/audit.json"
+   },
+   "state": "Postgame repair of potential assists and DFGA (355,995 audited rows). Preparation only: lanes 19 and 20 read measured values and never the *_filled columns."
+  },
+  {
+   "lane": 7,
+   "name": "Tracking playoff quartiles",
+   "status": "diagnostic",
+   "stats": [],
+   "doc": "nba_pipeline/docs/TRACKING_PLAYOFF_QUARTILES.md",
+   "scripts": [
+    "analyze_tracking_playoff_quartiles.py"
+   ],
+   "receipts": {
+    "report": "tracking_playoff_quartiles/report.md"
+   },
+   "state": "Descriptive RS-to-playoff rate changes by quartile (top-quartile potential assists -1.68, deflections -0.48 per 100). Regression to the mean is not removed; the playoff term must be tested inside the filters instead."
+  },
+  {
+   "lane": 8,
+   "name": "Rim contest savings and matchup burden",
+   "status": "measurement",
+   "stats": [],
+   "doc": "nba_pipeline/docs/RIM_DEFENSE_MATCHUP_SKILLS.md",
+   "scripts": [
+    "build_rim_defense_matchup_skills.py"
+   ],
+   "receipts": {
+    "manifest": "rim_defense_matchups/manifest.json",
+    "current": "rim_defense_matchups/current_research.csv"
+   },
+   "state": "Measurement layer for lane 9. The provider season-normal baseline is retrospective, so this is not a forecast and is not on the values table; 476 ambiguous PBP rows are excluded and the 2026 matchup source is incomplete."
+  },
+  {
+   "lane": 9,
+   "name": "Rolling predictive rim points saved",
+   "status": "live",
+   "stats": [
+    "rim_points_saved"
+   ],
+   "doc": "nba_pipeline/docs/PREDICTIVE_RIM_SAVED.md",
+   "scripts": [
+    "build_predictive_rim_saved.py",
+    "compare_rim_saved_blocks.py"
+   ],
+   "state": "Live; weakest live lane (see the stat row)."
+  },
+  {
+   "lane": 10,
+   "name": "Rim blocked-shot prior",
+   "status": "failed",
+   "stats": [],
+   "doc": "nba_pipeline/docs/RIM_BLOCKED_PRIOR.md",
+   "scripts": [
+    "research_rim_blocked_prior.py"
+   ],
+   "receipts": {
+    "report": "rim_blocked_prior/report.json"
+   },
+   "evidence": {
+    "kind": "rim_blocked"
+   },
+   "state": "Prior BLKA/FGA as an extra rim FG% feature fails development and stress. Nothing changed."
+  },
+  {
+   "lane": 11,
+   "name": "Three-point volume prior",
+   "status": "live",
+   "stats": [
+    "three_pct"
+   ],
+   "doc": "nba_pipeline/docs/THREE_PCT_VOLUME_PRIOR.md",
+   "scripts": [
+    "research_three_pct_volume_prior.py",
+    "export_three_pct_volume_prior.py"
+   ],
+   "receipts": {
+    "report": "three_pct_volume_prior/report.json"
+   },
+   "evidence": {
+    "kind": "volume_prior"
+   },
+   "state": "Owner-authorized on the table for 3P% only (strength 0.5). Small overall gain, large for low-volume shooters. Exported through 2026 observations without scoring 2026."
+  },
+  {
+   "lane": 12,
+   "name": "Shooting fusion",
+   "status": "failed",
+   "stats": [],
+   "doc": "nba_pipeline/docs/SHOOTING_FUSION_RESULTS.md",
+   "scripts": [
+    "research_shooting_fusion.py"
+   ],
+   "receipts": {
+    "report": "shooting_fusion/report.json"
+   },
+   "evidence": {
+    "kind": "fusion"
+   },
+   "state": "Cross-skill ridge/boosted 3P% corrections win conditional log loss but fail the joint makes gate; the selected volume+FT prior has stress gains of a few hundredths of a percent and no confirmed makes increment over the volume prior alone. Not on the table."
+  },
+  {
+   "lane": 13,
+   "name": "Physical features",
+   "status": "diagnostic",
+   "stats": [],
+   "doc": "nba_pipeline/docs/ESTIMATED_SKILLS_PHYSICAL_FEATURES.md",
+   "scripts": [
+    "estimated_skills_physical.py"
+   ],
+   "receipts": {
+    "manifest": "physical_features/manifest.json",
+    "current": "physical_features/current_players.csv"
+   },
+   "state": "Height/wingspan adapter (509 of 582 current players covered, undated source). Candidate predictors only; the fusion test with physical features failed the joint gate."
+  },
+  {
+   "lane": 14,
+   "name": "Team-game and league seasonality",
+   "status": "failed",
+   "stats": [],
+   "doc": "nba_pipeline/docs/TEAM_GAME_SEASONALITY.md",
+   "scripts": [
+    "research_team_game_seasonality.py",
+    "analyze_league_seasonality.py"
+   ],
+   "receipts": {
+    "report": "team_game_seasonality/report.json"
+   },
+   "evidence": {
+    "kind": "seasonality"
+   },
+   "state": "The game-number cubic selects zero on development. Descriptive calendar drift exists but is not a validated context term. Low priority."
+  },
+  {
+   "lane": 15,
+   "name": "Attempt rates vs EPM (2026)",
+   "status": "diagnostic",
+   "stats": [],
+   "doc": "nba_pipeline/docs/ATTEMPT_RATES_NEXT_GAME_EPM.md",
+   "scripts": [
+    "compare_attempt_rates_next_game_epm.py"
+   ],
+   "receipts": {
+    "report": "epm_next_game_attempts/report.json"
+   },
+   "state": "v1 rim/mid/three attempt rates against 12 cached EPM dates on 2026: same-day inconclusive, next appearance within 7 days rim +1.5%. Spent 2026 evidence for v1, not v4. Provider rows stay private."
+  },
+  {
+   "lane": 16,
+   "name": "EPM E-Skills benchmark (2026)",
+   "status": "diagnostic",
+   "stats": [],
+   "doc": "nba_pipeline/docs/NBA_ESTIMATED_SKILLS.md",
+   "scripts": [
+    "compare_nba_estimated_skills_to_epm.py"
+   ],
+   "receipts": {
+    "summary": "epm_benchmark/summary.json"
+   },
+   "state": "Aggregate-only correlation and level-adjusted MSE receipts for v1 vs the same 12 EPM snapshots. Spent 2026 evidence; provider values never copied."
+  },
+  {
+   "lane": 17,
+   "name": "Current skill comparison table",
+   "status": "diagnostic",
+   "stats": [],
+   "doc": "nba_pipeline/docs/CURRENT_SKILL_COMPARISON.md",
+   "scripts": [
+    "build_current_skill_comparison.py"
+   ],
+   "receipts": {
+    "table": "current_player_table/current_players.csv",
+    "provenance": "current_player_table/current_players_provenance.csv"
+   },
+   "state": "The local reader table the values export is built from: v1 for every PBP skill except 3P% (volume prior) plus next-game deflections. Its EPM/DARKO columns are private and local only; this registry copies none of them."
+  },
+  {
+   "lane": 18,
+   "name": "2026 forward confirmation (v3)",
+   "status": "diagnostic",
+   "stats": [],
+   "doc": "nba_pipeline/docs/NBA_ESTIMATED_SKILLS.md",
+   "scripts": [
+    "confirm_estimated_skills_2026.py"
+   ],
+   "receipts": {
+    "report": "confirmation_2026.json"
+   },
+   "state": "One-shot rest-of-season confirmation of v1 vs v3 (15/17, median +4.81%) on a rejected objective. This is why 2026 counts as partially exposed for lane 1; v3 must not be selected."
+  },
+  {
+   "lane": 19,
+   "name": "Next-game tracking filters (six stats)",
+   "status": "live",
+   "stats": [
+    "potential_assists",
+    "drives",
+    "possession_minutes",
+    "contested_shots",
+    "dfga",
+    "contested_dreb"
+   ],
+   "doc": "nba_pipeline/docs/NBA_TRACKING_NEXT_GAME.md",
+   "scripts": [
+    "build_tracking_next_game.py"
+   ],
+   "state": "Live; stress spent; contested shots reversed on stress but stays frozen."
+  },
+  {
+   "lane": 20,
+   "name": "Next-game fouls-drawn filters (three stats)",
+   "status": "live",
+   "stats": [
+    "off_fouls_drawn",
+    "charges_drawn",
+    "pfd"
+   ],
+   "doc": "nba_pipeline/docs/NBA_FOULS_DRAWN_NEXT_GAME.md",
+   "scripts": [
+    "fetch_fouls_drawn_cdn.py",
+    "build_fouls_drawn_game_lines.py",
+    "build_tracking_next_game.py"
+   ],
+   "state": "Live; stress spent; 8,543 of 8,879 games measured from the CDN ledger."
+  }
+ ]
+}

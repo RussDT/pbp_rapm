@@ -15,6 +15,7 @@ from .process_tov import process_tov_py
 from .process_reb import process_reb_py
 from .process_shooter_oreb import process_shooter_oreb_py
 from .process_block_recovery import process_block_recovery_py
+from .process_stop import process_stop_py
 from .process_rim_freq import process_rim_freq_py
 from .process_rim_fg_pct import process_rim_fg_pct_py
 from .process_midrange_freq import process_midrange_freq_py
@@ -55,6 +56,7 @@ __all__ = [
     'process_reb_py',
     'process_shooter_oreb_py',
     'process_block_recovery_py',
+    'process_stop_py',
     'process_rim_freq_py',
     'process_rim_fg_pct_py',
     'process_midrange_freq_py',

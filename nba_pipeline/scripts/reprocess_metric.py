@@ -31,6 +31,7 @@ METRIC_REGISTRY = {
     'REB':             ('process_reb',             'process_reb_py',             'REB',             {}, None),
     'SHOOTER_OREB':    ('process_shooter_oreb',    'process_shooter_oreb_py',    'SHOOTER_OREB',    {}, None),
     'BLOCK_RECOVERY':  ('process_block_recovery',  'process_block_recovery_py',  'BLOCK_RECOVERY',  {}, None),
+    'STOP':            ('process_stop',            'process_stop_py',            'STOP',            {}, None),
     'RIM_FREQ':        ('process_rim_freq',        'process_rim_freq_py',        'RIM_FREQ',        {}, None),
     'RIM_FG_PCT':      ('process_rim_fg_pct',      'process_rim_fg_pct_py',      'RIM_FG_PCT',      {}, None),
     'ASSIST_POINTS':   ('process_assist_points',   'process_assist_points_py',   'ASSIST_POINTS',   {}, None),

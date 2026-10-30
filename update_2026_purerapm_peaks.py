@@ -1,18 +1,35 @@
 #!/usr/bin/env python3
-"""Regenerate PureRAPMPeaks.csv from the published PureRAPM.csv export."""
+"""Regenerate PureRAPMPeaks.csv from the published PureRAPM.csv export.
+
+This producer is season agnostic: it derives peaks from whatever seasons
+PureRAPM.csv contains, so it needs no --year. Despite the historical `2026` in
+the filename it does not pin a season.
+
+Paths:
+  NBA_RAPM_CSVS_DIR          csvs repo checkout (default <repo>/../csvs)
+  NBA_RAPM_SEASON_LIMITS     first_last_season.csv
+                             (default <repo>/../REPLIT_NBA_RAPM/first_last_season.csv)
+"""
 
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 import pandas as pd
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-DEFAULT_SOURCE = PROJECT_ROOT.parent / "csvs" / "PureRAPM.csv"
-DEFAULT_TARGET = PROJECT_ROOT.parent / "csvs" / "PureRAPMPeaks.csv"
-DEFAULT_SEASON_LIMITS = PROJECT_ROOT.parent / "REPLIT_NBA_RAPM" / "first_last_season.csv"
+CSVS_DIR = Path(os.environ.get("NBA_RAPM_CSVS_DIR", PROJECT_ROOT.parent / "csvs"))
+DEFAULT_SOURCE = CSVS_DIR / "PureRAPM.csv"
+DEFAULT_TARGET = CSVS_DIR / "PureRAPMPeaks.csv"
+DEFAULT_SEASON_LIMITS = Path(
+    os.environ.get(
+        "NBA_RAPM_SEASON_LIMITS",
+        PROJECT_ROOT.parent / "REPLIT_NBA_RAPM" / "first_last_season.csv",
+    )
+)
 RAPM_LENGTHS = (2, 3, 4, 5)
 
 

@@ -6,7 +6,8 @@ who take end-of-clock attempts.
 
 This is a RAPM-owned experimental overlay. It does not modify
 `RUSSELL_SHOTQUALITY`, `FIRST_CHANCE`, `SECOND_CHANCE_CLEAN`, legacy Alt3, or
-the active public `weighted_factors_decomp_*` family.
+forward `weighted_factors_decomp_net_*` or the gross compatibility
+`weighted_factors_decomp_*` family.
 
 ## Why this exists
 

@@ -9,6 +9,10 @@ implemented. The raw-data-to-state daily adapters and scheduler are not wired.**
 No automatic daily-update claim, new source retrieval or2027 outcome scoring.
 The inventory/check commands never invoke research builders or fit models.
 
+## Separate full-history build, October21
+
+The owner subsequently authorized [the 1996–2026 predictive-stat library](FULL_PREDICTIVE_SKILL_HISTORY.md). Its pinned Cloudflare source adapter, 129 concepts/166 source-vintage heads, annual context-free OU replay and cross-stat lab are a separate historical research profile. Source subtype epochs, explicit tracking vintages and missing measurements are enforced; the first v1 queue was quarantined and corrected v2 completed787558 pregame rows across30 seasons/profile, with audited final outputs. Historical cross-stat gains are modest; only38/2504 fitted annual recipes formally converge, so fixed-budget settings are not certified optimal. This does not wire the16 live adapters below, change their frozen recipes, replace selected VPM or score2027. Read the new package's runtime status for actual completion.
+
 ## One operational map
 
 Curated source: `nba_pipeline/config/estimated_skills_operations.json`.

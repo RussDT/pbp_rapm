@@ -1,0 +1,17 @@
+# Three-point attempt-rate prior experiment
+
+Protocol, September 14, 2026: isolate prior 3PA/100 as a predictor of 3P%. Use cumulative earlier attempts/offensive possessions (including zero-attempt games), stabilized with 200 possessions at the 2019 warm-up rate. Fit an unconstrained quadratic in log1p(volume), standardized ridge alpha10, to earlier-season shooting observations weighted by attempts. Bound its probability at .01/.99. This curve supplies a moving prior; retain the existing v1 Kalman parameters and filter the deviation from the curve. Compare strengths 0, .25, .5, 1 on 2020–2022 using next-observed-shooting-game attempt-weighted MSE, equal season weight, paired game bootstrap and one-SE simplicity selection. Evaluate selected strength on spent 2023–2025, including prior volume <1 and <3 attempts/100. No 2026 labels, no 2027 data, no board replacement.
+
+This answers whether attempt rate helps conditional shotmaking prediction. Zero-attempt games update volume but supply no shotmaking outcome; game points or three-point makes prediction is a separate joint volume/accuracy target. Existing v1 hyperparameters were selected using broader historical data, so this comparison is retrospective research, not a pristine as-of-trained confirmation. Warm-up 2019 receives no learned curve. Polynomial behavior at sparse extremes is a limitation; low-volume results must be reported without forcing Capela's prediction lower. Prior strength is not a new attempt count and does not add synthetic shots.
+
+Runner: `nba_pipeline/scripts/research_three_pct_volume_prior.py`. Ignored outputs in `results/estimated_skills/three_pct_volume_prior/` include the development gate, stress report, fitted curves and common comparison rows.
+
+## Results
+
+Development selects strength .5. Historical 2023–2025 squared-error improvement is 0.0607% [0.0343,0.0878], with positive point estimates in all three seasons. For prior 3PA/100 <1, gain is 3.0248% [0.6396,5.7077] on 573 shooting-game observations; <3 gains 1.2320% [0.6588,1.7982] on 2,767. Overall sample is 65,489 shooting-game observations. Intervals are paired game-clustered, not independent player-season confirmations.
+
+The full fitted 2025 prior curve maps .25 attempts/100 to 23.07%, 1 to 27.18%, 5 to 34.37%, and 10 to 36.90%. These are population curve values before the selected half-strength blend and player residual update, not Capela's final estimates. Keep the public/local v1 comparison board unchanged pending a coherent dated export and broader model comparison. This is useful historical evidence for the single-feature challenger, not a claim of beating EPM or an admitted VPM prior.
+
+One regression test verifies strictly earlier attempt volume and the information contributed by zero-attempt games. Input hashes accompany ignored results.
+
+September 14 owner-authorized table update: `export_three_pct_volume_prior.py` exports the frozen strength0.5 challenger through 2026 shooting observations without scoring 2026. Both current-player and EPM comparison tables now use it for 3P% only; other PBP skills remain v1. Original v1 percentage is retained in provenance as p_three_pct_v1 and the canonical v1 export is unchanged. Capela moves from 35.48% to 28.63%. This is a research display change, not VPM admission. Dates remain last shooting observation; exported variance excludes fitted-curve uncertainty. Rebuild the EPM comparison after running the exporter.

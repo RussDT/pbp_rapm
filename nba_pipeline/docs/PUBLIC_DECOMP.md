@@ -1,7 +1,10 @@
 # Public Eight-Component DECOMP
 
-This is the active public decomposition. The older `weighted_factors_alt3_*`
-and `weighted_factors_alt3_efg_value_*` families remain audit surfaces.
+Owner decision 2026-09-03: this gross eight-component actual-points surface is
+now the public compatibility benchmark while Net DECOMP becomes the forward
+product. Keep it reproducible for rollback and matched comparisons, but do not
+start new reader products on it. The older `weighted_factors_alt3_*` and
+`weighted_factors_alt3_efg_value_*` families remain audit surfaces.
 
 ## Public tree
 
@@ -104,7 +107,8 @@ by the window's sample-specific multiplier and moves the exact delta out of
 silently use `1.0`; `--allow-unallocated-tov` is an explicit audit escape
 hatch.
 
-The daily job rebuilds and publishes the current 1Y-5Y DECOMP files. It does
+The current daily job still rebuilds and publishes these gross 1Y-5Y files
+during the Net DECOMP migration. It does
 not run the former `sync_alt3_decomp_to_scposs.py` mapper: that external
 script was written for the Alt3 schema and must be audited against the new
 97-column DECOMP schema before player `csvs/scposs` files are refreshed.

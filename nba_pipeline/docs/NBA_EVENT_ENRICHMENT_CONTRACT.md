@@ -83,6 +83,16 @@ Provider comparison should retain separate NBA-only, SQ-only,
 agreement/high-confidence, and SQ geometry variants. Switching, help, scheme,
 and scramble defense remain confounded.
 
+The first strict NBA-only implementation is
+`scripts/run_primary_defender_net_decomp.py`. On 753,830 2021-2025
+regular-season first-chance FGA rows, leave-one-season-out validation selects
+role alpha 3,000 and improves MSE in all five folds by 0.0162% on average versus
+role-off. The aggregate role block generalizes, but early/late player contrast
+repeatability is modest (`r=0.306`, rank `0.280`, 59.2% sign agreement). Keep
+the player surface diagnostic-only pending a hierarchical role parent and
+separate provider sensitivity. See
+[Primary-Defender Net-DECOMP Split](./PRIMARY_DEFENDER_NET_DECOMP.md).
+
 ## Research ownership
 
 - RAPM owns defender-role models, additive attribution, state/event value, and

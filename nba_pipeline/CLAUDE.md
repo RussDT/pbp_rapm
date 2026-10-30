@@ -54,14 +54,22 @@ event number within one clock. Use `scripts/repair_modern_raw_lineups.py` for
 For season-summary harnesses, treat the processed filename as the canonical season key. Legacy processed parquets do not all store the same embedded `Season` convention.
 - When syncing published artifacts into the downstream `rapms` repo, check both `nba_pipeline/master_results` and `nba_pipeline/results`; some metric result CSVs, such as `rim_assist_*`, can live only in `results` until the publish step copies them into `master_results`.
 - `rapm.py --age-dummies` uses `dpm_history.csv` only as a player-season age lookup (`nba_id`, `season`, `age`); the age fixed effects are still estimated inside the possession regression. `03_run_rapm_analysis.py --age-dummies` applies age fixed effects to the full daily weighted-factor metric suite and writes `_agefe` outputs.
-- The active public factor family is `weighted_factors_decomp_*`: five exact first-chance shot children (`DECOMP_RIM_FREQ`, `DECOMP_RIM_FG`, `DECOMP_MID_FG`, `DECOMP_THREE_FREQ`, `DECOMP_THREE_FG`) plus `ALT_FT`, `ALT_TOV_VALUE`, and `SECOND_CHANCE_CLEAN`. See `docs/PUBLIC_DECOMP.md`; Alt3 files are legacy/audit.
+- The 1997-2026 age-adjusted career O/D parent uses fixed RS scoring baselines, joint possession age bins, a slot-weighted cubic over ages 20-38 anchored at 27, and frozen `--age-curve-values` offsets. Player + age + freely fitted season effects do not identify the linear age tilt; the near-OLS annual curve is rejected. See `docs/THIRTY_YEAR_AGE_ADJUSTED_RAPM.md`.
+- Brand the parent as **21st Century RAPM** with an explicit 1997-2026 subtitle. The negative-LAKER research challenger applies only to negative age-27 career LAKER players at `<=1000` RS minutes and uses `minutes/(minutes+500)` O/D stabilization at scale `1.0`; keep its `neglaker_m1000_k500_s1` output distinct from the zero-prior control. See `docs/THIRTY_YEAR_AGE_ADJUSTED_RAPM.md`.
+- Its adaptive-precision challenger uses exact generalized ridge with O/D multipliers `4/3` only for one-season players age `<=22.5` whose nearest observation is over four years from age 27. The rule was selected on 1998-2021 first-to-second-season age-27 stability and improved in 2022-2025 stress. Keep `young1s_o4_d3` distinct, research-only, and preserve fixed-alpha controls. See `docs/THIRTY_YEAR_AGE_ADJUSTED_RAPM.md`.
+- The selected forward factor family is `weighted_factors_decomp_net_*`: five exact `DECOMP_NET_*` shot children plus `ALT_FT`, `ALT_TOV_NET_VALUE`, and `SECOND_CHANCE_NET`. The owner-expanded artifact contract is all 140 available rolling 1Y-5Y windows from 1997 through 2026 for actual Net, common-alpha SQ-v2 plus residual Net, and component-alpha TD550 SQ-v2 research VPM. Build them separately with `run_rapm_overnight.py --full-window-grid` and require CSV/parquet pairs. Consumer cutover remains pending and must be reversible. Gross `weighted_factors_decomp_*` remains compatibility/rollback during migration; Alt3 files are legacy/audit. See `docs/NET_CONTINUATION_DECOMP.md`.
 - `scripts/tune_forward_component_alphas.py` is the production-side compatibility module used by the private `alt3_3factor_research` stabilized-RAPM and VPM scripts. It must keep RS/PS family loading, training-split baselines, and target construction aligned with `rapm.py`.
 - `scripts/build_vpm_target_swap.py` is the RAPM-side adapter at the cross-repo seam. RAPM owns canonical PBP/DECOMP/solver behavior; the sibling VPM repo owns frozen EV sources and experiment decisions and invokes this adapter through `vpm/run_harness.py prepare-targets`. Do not duplicate target-writing logic in the research repo.
 - The long-term VPM goal is to beat standalone EPM on predeclared, date-correct future-game forecasts. Keep future actual-possession prediction as the intermediate gate, use common availability/minutes assumptions to isolate player-metric quality, and test lineup synergy or full-system forecasting as separate layers.
+- The sibling EPM12 direct-parent lane is the mandatory simplicity control for VPM: exact date-safe side-wise EPM12 `p_*` unions map to matured 365-day future pure O/D RAPM, then enter one parent solve. Selected development settings are mapper alpha `0.1`, O/D alphas `4000/8000`, and prior scale `1.5`. On frozen 2023-2026 stress the parent beats RAPM by `+254.11e-6 [171.85,336.95]`; decomposed selected VPM adds only `+41.55e-6 [-82.46,165.29]`, while a 25% post-solve pull clearly loses to the parent. Keep decomposition for now, but make the parent—not plain RAPM—the minimum baseline for incremental component claims. Preserve untouched 2027. Canonical sibling receipt: `vpm/docs/EPM12_PARENT_BASELINE.md`.
+- The corrected EPM12 counting-rate lane derives `3FGM/100`, rim `FGM/100`, mid `FGM/100`, and `FTM/100` from attempt rates times predictive percentages before mapping; never treat percentage and attempts as merely separate additive scoring-volume terms. The old lane remains a labeled misspecified historical incumbent because the post-hoc correction lost on spent stress. Do not change the board; carry corrected v13/v14 into protected 2027. Canonical sibling receipt: `vpm/docs/EPM12_COUNTING_RATE_CORRECTION.md`.
 - The accepted VPM player board comes from the sibling harness `estimate-board` command after an as-of prior build. Use the standalone v2 x2 TD550/component-alpha specification without an EPM blend or rejected absence adjustment. Determine current players from latest-season PBP participation and report box-feature coverage separately.
+- Databallr's `/impactmonster/vpm` comparison surface stages three separate validated artifacts from one frozen as-of specification: the selected prior-centred board, an `ev_noprior` board with identical target/history/TD550/component alphas, and the raw x2 prior anchors before lineup evidence. Keep the 582-player current-PBP universe identical, retain all ten atomic fields, flip raw defense once to positive-good, and leave unmodeled component-sides as explicit zeroes. The solved boards use the full configured 2016-2026 history; the raw-prior tab is not a time-decayed lineup solve.
+- Historical 1997-2015 no-prior VPM work uses `build_russell_v2_historical_bridge.py`: v2-distilled midrange, explicit portable-v3 three fallback, and native v2 unchanged from 2016 onward. Safe-crossfit remains audit-only. Use fixed season effects or an audited equivalent in a pooled 1997-2026 solve because the raw 2015/2016 EV-probability seam is nonzero. Canonical doc: `docs/RUSSELL_V2_HISTORICAL_BRIDGE.md`.
 - `vpm-explorer/` is the public Sites reader for the VPM board (`https://vpm-lab-2026.russdt.chatgpt.site`). Its current frozen CSV/manifest are the EPM12 x2 predictive research board; label it as development-leading rather than untouched confirmation. It verifies all ten component identities plus six-factor/offense/defense/net closure and labels five-player sums as additive studies rather than lineup predictions. Keep broader RAPM/research drilldowns in a separate non-additive lane, preserve the bounded-scroll board, and make the player view a connected identity → offense/defense/total VPM → `3 x 2` factor → component hierarchy. The `3 x 2` map stays intact on mobile. Its TS tiles condense the eight raw TS inputs into four exact display rollups: Rim = rim frequency + rim FG; Mid = mid EV + mid residual; 3P = three frequency + three EV + three residual; FT = FT value. Keep the original ten-component engine and tests intact. On desktop, keep the connected header and both factor rows visible as a compact single-screen read by controlling header, intro, side-bar, tile, and inter-row height while preserving the explanatory copy. Remove secondary prose before values on mobile and use explicit turnover-value wording. The default player-card theme is a warm-white/black Geist editorial treatment with chartreuse reserved for aggregate VPM totals; keep the restrained blue-offense/green-defense dark treatment as the switchable alternate. Refresh the board only after a deliberate new harness build.
 - `FIRST_CHANCE` carries ShotQuality-era `Is_FC_Transition_Possession` and `Has_FC_FGA` labels for the 2023-24 through 2025-26 transition/half-court split. The `FC_TRANSITION_SCORING` / `FC_HALFCOURT_SCORING` aliases use same-sample PPP placeholders, while `FC_MODE_MIX + FC_TRANSITION_VALUE + FC_HALFCOURT_VALUE = FIRST_CHANCE.Net_Diff` at row level.
 - Supabase-backed player-stat processors prefer `SUPABASE_SERVICE_ROLE_KEY` over `SUPABASE_KEY`; keep the service role key available for local backend processing so FT% / 3P% lookups do not silently fall back to defaults.
+- Publish curated reader-facing result CSVs through `scripts/publish_supabase_results.py` and `config/supabase_publications.json`; dry-run must pass before the explicit `--publish`. The generic `analytics_*` hub is content-addressed, retains old versions, promotes only complete uploads, and gives sites read-only RLS access through `analytics_current_rows`. Register new public results or document a dedicated-table replacement, and never publish raw licensed/provider rows, PII, auth data, credentials, or large intermediate artifacts there.
 - Preferred long historical core runs use `run_historical_core_weighted_factors.py --fixed-season-effects --age-poly-coefficients ...`: fixed RS raw season baselines and fixed polynomial age offsets are subtracted from the row target before centering and solving, instead of adding estimated nuisance columns.
 - Databallr WOWY / lineup net-rating work should use `scripts/build_clean_lineup_net_rating.py` as the duplicate raw action-score possession path instead of `RAPM*.parquet`; it treats period boundaries as hard splits, emits foreign-side technical/admin FT points as zero-possession scoring rows for the shooting team, and drops empty admin-only period-end rows.
 - The Five-Man Fit Lab historical refit starts at 2014 and uses clean lineup possessions, season-end EPM/E-Skills, on-ball time, and potential assists. Normalize the five EPM `p_usg` predictions to 100% for displayed allocation/concentration; raw sums are role-demand diagnostics, not lineup usage. Keep the fitted construction model, actual scoreboard, and repo-owned `FIRST_CHANCE + SECOND_CHANCE_CLEAN` mechanism ledger separate. The current defensive challenger failed 2024-2026 confirmation, so public defense remains the five-player D-EPM sum. Never substitute DPM.
@@ -254,7 +262,7 @@ python 03_run_rapm_analysis.py 1 4 ALL --rapm-workers 8 --cores-per-rapm 4  # co
 python 03_run_rapm_analysis.py 97 0 ALL --rubberband --season-effects --publish-to-rapms  # cross-century 1997-2000 window
 python 03_run_rapm_analysis.py 21 26 ALL --publish-to-rapms  # copy standard + alt3 weighted factors to rapms and push if changed
 ```
-This creates `weighted_factors` for the standard six-factor build and the legacy Alt3 families. The active public decomposition is built separately with `run_decomp_rolling.py`; see `docs/PUBLIC_DECOMP.md`. `weighted_factors_alt3_efg_value_*` remains the immediate predecessor/audit family: it uses six atomic first-chance EFG-value shot pieces, `ALT_FT`, point-valued `ALT_TOV_VALUE`, and direct `SECOND_CHANCE_CLEAN`, closing through `ALT_EFG_BASELINE`.
+This creates `weighted_factors` for the standard six-factor build and the legacy Alt3 families. Gross compatibility DECOMP is built separately with `run_decomp_rolling.py`; the selected forward product is Net DECOMP and its runner now supports the current 1Y-5Y release. Keep actual Net DECOMP, uniform-alpha SQ+residual Net DECOMP, and component-alpha TD550 Net SQ VPM distinct in `config/rapm_table_registry.json`. See `docs/NET_CONTINUATION_DECOMP.md`, `docs/RAPM_TABLE_REGISTRY.md`, and `docs/PUBLIC_DECOMP.md`. `weighted_factors_alt3_efg_value_*` remains the immediate predecessor/audit family: it uses six atomic first-chance EFG-value shot pieces, `ALT_FT`, point-valued `ALT_TOV_VALUE`, and direct `SECOND_CHANCE_CLEAN`, closing through `ALT_EFG_BASELINE`.
 Two-digit season windows may cross 1999-2000; `97 0` expands to 1997-2000 and filenames use `97_00`.
 
 ## Key Implementation Details
@@ -369,58 +377,41 @@ possessions, off_poss, def_poss
 
 See `docs/tov-decomposition.md` for full details on the TOV decomposition, second-chance integration, and column definitions.
 
-## Rubberband Effect (Added Feb 2025)
+## Clock-Aware Rubberband Effect
 
-The Engelmann rubberband effect: teams ahead coast (score less), teams behind push harder (score more). `rapm.py` now supports this as an optional adjustment via `--rubberband` / `-rb`.
+`rapm.py --rubberband` / `-rb` defaults to the validated smooth rubberband model:
 
-### How It Works
-- Uses **pre-possession score margin** (previous row's `score_margin` to avoid endogeneity — the current row's margin includes the current possession's scoring)
-- Margin is converted to **offensive-team-relative** `score_diff` during `transform_to_home_away_format()`
-- 6 score-margin bins × 4 periods = **24 binary indicator features** appended to the design matrix
-- Solved as a **3rd alternating block** in ridge regression: offense → defense → rubberband on residual
-- Close game (-5 to +5) is the reference category (omitted)
+- Uses offensive-team-relative score margin and exact clock at the **start** of the possession.
+- Fits separate continuous leading and trailing margin-by-regulation-progress surfaces, anchored to zero at a tie, plus separate overtime level/progress terms.
+- Uses 80 piecewise-linear basis features and default `alpha_rb=100`.
+- Solves offense, defense, rubberband, player priors, time weights, and unpenalized season/age nuisance terms in one exact augmented sparse LSQR system.
+- Keeps the established `_rb` output token and adds `*_rubberband_surface.csv` alongside coefficient and representative-effect files.
 
-### Score Margin Bins
-| Bin | Range | Label |
-|-----|-------|-------|
-| Far behind | sd <= -15 | `rb_neg3` |
-| Behind | -15 < sd <= -10 | `rb_neg2` |
-| Slightly behind | -10 < sd <= -5 | `rb_neg1` |
-| **Close game (ref)** | **-5 < sd <= 5** | **dropped** |
-| Slightly ahead | 5 < sd <= 10 | `rb_pos1` |
-| Ahead | 10 < sd <= 15 | `rb_pos2` |
-| Far ahead | sd > 15 | `rb_pos3` |
+The old 24 margin-bin × period model remains available with `--rubberband-model legacy`; it defaults to `alpha_rb=10` and uses `_rb_legacy` filenames so it cannot overwrite smooth outputs.
+
+Rolling five-season development (2018-2021 tests) selected smooth alpha 100. After historical score-state repair, frozen historical stress on 2022-2026 improves possession MSE versus no adjustment by `0.0022336 [0.0020922, 0.0023686]` and versus legacy by `0.0018924 [0.0017722, 0.0020101]`, winning all five seasons. Player net ratings remain stable versus legacy (`r=0.9975`, median absolute shift `0.059` points per 100).
+
+The basis and `alpha_rb=100` are fixed, but the coefficients are not. Each solve fits one common surface over its loaded seasons. A frozen 1997-2001 surface still beats no adjustment in every later era, but rolling five-season surfaces beat the fixed early curve by `0.000503 [0.000474,0.000530]` MSE overall and `0.000971 [0.000909,0.001032]` in 2018-2026. Treat a 1997-2026 surface as pooled, not era-specific. See `docs/RUBBERBAND_ADJUSTMENT.md` and `docs/RUBBERBAND_ERA_STABILITY.md`.
+
+### Home-Court Research Boundary
+
+The global centered home-offense nuisance term is a rolling-window promotion candidate, not yet a universal default. After historical venue repair, adding it after smooth rubberband improves held-out MSE in 2002-2009 by `0.000537 [0.000461,0.000610]`, in 2010-2017 by `0.000339 [0.000272,0.000407]`, and in 2018-2026 by `0.000120 [0.000076,0.000167]`. Player net ratings remain stable (`r=0.99928`, median absolute shift `0.042`).
+
+Historical score/venue state must use the repaired transform: it carries sparse scoreboard snapshots forward, seeds venue identity from exclusive score changes, and propagates identity through lineup continuity. It resolves roughly 99.3%-99.8% of 1997-2026 possessions; unresolved rows receive zero home context. The smooth-plus-home coefficient declines from about `+4.85` points/100 in 2002-2009 tests to `+2.95` in 2018-2026, so a long pooled coefficient is not era-specific. Canonical receipt: `docs/HOMECOURT_ADJUSTMENT.md`.
 
 ### Usage
 ```bash
-python rapm.py RAPM 26 26 ALL --rubberband --pure        # Single year
-python rapm.py RAPM 23 26 ALL -rb --pure                 # Multi-year (recommended)
-python rapm.py TOV 23 26 ALL -rb                         # Works with all metrics
-python rapm.py RAPM 23 26 ALL -rb --alpha-rb 50          # Override regularization
+python rapm.py RAPM 23 26 ALL --rubberband --pure          # smooth, alpha 100
+python rapm.py TOV 23 26 ALL --rubberband                  # same game-state basis, TOV target units
+python rapm.py RAPM 23 26 ALL --rubberband --alpha-rb 1000 # explicit sensitivity
+python rapm.py RAPM 23 26 ALL --rubberband --rubberband-model legacy
 ```
-
-### Outputs (alongside standard results)
-- `*_rb_results.csv` — player ratings with rubberband adjustment
-- `*_rb_rubberband_coefficients.csv` — 24 bin × period coefficients
-- `*_rb_rubberband_effects.csv` — predicted effect at representative margins per quarter
-- `Rubberband_Results/rubberband_report.html` — visual report explaining the effect
-
-### Key Parameters
-- `--rubberband` / `-rb`: Enable the adjustment
-- `--alpha-rb`: Rubberband regularization (default: 10). Low because only 24 well-identified features vs ~1000 player features at alpha=3000
-
-### Key Findings (23-26 ALL, 920K possessions, Pure RAPM)
-- **Team ahead by 20 in Q4**: -5.8 pts/100 (scores less due to +3.1 more turnovers per 100 — sloppiness/garbage time)
-- **Team behind by 20 in Q4**: +5.7 pts/100 (scores more due to +5.0 better true shooting — facing relaxed defense)
-- Effects near zero in Q1, build through Q2-Q3, maximal in Q4
-- Mean player shift: 0.24 pts/100 (conservative). Stars barely move due to ridge L2 penalty mechanics; role players on dominant teams benefit most
-- Works across all metrics: RAPM, TS, TOV, REB, etc.
 
 ### Sign Convention Warning
 The TOV rubberband coefficients are in `Off_Diff = -Is_Turnover` units. So a negative coefficient in the effects CSV means MORE turnovers, not fewer. All metrics use the convention: positive Off_Diff = good for offense.
 
 ### Critical Implementation Detail
-`score_margin` in processed parquets is **post-possession** (includes current scoring). The rubberband uses the **previous row's margin** within each game to get the pre-possession game state. This avoids endogeneity (mechanical correlation between scoring and margin). See `transform_to_home_away_format()` in `rapm.py`.
+`score_margin` and `time_quarter` in processed parquets are **post-possession**. The rubberband uses the preceding possession end state within a game and period; new periods start at 12:00 in regulation or 5:00 in overtime. This avoids mechanical target leakage from the current possession. See `transform_to_home_away_format()` and `rubberband_model.py`.
 
 ## Daily Automation (launchd)
 
@@ -429,32 +420,85 @@ The TOV rubberband coefficients are in `Off_Diff = -Is_Turnover` units. So a neg
 **Schedule:** Daily at 6:00 AM
 **Logs:** `nba_pipeline/logs/launchd_stdout.log`, `launchd_stderr.log`, `daily_update_YYYYMMDD.log`
 
+### Season Selection
+
+The orchestrator is season parameterized. Season year N means season (N-1)-N,
+so `2027` is the 2026-27 season. Every two-digit result token (`27`, `22_27`,
+`15_27`, ...) and every window argument is derived from the single season
+variable; there are no season literals left in the pipeline path.
+
+```bash
+./nba_pipeline/daily_rapm_update.sh --year 2027      # 2026-27 season
+NBA_RAPM_SEASON_YEAR=2027 ./nba_pipeline/daily_rapm_update.sh
+```
+
+`--year` requires a four-digit year and overrides the env var. The default is
+`2027`.
+
+Window derivation from `SEASON_YEAR`: the 1Y-6Y runs use starts
+`SEASON_YEAR-0` .. `SEASON_YEAR-5`, the rubberband run uses `SEASON_YEAR-12`
+(13 seasons), the DECOMP rolling windows are `SEASON_YEAR` plus
+`SEASON_YEAR-1..-4` paired with `SEASON_YEAR`, and the WOWY presence upload
+spans `SEASON_YEAR-4 .. SEASON_YEAR`.
+
+### Path And Behavior Environment Variables
+
+The script no longer contains absolute machine paths. `PIPELINE_DIR` is
+resolved from the script's own (symlink-followed) location, and everything
+downstream is overridable:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `NBA_RAPM_SEASON_YEAR` | `2027` | Season end year; `--year` overrides it |
+| `NBA_RAPM_PIPELINE_DIR` | the script's own directory | `nba_pipeline` root |
+| `NBA_RAPM_CSVS_DIR` | `<repo>/../csvs` | `csvs` repo checkout; exported to the producers |
+| `NBA_RAPM_CSVS_BRANCH` | `test-branch` | Branch the `csvs` push asserts |
+| `NBA_RAPM_RAPMS_DIR` | `<repo>/../rapms` | `rapms` repo checkout; sync/push skipped with a warning when absent |
+| `NBA_RAPM_CURRENT_METRICS_DIR` | unset | `nba_rapm` dir of the downstream NBA pipeline; step skipped with a warning when unset |
+| `NBA_RAPM_CURRENT_METRICS_SCRIPT` | `collect_source_<SEASON_YEAR>.py` | Current-metrics collector filename |
+| `NBA_RAPM_PUSH` | `1` | Set to `0` to skip the `csvs`/`rapms` commits and pushes |
+
+The Python producers read the same variables plus:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `NBA_RAPM_RESULTS_DIR` | `<repo>/nba_pipeline/results` | RAPM results root |
+| `NBA_RAPM_JOSH_DIR` | `<repo>/josh_rapm` | In-repo `josh_rapm` output dir |
+| `NBA_RAPM_SEASON_LIMITS` | `<repo>/../REPLIT_NBA_RAPM/first_last_season.csv` | Peak builder season limits |
+
+Missing `rapms`, `csvs`, or current-metrics locations now log a warning and
+skip rather than aborting the run.
+
 ### Pipeline Steps
-1. Fetch latest 2026 PBP data
+1. Fetch latest `SEASON_YEAR` PBP data (regular season and playoffs)
 2. Process RAPM parquets
-3. Run RAPM analysis for 1-6 year windows (26-26 through 21-26), all with `--season-effects` (August 2026 playoff-handling change; outputs carry `_se`)
+3. Run RAPM analysis for 1-6 year windows (`SEASON_YEAR` through `SEASON_YEAR-5`..`SEASON_YEAR`), all with `--season-effects` (August 2026 playoff-handling change; outputs carry `_se`)
 4. Time-decay 700 runs (21-26 se+td700, 21-26 rb+se+td700) + upload to Supabase (`weighted_factors_21_26_all_rb_se_td700.csv`)
 5. 13-year rubberband run (14-26)
 6. Active eight-component DECOMP player rolling bundles for the 1Y-5Y current windows, with both CSV and parquet outputs; the team-level Alt3 bundle remains an audit artifact
 7. Standalone metrics with td700 (RIM_FREQ, RIM_FG_PCT, MIDRANGE_FREQ, MIDRANGE_FG_PCT, TRANSITION_FREQ, TRANSITION_RIM, INITIAL_EV)
 8. Copy standalone TD results to `master_results/`, mapping canonical `transition_freq_24_26_all_td700_results.csv`, `transition_rim_24_26_all_td700_results.csv`, and `initial_ev_24_26_all_td700_results.csv` onto the published downstream filenames `transitionfreq_24_26_all_td700_results.csv`, `transitionrim_24_26_all_td700_results.csv`, and `initialev_24_26_all_td700_results.csv`, plus curated non-TD `special_rapm_24_26_all_results.csv`
 9. TS decomposition components (TS, SQ_POSS, FT_PREMIUM, CONTEST) + WLS regression + Supabase upload
-10. Downstream CSV exports (runs from `pbp_rapm/` root):
-   - `update_2026_josh_rapm.py` → `josh_rapm/` + `../csvs/josh_rapm/`
-   - `update_2026_purerapm.py` → `../csvs/PureRAPM.csv` (legacy)
-   - `update_2026_purerapm_peaks.py` → `../csvs/PureRAPMPeaks.csv`
-   - `update_2026_scaledoutput.py` → `../csvs/SCALEDOUTPUT_SMALLER.csv`
-11. Sync curated standard and active `weighted_factors_decomp_*` CSV/parquet files from `master_results/` → the downstream `rapms/master_results/`
+10. Downstream CSV exports (runs from `pbp_rapm/` root). The `2026` in these
+   filenames is historical: each producer is season parameterized and is
+   invoked with `--year "$SEASON_YEAR"`, resolving its own paths from
+   `Path(__file__).parent` and `NBA_RAPM_CSVS_DIR`.
+   - `update_2026_josh_rapm.py --year N` → `josh_rapm/` + `<csvs>/josh_rapm/`
+   - `update_2026_purerapm.py --year N` → `<csvs>/PureRAPM.csv` (legacy)
+   - `update_2026_purerapm_peaks.py` → `<csvs>/PureRAPMPeaks.csv` (season agnostic; derives peaks from whatever PureRAPM.csv holds, so it takes no `--year`)
+   - `update_2026_scaledoutput.py --year N` → `<csvs>/SCALEDOUTPUT_SMALLER.csv`
+   - `update_2026_scposs.py --year N` → `<csvs>/scposs/{nba_id}.csv` (also parameterized; still not wired into the orchestrator, see step 12)
+11. During migration, sync curated standard and gross compatibility `weighted_factors_decomp_*` CSV/parquet files from `master_results/` → downstream `rapms/master_results/`; the 1Y-5Y Net release audit passed on 2026-09-04, but replace that consumer with explicit `weighted_factors_decomp_net_*` only through a separately verified mapper and rollback cutover
 12. The old Alt3-to-scposs mapper is intentionally skipped until its 97-column DECOMP schema mapping is audited; do not silently feed it the new files
 13. Current metrics and peak leaderboards:
-   - run `/Users/russellthomas/Docs/2026_NBA_PIPELINE/nba_rapm/collect_source_2026.py --no-sync` with `NBA_PIPELINE_CSV_DIR=/Users/russellthomas/Docs/csvs`
+   - run `$NBA_RAPM_CURRENT_METRICS_DIR/$NBA_RAPM_CURRENT_METRICS_SCRIPT --no-sync` with `NBA_PIPELINE_CSV_DIR=$NBA_RAPM_CSVS_DIR`; the collector defaults to `collect_source_<SEASON_YEAR>.py`, so a new season needs either a collector named for it or an explicit `NBA_RAPM_CURRENT_METRICS_SCRIPT`
    - outputs include `current_comp.csv`, `structuredtest.csv`, `DARKO.csv`, `lebron.csv`, and `players_by_player.csv`
    - current 1Y/2Y/3Y/4Y/5Y RAPM rows remain on the last audited `csvs/scposs` surface until the DECOMP mapper is restored; `TimedecayRAPM` and `*_timedecay` remain on their original source
 14. Commit & push the touched `csvs` outputs (`PureRAPM.csv`, `PureRAPMPeaks.csv`, `SCALEDOUTPUT_SMALLER.csv`, `current_comp.csv`, `structuredtest.csv`, `DARKO.csv`, `lebron.csv`, `players_by_player.csv`, `autocomplete_map.csv`, `josh_rapm/`, and `scposs/`) to `RussDT/csvs@test-branch`, which is the branch read by the app.
 15. Commit & push the `rapms` repo
 
 ### rapms Repo
-**Location:** `/Users/russellthomas/Docs/rapms/` (GitHub: RussDT/rapms)
+**Location:** `$NBA_RAPM_RAPMS_DIR` (default `<repo>/../rapms`; GitHub: RussDT/rapms)
 **Contents:** `master_results/` with the published standard and alt3 CSVs:
 - `weighted_factors_{26,25_26,24_26,23_26,22_26,21_26}_all_se.csv` (pre-August-2026 syncs used `_all.csv`; stale copies may remain downstream)
 - `weighted_factors_21_26_all_se_td700.csv`
@@ -580,6 +624,16 @@ If `autocomplete_map.csv` lags active fringe players, `scripts/rapm.py` should b
   and raw `qSP-qSQ` needs a frozen season-relative transform plus provider
   timing audit before fresh future confirmation. See
   `docs/WNBA_RTSS_PRIOR_RESEARCH.md`.
+- Use `../wnba_test/train_wnba_rtss_pbp_student.py` for the WNBA qSQ-to-PBP
+  distillation lane. Join provider games through the audited inventory and
+  `shots.pbpId`, exclude every conflicting event, treat `2*qSQ` as the
+  context-only expected-points teacher, and forbid outcomes/provider fields
+  from student inputs. The standalone student is not a PBP replacement; the
+  2024-selected context blend improves 2025 development MSE by
+  `+0.001247 [+0.000151,+0.002282]`, while the shooter-inclusive comparison is
+  inconclusive. Keep RTSS 2026 sealed and require an exact EV/residual
+  possession attachment plus summed future-factor gate before VPM use. See
+  `docs/WNBA_RTSS_PBP_SHOT_QUALITY.md`.
 - Use `../wnba_test/cross_validate_wnba_rtss_priors.py` for symmetric
   leave-one-2023/2024/2025-season-out development with a full non-held-out
   2022-2025 box backbone and RTSS fit only to cross-fitted box residuals.
@@ -590,6 +644,14 @@ If `autocomplete_map.csv` lags active fringe players, `scripts/rapm.py` should b
   offensive shot candidates are RIM frequency, MID frequency, MID finishing,
   and THREE frequency, while RIM/THREE finishing stay box-only. All three RTSS
   seasons are now development data.
+- Build the research-only WNBA box-estimated rZTOV board with
+  `../wnba_test/build_wnba_rztov.py`. RTSS 2023-2025 supplies the potentially
+  assisted-share and potential-assist labels; scored seasons use only the
+  public PBP Stats-style box/PBP panel. Keep estimated self-created plus
+  assisted TSA equal to box TSA exactly, preserve the negative-good rate and
+  separate scoring/bad-pass centering, and do not promote the current
+  `14.88% / 6.71% / 18.59%` break-even fit into live WNBA VPM without fresh
+  observed-label and future-impact confirmation. See `docs/WNBA_RZTOV.md`.
 - Use `../wnba_test/cross_validate_wnba_rtss_total_priors.py` for the separate
   direct-total prior diagnostic. It builds annual clean-total ORAPM/DRAPM
   targets, varies offense and defense target penalties in orthogonal sweeps,
@@ -620,6 +682,12 @@ If `autocomplete_map.csv` lags active fringe players, `scripts/rapm.py` should b
 - Canonical workflow and initial 2026 holdout:
   `docs/WNBA_GABRIEL_INGEST_AND_BENCHMARK.md`.
 
+
+## NBA parent-prior target contract
+
+- Build sibling VPM annual ORAPM/DRAPM prior targets as independent single-season RS pure+rubberband solves with fixed offense/defense alphas `2000/4000`; raw `def` flips once to positive-good display DRAPM.
+- The sibling `build-parent-rapm-priors` lane freezes completed 2018-2023 development and uses cross-fitted predictive-skill opponent strength for matchup burden. Complete EPM, BAM, and result-derived suppression remain benchmark/diagnostic fields.
+- Frozen 2024-2026 stress is positive for the full bank, but the matchup increment is inconclusive and the result is not admitted without target-covariance-aware uncertainty plus a summed future-possession VPM gate. Do not emit 2027 from incomplete 2026 matchups.
 
 <claude-mem-context>
 # Recent Activity

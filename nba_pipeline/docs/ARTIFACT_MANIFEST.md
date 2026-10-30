@@ -38,6 +38,13 @@ The current intentionally tracked generated/reference exception is:
 | `wnba_test/Processed/` | WNBA processed CSV surfaces | No | WNBA downstream processing is currently CSV-based. |
 | `wnba_test/Results/` | WNBA clean-decomp result outputs | No | Generated outputs. |
 
+The RAPM table registry follows the same boundary. Its curated definition at
+`nba_pipeline/config/rapm_table_registry.json` is source and should be committed.
+The enriched JSON/CSV inventory under `nba_pipeline/results/rapm_registry/`,
+overnight state under `nba_pipeline/results/rapm_overnight/`, and stage logs
+under `nba_pipeline/logs/rapm_overnight/` are generated operational artifacts
+and should not be committed.
+
 ## Pre-Cleanup Inventory Snapshot
 
 Before the 2026-06-08 cleanup in `/Users/russellthomas/Docs/pbp_rapm`, the checkout had:

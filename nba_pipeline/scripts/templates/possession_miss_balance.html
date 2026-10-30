@@ -1,0 +1,93 @@
+<div id="miss-balance-filter">
+  <h3>What happens after the shot?</h3>
+  <div class="viz-controls"><label class="form-label" id="mb-season-label" hidden>Season<select class="form-select" id="mb-season"></select></label><label class="form-label">Shooter group<select class="form-select" id="mb-group"><option value="All">All players</option><option value="Guards">Guards</option><option value="Forwards">Forwards</option><option value="Bigs">Bigs</option><option value="Unknown">Unclassified</option></select></label><label class="form-check"><input class="form-check-input" id="mb-detail" type="checkbox"><span class="form-check-label">Show rim block breakdown</span></label></div>
+  <div id="mb-status" class="text-small text-muted" aria-live="polite"></div>
+  <h4>Your team's second chances</h4>
+  <div class="text-small">Extra points per 100 misses · More is better</div>
+  <div id="mb-own"></div>
+  <h4>Opponent scoring, including makes and misses</h4>
+  <div class="text-small">Make/miss-weighted points per 100 · Less is better</div>
+  <div id="mb-weighted"></div>
+  <details><summary>Opponent scoring after each shot result</summary>
+  <h4>Your opponent's next possession</h4>
+  <div class="text-small">Extra points per 100 opponent possessions · Less is better</div>
+  <div id="mb-opp"></div>
+  </details>
+  <h4>Make rates and weighted opponent scoring</h4>
+  <table class="table table-sm"><thead><tr><th>Shot</th><th class="text-end">FG%</th><th class="text-end">Opponent PPP</th></tr></thead><tbody id="mb-fg"></tbody></table>
+  <h4>Net value when the shot misses</h4>
+  <div class="text-small">Points per miss · Second chances − opponent cost</div>
+  <table class="table table-sm"><thead><tr><th>Shot</th><th class="text-end">Second chances</th><th class="text-end">Opponent cost</th><th class="text-end">Net</th></tr></thead><tbody id="mb-net-miss"></tbody></table>
+  <h4>Net value across all attempts</h4>
+  <div class="text-small">Points per attempt · Made-FG points + second chances − opponent cost</div>
+  <table class="table table-sm"><thead><tr><th>Shot</th><th class="text-end">Made FG</th><th class="text-end">Second chances</th><th class="text-end">Opponent cost</th><th class="text-end">Net</th></tr></thead><tbody id="mb-net-all"></tbody></table>
+  <div class="text-small text-muted">Opponent cost is scoring above league average; negative is a benefit. Estimated adjusted shot values: miss-branch opponent scoring is defensive-rebound-conditioned, and made-FG points exclude associated free throws.</div>
+  <div id="mb-cohort" class="text-small text-muted"></div>
+  <div class="text-small text-muted">Weighted scoring = make rate × opponent PPP after makes + miss rate × opponent PPP after misses. Both rim panels include blocks. Miss-branch PPP covers possessions after defensive rebounds; it does not cover every sequence after an offensive rebound.</div>
+  <script type="application/json" id="mb-data">__POSITION_DATA__</script>
+</div>
+<style>
+#miss-balance-filter {position:relative;}
+#miss-balance-filter h4 {margin:20px 0 4px;}
+#miss-balance-filter svg {display:block;width:100%;}
+#miss-balance-filter svg text {fill:var(--foreground);font-size:12px;}
+#miss-balance-filter .mb-tooltip {position:absolute;pointer-events:none;background:var(--popover);color:var(--popover-foreground);padding:8px;border:1px solid var(--border);width:min(270px,calc(100% - 16px));z-index:5;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+(()=>{
+const root=document.getElementById('miss-balance-filter'),bundle=JSON.parse(root.querySelector('#mb-data').textContent),control=root.querySelector('#mb-group'),detail=root.querySelector('#mb-detail'),seasonControl=root.querySelector('#mb-season');
+let data=bundle.seasons?bundle.seasons[bundle.default_season]:bundle;
+let baseline=data.groups.All.rows.find(r=>r.category==='Missed FG').own;
+if(bundle.seasons){root.querySelector('#mb-season-label').hidden=false;seasonControl.innerHTML=Object.entries(bundle.seasons).map(([key,d])=>`<option value="${key}">${d.season.replace(' NBA regular season','')}</option>`).join('');seasonControl.value=bundle.default_season;seasonControl.addEventListener('change',()=>{data=bundle.seasons[seasonControl.value];baseline=data.groups.All.rows.find(r=>r.category==='Missed FG').own;draw();});}
+
+const fmt=v=>Math.abs(v)<.05?'0':d3.format('+.1f')(v);
+const tip=document.createElement('div');tip.className='mb-tooltip text-small';tip.role='tooltip';tip.hidden=true;root.appendChild(tip);
+function rowsFor(group){
+ const rows=data.groups[group].rows,find=c=>rows.find(r=>r.category===c);
+ const parts=['Short Mid Range Miss','Long Mid Range Miss'].map(find).filter(Boolean);
+ const count=parts.reduce((s,r)=>s+r.n,0),misses=parts.reduce((s,r)=>s+r.misses,0);
+ const mid={category:'Midrange miss',n:count,misses,ppp:parts.reduce((s,r)=>s+r.n*r.ppp,0)/count,own:parts.reduce((s,r)=>s+r.misses*r.own,0)/misses};
+ const pair=(c,label)=>{const r=typeof c==='string'?find(c):c;return r?{...r,label}:null;};
+ const rimParts=['At Rim Miss (Unblocked)','At Rim Block'].map(find).filter(Boolean);
+ const rimMisses=rimParts.reduce((s,r)=>s+r.misses,0),rimN=rimParts.reduce((s,r)=>s+r.n,0);
+ const rimAll={category:'All rim misses',misses:rimMisses,n:rimN,own:rimParts.reduce((s,r)=>s+r.misses*r.own,0)/rimMisses,ppp:rimParts.reduce((s,r)=>s+r.n*r.ppp,0)/rimN};
+ const missesRows=[pair(rimAll,'Rim miss'),...(detail.checked?[pair('At Rim Miss (Unblocked)','Rim · no block'),pair('At Rim Block','Rim blocked')]:[]),pair('Short Mid Range Miss','Short mid miss'),pair('Long Mid Range Miss','Long mid miss'),pair('Missed 3PT','Three miss')].filter(Boolean);
+ const weighted=data.groups[group].weighted_zones.map(r=>({...r,label:r.zone,ppp:r.weighted_ppp}));
+ const madeRows=weighted.map(r=>({...r,ppp:r.made_ppp,n:r.made_n,label:'Made '+r.zone.toLowerCase()}));
+ return {own:missesRows,opp:[...missesRows,...madeRows],weighted};
+}
+function drawPanel(key,rows){
+ const chart=root.querySelector('#mb-'+key),w=Math.floor(chart.getBoundingClientRect().width);if(!w)return;
+ const own=key==='own',weighted=key==='weighted',value=r=>100*(own?r.own-baseline:r.ppp-data.baseline);
+ const values=['All','Guards','Forwards','Bigs',control.value].flatMap(g=>rowsFor(g)[key].map(value)).filter(Number.isFinite),extent=d3.extent([0,...values]);
+ const pad=Math.max(6,(extent[1]-extent[0])*.28),left=w<460?113:145,right=14,top=44,rowH=46,bottom=53,h=top+rows.length*rowH+bottom;
+ const x=d3.scaleLinear().domain([extent[0]-pad,extent[1]+pad]).range([left+8,w-right-8]);
+ const svg=d3.select(chart).selectAll('svg').data([0]).join('svg').attr('viewBox',`0 0 ${w} ${h}`).attr('role','img').attr('aria-label',`${own?'Own second-chance':'Opponent next-possession'} points per 100 relative to NBA average`);svg.selectAll('*').remove();
+ svg.append('rect').attr('data-chart-frame','').attr('x',left).attr('y',top-18).attr('width',w-right-left).attr('height',rows.length*rowH).attr('fill','none').attr('stroke','var(--border)');
+ let ticks=x.ticks(w<460?3:5).filter(t=>t!==0);
+ ticks.forEach(t=>{svg.append('line').attr('x1',x(t)).attr('x2',x(t)).attr('y1',top-18).attr('y2',h-bottom-18).attr('stroke','var(--border)');svg.append('text').attr('x',x(t)).attr('y',h-bottom+3).attr('text-anchor','middle').text(d3.format('+d')(t));});
+ svg.append('line').attr('x1',x(0)).attr('x2',x(0)).attr('y1',top-18).attr('y2',h-bottom-18).attr('stroke','var(--foreground)');
+ svg.append('text').attr('x',Math.max(left+40,Math.min(w-right-40,x(0)))).attr('y',17).attr('text-anchor','middle').text('NBA average');
+ svg.append('text').attr('class','axis-title').attr('data-axis','y').attr('x',2).attr('y',17).text('Shot result');
+ svg.append('text').attr('class','axis-title').attr('data-axis','x').attr('x',(left+w-right)/2).attr('y',h-14).attr('text-anchor','middle').text('Extra points per 100');
+ rows.forEach((r,i)=>{const y=top+i*rowH,v=value(r),b=x(v),a=x(0);
+ svg.append('text').attr('x',left-8).attr('y',y+4).attr('text-anchor','end').text(r.label);
+ svg.append('rect').attr('data-component',key).attr('x',Math.min(a,b)).attr('y',y-9).attr('width',Math.abs(a-b)).attr('height',18).attr('fill',`var(--viz-series-${own?1:2})`);
+ svg.append('text').attr('data-component-value',key).attr('x',b+(v>=0?5:-5)).attr('y',y+4).attr('text-anchor',v>=0?'start':'end').text(fmt(v));
+ const tooltip=()=>weighted?`${r.label}: ${r.weighted_ppp.toFixed(3)} weighted opponent PPP. ${(100*r.fg).toFixed(1)}% made × ${r.made_ppp.toFixed(3)} PPP + ${(100*(1-r.fg)).toFixed(1)}% missed × ${r.miss_ppp.toFixed(3)} PPP. League average ${data.baseline.toFixed(3)}. Includes blocks.`:`${r.label}: ${own?(r.own*100).toFixed(1)+' second-chance points per 100 misses, compared with '+(baseline*100).toFixed(1)+' NBA average. '+r.misses.toLocaleString()+' misses.':(r.ppp*100).toFixed(1)+' opponent points per 100 ensuing possessions, compared with '+(data.baseline*100).toFixed(1)+' NBA average. '+r.n.toLocaleString()+' possessions.'}`;
+ svg.append('rect').attr('data-chart-hit','').attr('x',0).attr('y',y-21).attr('width',w).attr('height',44).attr('fill','transparent').attr('aria-label',tooltip()).on('pointermove',e=>{tip.textContent=tooltip();tip.hidden=false;const box=root.getBoundingClientRect();tip.style.left=Math.max(0,Math.min(e.clientX-box.left,w-285))+'px';tip.style.top=e.clientY-box.top+14+'px';}).on('pointerleave',()=>tip.hidden=true).on('click',e=>{tip.textContent=tooltip();tip.hidden=false;const box=root.getBoundingClientRect();tip.style.left='0px';tip.style.top=e.clientY-box.top+14+'px';});
+ });
+ const labels=[...svg.node().querySelectorAll('text')];for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++){const a=labels[i],b=labels[j],ra=a.getBoundingClientRect(),rb=b.getBoundingClientRect();if(ra.width&&rb.width&&ra.left<rb.right+4&&ra.right+4>rb.left&&ra.top<rb.bottom&&ra.bottom>rb.top){if(/^[+-]\d+$/.test(a.textContent))a.remove();else if(/^[+-]\d+$/.test(b.textContent))b.remove();}}
+}
+function drawNetTables(){
+ const group=data.groups[control.value],categories={'Rim':['At Rim Block','At Rim Miss (Unblocked)'],'Short mid':['Short Mid Range Miss'],'Long mid':['Long Mid Range Miss'],'Three':['Missed 3PT']};
+ const num=v=>Number.isFinite(v)?v.toFixed(3):'—',cost=v=>Number.isFinite(v)?d3.format('+.3f')(v):'—';
+ const values=group.weighted_zones.map(r=>{const parts=group.rows.filter(v=>categories[r.zone].includes(v.category)),misses=parts.reduce((sum,v)=>sum+v.misses,0),sc=parts.reduce((sum,v)=>sum+v.misses*v.own,0)/misses,missCost=r.miss_ppp-data.baseline,allCost=r.weighted_ppp-data.baseline,made=(r.zone==='Three'?3:2)*r.fg,continuation=(1-r.fg)*sc;return {...r,sc,missCost,allCost,made,continuation,missNet:sc-missCost,allNet:made+continuation-allCost};});
+ root.querySelector('#mb-net-miss').innerHTML=values.map(r=>`<tr><td>${r.zone}</td><td class="text-end">${num(r.sc)}</td><td class="text-end">${cost(r.missCost)}</td><td class="text-end"><strong>${num(r.missNet)}</strong></td></tr>`).join('');
+ root.querySelector('#mb-net-all').innerHTML=values.map(r=>`<tr><td>${r.zone}</td><td class="text-end">${num(r.made)}</td><td class="text-end">${num(r.continuation)}</td><td class="text-end">${cost(r.allCost)}</td><td class="text-end"><strong>${num(r.allNet)}</strong></td></tr>`).join('');
+}
+function draw(){tip.hidden=true;drawNetTables();root.querySelector('#mb-cohort').textContent=data.first_chance_only?'Shots before the first offensive rebound only. Own second-chance value includes later points after those misses; opponent scoring includes their full possession.':'';const rows=rowsFor(control.value);drawPanel('own',rows.own);drawPanel('opp',rows.opp);drawPanel('weighted',rows.weighted);root.querySelector('#mb-status').textContent=data.season+' · '+control.options[control.selectedIndex].text+(data.first_chance_only?' · First-chance shots only':'');root.querySelector('#mb-fg').innerHTML=data.groups[control.value].weighted_zones.map(r=>`<tr><td>${r.zone}</td><td class="text-end">${(r.fg*100).toFixed(1)}%</td><td class="text-end">${r.weighted_ppp.toFixed(3)}</td></tr>`).join('');}
+root.querySelector('details').addEventListener('toggle',draw);control.addEventListener('change',draw);detail.addEventListener('change',draw);new ResizeObserver(draw).observe(root.querySelector('#mb-own'));draw();
+})();
+</script>

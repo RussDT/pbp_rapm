@@ -891,6 +891,13 @@ def seeded_target_title_probability_curve(
 
 
 SALARY_PEER_HURDLE_VERSION = "salary-peer-full-season-v2"
+ERA_LOCAL_SALARY_PEER_HURDLE_VERSION = "salary-peer-era-local-budget-neutral-v3"
+PLAYOFF_ADJUSTED_SALARY_PEER_HURDLE_VERSION = (
+    "salary-peer-era-local-budget-neutral-playoff-prior-v4"
+)
+ERA_LOCAL_SALARY_PEER_WINDOW = 4
+REGULAR_SEASON_CAP_POINT_PRICE = 0.067
+PLAYOFF_CAP_POINT_PRICE = 0.078
 
 
 def add_salary_peer_title_lift(
@@ -902,8 +909,11 @@ def add_salary_peer_title_lift(
     rating_grid: np.ndarray | None = None,
     regular_seed_probabilities: pd.DataFrame | None = None,
     playoff_seed_fields: pd.DataFrame | None = None,
+    era_window: int = ERA_LOCAL_SALARY_PEER_WINDOW,
+    regular_season_cap_point_price: float = REGULAR_SEASON_CAP_POINT_PRICE,
+    playoff_cap_point_price: float = PLAYOFF_CAP_POINT_PRICE,
 ) -> pd.DataFrame:
-    """Average salary-peer title lift with optional regular-season seeding effects."""
+    """Average salary-peer title lift with full-history and era-local estimates."""
     focal_required = {"season", "player_id", "own_dpm", "salary_share"}
     roster_required = {
         "season",
@@ -941,6 +951,10 @@ def add_salary_peer_title_lift(
     )
     if grid.ndim != 1 or len(grid) < 2 or not np.all(np.diff(grid) > 0):
         raise ValueError("Salary-peer rating grid must be a strictly increasing vector")
+    if era_window < 1:
+        raise ValueError("Salary-peer era window must be at least one season")
+    if regular_season_cap_point_price < 0 or playoff_cap_point_price < 0:
+        raise ValueError("Salary-peer cap-point prices cannot be negative")
 
     curves: dict[tuple[int, int], np.ndarray] = {}
     seeded_curves: dict[tuple[int, int, int], np.ndarray] = {}
@@ -1013,6 +1027,103 @@ def add_salary_peer_title_lift(
                         dtype=float,
                     )
 
+    adjusted_columns = {
+        "focal": "playoff_adjusted_dpm" in focal_seasons.columns,
+        "roster_rating": "playoff_adjusted_dpm" in playoff_roster.columns,
+        "roster_contribution": (
+            "playoff_adjusted_team_contribution_dpm" in playoff_roster.columns
+        ),
+        "team": "playoff_adjusted_team_dpm" in playoff_teams.columns,
+    }
+    if any(adjusted_columns.values()) and not all(adjusted_columns.values()):
+        missing = [name for name, present in adjusted_columns.items() if not present]
+        raise ValueError(
+            "Playoff-adjusted salary-peer inputs must be supplied together; "
+            f"missing {missing}"
+        )
+    has_playoff_adjustment = all(adjusted_columns.values())
+    adjusted_curves = curves
+    adjusted_seeded_curves = seeded_curves
+    adjusted_base_ratings = base_ratings
+    adjusted_base_probabilities = base_probabilities
+    if has_playoff_adjustment:
+        adjusted_curves = {}
+        adjusted_seeded_curves = {}
+        adjusted_base_ratings = {}
+        adjusted_base_probabilities = {}
+        for season, season_teams in playoff_teams.groupby("season", sort=True):
+            season_nodes = bracket_nodes.loc[bracket_nodes["season"].eq(int(season))]
+            if season_nodes.empty:
+                continue
+            ratings = season_teams.set_index("team_id")[
+                "playoff_adjusted_team_dpm"
+            ].astype(float)
+            for team_id, base_rating in ratings.items():
+                key = (int(season), int(team_id))
+                curve = np.asarray(
+                    target_title_probability_curve(
+                        season_nodes,
+                        ratings,
+                        target_team_id=int(team_id),
+                        target_ratings=grid,
+                        model=model,
+                    ),
+                    dtype=float,
+                )
+                adjusted_curves[key] = curve
+                adjusted_base_ratings[key] = float(base_rating)
+                adjusted_base_probabilities[key] = float(
+                    np.interp(float(base_rating), grid, curve)
+                )
+                if seeded_mode:
+                    assert playoff_seed_fields is not None
+                    season_field = playoff_seed_fields.loc[
+                        playoff_seed_fields["season"].eq(int(season))
+                    ].copy()
+                    target_row = season_field.loc[
+                        season_field["team_id"].eq(int(team_id))
+                    ]
+                    if len(target_row) != 1:
+                        raise ValueError(
+                            f"Team {team_id} has no unique playoff seed-field row in {season}"
+                        )
+                    target_conference = str(target_row.iloc[0]["conference"])
+                    for target_seed in range(1, 9):
+                        conference_field = season_field.loc[
+                            season_field["conference"].astype(str).eq(target_conference)
+                        ].sort_values("seed", kind="mergesort")
+                        other_teams = conference_field.loc[
+                            conference_field["team_id"].ne(int(team_id)), "team_id"
+                        ].astype(int).tolist()
+                        reordered = other_teams.copy()
+                        reordered.insert(target_seed - 1, int(team_id))
+                        moved_field = season_field.loc[
+                            ~season_field["conference"].astype(str).eq(target_conference)
+                        ].copy()
+                        moved_conference = pd.DataFrame(
+                            {
+                                "season": int(season),
+                                "team_id": reordered,
+                                "conference": target_conference,
+                                "seed": np.arange(1, 9, dtype=int),
+                            }
+                        )
+                        moved_field = pd.concat(
+                            [moved_field, moved_conference], ignore_index=True
+                        )
+                        adjusted_seeded_curves[
+                            (int(season), int(team_id), target_seed)
+                        ] = np.asarray(
+                            seeded_target_title_probability_curve(
+                                moved_field,
+                                ratings,
+                                target_team_id=int(team_id),
+                                target_ratings=grid,
+                                model=model,
+                            ),
+                            dtype=float,
+                        )
+
     seed_surface_groups: dict[tuple[int, int], pd.DataFrame] = {}
     if seeded_mode:
         assert regular_seed_probabilities is not None
@@ -1073,16 +1184,48 @@ def add_salary_peer_title_lift(
         "salary_peer_fixed_bracket_title_lift",
         "salary_peer_seeding_title_lift",
         "title_lift_over_contract",
+        "era_local_salary_peer_placement_count",
+        "era_local_budget_actual_title_probability",
+        "era_local_budget_baseline_title_probability",
+        "era_local_budget_actual_playoff_probability",
+        "era_local_budget_baseline_playoff_probability",
+        "era_local_budget_actual_mean_seed",
+        "era_local_budget_baseline_mean_seed",
+        "era_local_budget_fixed_bracket_actual_title_probability",
+        "era_local_budget_fixed_bracket_baseline_title_probability",
+        "era_local_budget_fixed_bracket_title_lift",
+        "era_local_budget_seeding_title_lift",
+        "era_local_budget_mean_signed_salary_gap_cap_points",
+        "era_local_budget_median_salary_gap",
+        "era_local_budget_p90_salary_gap",
+        "era_local_budget_share_salary_gap_over_5",
+        "era_local_budget_mean_regular_season_debit",
+        "era_local_budget_mean_playoff_debit",
+        "title_lift_over_contract_v2",
+        "playoff_adjusted_actual_title_probability",
+        "playoff_adjusted_baseline_title_probability",
+        "playoff_adjusted_fixed_bracket_actual_title_probability",
+        "playoff_adjusted_fixed_bracket_baseline_title_probability",
+        "playoff_adjusted_fixed_bracket_title_lift",
+        "playoff_adjusted_seeding_title_lift",
+        "playoff_adjusted_title_lift_over_contract_v2",
     ]
     for column in result_columns:
         output[column] = np.nan
     output["contract_hurdle_version"] = None
+    output["contract_hurdle_version_v2"] = None
+    output["playoff_adjusted_contract_hurdle_version"] = None
 
     covered_positions = np.flatnonzero(output["salary_share"].notna().to_numpy())
     if len(covered_positions):
         focal_salary = output.iloc[covered_positions]["salary_share"].to_numpy(dtype=float)
         focal_season = output.iloc[covered_positions]["season"].to_numpy(dtype=int)
         focal_epm = output.iloc[covered_positions]["own_dpm"].to_numpy(dtype=float)
+        focal_playoff_epm = (
+            output.iloc[covered_positions]["playoff_adjusted_dpm"].to_numpy(dtype=float)
+            if has_playoff_adjustment
+            else focal_epm
+        )
         count = np.zeros(len(covered_positions), dtype=int)
         actual_sum = np.zeros(len(covered_positions), dtype=float)
         baseline_sum = np.zeros(len(covered_positions), dtype=float)
@@ -1099,6 +1242,23 @@ def add_salary_peer_title_lift(
         peer_epm_sum = np.zeros(len(covered_positions), dtype=float)
         peer_workload_sum = np.zeros(len(covered_positions), dtype=float)
         gap_columns: list[np.ndarray] = []
+        era_count = np.zeros(len(covered_positions), dtype=int)
+        era_actual_sum = np.zeros(len(covered_positions), dtype=float)
+        era_baseline_sum = np.zeros(len(covered_positions), dtype=float)
+        era_fixed_actual_sum = np.zeros(len(covered_positions), dtype=float)
+        era_fixed_baseline_sum = np.zeros(len(covered_positions), dtype=float)
+        era_actual_playoff_sum = np.zeros(len(covered_positions), dtype=float)
+        era_baseline_playoff_sum = np.zeros(len(covered_positions), dtype=float)
+        era_actual_seed_weighted_sum = np.zeros(len(covered_positions), dtype=float)
+        era_baseline_seed_weighted_sum = np.zeros(len(covered_positions), dtype=float)
+        era_signed_gap_sum = np.zeros(len(covered_positions), dtype=float)
+        era_regular_debit_sum = np.zeros(len(covered_positions), dtype=float)
+        era_playoff_debit_sum = np.zeros(len(covered_positions), dtype=float)
+        era_gap_columns: list[np.ndarray] = []
+        adjusted_actual_sum = np.zeros(len(covered_positions), dtype=float)
+        adjusted_baseline_sum = np.zeros(len(covered_positions), dtype=float)
+        adjusted_fixed_actual_sum = np.zeros(len(covered_positions), dtype=float)
+        adjusted_fixed_baseline_sum = np.zeros(len(covered_positions), dtype=float)
 
         for key, candidates in roster_groups.items():
             ordered = candidates.sort_values(
@@ -1110,6 +1270,18 @@ def add_salary_peer_title_lift(
             workloads = ordered["playoff_workload_share"].to_numpy(dtype=float)
             contributions = ordered["own_team_contribution_dpm"].to_numpy(dtype=float)
             peer_epms = ordered["own_dpm"].to_numpy(dtype=float)
+            adjusted_peer_epms = (
+                ordered["playoff_adjusted_dpm"].to_numpy(dtype=float)
+                if has_playoff_adjustment
+                else peer_epms
+            )
+            adjusted_contributions = (
+                ordered["playoff_adjusted_team_contribution_dpm"].to_numpy(
+                    dtype=float
+                )
+                if has_playoff_adjustment
+                else contributions
+            )
             regular_workloads = (
                 ordered["regular_season_workload_share"]
                 .fillna(0.0)
@@ -1128,6 +1300,7 @@ def add_salary_peer_title_lift(
             )
             chosen = np.where(choose_upper, upper, lower)
             valid = focal_season != int(key[0])
+            era_valid = valid & (np.abs(focal_season - int(key[0])) <= era_window)
             workload = workloads[chosen]
             contribution = contributions[chosen]
             peer_epm = peer_epms[chosen]
@@ -1144,6 +1317,47 @@ def add_salary_peer_title_lift(
                 len(covered_positions), base_probabilities[key], dtype=float
             )
             fixed_zero_probability = np.interp(zero_rating, grid, curve)
+            signed_gap_cap_points = 100.0 * (focal_salary - shares[chosen])
+            regular_season_debit = (
+                regular_season_cap_point_price * signed_gap_cap_points
+            )
+            playoff_debit = playoff_cap_point_price * signed_gap_cap_points
+            era_actual_rating = actual_rating - playoff_debit
+            if np.any(
+                era_valid
+                & ((era_actual_rating < grid[0]) | (era_actual_rating > grid[-1]))
+            ):
+                raise ValueError(
+                    "An era-local salary-peer actual rating is outside the response grid"
+                )
+            era_fixed_actual_probability = np.interp(era_actual_rating, grid, curve)
+            era_fixed_baseline_probability = fixed_baseline_probability
+            adjusted_base_rating = adjusted_base_ratings[key]
+            adjusted_actual_rating = (
+                adjusted_base_rating
+                - adjusted_contributions[chosen]
+                + focal_playoff_epm * workload
+                - playoff_debit
+            )
+            if np.any(
+                era_valid
+                & (
+                    (adjusted_actual_rating < grid[0])
+                    | (adjusted_actual_rating > grid[-1])
+                )
+            ):
+                raise ValueError(
+                    "A playoff-adjusted salary-peer rating is outside the response grid"
+                )
+            adjusted_curve = adjusted_curves[key]
+            adjusted_fixed_actual_probability = np.interp(
+                adjusted_actual_rating, grid, adjusted_curve
+            )
+            adjusted_fixed_baseline_probability = np.full(
+                len(covered_positions),
+                adjusted_base_probabilities[key],
+                dtype=float,
+            )
             if seeded_mode:
                 surface = seed_surface_groups.get(key)
                 if surface is None:
@@ -1152,11 +1366,18 @@ def add_salary_peer_title_lift(
                 actual_shift = (focal_epm - peer_epm) * regular_workload
                 baseline_shift = np.zeros(len(covered_positions), dtype=float)
                 zero_shift = -peer_epm * regular_workload
+                era_actual_shift = actual_shift - regular_season_debit
                 for label, shifts in (
                     ("actual", actual_shift),
                     ("zero", zero_shift),
+                    ("era-local actual", era_actual_shift),
                 ):
-                    if np.any((shifts < shift_grid[0]) | (shifts > shift_grid[-1])):
+                    relevant = era_valid if label == "era-local actual" else np.ones(
+                        len(shifts), dtype=bool
+                    )
+                    if np.any(
+                        relevant & ((shifts < shift_grid[0]) | (shifts > shift_grid[-1]))
+                    ):
                         raise ValueError(
                             f"A salary-peer {label} regular-season shift is outside the seed grid"
                         )
@@ -1197,6 +1418,52 @@ def add_salary_peer_title_lift(
                 zero_probability, zero_playoff, zero_seed_weighted = seeded_probability(
                     zero_shift, zero_rating
                 )
+                (
+                    era_actual_probability,
+                    era_actual_playoff,
+                    era_actual_seed_weighted,
+                ) = seeded_probability(era_actual_shift, era_actual_rating)
+                era_baseline_probability = baseline_probability
+                era_baseline_playoff = baseline_playoff
+                era_baseline_seed_weighted = baseline_seed_weighted
+                adjusted_actual_probability = np.zeros(
+                    len(covered_positions), dtype=float
+                )
+                adjusted_baseline_probability = np.zeros(
+                    len(covered_positions), dtype=float
+                )
+                for seed_number in range(1, 9):
+                    adjusted_seed_probability = np.interp(
+                        era_actual_shift,
+                        shift_grid,
+                        surface[f"seed_{seed_number}_probability"].to_numpy(
+                            dtype=float
+                        ),
+                    )
+                    baseline_seed_probability = np.interp(
+                        baseline_shift,
+                        shift_grid,
+                        surface[f"seed_{seed_number}_probability"].to_numpy(
+                            dtype=float
+                        ),
+                    )
+                    adjusted_actual_probability += adjusted_seed_probability * np.interp(
+                        adjusted_actual_rating,
+                        grid,
+                        adjusted_seeded_curves[(key[0], key[1], seed_number)],
+                    )
+                    adjusted_baseline_probability += (
+                        baseline_seed_probability
+                        * np.interp(
+                            np.full(
+                                len(covered_positions),
+                                adjusted_base_rating,
+                                dtype=float,
+                            ),
+                            grid,
+                            adjusted_seeded_curves[(key[0], key[1], seed_number)],
+                        )
+                    )
             else:
                 actual_probability = fixed_actual_probability
                 baseline_probability = fixed_baseline_probability
@@ -1207,6 +1474,16 @@ def add_salary_peer_title_lift(
                 actual_seed_weighted = baseline_seed_weighted = zero_seed_weighted = (
                     np.full(len(covered_positions), np.nan)
                 )
+                era_actual_probability = era_fixed_actual_probability
+                era_baseline_probability = era_fixed_baseline_probability
+                era_actual_playoff = era_baseline_playoff = np.ones(
+                    len(covered_positions), dtype=float
+                )
+                era_actual_seed_weighted = era_baseline_seed_weighted = np.full(
+                    len(covered_positions), np.nan
+                )
+                adjusted_actual_probability = adjusted_fixed_actual_probability
+                adjusted_baseline_probability = adjusted_fixed_baseline_probability
             count += valid.astype(int)
             actual_sum += np.where(valid, actual_probability, 0.0)
             baseline_sum += np.where(valid, baseline_probability, 0.0)
@@ -1224,6 +1501,45 @@ def add_salary_peer_title_lift(
             peer_workload_sum += np.where(valid, workload, 0.0)
             chosen_gap = np.abs(shares[chosen] - focal_salary)
             gap_columns.append(np.where(valid, chosen_gap, np.nan))
+            era_count += era_valid.astype(int)
+            era_actual_sum += np.where(era_valid, era_actual_probability, 0.0)
+            era_baseline_sum += np.where(era_valid, era_baseline_probability, 0.0)
+            era_fixed_actual_sum += np.where(
+                era_valid, era_fixed_actual_probability, 0.0
+            )
+            era_fixed_baseline_sum += np.where(
+                era_valid, era_fixed_baseline_probability, 0.0
+            )
+            era_actual_playoff_sum += np.where(era_valid, era_actual_playoff, 0.0)
+            era_baseline_playoff_sum += np.where(
+                era_valid, era_baseline_playoff, 0.0
+            )
+            era_actual_seed_weighted_sum += np.where(
+                era_valid, era_actual_seed_weighted, 0.0
+            )
+            era_baseline_seed_weighted_sum += np.where(
+                era_valid, era_baseline_seed_weighted, 0.0
+            )
+            era_signed_gap_sum += np.where(
+                era_valid, signed_gap_cap_points, 0.0
+            )
+            era_regular_debit_sum += np.where(
+                era_valid, regular_season_debit, 0.0
+            )
+            era_playoff_debit_sum += np.where(era_valid, playoff_debit, 0.0)
+            era_gap_columns.append(np.where(era_valid, chosen_gap, np.nan))
+            adjusted_actual_sum += np.where(
+                era_valid, adjusted_actual_probability, 0.0
+            )
+            adjusted_baseline_sum += np.where(
+                era_valid, adjusted_baseline_probability, 0.0
+            )
+            adjusted_fixed_actual_sum += np.where(
+                era_valid, adjusted_fixed_actual_probability, 0.0
+            )
+            adjusted_fixed_baseline_sum += np.where(
+                era_valid, adjusted_fixed_baseline_probability, 0.0
+            )
 
         valid_rows = count > 0
         denominator = np.where(valid_rows, count, 1)
@@ -1318,6 +1634,121 @@ def add_salary_peer_title_lift(
         )
         output.loc[labels, "contract_hurdle_version"] = np.where(
             valid_rows, SALARY_PEER_HURDLE_VERSION, None
+        )
+        era_valid_rows = era_count > 0
+        era_denominator = np.where(era_valid_rows, era_count, 1)
+        era_actual_mean = era_actual_sum / era_denominator
+        era_baseline_mean = era_baseline_sum / era_denominator
+        era_fixed_actual_mean = era_fixed_actual_sum / era_denominator
+        era_fixed_baseline_mean = era_fixed_baseline_sum / era_denominator
+        era_full_lift = era_actual_mean - era_baseline_mean
+        era_fixed_lift = era_fixed_actual_mean - era_fixed_baseline_mean
+        era_gap_matrix = np.column_stack(era_gap_columns)
+        with np.errstate(invalid="ignore"):
+            era_median_gap = np.nanmedian(era_gap_matrix, axis=1)
+            era_p90_gap = np.nanquantile(era_gap_matrix, 0.90, axis=1)
+            era_share_gap_over_5 = np.nanmean(
+                np.where(
+                    np.isnan(era_gap_matrix),
+                    np.nan,
+                    (era_gap_matrix > 0.05).astype(float),
+                ),
+                axis=1,
+            )
+        output.loc[labels, "era_local_salary_peer_placement_count"] = np.where(
+            era_valid_rows, era_count, np.nan
+        )
+        output.loc[labels, "era_local_budget_actual_title_probability"] = np.where(
+            era_valid_rows, era_actual_mean, np.nan
+        )
+        output.loc[labels, "era_local_budget_baseline_title_probability"] = np.where(
+            era_valid_rows, era_baseline_mean, np.nan
+        )
+        output.loc[labels, "era_local_budget_actual_playoff_probability"] = np.where(
+            era_valid_rows, era_actual_playoff_sum / era_denominator, np.nan
+        )
+        output.loc[labels, "era_local_budget_baseline_playoff_probability"] = np.where(
+            era_valid_rows, era_baseline_playoff_sum / era_denominator, np.nan
+        )
+        output.loc[labels, "era_local_budget_actual_mean_seed"] = np.where(
+            era_valid_rows & (era_actual_playoff_sum > 0),
+            era_actual_seed_weighted_sum
+            / np.where(era_actual_playoff_sum > 0, era_actual_playoff_sum, 1),
+            np.nan,
+        )
+        output.loc[labels, "era_local_budget_baseline_mean_seed"] = np.where(
+            era_valid_rows & (era_baseline_playoff_sum > 0),
+            era_baseline_seed_weighted_sum
+            / np.where(era_baseline_playoff_sum > 0, era_baseline_playoff_sum, 1),
+            np.nan,
+        )
+        output.loc[
+            labels, "era_local_budget_fixed_bracket_actual_title_probability"
+        ] = np.where(era_valid_rows, era_fixed_actual_mean, np.nan)
+        output.loc[
+            labels, "era_local_budget_fixed_bracket_baseline_title_probability"
+        ] = np.where(era_valid_rows, era_fixed_baseline_mean, np.nan)
+        output.loc[labels, "era_local_budget_fixed_bracket_title_lift"] = np.where(
+            era_valid_rows, era_fixed_lift, np.nan
+        )
+        output.loc[labels, "era_local_budget_seeding_title_lift"] = np.where(
+            era_valid_rows, era_full_lift - era_fixed_lift, np.nan
+        )
+        output.loc[
+            labels, "era_local_budget_mean_signed_salary_gap_cap_points"
+        ] = np.where(era_valid_rows, era_signed_gap_sum / era_denominator, np.nan)
+        output.loc[labels, "era_local_budget_median_salary_gap"] = np.where(
+            era_valid_rows, era_median_gap, np.nan
+        )
+        output.loc[labels, "era_local_budget_p90_salary_gap"] = np.where(
+            era_valid_rows, era_p90_gap, np.nan
+        )
+        output.loc[labels, "era_local_budget_share_salary_gap_over_5"] = np.where(
+            era_valid_rows, era_share_gap_over_5, np.nan
+        )
+        output.loc[labels, "era_local_budget_mean_regular_season_debit"] = np.where(
+            era_valid_rows, era_regular_debit_sum / era_denominator, np.nan
+        )
+        output.loc[labels, "era_local_budget_mean_playoff_debit"] = np.where(
+            era_valid_rows, era_playoff_debit_sum / era_denominator, np.nan
+        )
+        output.loc[labels, "title_lift_over_contract_v2"] = np.where(
+            era_valid_rows, era_full_lift, np.nan
+        )
+        output.loc[labels, "contract_hurdle_version_v2"] = np.where(
+            era_valid_rows, ERA_LOCAL_SALARY_PEER_HURDLE_VERSION, None
+        )
+        adjusted_actual_mean = adjusted_actual_sum / era_denominator
+        adjusted_baseline_mean = adjusted_baseline_sum / era_denominator
+        adjusted_fixed_actual_mean = adjusted_fixed_actual_sum / era_denominator
+        adjusted_fixed_baseline_mean = adjusted_fixed_baseline_sum / era_denominator
+        adjusted_full_lift = adjusted_actual_mean - adjusted_baseline_mean
+        adjusted_fixed_lift = (
+            adjusted_fixed_actual_mean - adjusted_fixed_baseline_mean
+        )
+        output.loc[labels, "playoff_adjusted_actual_title_probability"] = np.where(
+            era_valid_rows, adjusted_actual_mean, np.nan
+        )
+        output.loc[labels, "playoff_adjusted_baseline_title_probability"] = np.where(
+            era_valid_rows, adjusted_baseline_mean, np.nan
+        )
+        output.loc[
+            labels, "playoff_adjusted_fixed_bracket_actual_title_probability"
+        ] = np.where(era_valid_rows, adjusted_fixed_actual_mean, np.nan)
+        output.loc[
+            labels, "playoff_adjusted_fixed_bracket_baseline_title_probability"
+        ] = np.where(era_valid_rows, adjusted_fixed_baseline_mean, np.nan)
+        output.loc[labels, "playoff_adjusted_fixed_bracket_title_lift"] = np.where(
+            era_valid_rows, adjusted_fixed_lift, np.nan
+        )
+        output.loc[labels, "playoff_adjusted_seeding_title_lift"] = np.where(
+            era_valid_rows, adjusted_full_lift - adjusted_fixed_lift, np.nan
+        )
+        output.loc[
+            labels, "playoff_adjusted_title_lift_over_contract_v2"
+        ] = np.where(era_valid_rows, adjusted_full_lift, np.nan)
+        output.loc[labels, "playoff_adjusted_contract_hurdle_version"] = np.where(
+            era_valid_rows, PLAYOFF_ADJUSTED_SALARY_PEER_HURDLE_VERSION, None
         )
     output["neutral_contract_actual_title_probability"] = output[
         "salary_peer_actual_title_probability"

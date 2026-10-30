@@ -116,6 +116,18 @@ The prior-season shooter layer adds another `0.232%` MSE improvement over the
 context model on 2026. Geometry, shot-form context, and shooter history each
 contribute modestly.
 
+## RTSS Teacher/Student Follow-Up
+
+`train_wnba_rtss_pbp_student.py` distills provider `qSQ` into a model that uses
+only the outcome-safe PBP feature contract. The exact game/event join validates
+61,521 MID/THREE teacher shots from 2023-2025. The standalone student does not
+beat this PBP model, but a student/context blend selected on 2024 improves 2025
+all-PBP MSE by `0.001247`, with a paired game-clustered interval of
+`[+0.000151,+0.002282]`. The analogous shooter-inclusive blend is positive but
+inconclusive. This is development evidence only; RTSS 2026 remains sealed and
+the live WNBA impact metric is unchanged. See
+[WNBA RTSS-to-PBP ShotQuality Student](./WNBA_RTSS_PBP_SHOT_QUALITY.md).
+
 ## Historical Sample Audit
 
 Gabriel classic PBP adds 345,314 field-goal attempts from 2010-2021, including

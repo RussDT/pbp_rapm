@@ -24,6 +24,10 @@ try:
         lookup_asof_ratings,
     )
     from nba_pipeline.scripts.playoff_title_simulation import (
+        ERA_LOCAL_SALARY_PEER_HURDLE_VERSION,
+        ERA_LOCAL_SALARY_PEER_WINDOW,
+        PLAYOFF_CAP_POINT_PRICE,
+        REGULAR_SEASON_CAP_POINT_PRICE,
         SALARY_PEER_HURDLE_VERSION,
         add_salary_peer_title_lift,
         build_bracket_nodes,
@@ -33,6 +37,11 @@ try:
         prepare_playoff_game_model_rows,
         regular_season_seed_probabilities,
         select_playoff_game_model,
+    )
+    from nba_pipeline.scripts.playoff_epm_prior import (
+        build_walk_forward_playoff_epm_ratings,
+        evaluate_walk_forward_playoff_ratings,
+        load_playoff_possessions,
     )
 except ModuleNotFoundError:  # Direct script execution from the repository root.
     from build_darko_teammate_help import (  # type: ignore[no-redef]
@@ -41,6 +50,10 @@ except ModuleNotFoundError:  # Direct script execution from the repository root.
         lookup_asof_ratings,
     )
     from playoff_title_simulation import (  # type: ignore[no-redef]
+        ERA_LOCAL_SALARY_PEER_HURDLE_VERSION,
+        ERA_LOCAL_SALARY_PEER_WINDOW,
+        PLAYOFF_CAP_POINT_PRICE,
+        REGULAR_SEASON_CAP_POINT_PRICE,
         SALARY_PEER_HURDLE_VERSION,
         add_salary_peer_title_lift,
         build_bracket_nodes,
@@ -50,6 +63,21 @@ except ModuleNotFoundError:  # Direct script execution from the repository root.
         prepare_playoff_game_model_rows,
         regular_season_seed_probabilities,
         select_playoff_game_model,
+    )
+    from playoff_epm_prior import (  # type: ignore[no-redef]
+        build_walk_forward_playoff_epm_ratings,
+        evaluate_walk_forward_playoff_ratings,
+        load_playoff_possessions,
+    )
+
+
+try:
+    from nba_pipeline.scripts.playoff_availability import (
+        SEASON_FIELDS, CAREER_FIELDS, career_participation_summary, refresh_participation,
+    )
+except ModuleNotFoundError:
+    from playoff_availability import (
+        SEASON_FIELDS, CAREER_FIELDS, career_participation_summary, refresh_participation,
     )
 
 
@@ -75,6 +103,11 @@ TEAM_MODEL_SPECS = ("overall", "sides")
 TEAM_MODEL_C_VALUES = (0.05, 0.2, 1.0, 5.0, 20.0, 100.0)
 APP_SHARDS = 64
 TITLE_FIELD_SIZE = 16
+PLAYOFF_PRIOR_ALPHA_OFFENSE = 24_000.0
+PLAYOFF_PRIOR_ALPHA_DEFENSE = 24_000.0
+PLAYOFF_PRIOR_HISTORY_WINDOW = 8
+PLAYOFF_PRIOR_GATE_START_SEASON = 2007
+PLAYOFF_PRIOR_GATE_END_SEASON = 2025
 # Contract-EPM v1 keeps the prototype assumptions already used by the
 # From Impact to Winning reader, expressed in cap-share units so the hurdle is
 # comparable across eras. These are declared assumptions, not a fitted market
@@ -351,6 +384,97 @@ def build_salary_peer_focal_seasons(
         ),
     }
     return output, report
+
+
+def attach_playoff_adjusted_ratings(
+    seasons: pd.DataFrame,
+    teams: pd.DataFrame,
+    playoff_ratings: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Attach entering-playoffs ratings and rebuild actual rotation strength."""
+    season_required = {
+        "season",
+        "team_id",
+        "player_id",
+        "own_dpm",
+        "playoff_workload_share",
+    }
+    team_required = {"season", "team_id", "team_dpm"}
+    rating_required = {
+        "season",
+        "player_id",
+        "playoff_adjusted_dpm",
+        "playoff_translation_dpm",
+        "playoff_prior_possessions",
+    }
+    for label, frame, required in (
+        ("player seasons", seasons, season_required),
+        ("playoff teams", teams, team_required),
+        ("playoff-adjusted ratings", playoff_ratings, rating_required),
+    ):
+        missing = required.difference(frame.columns)
+        if missing:
+            raise ValueError(f"{label} are missing columns: {sorted(missing)}")
+    rating_columns = [
+        "season",
+        "player_id",
+        "playoff_adjusted_dpm",
+        "playoff_translation_o_dpm",
+        "playoff_translation_d_dpm",
+        "playoff_translation_dpm",
+        "playoff_prior_seasons",
+        "playoff_prior_possessions",
+    ]
+    rating_columns = [
+        column for column in rating_columns if column in playoff_ratings.columns
+    ]
+    output = seasons.drop(
+        columns=[column for column in rating_columns[2:] if column in seasons.columns],
+        errors="ignore",
+    ).merge(
+        playoff_ratings[rating_columns],
+        on=["season", "player_id"],
+        how="left",
+        validate="many_to_one",
+    )
+    output["playoff_adjusted_dpm"] = output["playoff_adjusted_dpm"].fillna(
+        output["own_dpm"]
+    )
+    output["playoff_translation_dpm"] = output[
+        "playoff_translation_dpm"
+    ].fillna(0.0)
+    output["playoff_prior_possessions"] = output[
+        "playoff_prior_possessions"
+    ].fillna(0).astype(int)
+    output["playoff_adjusted_team_contribution_dpm"] = (
+        output["playoff_adjusted_dpm"]
+        * pd.to_numeric(output["playoff_workload_share"], errors="coerce")
+    )
+    team_ratings = (
+        output.dropna(subset=["team_id", "playoff_workload_share"])
+        .groupby(["season", "team_id"], as_index=False, sort=False)
+        ["playoff_adjusted_team_contribution_dpm"]
+        .sum(min_count=1)
+        .rename(
+            columns={
+                "playoff_adjusted_team_contribution_dpm": (
+                    "playoff_adjusted_team_dpm"
+                )
+            }
+        )
+    )
+    adjusted_teams = teams.drop(
+        columns="playoff_adjusted_team_dpm", errors="ignore"
+    ).merge(
+        team_ratings,
+        on=["season", "team_id"],
+        how="left",
+        validate="one_to_one",
+    )
+    adjusted_teams["playoff_adjusted_team_dpm"] = adjusted_teams[
+        "playoff_adjusted_team_dpm"
+    ].fillna(adjusted_teams["team_dpm"])
+    return output, adjusted_teams
 
 
 def add_title_lift_over_contract(
@@ -1010,6 +1134,16 @@ def build_career_championship_help(
     for column in (
         "salary_peer_fixed_bracket_title_lift",
         "salary_peer_seeding_title_lift",
+        "title_lift_over_contract_v2",
+        "era_local_budget_fixed_bracket_title_lift",
+        "era_local_budget_seeding_title_lift",
+        "era_local_budget_actual_title_probability",
+        "era_local_budget_baseline_title_probability",
+        "playoff_adjusted_title_lift_over_contract_v2",
+        "playoff_adjusted_fixed_bracket_title_lift",
+        "playoff_adjusted_seeding_title_lift",
+        "playoff_adjusted_actual_title_probability",
+        "playoff_adjusted_baseline_title_probability",
     ):
         if column not in seasons.columns:
             seasons[column] = np.nan
@@ -1094,11 +1228,62 @@ def build_career_championship_help(
                 "neutral_contract_hurdle_title_probability",
                 lambda values: values.sum(min_count=1),
             ),
+            contract_seasons_covered_v2=("title_lift_over_contract_v2", "count"),
+            title_lift_over_contract_v2_championships=(
+                "title_lift_over_contract_v2",
+                lambda values: values.sum(min_count=1),
+            ),
+            era_local_budget_fixed_bracket_title_lift_championships=(
+                "era_local_budget_fixed_bracket_title_lift",
+                lambda values: values.sum(min_count=1),
+            ),
+            era_local_budget_seeding_title_lift_championships=(
+                "era_local_budget_seeding_title_lift",
+                lambda values: values.sum(min_count=1),
+            ),
+            era_local_budget_actual_championships=(
+                "era_local_budget_actual_title_probability",
+                lambda values: values.sum(min_count=1),
+            ),
+            era_local_budget_baseline_championships=(
+                "era_local_budget_baseline_title_probability",
+                lambda values: values.sum(min_count=1),
+            ),
+            contract_seasons_covered_playoff_adjusted=(
+                "playoff_adjusted_title_lift_over_contract_v2",
+                "count",
+            ),
+            playoff_adjusted_title_lift_over_contract_championships=(
+                "playoff_adjusted_title_lift_over_contract_v2",
+                lambda values: values.sum(min_count=1),
+            ),
+            playoff_adjusted_fixed_bracket_title_lift_championships=(
+                "playoff_adjusted_fixed_bracket_title_lift",
+                lambda values: values.sum(min_count=1),
+            ),
+            playoff_adjusted_seeding_title_lift_championships=(
+                "playoff_adjusted_seeding_title_lift",
+                lambda values: values.sum(min_count=1),
+            ),
+            playoff_adjusted_actual_championships=(
+                "playoff_adjusted_actual_title_probability",
+                lambda values: values.sum(min_count=1),
+            ),
+            playoff_adjusted_baseline_championships=(
+                "playoff_adjusted_baseline_title_probability",
+                lambda values: values.sum(min_count=1),
+            ),
         )
     )
     career = career.merge(contract_summary, on="player_id", how="left", validate="one_to_one")
+    if "playoff_participation_used" in seasons:
+        career = career.merge(career_participation_summary(seasons), on="player_id",
+                              how="left", validate="one_to_one")
     career["contract_coverage_pct"] = (
         100.0 * career["contract_seasons_covered"] / career["seasons_modeled"]
+    )
+    career["contract_coverage_pct_v2"] = (
+        100.0 * career["contract_seasons_covered_v2"] / career["seasons_modeled"]
     )
     peak_index = context_seasons.groupby("player_id")[
         "teammate_help_championships"
@@ -1163,10 +1348,24 @@ def build_career_championship_help(
         - career["neutral_contract_hurdle_championships"]
         - career["title_lift_over_contract_championships"]
     ).abs()
+    contract_gap_v2 = (
+        career["era_local_budget_actual_championships"]
+        - career["era_local_budget_baseline_championships"]
+        - career["title_lift_over_contract_v2_championships"]
+    ).abs()
+    playoff_adjusted_contract_gap = (
+        career["playoff_adjusted_actual_championships"]
+        - career["playoff_adjusted_baseline_championships"]
+        - career["playoff_adjusted_title_lift_over_contract_championships"]
+    ).abs()
     report = {
         "max_career_reconciliation_gap": float(career_gap.max()),
         "max_career_three_bucket_gap": float(bucket_gap.max()),
         "max_career_contract_lift_gap": float(contract_gap.max()),
+        "max_career_contract_lift_v2_gap": float(contract_gap_v2.max()),
+        "max_career_playoff_adjusted_contract_lift_gap": float(
+            playoff_adjusted_contract_gap.max()
+        ),
     }
     if report["max_career_reconciliation_gap"] > 1e-10:
         raise AssertionError("Career teammate championship-help rows do not reconcile")
@@ -1174,6 +1373,12 @@ def build_career_championship_help(
         raise AssertionError("Career self/on-court/bench buckets do not reconcile")
     if report["max_career_contract_lift_gap"] > 1e-10:
         raise AssertionError("Career Title Lift over Contract rows do not reconcile")
+    if report["max_career_contract_lift_v2_gap"] > 1e-10:
+        raise AssertionError("Career Title Lift over Contract v2 rows do not reconcile")
+    if report["max_career_playoff_adjusted_contract_lift_gap"] > 1e-10:
+        raise AssertionError(
+            "Career playoff-adjusted Title Lift over Contract rows do not reconcile"
+        )
     return career, teammate.reset_index(drop=True), report
 
 
@@ -1223,6 +1428,19 @@ def write_app_championship_data(
         "salary_peer_seeding_title_lift_championships",
         "neutral_contract_actual_championships",
         "neutral_contract_hurdle_championships",
+        "contract_seasons_covered_v2",
+        "contract_coverage_pct_v2",
+        "title_lift_over_contract_v2_championships",
+        "era_local_budget_fixed_bracket_title_lift_championships",
+        "era_local_budget_seeding_title_lift_championships",
+        "era_local_budget_actual_championships",
+        "era_local_budget_baseline_championships",
+        "contract_seasons_covered_playoff_adjusted",
+        "playoff_adjusted_title_lift_over_contract_championships",
+        "playoff_adjusted_fixed_bracket_title_lift_championships",
+        "playoff_adjusted_seeding_title_lift_championships",
+        "playoff_adjusted_actual_championships",
+        "playoff_adjusted_baseline_championships",
         "normalized_self_championships",
         "self_replacement_championships",
         "on_court_teammate_championships",
@@ -1243,6 +1461,12 @@ def write_app_championship_data(
         "is_playoff_participant",
         "won_championship",
         "own_dpm",
+        "playoff_adjusted_dpm",
+        "playoff_translation_o_dpm",
+        "playoff_translation_d_dpm",
+        "playoff_translation_dpm",
+        "playoff_prior_seasons",
+        "playoff_prior_possessions",
         "help_dpm",
         "coverage_pct",
         "total_exposures",
@@ -1287,6 +1511,33 @@ def write_app_championship_data(
         "salary_peer_fixed_bracket_raw_title_lift",
         "salary_peer_fixed_bracket_title_lift",
         "salary_peer_seeding_title_lift",
+        "era_local_salary_peer_placement_count",
+        "era_local_budget_actual_title_probability",
+        "era_local_budget_baseline_title_probability",
+        "era_local_budget_actual_playoff_probability",
+        "era_local_budget_baseline_playoff_probability",
+        "era_local_budget_actual_mean_seed",
+        "era_local_budget_baseline_mean_seed",
+        "era_local_budget_fixed_bracket_actual_title_probability",
+        "era_local_budget_fixed_bracket_baseline_title_probability",
+        "era_local_budget_fixed_bracket_title_lift",
+        "era_local_budget_seeding_title_lift",
+        "era_local_budget_mean_signed_salary_gap_cap_points",
+        "era_local_budget_median_salary_gap",
+        "era_local_budget_p90_salary_gap",
+        "era_local_budget_share_salary_gap_over_5",
+        "era_local_budget_mean_regular_season_debit",
+        "era_local_budget_mean_playoff_debit",
+        "title_lift_over_contract_v2",
+        "contract_hurdle_version_v2",
+        "playoff_adjusted_actual_title_probability",
+        "playoff_adjusted_baseline_title_probability",
+        "playoff_adjusted_fixed_bracket_actual_title_probability",
+        "playoff_adjusted_fixed_bracket_baseline_title_probability",
+        "playoff_adjusted_fixed_bracket_title_lift",
+        "playoff_adjusted_seeding_title_lift",
+        "playoff_adjusted_title_lift_over_contract_v2",
+        "playoff_adjusted_contract_hurdle_version",
         "normalized_self_title_probability_added",
         "self_replacement_title_probability_added",
         "on_court_teammate_title_probability_added",
@@ -1316,6 +1567,8 @@ def write_app_championship_data(
         "championships_added",
         "season_championship_help_rank",
     ]
+    career_columns += [c for c in CAREER_FIELDS if c in career]
+    season_columns += [c for c in SEASON_FIELDS if c in seasons]
     season_teammates = attributed.copy()
     season_teammates = season_teammates.sort_values(
         ["season", "player_id", "championships_added", "shared_exposures", "teammate_id"],
@@ -2616,6 +2869,34 @@ def main() -> None:
         ],
         ignore_index=True,
     )
+    playoff_epm_priors = rating_snapshots[
+        ["season", "nba_id", "o_dpm", "d_dpm", "dpm"]
+    ].rename(columns={"nba_id": "player_id"})
+    playoff_possessions = load_playoff_possessions(
+        args.processed_dir, args.start_year, args.end_year
+    )
+    playoff_adjusted_ratings, playoff_prior_report = (
+        build_walk_forward_playoff_epm_ratings(
+            playoff_possessions,
+            playoff_epm_priors,
+            alpha_offense=PLAYOFF_PRIOR_ALPHA_OFFENSE,
+            alpha_defense=PLAYOFF_PRIOR_ALPHA_DEFENSE,
+            history_window=PLAYOFF_PRIOR_HISTORY_WINDOW,
+        )
+    )
+    gate_end_season = min(int(args.end_year), PLAYOFF_PRIOR_GATE_END_SEASON)
+    playoff_prior_gate = None
+    if gate_end_season >= PLAYOFF_PRIOR_GATE_START_SEASON:
+        playoff_prior_gate = evaluate_walk_forward_playoff_ratings(
+            playoff_possessions,
+            playoff_epm_priors,
+            playoff_adjusted_ratings,
+            start_season=PLAYOFF_PRIOR_GATE_START_SEASON,
+            end_season=gate_end_season,
+        )
+    playoff_adjusted_ratings.to_csv(
+        args.output_dir / "playoff_epm_prior_ratings.csv", index=False
+    )
     seasons, salary_peer_universe_report = build_salary_peer_focal_seasons(
         seasons,
         rating_snapshots,
@@ -2635,6 +2916,9 @@ def main() -> None:
         on=["season", "team_id", "player_id"],
         how="left",
         validate="many_to_one",
+    )
+    seasons, sample = attach_playoff_adjusted_ratings(
+        seasons, sample, playoff_adjusted_ratings
     )
     playoff_game_model_rows = prepare_playoff_game_model_rows(playoff_games, sample)
     playoff_game_model, series_diagnostics, series_model_report = (
@@ -2663,6 +2947,12 @@ def main() -> None:
         regular_seed_probabilities=seed_probabilities,
         playoff_seed_fields=playoff_seed_fields,
     )
+    seasons, participation_cv, participation_report = refresh_participation(
+        seasons, playoff_games, regular_roster, args.raw_dir,
+        PIPELINE_DIR / "config" / "playoff_participation_roster_overrides.json",
+    )
+    participation_cv.to_csv(args.output_dir / "playoff_participation_cv.csv", index=False)
+    metadata["playoff_participation"] = participation_report
     career, teammate, career_report = build_career_championship_help(seasons, attributed)
     selected["model_team_seasons"] = int(len(sample))
     selected["championship_team_seasons"] = int(sample["won_championship"].sum())
@@ -2726,6 +3016,55 @@ def main() -> None:
             "fixed_bracket_component_retained": True,
         },
         "status": "retrospective realized salary-peer comparison",
+        "era_local_budget_neutral_challenger": {
+            "label": "Title Lift over Contract v2",
+            "hurdle_version": ERA_LOCAL_SALARY_PEER_HURDLE_VERSION,
+            "field": (
+                f"realized playoff teams from the {ERA_LOCAL_SALARY_PEER_WINDOW} seasons "
+                "before and after the focal season, excluding the focal season; only available "
+                "complete seasons are used at dataset edges"
+            ),
+            "peer_rule": (
+                "closest annual salary-cap-share rotation player on each destination team; "
+                "ties use the larger playoff workload"
+            ),
+            "budget_adjustment": {
+                "signed_gap": "100 * (focal salary share - peer salary share)",
+                "regular_season_team_rating_points_per_cap_point": (
+                    REGULAR_SEASON_CAP_POINT_PRICE
+                ),
+                "playoff_team_rating_points_per_cap_point": PLAYOFF_CAP_POINT_PRICE,
+                "rule": (
+                    "subtract price times signed cap-point gap from the focal player's team-"
+                    "rating change; a cheaper focal player receives the symmetric credit"
+                ),
+            },
+            "identity": (
+                "full title lift equals fixed-bracket lift plus qualification/seeding lift"
+            ),
+            "status": "research challenger retained beside the full-history metric",
+        },
+        "playoff_prior_challenger": {
+            "label": "Playoff-prior TLOC",
+            "prior": "pre-playoff O-EPM and D-EPM",
+            "update": (
+                "persistent player playoff translation learned only from earlier "
+                "postseasons, ridge-shrunk toward zero"
+            ),
+            "regular_season_rule": (
+                "pre-playoff EPM remains unchanged for qualification and seeding"
+            ),
+            "playoff_rule": (
+                "entering-playoffs adjusted impact is used for focal players, salary "
+                "peers, destination teammates, and opponent fields"
+            ),
+            "report": playoff_prior_report,
+            "forward_playoff_gate": playoff_prior_gate,
+            "status": (
+                "research challenger; held-out playoff prediction point estimate improves "
+                "but the game-clustered interval crosses zero"
+            ),
+        },
         "prototype_contract_epm_sensitivity": {
             "hurdle_version": CONTRACT_HURDLE_VERSION,
             "replacement_epm": CONTRACT_REPLACEMENT_EPM,

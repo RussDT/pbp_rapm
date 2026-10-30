@@ -17,7 +17,11 @@
 
 Keep these surfaces distinct:
 
-- `weighted_factors_decomp_*`: active public actual-points decomposition.
+- `weighted_factors_decomp_net_*`: selected forward continuation-priced
+  explanatory decomposition; its owner-expanded artifact contract is all 140
+  rolling 1Y-5Y windows from 1997 through 2026, and consumer migration follows
+  the full-grid audit.
+- `weighted_factors_decomp_*`: gross actual-points compatibility benchmark.
 - ShotQuality-EV VPM: predictive research evolution of DECOMP with a ten-part
   additive tree.
 - `weighted_factors_alt3_efg_value_*`: legacy EFG-value display/audit family.
@@ -26,7 +30,11 @@ Keep these surfaces distinct:
 Do not feed an Alt3 schema into a DECOMP consumer without an explicit mapper
 audit. Do not call an Alt3 balancing residual a DECOMP component.
 
-## Public Eight-Component DECOMP
+## Gross Eight-Component Compatibility DECOMP
+
+Owner decision 2026-09-03: new explanatory products use Net DECOMP. Preserve
+this gross surface for rollback, matched comparisons, and consumers that have
+not migrated yet.
 
 Use these player-facing components:
 

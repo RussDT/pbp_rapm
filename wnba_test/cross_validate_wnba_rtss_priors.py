@@ -206,17 +206,22 @@ MECHANISM_FEATURES: dict[tuple[str, str], list[str]] = {
         "rtss_drive_help_rate100",
         "rtss_def_rotation_rate100",
         "rtss_def_matchup_rate100",
+        "rtss_def_rim_dfga_rate100",
     ],
     ("ALT_EFG_RIM_FG", "def"): [
         "rtss_drive_help_rate100",
         "rtss_def_rotation_rate100",
         "rtss_def_contest_rate100",
+        "rtss_def_rim_dfga_rate100",
+        "rtss_def_rim_fg_pct_allowed",
+        "rtss_def_rim_heavy_contest_share",
     ],
     ("ALT_EFG_MID_FREQ", "def"): [
         "rtss_def_contest_rate100",
         "rtss_def_closeout_rate100",
         "rtss_def_rotation_rate100",
         "rtss_def_mid3_catch_shoot_share",
+        "rtss_def_mid_dfga_rate100",
     ],
     ("ALT_EFG_MID_FG", "def"): [
         "rtss_def_contest_rate100",
@@ -224,12 +229,16 @@ MECHANISM_FEATURES: dict[tuple[str, str], list[str]] = {
         "rtss_def_contest_distance",
         "rtss_def_closeout_rate100",
         "rtss_def_rotation_rate100",
+        "rtss_def_mid_fg_pct_allowed",
+        "rtss_def_mid_heavy_contest_share",
+        "rtss_def_mid_closest_distance",
     ],
     ("ALT_EFG_THREE_FREQ", "def"): [
         "rtss_def_contest_rate100",
         "rtss_def_closeout_rate100",
         "rtss_def_rotation_rate100",
         "rtss_def_mid3_catch_shoot_share",
+        "rtss_def_three_dfga_rate100",
     ],
     ("ALT_EFG_THREE_FG", "def"): [
         "rtss_def_contest_rate100",
@@ -237,30 +246,41 @@ MECHANISM_FEATURES: dict[tuple[str, str], list[str]] = {
         "rtss_def_contest_distance",
         "rtss_def_closeout_rate100",
         "rtss_def_rearview_share",
+        "rtss_def_three_fg_pct_allowed",
+        "rtss_def_three_heavy_contest_share",
+        "rtss_def_three_closest_distance",
     ],
     ("ALT_FT", "def"): [
         "rtss_drive_help_rate100",
         "rtss_def_rotation_rate100",
         "rtss_def_contest_rate100",
+        "rtss_def_shooting_fouls_rate100",
+        "rtss_def_fouls_committed_rate100",
     ],
     ("ALT_FT_FREQ", "def"): [
         "rtss_drive_help_rate100",
         "rtss_def_rotation_rate100",
         "rtss_def_contest_rate100",
+        "rtss_def_shooting_fouls_rate100",
+        "rtss_def_non_shooting_fouls_rate100",
     ],
     ("ALT_FC_COMPLETION", "def"): [
         "rtss_def_matchup_rate100",
         "rtss_def_rotation_rate100",
         "rtss_drive_help_rate100",
+        "rtss_def_off_fouls_drawn_rate100",
     ],
     ("ALT_TOV_VALUE", "def"): [
         "rtss_def_matchup_rate100",
         "rtss_def_rotation_rate100",
         "rtss_drive_help_rate100",
+        "rtss_def_off_fouls_drawn_rate100",
+        "rtss_def_charges_drawn_rate100",
     ],
     ("ALT_BADPASS_TOV_VALUE", "def"): [
         "rtss_def_matchup_rate100",
         "rtss_def_rotation_rate100",
+        "rtss_def_off_fouls_drawn_rate100",
     ],
     ("SECOND_CHANCE_CLEAN", "def"): [
         "rtss_def_rb_opp_rate100",
@@ -280,23 +300,25 @@ Q_FEATURES: dict[tuple[str, str], list[str]] = {
         "rtss_three_qsq_epv",
         "rtss_three_shooter_adjustment_epv",
     ],
+    # Defensive allowed shot quality, split by zone. The pooled mid3 average
+    # mixes two different defensive skills, so each zone gets its own arm.
     ("ALT_EFG_MID_FREQ", "def"): [
-        "rtss_def_mid3_qsq_epv",
-        "rtss_def_mid3_qsp_epv",
+        "rtss_def_mid_qsq_epv",
+        "rtss_def_mid_qsp_epv",
     ],
     ("ALT_EFG_MID_FG", "def"): [
-        "rtss_def_mid3_qsq_epv",
-        "rtss_def_mid3_qsp_epv",
-        "rtss_def_closest_distance",
+        "rtss_def_mid_qsq_epv",
+        "rtss_def_mid_qsp_epv",
+        "rtss_def_mid_closest_distance",
     ],
     ("ALT_EFG_THREE_FREQ", "def"): [
-        "rtss_def_mid3_qsq_epv",
-        "rtss_def_mid3_qsp_epv",
+        "rtss_def_three_qsq_epv",
+        "rtss_def_three_qsp_epv",
     ],
     ("ALT_EFG_THREE_FG", "def"): [
-        "rtss_def_mid3_qsq_epv",
-        "rtss_def_mid3_qsp_epv",
-        "rtss_def_closest_distance",
+        "rtss_def_three_qsq_epv",
+        "rtss_def_three_qsp_epv",
+        "rtss_def_three_closest_distance",
     ],
 }
 

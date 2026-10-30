@@ -13,6 +13,7 @@ import argparse
 import json
 from collections import Counter, defaultdict
 from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,13 @@ DEFAULT_OUTPUT = (
 )
 
 VALID_CROSSWALK_STATUSES = {"exact", "high_confidence_consensus"}
+# Confirmation-season fence. 2026 is the untouched RTSS holdout, so the default
+# feature surface stops at 2025 and no development fit can see 2026 by
+# accident. Building 2026 rows requires the explicit
+# --include-confirmation-season flag, and those rows are only legitimate as
+# scoring input to run_wnba_rtss_confirmation.py, never as fit rows.
+DEVELOPMENT_SEASONS = (2023, 2024, 2025)
+CONFIRMATION_SEASON = 2026
 RIM_REGIONS = {"ra", "restricted area"}
 
 
@@ -79,11 +87,14 @@ def _season(data: dict[str, Any]) -> int | None:
     return None
 
 
-def _aggregate_game(path_string: str) -> list[dict[str, Any]]:
+def _aggregate_game(
+    path_string: str,
+    seasons: tuple[int, ...] = DEVELOPMENT_SEASONS,
+) -> list[dict[str, Any]]:
     path = Path(path_string)
     data = json.loads(path.read_text())
     season = _season(data)
-    if season not in {2023, 2024, 2025}:
+    if season not in set(seasons):
         return []
 
     accum: defaultdict[tuple[int, str], Counter[str]] = defaultdict(Counter)
@@ -231,11 +242,53 @@ def _aggregate_game(path_string: str) -> list[dict[str, Any]]:
                     f"{zone}_{role}_shooter_adjustment_n",
                 )
 
+        # Closest-defender attribution. This is a provider-specific proximity
+        # label, not causal defensive credit; every derived feature stays a
+        # research prior candidate.
         defender = row.get("closestDefId")
+        if defender is not None:
+            defended_value = 3.0 if three else 2.0
+            _add(accum, season, defender, "def_shots_all")
+            _add(accum, season, defender, f"def_{zone}_shots")
+            _add(accum, season, defender, f"def_{zone}_makes", made)
+            _add(
+                accum,
+                season,
+                defender,
+                f"def_{zone}_points_allowed",
+                defended_value * made,
+            )
+            defended_contest = str(row.get("contestLevel") or "").lower()
+            if defended_contest:
+                _add(accum, season, defender, f"def_{zone}_contest_observations")
+                _add(
+                    accum,
+                    season,
+                    defender,
+                    f"def_{zone}_heavy_contests",
+                    defended_contest == "heavily_contested",
+                )
+                _add(
+                    accum,
+                    season,
+                    defender,
+                    f"def_{zone}_uncontested",
+                    defended_contest == "uncontested",
+                )
+            defended_distance = _number(row.get("closestDefDist"))
+            if defended_distance is not None:
+                _add(
+                    accum,
+                    season,
+                    defender,
+                    f"def_{zone}_closest_distance_sum",
+                    defended_distance,
+                )
+                _add(accum, season, defender, f"def_{zone}_closest_distance_n")
+
         if defender is not None and (mid or three):
             value = 3.0 if three else 2.0
             _add(accum, season, defender, "def_mid3_shots")
-            _add(accum, season, defender, f"def_{zone}_shots")
             _add(
                 accum,
                 season,
@@ -248,13 +301,47 @@ def _aggregate_game(path_string: str) -> list[dict[str, Any]]:
             if qsq is not None:
                 _add(accum, season, defender, "def_mid3_qsq_sum", qsq * value)
                 _add(accum, season, defender, "def_mid3_qsq_n")
+                # Zone-split allowed shot quality: MID and THREE defense are
+                # different skills and the pooled mid3 average hides both.
+                _add(accum, season, defender, f"def_{zone}_qsq_sum", qsq * value)
+                _add(accum, season, defender, f"def_{zone}_qsq_n")
             if qsp is not None:
                 _add(accum, season, defender, "def_mid3_qsp_sum", qsp * value)
                 _add(accum, season, defender, "def_mid3_qsp_n")
+                _add(accum, season, defender, f"def_{zone}_qsp_sum", qsp * value)
+                _add(accum, season, defender, f"def_{zone}_qsp_n")
             distance = _number(row.get("closestDefDist"))
             if distance is not None:
                 _add(accum, season, defender, "def_closest_distance_sum", distance)
                 _add(accum, season, defender, "def_closest_distance_n")
+
+    # Foul markings. On an offensive foul the provider records the offensive
+    # player as `foulerId` and the defender who absorbed it as `fouledId`, so
+    # offensive fouls drawn are a defensive credit and offensive fouls
+    # committed are an offensive debit.
+    for row in data.get("fouls", []):
+        if row.get("isTeam") or row.get("isTechnical"):
+            continue
+        fouler = row.get("foulerId")
+        fouled = row.get("fouledId")
+        offensive_foul = bool(row.get("isOffensive"))
+        shooting_foul = bool(row.get("shooting"))
+        if offensive_foul:
+            _add(accum, season, fouled, "def_off_fouls_drawn")
+            _add(accum, season, fouled, "def_charges_drawn", bool(row.get("charge")))
+            _add(accum, season, fouler, "off_fouls_committed")
+        else:
+            _add(accum, season, fouler, "def_fouls_committed")
+            _add(accum, season, fouler, "def_shooting_fouls_committed", shooting_foul)
+            _add(
+                accum,
+                season,
+                fouler,
+                "def_non_shooting_fouls_committed",
+                not shooting_foul,
+            )
+            _add(accum, season, fouled, "off_fouls_drawn")
+            _add(accum, season, fouled, "off_shooting_fouls_drawn", shooting_foul)
 
     for row in data.get("touches", []):
         player_id = row.get("playerId")
@@ -434,6 +521,60 @@ def _feature_surface(raw: pd.DataFrame) -> pd.DataFrame:
         "rtss_off_crash_rate100": ("off_crashes", "off_chances", 200.0),
         "rtss_off_rb_opp_rate100": ("off_rb_opportunities", "off_chances", 200.0),
         "rtss_def_rb_opp_rate100": ("def_rb_opportunities", "def_chances", 250.0),
+        # Closest-defender dFGA volume, split by zone.
+        "rtss_def_rim_dfga_rate100": ("def_rim_shots", "def_chances", 250.0),
+        "rtss_def_mid_dfga_rate100": ("def_mid_shots", "def_chances", 250.0),
+        "rtss_def_three_dfga_rate100": ("def_three_shots", "def_chances", 250.0),
+        "rtss_def_dfga_rate100": ("def_shots_all", "def_chances", 250.0),
+        # Points allowed as nearest defender, by zone.
+        "rtss_def_rim_points_allowed_rate100": (
+            "def_rim_points_allowed",
+            "def_chances",
+            250.0,
+        ),
+        "rtss_def_mid_points_allowed_rate100": (
+            "def_mid_points_allowed",
+            "def_chances",
+            250.0,
+        ),
+        "rtss_def_three_points_allowed_rate100": (
+            "def_three_points_allowed",
+            "def_chances",
+            250.0,
+        ),
+        # Foul markings.
+        "rtss_def_off_fouls_drawn_rate100": (
+            "def_off_fouls_drawn",
+            "def_chances",
+            250.0,
+        ),
+        "rtss_def_charges_drawn_rate100": ("def_charges_drawn", "def_chances", 250.0),
+        "rtss_def_fouls_committed_rate100": (
+            "def_fouls_committed",
+            "def_chances",
+            250.0,
+        ),
+        "rtss_def_shooting_fouls_rate100": (
+            "def_shooting_fouls_committed",
+            "def_chances",
+            250.0,
+        ),
+        "rtss_def_non_shooting_fouls_rate100": (
+            "def_non_shooting_fouls_committed",
+            "def_chances",
+            250.0,
+        ),
+        "rtss_off_fouls_drawn_rate100": ("off_fouls_drawn", "off_chances", 200.0),
+        "rtss_off_shooting_fouls_drawn_rate100": (
+            "off_shooting_fouls_drawn",
+            "off_chances",
+            200.0,
+        ),
+        "rtss_off_fouls_committed_rate100": (
+            "off_fouls_committed",
+            "off_chances",
+            200.0,
+        ),
     }
     share_specs = {
         "rtss_three_share": ("three_attempts", "shot_attempts", 75.0),
@@ -492,6 +633,36 @@ def _feature_surface(raw: pd.DataFrame) -> pd.DataFrame:
         "rtss_three_self_created_fg_pct": (
             "three_self_created_makes",
             "three_self_created_attempts",
+            75.0,
+        ),
+        # Allowed shooting as nearest defender, split by zone.
+        "rtss_def_rim_fg_pct_allowed": ("def_rim_makes", "def_rim_shots", 50.0),
+        "rtss_def_mid_fg_pct_allowed": ("def_mid_makes", "def_mid_shots", 50.0),
+        "rtss_def_three_fg_pct_allowed": ("def_three_makes", "def_three_shots", 75.0),
+        # Contest quality as nearest defender, split by zone.
+        "rtss_def_rim_heavy_contest_share": (
+            "def_rim_heavy_contests",
+            "def_rim_contest_observations",
+            50.0,
+        ),
+        "rtss_def_mid_heavy_contest_share": (
+            "def_mid_heavy_contests",
+            "def_mid_contest_observations",
+            50.0,
+        ),
+        "rtss_def_three_heavy_contest_share": (
+            "def_three_heavy_contests",
+            "def_three_contest_observations",
+            75.0,
+        ),
+        "rtss_def_mid_uncontested_share": (
+            "def_mid_uncontested",
+            "def_mid_contest_observations",
+            50.0,
+        ),
+        "rtss_def_three_uncontested_share": (
+            "def_three_uncontested",
+            "def_three_contest_observations",
             75.0,
         ),
         "rtss_touch_double_team_share": ("touch_double_teams", "touches", 100.0),
@@ -576,6 +747,29 @@ def _feature_surface(raw: pd.DataFrame) -> pd.DataFrame:
         ),
         "rtss_def_mid3_qsq_epv": ("def_mid3_qsq_sum", "def_mid3_qsq_n", 100.0),
         "rtss_def_mid3_qsp_epv": ("def_mid3_qsp_sum", "def_mid3_qsp_n", 100.0),
+        # Allowed shot quality split by zone. qSQ is the league-average-shooter
+        # context the defender conceded; qSP adds the actual shooter, so the
+        # qSQ arm is the defender-attributable candidate and qSP is retained
+        # only as a paired benchmark.
+        "rtss_def_mid_qsq_epv": ("def_mid_qsq_sum", "def_mid_qsq_n", 75.0),
+        "rtss_def_mid_qsp_epv": ("def_mid_qsp_sum", "def_mid_qsp_n", 75.0),
+        "rtss_def_three_qsq_epv": ("def_three_qsq_sum", "def_three_qsq_n", 100.0),
+        "rtss_def_three_qsp_epv": ("def_three_qsp_sum", "def_three_qsp_n", 100.0),
+        "rtss_def_mid_closest_distance": (
+            "def_mid_closest_distance_sum",
+            "def_mid_closest_distance_n",
+            75.0,
+        ),
+        "rtss_def_three_closest_distance": (
+            "def_three_closest_distance_sum",
+            "def_three_closest_distance_n",
+            100.0,
+        ),
+        "rtss_def_rim_closest_distance": (
+            "def_rim_closest_distance_sum",
+            "def_rim_closest_distance_n",
+            75.0,
+        ),
         "rtss_def_closest_distance": (
             "def_closest_distance_sum",
             "def_closest_distance_n",
@@ -635,6 +829,7 @@ def build_features(
     crosswalk_path: Path,
     output_path: Path,
     workers: int,
+    seasons: tuple[int, ...] = DEVELOPMENT_SEASONS,
 ) -> pd.DataFrame:
     paths = sorted(rtss_root.rglob("basketball-markings.json"))
     if not paths:
@@ -643,7 +838,11 @@ def build_features(
     combined: defaultdict[tuple[int, str], Counter[str]] = defaultdict(Counter)
     with ProcessPoolExecutor(max_workers=workers) as pool:
         for game_number, records in enumerate(
-            pool.map(_aggregate_game, map(str, paths), chunksize=2),
+            pool.map(
+                partial(_aggregate_game, seasons=seasons),
+                map(str, paths),
+                chunksize=2,
+            ),
             start=1,
         ):
             for record in records:
@@ -730,12 +929,30 @@ def main() -> None:
     parser.add_argument("--crosswalk", type=Path, default=DEFAULT_CROSSWALK)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument(
+        "--include-confirmation-season",
+        action="store_true",
+        help=(
+            f"also build {CONFIRMATION_SEASON} rows. These are scoring-only "
+            "input for the confirmation harness and must never enter a "
+            "development fit; write them to a separate --output path."
+        ),
+    )
     args = parser.parse_args()
+    seasons = DEVELOPMENT_SEASONS
+    if args.include_confirmation_season:
+        seasons = DEVELOPMENT_SEASONS + (CONFIRMATION_SEASON,)
+        if args.output.resolve() == DEFAULT_OUTPUT.resolve():
+            parser.error(
+                "--include-confirmation-season requires an explicit --output "
+                "path so the fenced development surface is never overwritten"
+            )
     frame = build_features(
         args.rtss_root.resolve(),
         args.crosswalk.resolve(),
         args.output.resolve(),
         max(1, args.workers),
+        seasons,
     )
     print(
         f"wrote {len(frame)} player-seasons and "
