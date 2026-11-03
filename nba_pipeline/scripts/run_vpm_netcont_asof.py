@@ -39,9 +39,14 @@ DEFAULT_OUTPUT_ROOT = PIPELINE_ROOT / "results" / "vpm_netcont_asof_td550"
 RESEARCH_ROOT = PIPELINE_ROOT.parent.parent / "vpm"
 EV_16_20 = RESEARCH_ROOT / "vpm" / "data" / "russell_sq_v2_ev_16_22.parquet"
 EV_21_26 = RESEARCH_ROOT / "vpm" / "data" / "russell_sq_v2_ev_21_26.parquet"
+# The published russell_sq_v2 tables stop at 2026. A season past them is scored
+# with the frozen 2026 clean-SQ model, which is the only EV source carrying it.
+PUBLISHED_EV_END_YEAR = 2026
+LIVE_CLEAN_EV = PIPELINE_ROOT / "results" / "live_clean_sq" / "clean_ev_live_2016_2027.parquet"
 
 HALF_LIFE = 550
 START_YEAR = 2016
+FIRST_YEAR = 2020
 COMPONENTS = {
     "DECOMP_NET_RIM_FREQ": (750, 750),
     "DECOMP_NET_RIM_FG": (1000, 750),
@@ -69,7 +74,22 @@ class Snapshot:
 
     @property
     def load_end_year(self) -> int:
-        return pd.Timestamp(self.cutoff_date).year
+        """Last season-end year whose games can reach this snapshot.
+
+        The cutoff's calendar year names the season that has just ended or is
+        halfway through, which is what every quarterly checkpoint needs. A
+        cutoff inside an autumn is the exception: the season already under way
+        carries the next calendar year, so ask the data whether it has games
+        before the cutoff rather than assuming either way. A season with
+        nothing to contribute is skipped downstream, so this only extends the
+        range -- it never shortens one.
+        """
+        calendar_year = pd.Timestamp(self.cutoff_date).year
+        if self.season_end_year > calendar_year and _eligible_game_ids(
+            self.season_end_year, False, pd.Timestamp(self.cutoff_date)
+        ):
+            return self.season_end_year
+        return calendar_year
 
     @property
     def slug(self) -> str:
@@ -83,6 +103,20 @@ def season_snapshots(season_end_year: int) -> list[Snapshot]:
         Snapshot(season_end_year, "may01", f"{season_end_year}-05-01"),
         Snapshot(season_end_year, "aug30", f"{season_end_year}-08-30"),
     ]
+
+
+def nba_season_end_year(date: pd.Timestamp) -> int:
+    """Season-ending year of the NBA season in progress on `date`."""
+    return date.year + 1 if date.month >= 10 else date.year
+
+
+def asof_snapshot(cutoff: pd.Timestamp) -> Snapshot:
+    """A checkpoint at an arbitrary date, labelled the way the grid labels its own."""
+    return Snapshot(
+        nba_season_end_year(cutoff),
+        f"{cutoff:%b%d}".lower(),
+        cutoff.strftime("%Y-%m-%d"),
+    )
 
 
 def _phase_suffix(playoffs: bool) -> str:
@@ -148,6 +182,12 @@ def _run(cmd: list[str], *, log_path: Path, env: dict[str, str] | None = None) -
 
 
 def _ev_source(year: int) -> Path:
+    if year > PUBLISHED_EV_END_YEAR:
+        if not LIVE_CLEAN_EV.exists():
+            raise FileNotFoundError(
+                f"{year} has no published EV table and {LIVE_CLEAN_EV} is absent"
+            )
+        return LIVE_CLEAN_EV
     return EV_16_20 if year <= 2020 else EV_21_26
 
 
@@ -490,21 +530,32 @@ def parse_years(value: str) -> list[int]:
         elif token:
             years.append(int(token))
     years = sorted(set(years))
-    if not years or min(years) < 2020 or max(years) > 2026:
-        raise ValueError("Season-end years must lie within 2020-2026")
+    ceiling = nba_season_end_year(pd.Timestamp.today())
+    if not years or min(years) < FIRST_YEAR or max(years) > ceiling:
+        raise ValueError(f"Season-end years must lie within {FIRST_YEAR}-{ceiling}")
     return years
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--season-end-years", default="2020-2026")
+    parser.add_argument(
+        "--as-of",
+        help="Build one checkpoint at this date (YYYY-MM-DD, or 'today') instead of "
+             "the quarterly grid. The grid has no checkpoint meaning 'now', so this "
+             "is how a season in progress gets a current board.",
+    )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--cores-per-rapm", type=int, default=2)
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
-    years = parse_years(args.season_end_years)
-    snapshots = [snapshot for year in years for snapshot in season_snapshots(year)]
+    if args.as_of:
+        cutoff = pd.Timestamp.today().normalize() if args.as_of == "today" else pd.Timestamp(args.as_of)
+        snapshots = [asof_snapshot(cutoff)]
+    else:
+        years = parse_years(args.season_end_years)
+        snapshots = [snapshot for year in years for snapshot in season_snapshots(year)]
     args.output_root.mkdir(parents=True, exist_ok=True)
     records: list[dict] = []
     for index, snapshot in enumerate(snapshots, 1):
@@ -515,8 +566,11 @@ def main() -> int:
         records.append(record)
         print(f"  {record['status']}: players={record['player_count']} elapsed={record['elapsed_seconds']:.1f}s", flush=True)
 
-    manifest_csv = args.output_root / "snapshot_manifest.csv"
-    manifest_json = args.output_root / "snapshot_manifest.json"
+    # A one-off checkpoint keeps its own manifest: the grid's manifest is the
+    # record of the published 28 and must not be overwritten by a single run.
+    stem = f"snapshot_manifest_{snapshots[0].slug}" if args.as_of else "snapshot_manifest"
+    manifest_csv = args.output_root / f"{stem}.csv"
+    manifest_json = args.output_root / f"{stem}.json"
     pd.DataFrame(records).to_csv(manifest_csv, index=False)
     manifest_json.write_text(json.dumps(records, indent=2) + "\n")
     print(f"Wrote {manifest_csv}", flush=True)

@@ -131,12 +131,23 @@ def spec_id(profile: str, timedecay: bool, half_life: int) -> str:
 
 
 def expected_input_paths(processed_dir: Path, window: Window) -> list[Path]:
+    """Target inputs that must exist before this window solves.
+
+    A season still in progress has no playoff files yet, so its `_PS` triple is
+    absent as a whole rather than corrupt. Nothing here opens those paths --
+    `rapm.py` skips input files it cannot find with a warning -- so requiring
+    them would block the current release over files no solve reads. The `_PS`
+    triple is therefore required only once a season has begun publishing it,
+    which still makes a half-written playoff set an error.
+    """
+    families = ("FIRST_CHANCE", "SECOND_CHANCE_CLEAN", "RAPM")
     paths: list[Path] = []
     for year in range(window.start_year, window.end_year + 1):
         yy = year % 100
-        for suffix in ("", "_PS"):
-            for family in ("FIRST_CHANCE", "SECOND_CHANCE_CLEAN", "RAPM"):
-                paths.append(processed_dir / f"{family}{yy:02d}{suffix}.parquet")
+        paths.extend(processed_dir / f"{family}{yy:02d}.parquet" for family in families)
+        playoffs = [processed_dir / f"{family}{yy:02d}_PS.parquet" for family in families]
+        if any(path.exists() for path in playoffs):
+            paths.extend(playoffs)
     return paths
 
 

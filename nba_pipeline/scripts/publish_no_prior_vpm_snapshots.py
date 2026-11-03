@@ -17,7 +17,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SOURCE_ROOT = REPO_ROOT / "nba_pipeline" / "results" / "vpm_netcont_asof_td550"
 DEFAULT_OUTPUT = DEFAULT_SOURCE_ROOT / "supabase_rows.csv"
 TABLE = "nba_no_prior_vpm_td550_snapshots"
-EXPECTED_SNAPSHOTS = 28
+# The published quarterly grid through 2026. In-season checkpoints are added on
+# top of it, so this is the floor the tree must still meet, not an exact count.
+MIN_SNAPSHOTS = 28
 SOURCE_COLUMN_MAP = {
     "as_of_date": "snapshot_date",
     "o_DECOMP_NET_RIM_FREQ": "o_decomp_net_rim_freq",
@@ -70,8 +72,8 @@ def _with_transport_retry(operation: Any, label: str, attempts: int = 5) -> Any:
 
 def build_publish_frame(source_root: Path = DEFAULT_SOURCE_ROOT) -> pd.DataFrame:
     paths = sorted(source_root.glob("*/*/player_estimates.csv"))
-    if len(paths) != EXPECTED_SNAPSHOTS:
-        raise ValueError(f"expected {EXPECTED_SNAPSHOTS} snapshot files, found {len(paths)}")
+    if len(paths) < MIN_SNAPSHOTS:
+        raise ValueError(f"expected at least {MIN_SNAPSHOTS} snapshot files, found {len(paths)}")
 
     frames: list[pd.DataFrame] = []
     alpha_contract: str | None = None
@@ -100,8 +102,11 @@ def build_publish_frame(source_root: Path = DEFAULT_SOURCE_ROOT) -> pd.DataFrame
         raise ValueError("duplicate (player_id, snapshot_date) rows")
     if set(combined["prior_scale"]) != {0.0}:
         raise ValueError("publication contains nonzero priors")
-    if combined["snapshot_date"].nunique() != EXPECTED_SNAPSHOTS:
-        raise ValueError("publication does not contain 28 distinct snapshot dates")
+    if combined["snapshot_date"].nunique() < MIN_SNAPSHOTS:
+        raise ValueError(
+            f"publication has {combined['snapshot_date'].nunique()} distinct snapshot "
+            f"dates, fewer than the {MIN_SNAPSHOTS} already published"
+        )
 
     lead = [
         "player_id", "player_name", "season_end_year", "snapshot_date",

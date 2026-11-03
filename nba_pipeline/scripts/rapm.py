@@ -29,6 +29,7 @@ from functools import partial
 from pathlib import Path
 import os
 import re
+import unicodedata
 import shutil
 import subprocess
 
@@ -3576,12 +3577,28 @@ def _normalize_player_id(player_id):
         return None
 
 
+def _player_name_fold(name):
+    """Drop diacritics, so an accented name can be compared with a folded one."""
+    return "".join(
+        char for char in unicodedata.normalize("NFD", name)
+        if unicodedata.category(char) != "Mn"
+    )
+
+
 def _player_name_quality(name):
-    """Prefer full multi-token names over truncated labels."""
+    """Rank a name candidate: more tokens first, then keep the diacritics.
+
+    Token count decides first, so a full name always beats a bare surname. Two
+    equally complete spellings are then separated by their accents, because the
+    daily collector's autocomplete map is ASCII-folded -- taking it on a tie
+    spelled "Nikola Topic" and "Pacome Dadiet" and stripped every accent on the
+    board. Length is deliberately not a tiebreak: a longer surname ("Hilario")
+    is not a better name than a shorter official one ("Nene").
+    """
     cleaned = _clean_player_name(name)
     if cleaned is None:
         return (-1, -1)
-    return (len(cleaned.split()), len(cleaned))
+    return (len(cleaned.split()), cleaned != _player_name_fold(cleaned))
 
 
 def _store_player_name(name_map, player_id, player_name):
@@ -3640,6 +3657,59 @@ def _load_neighbor_identity_names(allowed_ids=None):
     return name_map
 
 
+# The daily collector regenerates a current autocomplete map in the downstream
+# pipeline repo. This repo's own `autocomplete_map.csv` is gitignored, so it can
+# sit months stale without anyone noticing -- it was frozen on 2026-08-26 while
+# the collector kept producing a current one, which is why every player who
+# debuted after that date reached the boards as a bare PBP surname. Consulting
+# the live copy as well means a new player is named the day he appears.
+# Override with a colon-separated NBA_RAPM_NAME_MAP_SOURCES.
+_COLLECTOR_NAME_MAPS = (
+    PROJECT_ROOT.parent.parent
+    / "pipelines" / "core" / "nba_rapm" / "data" / "inputs" / "generated" / "autocomplete_map.csv",
+    PROJECT_ROOT.parent.parent / "pipelines" / "core" / "csvs" / "autocomplete_map.csv",
+)
+
+
+def _load_collector_name_maps(allowed_ids=None):
+    """Load names from the daily collector's freshly generated autocomplete map."""
+    override = os.environ.get("NBA_RAPM_NAME_MAP_SOURCES")
+    paths = (
+        [Path(part) for part in override.split(":") if part]
+        if override
+        else list(_COLLECTOR_NAME_MAPS)
+    )
+
+    name_map = {}
+    for path in paths:
+        if not path.exists():
+            continue
+        try:
+            frame = pd.read_csv(path, low_memory=False)
+        except Exception as exc:
+            logging.warning(f"Could not read collector player names from {path}: {exc}")
+            continue
+        _ingest_name_frame(name_map, frame, "nba_id", "player_name", allowed_ids=allowed_ids)
+
+    return name_map
+
+
+def _ids_needing_better_names(name_map, allowed_ids):
+    """IDs with no name yet, or with one no better than a bare surname.
+
+    The later sources used to run only for IDs with no name at all, which made a
+    truncated name permanent: a player the primary map knows only by surname was
+    never offered to a source that knows him in full. Gating on quality instead
+    lets each source improve on the last, and `_store_player_name` still refuses
+    to replace a better name with a worse one.
+    """
+    return {
+        player_id
+        for player_id in allowed_ids
+        if player_id not in name_map or len(name_map[player_id].split()) < 2
+    }
+
+
 def _load_raw_pbp_names(raw_data_dir, allowed_ids=None):
     """Recover missing names directly from raw PBP parquet event columns."""
     name_map = {}
@@ -3679,9 +3749,19 @@ def build_player_name_map(player_ids, name_map_file):
     except Exception as exc:
         logging.warning(f"Could not load primary player-name map: {exc}")
 
-    unresolved_ids = sorted(allowed_ids - set(name_map))
-    if unresolved_ids:
-        supplemental = _load_neighbor_identity_names(allowed_ids=set(unresolved_ids))
+    pending = _ids_needing_better_names(name_map, allowed_ids)
+    if pending:
+        collector = _load_collector_name_maps(allowed_ids=pending)
+        for player_id, player_name in collector.items():
+            _store_player_name(name_map, player_id, player_name)
+        logging.info(
+            "Supplemented %d player names from the daily collector autocomplete map",
+            len(collector),
+        )
+
+    pending = _ids_needing_better_names(name_map, allowed_ids)
+    if pending:
+        supplemental = _load_neighbor_identity_names(allowed_ids=pending)
         for player_id, player_name in supplemental.items():
             _store_player_name(name_map, player_id, player_name)
         logging.info(
@@ -3689,9 +3769,12 @@ def build_player_name_map(player_ids, name_map_file):
             len(supplemental),
         )
 
-    unresolved_ids = sorted(allowed_ids - set(name_map))
-    if unresolved_ids:
-        raw_names = _load_raw_pbp_names(PIPELINE_ROOT / "raw_data", allowed_ids=set(unresolved_ids))
+    # Raw PBP carries a surname only, so it stays last: it is the source that
+    # produced "Boozer" for Cameron Boozer, and it should fill a name only when
+    # nothing better exists anywhere.
+    pending = _ids_needing_better_names(name_map, allowed_ids)
+    if pending:
+        raw_names = _load_raw_pbp_names(PIPELINE_ROOT / "raw_data", allowed_ids=pending)
         for player_id, player_name in raw_names.items():
             _store_player_name(name_map, player_id, player_name)
         logging.info("Recovered %d player names from raw PBP fallback sources", len(raw_names))

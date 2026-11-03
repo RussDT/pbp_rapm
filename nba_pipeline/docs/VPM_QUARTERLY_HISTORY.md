@@ -281,3 +281,60 @@ The history starts in 2014 under this owner contract; older available lineup
 rows train matured priors but are not released as earlier quarterly ratings.
 Live 2027 ingestion/refresh adapters and prospective team-win roster/minutes
 readiness remain separate outstanding work; this receipt does not certify them.
+
+## In-season as-of checkpoints (2026-11-03)
+
+The quarterly grid is oct01/jan01/may01/aug30, so it has no checkpoint meaning
+"now". A season in progress therefore never produced a current board: the lane
+sat at the previous August for months while every other board updated nightly.
+`run_vpm_netcont_asof.py --as-of today` adds one checkpoint at today's date.
+
+Two layers capped the lane at 2026. The Python side was `parse_years`,
+`load_end_year` and the EV routing; the decisive one was four CHECK constraints
+on `public.nba_no_prior_vpm_td550_snapshots` that pinned the table to the 2026
+quarterly grid, so lifting only the Python side still failed at the database.
+Migration `20261103213900_allow_in_season_td550_snapshots.sql` in
+`products/nbarapm-legacy` replaces all four with one general invariant:
+checkpoint label and `season_end_year` are both pure functions of
+`snapshot_date`. That rule was verified against all 34,075 pre-existing rows
+before it was applied. `to_char` is only STABLE, not IMMUTABLE, so the month
+abbreviation comes from a literal array indexed by the snapshot month.
+
+`daily_rapm_update.sh` step 9c runs the as-of solve and publish nightly. The
+as-of checkpoint is a rolling "current", not history -- the grid keeps the
+history -- so yesterday's directory is pruned first, since the publisher
+uploads every checkpoint it finds on disk. The four grid labels are never
+pruned. The publisher upserts on `(player_id, snapshot_date)`, so re-running
+on the same day replaces that day's rows. One write feeds the legacy TD RAPM
+board, the per-player factor panel, and Current Impact's `*_timedecay` columns.
+
+### Player names
+
+The first 2027 board reached the site with 46 surname-only names ("Boozer",
+"Smith"). `rapm.py`'s name cascade ends in a raw-PBP fallback whose
+`playerN_name` columns carry a surname only, and its primary source,
+`autocomplete_map.csv`, is gitignored here and had been frozen since
+2026-08-26 -- before the 2026 draft class played. Every player who debuted
+after that date fell through to the surname fallback. The correct names were
+already being regenerated daily by the collector in `pipelines/core`; the two
+repos were simply not connected.
+
+Three changes in `rapm.py` make the fix durable rather than a one-off file
+edit. A collector tier now reads the daily-regenerated map (override with
+`NBA_RAPM_NAME_MAP_SOURCES`). The cascade is gated on name *quality* instead
+of absence, so a player the primary map knows only by surname is still offered
+to a source that knows him in full; previously a truncated name was permanent.
+And `_player_name_quality` ranks on `(token count, has diacritics)`: the
+collector's map is ASCII-folded, so ranking on length alone both stripped
+every accent on the board and preferred "Hilario" over "Nene".
+
+Verification: a full re-solve took surname-only names from 46 to 1 ("Nene",
+which is correct) and restored 9 accented names, with `vpm_net`/`vpm_off`/
+`vpm_def` bit-identical across all 1,608 shared players
+(`max|delta| = 0.00e+00`) -- only names moved. Note that
+`run_vpm_netcont_asof.py` caches solved components and `--force` does not
+invalidate that cache, so a name fix requires clearing the `components`
+directory, not just `--force`.
+
+Live after publication: 29 snapshot dates, newest 2026-11-03, 1,608 rows,
+`nba_td550_profile_factors` in sync, dirty queue drained.
