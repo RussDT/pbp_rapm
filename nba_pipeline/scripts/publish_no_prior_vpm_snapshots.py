@@ -140,12 +140,23 @@ def publish(frame: pd.DataFrame, batch_size: int) -> None:
         )
         print(f"uploaded batch {number}: {len(batch)} rows")
 
+    # Verify only the dates published here. Earlier in-season checkpoints stay in
+    # the table after their local directories are pruned, so a whole-table count
+    # grows every day and can never equal the local frame.
+    published_dates = sorted(frame["snapshot_date"].unique().tolist())
     count = _with_transport_retry(
-        lambda: client.table(TABLE).select("player_id", count="exact", head=True).execute(),
+        lambda: client.table(TABLE)
+        .select("player_id", count="exact", head=True)
+        .in_("snapshot_date", published_dates)
+        .execute(),
         "verification",
     ).count
     if count != len(frame):
-        raise RuntimeError(f"remote row count {count} does not match local {len(frame)}")
+        raise RuntimeError(
+            f"remote row count {count} across {len(published_dates)} published "
+            f"snapshot dates does not match local {len(frame)}"
+        )
+    print(f"verified {count} remote rows across {len(published_dates)} snapshot dates")
 
 
 def main() -> int:

@@ -7,7 +7,7 @@ for team/position info, calculates ranks and percentiles, then upserts
 to the timedecay_rapm table.
 
 Usage:
-    python upload_timedecay_rapm.py                          # default: 21-26 file
+    python upload_timedecay_rapm.py                          # default: 6Y window ending NBA_RAPM_SEASON_YEAR
     python upload_timedecay_rapm.py --source-file ../master_results/weighted_factors_14_18_all_rb_td700.csv
 """
 
@@ -36,8 +36,12 @@ logging.basicConfig(
 # Load environment variables
 load_dotenv(PROJECT_ROOT / ".env")
 
-# Default source file
-DEFAULT_SOURCE_FILE = MASTER_RESULTS_DIR / "weighted_factors_21_26_all_rb_se_td700.csv"
+# Default source file: the 6-year rb+se td700 window ending at
+# NBA_RAPM_SEASON_YEAR (default 2027 -> weighted_factors_22_27_all_rb_se_td700.csv)
+SEASON_YEAR = int(os.environ.get("NBA_RAPM_SEASON_YEAR", "2027"))
+DEFAULT_SOURCE_FILE = MASTER_RESULTS_DIR / (
+    f"weighted_factors_{(SEASON_YEAR - 5) % 100:02d}_{SEASON_YEAR % 100:02d}_all_rb_se_td700.csv"
+)
 
 # Metrics that get ranks/percentiles (higher = better for all)
 RANKED_METRICS = [
@@ -114,7 +118,7 @@ def upload_to_supabase_records(supabase: Client, records: list, year: int) -> bo
 def main():
     parser = argparse.ArgumentParser(description="Upload time-decay RAPM to Supabase")
     parser.add_argument('--source-file', type=str, default=None,
-                        help='Path to weighted_factors CSV (default: weighted_factors_21_26_all_rb_se_td700.csv)')
+                        help=f'Path to weighted_factors CSV (default: {DEFAULT_SOURCE_FILE.name})')
     args = parser.parse_args()
 
     source_file = Path(args.source_file) if args.source_file else DEFAULT_SOURCE_FILE
@@ -126,9 +130,9 @@ def main():
 
     # Connect to Supabase
     url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY")
     if not url or not key:
-        logging.error("SUPABASE_URL or SUPABASE_KEY missing in .env")
+        logging.error("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY/SUPABASE_KEY missing in .env")
         sys.exit(1)
 
     supabase: Client = create_client(url, key)

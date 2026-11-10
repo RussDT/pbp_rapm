@@ -1,8 +1,10 @@
 """
 Update the current-season scposs rows in the per-player CSV files.
 
-Reads `weighted_factors_<window>_all.csv` from the per-window
-`nba_pipeline/results/rapm_<window>_all` folders, transforms them, and updates
+Reads `weighted_factors_<window>_all_se.csv` from the per-window
+`nba_pipeline/results/rapm_<window>_all_se` folders (the August 2026
+season-effects naming, matching update_2026_purerapm.py and
+update_2026_scaledoutput.py), transforms them, and updates
 `<csvs>/scposs/{nba_id}.csv`. Despite the historical `2026` in this filename,
 the script is season parameterized: pass `--year 2027` (or set
 `NBA_RAPM_SEASON_YEAR=2027`). Season year N means season (N-1)-N; two-digit
@@ -53,7 +55,11 @@ def build_source_files(latest_year: int):
     for length in WINDOW_LENGTHS:
         token = range_token(latest_year, length)
         source_files.append(
-            (f"rapm_{token}_all", f"weighted_factors_{token}_all.csv", f"{length}Y")
+            (
+                f"rapm_{token}_all_se",
+                f"weighted_factors_{token}_all_se.csv",
+                f"{length}Y",
+            )
         )
     return source_files
 

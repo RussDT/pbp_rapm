@@ -456,6 +456,7 @@ downstream is overridable:
 | `NBA_RAPM_RAPMS_DIR` | `<repo>/../rapms` | `rapms` repo checkout; sync/push skipped with a warning when absent |
 | `NBA_RAPM_CURRENT_METRICS_DIR` | unset | `nba_rapm` dir of the downstream NBA pipeline; step skipped with a warning when unset |
 | `NBA_RAPM_CURRENT_METRICS_SCRIPT` | `collect_source_<SEASON_YEAR>.py` | Current-metrics collector filename |
+| `NBA_RAPM_CSVS_PUBLISH_SCRIPT` | core `scripts/publish_csvs.sh` | Shared publisher: pins the branch, applies the regression guard, leaves the checkout untouched |
 | `NBA_RAPM_PUSH` | `1` | Set to `0` to skip the `csvs`/`rapms` commits and pushes |
 
 The Python producers read the same variables plus:
@@ -494,7 +495,7 @@ skip rather than aborting the run.
    - run `$NBA_RAPM_CURRENT_METRICS_DIR/$NBA_RAPM_CURRENT_METRICS_SCRIPT --no-sync` with `NBA_PIPELINE_CSV_DIR=$NBA_RAPM_CSVS_DIR`; the collector defaults to `collect_source_<SEASON_YEAR>.py`, so a new season needs either a collector named for it or an explicit `NBA_RAPM_CURRENT_METRICS_SCRIPT`
    - outputs include `current_comp.csv`, `structuredtest.csv`, `DARKO.csv`, `lebron.csv`, and `players_by_player.csv`
    - current 1Y/2Y/3Y/4Y/5Y RAPM rows remain on the last audited `csvs/scposs` surface until the DECOMP mapper is restored; `TimedecayRAPM` and `*_timedecay` remain on their original source
-14. Commit & push the touched `csvs` outputs (`PureRAPM.csv`, `PureRAPMPeaks.csv`, `SCALEDOUTPUT_SMALLER.csv`, `current_comp.csv`, `structuredtest.csv`, `DARKO.csv`, `lebron.csv`, `players_by_player.csv`, `autocomplete_map.csv`, `josh_rapm/`, and `scposs/`) to `RussDT/csvs@test-branch`, which is the branch read by the app.
+14. Publish changed `csvs` outputs to `RussDT/csvs@test-branch`, the branch the app reads, through the shared `publish_csvs.sh`; the checkout stays on `main` and regressed files are held back.
 15. Commit & push the `rapms` repo
 
 ### rapms Repo

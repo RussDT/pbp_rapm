@@ -5,7 +5,7 @@ Upload Six-Factor RAPM to Supabase
 Reads multiple weighted_factors CSVs from master_results (different year windows),
 calculates ranks and percentiles per window, then upserts to the six_factor table.
 
-Uploads:
+Uploads, for NBA_RAPM_SEASON_YEAR (default 2027; 26 = 2025-26 shown):
   - 21_26 through 26_all (no td, no rb) → rb=false, timedecay=false
   - 14_26_all_rb → rb=true, timedecay=false
 
@@ -36,15 +36,24 @@ logging.basicConfig(
 
 load_dotenv(PROJECT_ROOT / ".env")
 
+# Season end year (2027 = 2026-27); matches daily_rapm_update.sh.
+SEASON_YEAR = int(os.environ.get("NBA_RAPM_SEASON_YEAR", "2027"))
+
+
+def window_token(season_year: int, years: int) -> str:
+    end = season_year % 100
+    if years == 1:
+        return f"{end:02d}"
+    return f"{(season_year - years + 1) % 100:02d}_{end:02d}"
+
+
 # Files to upload: (filename, year_interval, rb)
 SOURCE_FILES = [
-    ("weighted_factors_26_all_se.csv", "1Y", False),
-    ("weighted_factors_25_26_all_se.csv", "2Y", False),
-    ("weighted_factors_24_26_all_se.csv", "3Y", False),
-    ("weighted_factors_23_26_all_se.csv", "4Y", False),
-    ("weighted_factors_22_26_all_se.csv", "5Y", False),
-    ("weighted_factors_21_26_all_se.csv", "6Y", False),
-    ("weighted_factors_14_26_all_rb.csv", "13Y", True),
+    *[
+        (f"weighted_factors_{window_token(SEASON_YEAR, n)}_all_se.csv", f"{n}Y", False)
+        for n in range(1, 7)
+    ],
+    (f"weighted_factors_{window_token(SEASON_YEAR, 13)}_all_rb.csv", "13Y", True),
 ]
 
 # Column rename: CSV → table
@@ -133,9 +142,9 @@ def clean_records(records_list: list) -> list:
 def main():
     # Connect to Supabase
     url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY")
     if not url or not key:
-        logging.error("SUPABASE_URL or SUPABASE_KEY missing in .env")
+        logging.error("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY/SUPABASE_KEY missing in .env")
         sys.exit(1)
 
     supabase: Client = create_client(url, key)

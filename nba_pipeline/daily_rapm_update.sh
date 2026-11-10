@@ -14,6 +14,7 @@
 #   NBA_RAPM_SEASON_YEAR            season end year (default 2027)
 #   NBA_RAPM_PIPELINE_DIR           nba_pipeline dir (default: this script's dir)
 #   NBA_RAPM_CSVS_DIR               csvs repo checkout (default <repo>/../csvs)
+#   NBA_RAPM_CSVS_PUBLISH_SCRIPT    shared csvs publisher (default core scripts/publish_csvs.sh)
 #   NBA_RAPM_CSVS_BRANCH            expected csvs branch (default test-branch)
 #   NBA_RAPM_RAPMS_DIR              rapms repo checkout (default <repo>/../rapms)
 #   NBA_RAPM_CURRENT_METRICS_DIR    nba_rapm dir of the downstream NBA pipeline
@@ -136,6 +137,7 @@ PROJECT_DIR="$(dirname "$PIPELINE_DIR")"
 LOG_FILE="$PIPELINE_DIR/logs/daily_update_$(date +%Y%m%d).log"
 
 CSVS_DIR="${NBA_RAPM_CSVS_DIR:-$PROJECT_DIR/../csvs}"
+CSVS_PUBLISH_SCRIPT="${NBA_RAPM_CSVS_PUBLISH_SCRIPT:-$PROJECT_DIR/../../pipelines/core/scripts/publish_csvs.sh}"
 CSVS_BRANCH="${NBA_RAPM_CSVS_BRANCH:-test-branch}"
 RAPMS_DIR="${NBA_RAPM_RAPMS_DIR:-$PROJECT_DIR/../rapms}"
 CURRENT_METRICS_DIR="${NBA_RAPM_CURRENT_METRICS_DIR:-}"
@@ -362,17 +364,20 @@ MASTER_DIR="$PIPELINE_DIR/master_results"
 TD_DIR="$PIPELINE_DIR/results/td"
 mkdir -p "$MASTER_DIR"
 
-for f in \
+copy_publish_artifact \
+    "$TD_DIR/rim_freq_${W6}_all_td700_results.csv" \
     "rimfreq_${W6}_all_td700_results.csv" \
+    "$TD_DIR/rimfreq_${W6}_all_td700_results.csv"
+
+copy_publish_artifact \
+    "$TD_DIR/rim_fg_pct_${W6}_all_td700_results.csv" \
     "rimfgpct_${W6}_all_td700_results.csv" \
-    "midrangefreq_${W6}_all_td700_results.csv"; do
-    if [ -f "$TD_DIR/$f" ]; then
-        cp "$TD_DIR/$f" "$MASTER_DIR/$f"
-        log "  Copied $f to master_results/"
-    else
-        log "  WARNING: $f not found in $TD_DIR"
-    fi
-done
+    "$TD_DIR/rimfgpct_${W6}_all_td700_results.csv"
+
+copy_publish_artifact \
+    "$TD_DIR/midrange_freq_${W6}_all_td700_results.csv" \
+    "midrangefreq_${W6}_all_td700_results.csv" \
+    "$TD_DIR/midrangefreq_${W6}_all_td700_results.csv"
 
 copy_publish_artifact \
     "$TD_DIR/transition_freq_${W3}_all_td700_results.csv" \
@@ -472,6 +477,9 @@ upload $PYTHON_PATH "$SCRIPTS_DIR/publish_no_prior_vpm_snapshots.py" --publish
 log ""
 log "[$(date +%H:%M:%S)] Syncing master_results to rapms repo..."
 RAPMS_MASTER="$RAPMS_DIR/master_results"
+if [ "$PUSH_DOWNSTREAM" = "1" ] && [ -d "$RAPMS_DIR/.git" ]; then
+    git -C "$RAPMS_DIR" pull --ff-only origin main 2>&1 | tee -a "$LOG_FILE" || true
+fi
 
 if [ -d "$RAPMS_MASTER" ]; then
     for f in \
@@ -551,27 +559,36 @@ fi
 
 if [ "$PUSH_DOWNSTREAM" != "1" ]; then
     log "[$(date +%H:%M:%S)] NBA_RAPM_PUSH=$PUSH_DOWNSTREAM; skipping csvs/rapms commits and pushes"
-elif [ ! -d "$CSVS_DIR/.git" ]; then
-    log "  WARNING: csvs repo not found at $CSVS_DIR; push skipped"
-    log "           set NBA_RAPM_CSVS_DIR to the csvs checkout to enable it"
 else
-    log "[$(date +%H:%M:%S)] Pushing csvs repo..."
-    cd "$CSVS_DIR"
-    CURRENT_CSVS_BRANCH="$(git branch --show-current)"
-    if [ "$CURRENT_CSVS_BRANCH" != "$CSVS_BRANCH" ]; then
-        log "  ERROR: csvs repo is on $CURRENT_CSVS_BRANCH, expected $CSVS_BRANCH"
-        exit 1
+    # csvs goes through the shared publisher: it pins the branch, fetches the
+    # current tip, applies the regression guard and never touches the checkout,
+    # which sits on main with uncommitted pipeline output.
+    if [ ! -x "$CSVS_PUBLISH_SCRIPT" ]; then
+        log "  WARNING: csvs publisher not found at $CSVS_PUBLISH_SCRIPT; push skipped"
+    elif ! git -C "$CSVS_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+        log "  WARNING: csvs repo not found at $CSVS_DIR; push skipped"
+        log "           set NBA_RAPM_CSVS_DIR to the csvs checkout to enable it"
+    else
+        log "[$(date +%H:%M:%S)] Publishing csvs repo to $CSVS_BRANCH..."
+        CSVS_DIR="$CSVS_DIR" CSVS_BRANCH="$CSVS_BRANCH" "$CSVS_PUBLISH_SCRIPT" \
+            --message "Daily RAPM csvs update $(date +%Y-%m-%d)" 2>&1 | tee -a "$LOG_FILE" \
+            || true
+        if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+            log "  WARNING: csvs publish failed; continuing to rapms"
+        fi
     fi
-    git add PureRAPM.csv PureRAPMPeaks.csv SCALEDOUTPUT_SMALLER.csv current_comp.csv structuredtest.csv DARKO.csv lebron.csv players_by_player.csv autocomplete_map.csv josh_rapm scposs
-    git diff --cached --quiet || git commit -m "Daily RAPM csvs update $(date +%Y-%m-%d)"
-    git push origin "$CSVS_BRANCH"
 
     if [ -d "$RAPMS_DIR/.git" ]; then
         log "[$(date +%H:%M:%S)] Pushing rapms repo..."
-        cd "$RAPMS_DIR"
-        git add -A
-        git diff --cached --quiet || git commit -m "Daily RAPM update $(date +%Y-%m-%d)"
-        git push origin main
+        (
+            cd "$RAPMS_DIR" &&
+            git add -A &&
+            { git diff --cached --quiet || git commit -m "Daily RAPM update $(date +%Y-%m-%d)"; } &&
+            git push origin main
+        ) 2>&1 | tee -a "$LOG_FILE"
+        if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+            log "  WARNING: rapms push failed"
+        fi
     else
         log "  WARNING: rapms repo not found at $RAPMS_DIR; push skipped"
     fi
