@@ -1,5 +1,6 @@
 # NBA Pipeline Docs
 
+- [Nightly full-feature VPM runner](VPM_DAILY_RUNNER.md) - 7:30 AM launchd job: R2 completeness gate, frozen-model build, numeric gates, gated publish to the nbarapm VPM Preview; Nov 3 replay byte-identical; first real publish Nov 9 (146 games)
 - [Predictive VPM field benchmark](VPM_FIELD_BENCHMARK.md) - seven preseason game/season, continuity and veterans-only tests against dated EPM and lagged DARKO/LEBRON/MAMBA; owner-requested 1.10×/1.20× scale diagnostics
 
 This directory is the canonical FreshDocs surface for `/Users/russellthomas/Docs/pbp_rapm`.

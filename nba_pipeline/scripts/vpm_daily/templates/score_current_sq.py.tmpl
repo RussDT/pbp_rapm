@@ -1,0 +1,100 @@
+"""Apply existing chronological SQ models to cached 2027 shots; never fit."""
+from pathlib import Path
+import hashlib,importlib.util,json,sys,time
+import joblib,numpy as np,pandas as pd
+R=Path('/Users/russ/Documents/Codex/basketball/nba/research/rapm');V=R.parent/'vpm'
+D=Path(__file__).resolve().parent
+SQ=V/'vpm/results/harness/vpm_clean_sq_preseason_v2/sq'
+CURRENT=R/'nba_pipeline/results/estimated_skills/current_refresh_@@TAG@@_v1'
+CUT=pd.Timestamp('@@CUT@@')
+sys.path[:0]=[str(V),str(R/'nba_pipeline/scripts')]
+from vpm.harness import chronological_sq as C
+import build_pbp_shot_quality as P
+
+def sha(p):
+ h=hashlib.sha256()
+ with Path(p).open('rb')as f:
+  for b in iter(lambda:f.read(1024*1024),b''):h.update(b)
+ return h.hexdigest()
+def write(p,obj):
+ with p.open('x')as f:json.dump(obj,f,indent=2,sort_keys=True,allow_nan=False);f.write('\n')
+def predict(frame,model,meta):
+ x=frame.copy()
+ for raw,col in [('event_action_type','action_code'),('shot_family','family_code')]:
+  x[col]=x[raw].map({v:i for i,v in enumerate(meta['vocabulary'][raw])}).fillna(-1).astype(float)
+ if meta['features']!=C.FEATURES or 'made'in C.FEATURES:raise ValueError('Frozen predictor schema differs')
+ prediction=model.predict_proba(x[C.FEATURES].astype(float))[:,1]
+ if not np.isfinite(prediction).all()or not ((prediction>=0)&(prediction<=1)).all():raise ValueError('Invalid frozen predictions')
+ x['p_make']=prediction;x['ev_pts']=prediction*x.shot_value
+ return x
+
+def main():
+ started=time.perf_counter();pins={};rawpath=CURRENT/'native_source/NBA27_current.parquet'
+ def pin(p,expected=None):
+  p=Path(p);h=sha(p)
+  if expected is not None and h!=expected:raise ValueError('Source/model changed: '+str(p))
+  pins[str(p)]=h;return h
+ for p in [Path(__file__),Path(C.__file__),Path(P.__file__),SQ/'preparation.json',SQ/'fit_manifest.json',CURRENT/'native_source/source_current.json']:pin(p)
+ raw=pd.read_parquet(rawpath);pin(rawpath)
+ if raw.duplicated(['game_id','event_num']).any()or not raw.event_num.equals(raw.cloud_event_order):raise ValueError('Current event-order identity differs')
+ if not pd.to_datetime(raw.game_date).lt(CUT).all():raise ValueError('Future current shot')
+ makes,misses=P.event_make_miss_flags(raw.event_type);shots=raw.loc[makes|misses].copy();makes=makes.loc[shots.index];misses=misses.loc[shots.index]
+ sides,description=P.choose_shot_side(shots,makes,misses)
+ if not sides.isin(['Home','Away']).all()or shots.player1_id.le(0).any():raise ValueError('Unresolved shot identity')
+ shots['shot_description']=description;shots['is_make']=makes.astype(bool);shots['shooter_id']=shots.player1_id.astype(np.int64)
+ shots['season_end_year']=2027;shots['season_type']='RS';shots['game_id']=C.normal_game_id(shots.game_id)
+ shots=P.add_shot_features(shots)
+ totalshots=len(shots);zones=shots.shot_zone.value_counts().to_dict()
+ d=shots.loc[shots.shot_zone.isin(['short_mid','long_mid','deep_two','three'])].copy()
+ d['zone']=np.where(d.shot_zone.eq('three'),'three','mid');d['made']=d.is_make.astype(int);d['playoffs']=0
+ clock=d.time_quarter.astype('string').str.extract(r'^(\d+):(\d+(?:\.\d+)?)$')
+ d['seconds_remaining_quarter']=pd.to_numeric(clock[0])*60+pd.to_numeric(clock[1])
+ if d.seconds_remaining_quarter.isna().any():raise ValueError('Missing original MM:SS clock')
+ history_columns=['season_end_year','game_id','event_num','shooter_id','zone','made','game_date','period']
+ prep=json.loads((SQ/'preparation.json').read_bytes())
+ pin(SQ/'features.parquet',prep['feature_sha256']);pin(SQ/'career_seed_counts.parquet',prep['seed_sha256'])
+ history=pd.read_parquet(SQ/'features.parquet',columns=history_columns)
+ if history.season_end_year.max()!=2026 or pd.to_datetime(history.game_date).max()>=d.game_date.min():raise ValueError('Historical/current clock overlap')
+ seed=pd.read_parquet(SQ/'career_seed_counts.parquet')
+ # Exact original causal count algorithm over the saved prefix and current suffix.
+ talent=C.causal_talent(pd.concat([history,d[history_columns]],ignore_index=True),seed)
+ talent=talent.loc[talent.season_end_year.eq(2027),['game_id','event_num','sh_zone_rate','sh_zone_n','sh_jumper_rate','league_zone_prior','league_jumper_prior']]
+ d=d.merge(talent,on=['game_id','event_num'],validate='one_to_one')
+ # All cached game-agnostic snapshots, same strict-before-date matching as prepare().
+ snapshots=[];epm_dates=[]
+ for path in sorted((R/'nba_pipeline/cache/epm').glob('epm_all_*_go0.csv')):
+  cut=pd.Timestamp(path.name.split('_')[2])
+  if cut>=d.game_date.max():continue
+  mp=path.with_suffix('.manifest.json');meta=json.loads(mp.read_bytes())
+  pin(path,meta['csv_sha256']);pin(mp)
+  if meta['requested_date']!=str(cut.date())or any(pd.Timestamp(date)>cut for date in meta['provider_effective_dates']):raise ValueError('EPM date authority differs')
+  e=pd.read_csv(path,usecols=['player_id','p_fg3pct','p_fgpct_mid','p_ftpct','p_fg3a_100']);e.player_id=e.player_id.astype(np.int64)
+  if e.player_id.duplicated().any():raise ValueError('Duplicate EPM identity')
+  e.loc[e.p_fg3a_100.fillna(0)<.5,'p_fg3pct']=np.nan;e['epm_requested_date']=cut;snapshots.append(e);epm_dates.append(str(cut.date()))
+ e=pd.concat(snapshots,ignore_index=True).rename(columns={'player_id':'shooter_id','p_fg3pct':'epm_fg3pct','p_fgpct_mid':'epm_midpct','p_ftpct':'epm_ftpct','p_fg3a_100':'epm_fg3a'})
+ e.epm_requested_date=pd.to_datetime(e.epm_requested_date).astype('datetime64[ns]');d.game_date=pd.to_datetime(d.game_date).astype('datetime64[ns]')
+ d=pd.merge_asof(d.sort_values('game_date'),e.sort_values('epm_requested_date'),left_on='game_date',right_on='epm_requested_date',by='shooter_id',direction='backward',allow_exact_matches=False)
+ present=d.epm_requested_date.notna()
+ if (d.loc[present,'epm_requested_date']>=d.loc[present,'game_date']).any():raise ValueError('Future EPM predictor')
+ model_receipts=[];scored=[]
+ fit=json.loads((SQ/'fit_manifest.json').read_bytes())
+ for zone in ['mid','three']:
+  mp=SQ/'models'/('2026_'+zone+'.json');meta=json.loads(mp.read_bytes());pin(mp,fit['models'][mp.name]);pin(mp.with_suffix('.joblib'),meta['model_sha256'])
+  if meta['training_end']>=str(d.game_date.min().date())or meta['season']!=2026:raise ValueError('Frozen training clock differs')
+  model=joblib.load(mp.with_suffix('.joblib'));subset=d.loc[d.zone.eq(zone)].copy();out=predict(subset,model,meta)
+  # Made outcome is recorded, never consumed by inference. Verify directly.
+  altered=subset.copy();altered['made']=1-altered.made
+  if not np.array_equal(out.p_make.to_numpy(),predict(altered,model,meta).p_make.to_numpy()):raise ValueError('Outcome entered frozen inference')
+  scored.append(out);model_receipts.append(dict(zone=zone,model_path=str(mp.with_suffix('.joblib')),model_sha256=meta['model_sha256'],training_end=meta['training_end'],original_scored_season=2026,current_scored_season=2027,rows=len(out),new_fits=0))
+ result=pd.concat(scored).sort_values(['game_date','game_id','period','event_num'],kind='stable').reset_index(drop=True)
+ cols=['season_end_year','game_id','event_num','shooter_id','zone','made','shot_value','p_make','ev_pts','game_date']
+ ev=result[cols]
+ if len(ev)!=len(d)or ev.duplicated(['game_id','event_num']).any():raise ValueError('Incomplete EV keys')
+ for name,frame in [('features.parquet',result),('clean_ev.parquet',ev)]:
+  path=D/name
+  if path.exists():raise FileExistsError('Never overwrite current SQ outputs')
+  frame.to_parquet(path,index=False)
+ mapping=result[['game_id','event_num','cloud_action_number','cloud_event_id','zone']];mapping.to_parquet(D/'event_identity.parquet',index=False)
+ receipt=dict(schema='frozen_current_sq_inference_v1',cut=str(CUT.date()),season_end_year=2027,status='scored_current_season_with_existing_frozen_2026_models',source_games=int(raw.game_id.nunique()),shot_games=int(ev.game_id.nunique()),raw_field_goals=totalshots,raw_shot_zones={str(k):int(v)for k,v in zones.items()},eligible_mid_three_shots=len(d),scored_rows=len(ev),scored_by_zone={str(k):int(v)for k,v in ev.zone.value_counts().items()},coverage=1.0,first_game_date=str(ev.game_date.min().date()),last_game_date=str(ev.game_date.max().date()),models=model_receipts,features=C.FEATURES,feature_parser='Unchanged build_pbp_shot_quality.add_shot_features (including original description-based defaults)',talent_clock='Unchanged chronological_sq.causal_talent: pre2015 half-count seed plus observed2015–26/current strictly before whole game-day; league priors preceding season2026',epm_clock='Unchanged strict-before-game merge_asof of cached predictive p_*; missing skills retained as NaN',latest_epm_snapshot=max(epm_dates),epm_covered_rows=int(present.sum()),epm_missing_rows=int((~present).sum()),distance_source={str(k):int(v)for k,v in result.distance_source.value_counts().items()},event_key='game_id + cloud event_order = raw event_num; actionNumber retained only in event_identity',outcome_predictor_test='flipping made leaves every probability bit-identical',new_fits=0,pointer_changed=False,input_hashes=pins,output_hashes={str(D/name):sha(D/name)for name in ['features.parquet','clean_ev.parquet','event_identity.parquet']},elapsed_seconds=time.perf_counter()-started)
+ write(D/'receipt.json',receipt);print(json.dumps({k:v for k,v in receipt.items()if k not in ['input_hashes','features']},indent=2),flush=True)
+if __name__=='__main__':main()
