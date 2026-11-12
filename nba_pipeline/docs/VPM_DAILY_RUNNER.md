@@ -20,7 +20,10 @@ A failure shows a macOS notification.
    NBA CDN schedule returns 403, so ESPN is the reference.
 3. Snapshots R2, renders the Nov 3 stage code for the cut date
    (`templates/*.py.tmpl`, `render.py`), then builds features, tracking, SQ
-   atoms and the board.
+   atoms and the own-only comparison board. By default, it then restores the
+   frozen clean-v61 entrant/background prior before re-solving the same Parent
+   likelihood. The own mapper, native geometry, penalties and SQ corrections
+   remain unchanged.
 4. Numeric gates: normal-equation error <= 1e-10, native Net gap <= 1e-9, no
    fits, O + D = total.
 5. `publish_vpm_preview.py --publish` inserts one row into
@@ -49,12 +52,42 @@ Run from `nba_pipeline/` with `../.venv/bin/python`:
 Publishing is a dry run unless `--publish` is passed. `--tag NAME --from-saved`
 rebuilds into a separate folder from a saved snapshot.
 
+`--prior-mode own-only` keeps the comparison control. The default is
+`--prior-mode entrant`. The restored board, actual background/combined arrays
+and same-cut comparison CSV are saved in a separate `_entrant_board_v1` folder;
+the original compact own-only board is retained.
+
+## Entrant/background prior
+
+The frozen 2025 clean-v61 component model supplies background ability. It is
+blended with the current full-feature own prior using
+`background_weight = max(1 - career_NBA_possessions / 2000, 0)` before the lineup
+solve. Career exposure uses the original historical counts and exact dated
+current native appearances, separately from feature masks and TD weights.
+Veterans at 2,000 possessions retain their exact own prior. Unidentified
+low-experience players at the archive's 1997 boundary retain own-only priors
+with a missing reported background weight; current preview players have
+identified weights.
+
+Completed 2026 college counts and birthdates are fetched from Supabase
+`draft_ready_data`, joined by unique full name with conflicting NBA IDs
+rejected, and transformed by the original frozen estimator. Its `draft_pick`
+field is deliberately excluded: the frozen actual-draft source ends in 2025.
+Missing backgrounds use the model's learned population/missing-data fallback.
+No entrant coefficients, own mapper or SQ model are refitted.
+
 ## Evidence
 
 - Replaying Nov 3 from saved inputs reproduced the live board exactly: rankings
   642 x 168, canonical arrays and metadata byte-identical, Supabase players
   equal. Only path-bearing manifest hashes differ.
 - First real run: 2026-11-09, 146 games, 641 players, read back from Supabase.
+- Entrant restoration: 2026-11-12, through November 11, 170 games and 641
+  preview players. Zero background weight recovers the own-only board within
+  5.33e-15; actual restored normal-equation error is 4.68e-15 and native Net
+  closure is 1.71e-15. All 20 persisted arrays read back exactly. Same-cut
+  changes are retained in `own_only_comparison.csv`; this rerun is not a new
+  predictive-performance test.
 
 ## Known limits
 

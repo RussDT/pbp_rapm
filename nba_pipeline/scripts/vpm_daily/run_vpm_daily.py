@@ -182,7 +182,7 @@ def build_preview(paths, values, result):
         raise ValueError('Board fails its numerical closure gates')
     if result['new_mapper_fits'] != 0 or result['new_objective_tuning'] != 0 or result['selected_pointer_changed']:
         raise ValueError('Board changed a frozen choice')
-    d = pd.read_csv(S/'current_rankings.csv', float_precision='round_trip').rename(columns={'player_id': 'nba_id'})
+    d = pd.read_csv(Path(result.get('rankings_path', S/'current_rankings.csv')), float_precision='round_trip').rename(columns={'player_id': 'nba_id'})
     if not d.nba_id.is_unique or len(d) != result['recent_players'] or not d.estimate_date.eq(cut).all():
         raise ValueError('Rankings identity differs')
     if (d.ovpm+d.dvpm-d.vpm).abs().max() >= 1e-9:
@@ -195,6 +195,13 @@ def build_preview(paths, values, result):
         current_sq=True, preview=True,
         qualification='Research preview; conditional fixed fits and historical source vintages; not evidence of predictive superiority.',
         sq_policy='Frozen2026SQ models applied without refitting; predictive EPM skill inputs use cached pregame snapshots, latest request2026-09-20; original missingness retained.')
+    metadata.update(prior_regime=result.get('prior_regime', 'uniform_own_only'),
+        background_prior_restored=result.get('background_prior_restored', False),
+        entrant_metadata=({key: result['entrant_metadata'][key] for key in [
+            'model_sha256', 'fit_cut', 'fit_end', 'full_own_possessions', 'frozen_draft_max_year', 'qualification']}
+            if result.get('entrant_metadata') else None),
+        deployment_comparison=('Frozen entrant/background blend added by owner request; no new predictive-performance claim'
+                               if result.get('background_prior_restored') else 'Own-only research control'))
     rows = d.astype(object).where(pd.notnull(d), None).to_dict(orient='records')
     (S/'supabase_preview.json').write_text(json.dumps(dict(snapshot_date=cut, player_count=len(rows), metadata=metadata,
         players=rows), ensure_ascii=False, allow_nan=False, separators=(',', ':'))+'\n')
@@ -207,6 +214,7 @@ def main():
     parser.add_argument('--tag', help='Output-folder tag. Default: the date as YYYYMMDD.')
     parser.add_argument('--from-saved', type=Path, help='Reproduction only: reuse this saved R2 snapshot folder.')
     parser.add_argument('--wait-hours', type=float, default=4.0)
+    parser.add_argument('--prior-mode', choices=['entrant', 'own-only'], default='entrant', help='Restore the frozen entrant prior by default; own-only is a comparison control.')
     args = parser.parse_args()
     cut = pd.Timestamp(args.cut or pd.Timestamp.now(tz='America/Los_Angeles').date())
     if cut.year+(cut.month >= 7) != SEASON:
@@ -229,6 +237,9 @@ def main():
         raise ValueError('Manifest and snapshot game counts differ')
     values.update(GAMES=refresh['manifest_games'], LAST_GAME=str(pd.to_datetime(str(max(dates))).date()))
     result = emit(paths, values, refresh, values)
+    if args.prior_mode == 'entrant':
+        run(HERE/'restore_entrant_background.py', [paths['emit']], paths['emit']/'restore_entrant.log')
+        result = json.loads((paths['emit']/'entrant_result.json').read_bytes())
     preview = build_preview(paths, values, result)
     say('READY_TO_PUBLISH', preview=str(preview), estimate_date=values['CUT'], games=values['GAMES'],
         players=result['recent_players'], manifest=result['board_manifest_sha256'])
