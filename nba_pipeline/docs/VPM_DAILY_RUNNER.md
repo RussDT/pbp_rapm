@@ -13,12 +13,15 @@ time. If the Mac is asleep, launchd runs it on wake. It runs
 A failure shows a macOS notification.
 
 Because this checkout is in `~/Documents`, macOS must allow the unattended
-`/bin/zsh` launcher to read that protected folder. Enable `/bin/zsh` in System
-Settings > Privacy & Security > Full Disk Access. Without that permission,
-launchd fires but exits 127 before opening `run_nightly.sh`; the script's own
-logging and failure notification never run. The launch-level error is recorded
-in `logs/vpm_daily/launchd_stderr.log`. This was the cause of the missed
+launcher to read that protected folder. The LaunchAgent and script use
+`/bin/bash`, which already has Full Disk Access on this Mac. The original
+LaunchAgent incorrectly used `/bin/zsh`, which lacked that permission. It
+exited 127 before opening `run_nightly.sh`, so the script's own logging and
+failure notification never ran. This interpreter mismatch caused the missed
 November 10-15 scheduled runs; the November 12 publication was a manual run.
+The November 15 recovery was also manually published, through November 14.
+The corrected bash launch passes an actual unattended file-access and Python
+dependency check. Launch-level failures are in `logs/vpm_daily/launchd_stderr.log`.
 
 ## What one run does
 

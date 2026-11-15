@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 # Build today's VPM board from R2 and publish it if every gate passes.
 set -euo pipefail
 PIPE=/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline
