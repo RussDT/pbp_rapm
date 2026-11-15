@@ -36,7 +36,11 @@ dependency check. Launch-level failures are in `logs/vpm_daily/launchd_stderr.lo
    likelihood. The own mapper, native geometry, penalties and SQ corrections
    remain unchanged.
 4. Numeric gates: normal-equation error <= 1e-10, native Net gap <= 1e-9, no
-   fits, O + D = total.
+   fits, O + D = total. The public reporting layer then centers final O/D and
+   each final component on the complete active365 player pool, using each
+   side's original TD550 possession weights. The dated pool and offsets are
+   fixed before any site search/filter. Saved model boards and all priors
+   retain their original values; rankings and lineup predictions are unchanged.
 5. `publish_vpm_preview.py --publish` inserts one row into
    `public.nba_vpm_preview_boards` and reads it back. It skips a board that is
    not newer than the live one or adds no games, and it fails if the player
@@ -86,6 +90,22 @@ rejected, and transformed by the original frozen estimator. Its `draft_pick`
 field is deliberately excluded: the frozen actual-draft source ends in 2025.
 Missing backgrounds use the model's learned population/missing-data fallback.
 No entrant coefficients, own mapper or SQ model are refitted.
+
+## Public reporting baseline
+
+`preview_centering.py` applies one side-specific weighted mean subtraction per
+final atomic component, with matching parent/leaf PPP-intercept adjustments.
+Rollup offsets preserve the shot-value, turnover, second-chance and O+D sums.
+Metadata `reporting_centering` saves the schema, exact dated player-set digest,
+weight totals, every field offset and intercept adjustments. Priors remain
+the frozen models' original ability estimates and are not separately centered.
+
+The November 15 board's reporting offsets are +0.1999874085 offense and
++0.0978532657 defense, or +0.2978406742 total. Its 643-player publication was
+updated atomically with an exact old-content guard; both its previous payload
+and the centered publication/read-back receipt are retained under
+`current_refresh_20261115_schedule_recovery_sq_v1/active_centering_v1/`.
+The daily builder uses this reporting baseline automatically for future dates.
 
 ## Evidence
 

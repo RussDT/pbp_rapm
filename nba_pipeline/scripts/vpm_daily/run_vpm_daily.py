@@ -22,6 +22,7 @@ import requests
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from render import date_values, render  # noqa: E402
+from preview_centering import center_active_preview  # noqa: E402
 
 PIPE = HERE.parents[1]
 E = PIPE / 'results/estimated_skills'
@@ -187,12 +188,18 @@ def build_preview(paths, values, result):
         raise ValueError('Rankings identity differs')
     if (d.ovpm+d.dvpm-d.vpm).abs().max() >= 1e-9:
         raise ValueError('O+D does not equal total')
+    board_root = Path(result['board_path'])
+    if (board_root/'board.json').exists():
+        intercepts = json.loads((board_root/'board.json').read_bytes())['intercepts']
+    else:
+        intercepts = json.loads((board_root/'manifest.json').read_bytes())['intercepts']
+    d, centering = center_active_preview(d, intercepts['parent_centered'])
     d.insert(0, 'rank', range(1, len(d)+1))
     metadata = dict(schema='full_feature_vpm_preview_v1', estimate_date=cut, game_through=values['LAST_GAME'],
         season_end_year=SEASON, current_season_games=games, source_players=result['players'], player_count=len(d),
         selection='Positive playing exposure within365days before estimate date',
         source_manifest_sha256=result['board_manifest_sha256'], model_sha256=result['model_sha256'], tracking=True,
-        current_sq=True, preview=True,
+        current_sq=True, preview=True, reporting_centering=centering,
         qualification='Research preview; conditional fixed fits and historical source vintages; not evidence of predictive superiority.',
         sq_policy='Frozen2026SQ models applied without refitting; predictive EPM skill inputs use cached pregame snapshots, latest request2026-09-20; original missingness retained.')
     metadata.update(prior_regime=result.get('prior_regime', 'uniform_own_only'),
