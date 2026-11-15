@@ -12,6 +12,14 @@ time. If the Mac is asleep, launchd runs it on wake. It runs
 `scripts/vpm_daily/run_nightly.sh`; logs are in `logs/vpm_daily/{YYYYMMDD}.log`.
 A failure shows a macOS notification.
 
+Because this checkout is in `~/Documents`, macOS must allow the unattended
+`/bin/zsh` launcher to read that protected folder. Enable `/bin/zsh` in System
+Settings > Privacy & Security > Full Disk Access. Without that permission,
+launchd fires but exits 127 before opening `run_nightly.sh`; the script's own
+logging and failure notification never run. The launch-level error is recorded
+in `logs/vpm_daily/launchd_stderr.log`. This was the cause of the missed
+November 10-15 scheduled runs; the November 12 publication was a manual run.
+
 ## What one run does
 
 1. The cut is today in America/Los_Angeles; games through yesterday are used.
