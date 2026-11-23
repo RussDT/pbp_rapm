@@ -2,6 +2,11 @@
 
 Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
+## 2026-11-23 — Scoring Impact + rZTOV build daily for 2026-27
+
+- `scripts/run_scoring_rztov_daily.py` builds both boards for the season in progress with the fit frozen at 2026 and promotes to `results/scoring_rztov_daily/2027/current` only when the 42-check audit and the frozen-rows check pass. First build `20261123T213052Z-g247`: 389 current-season rows, rows through 2026 identical to the frozen artifacts. Canonical `SCORING_RZTOV_DAILY.md`.
+- Still open: unscheduled, nothing published, `--solves run` untested, and a live failing run not yet observed. The Cloudflare job replaces this runner (plan doc and databallr issues #2559-#2562).
+
 ## 2026-11-09 — Full-feature VPM now runs nightly
 
 - `scripts/vpm_daily/` builds and publishes the R2-fed VPM Preview unattended (launchd `com.russellthomas.vpm-daily`, 7:30 AM). Nov 3 replay was byte-identical; Nov 9 published with 146 games/641 players. Canonical `VPM_DAILY_RUNNER.md`.
@@ -22,8 +27,3 @@ Short-term session memory. Durable rules belong in AGENTS.md / CLAUDE.md.
 
 - Canonical VPM_DAILY_1997_HISTORY.md; v74/source-adaptedv73 completes6108dates/9416143rows/2856players with9507828prior-observed featurequeries/37845admittednativegames, zero newfilters/mappers. All30annual endpoints reproduce1.128e-10; all-date source/nativeprefix/prior dot/11head/TD/center/intercept algebra and11fresh literal native+SQ batchcuts pass. Ownpriorsgap0;ratinggap3.553e-15;freshnormal8.915e-15. Numericalaudit169ea2e3/workflow64611d0c/source9a295a78; frozenpendingmarker preserved with separate report/certificate closure, no healthy/completedjob restart.
 - Reader8800/coherentv2 fullSQL9416143float64rows exactlysource; finalconsumer39bb4b1e. Measured slow-status/date-picker race fixed in separately versioned consumer only, oldreader/source preserved;11readerchecks pass.742markedbackcastdates=741estimated+empty1996-11-01;401574estimatedbackcastrows. Uniformown-only/unknownbackgroundNaN, held originalannualreport parameter/model releases, observed-only2016+SQ.38of2504upstreamfits converge (2476bootstraps), no optimal-decay/forecast-win/live/public/2027/pointerchange. Retainselectedv61; history is not same-game daily-trained experiment. Temporarycontinuation pauses after final independent report/certificate verification.
-
-## 2026-10-23 — Daily-trained VPM/EPM replay complete
-
-- Canonical VPM_DAILY_TRAINED_EPM_COMPARISON.md; sibling vpm_daily_trained_epm_provenance_v2 completes651dates/4772games. Daily-trained prior uses pregame stats→same-game lineup scoring with annual past-only coefficients and no extra calibration decay. Equal-season RMSE daily13.622290/EPM13.671691; MSEgain+1.348366 game95%CI[-.687286,3.421812]/season[-.693116,4.311532], unresolved. Matchedannual13.592865/H365winner13.586407 perform better, gamebootstrap differences exclude0 but season intervals span0.2024–26daily13.953620/EPM13.949369 essentially tied. Selectedv61/2027 unchanged.
-- Independent12142pin/1953board/102012minute-input audit passes all84scores/24pairedintervals; oldEPM/minutes/winnergamepred parity0. Full auditSHA2743833d54c894e8b88d7af3ae7736d86b2be5fbe6d3edff8c383ba6d8ef0872. Owner-requested339-date provisional snapshot preserved, no recipe/selection changes. Exact archived API TypeScript bytes repair only a provenance leaf; preserve failedfirstroot and audit-schema/date correction receipts.46focused/shared tests pass. Sourcevintages/actualminutespace/fixedfitsselection/spenthistory/7of187convergence qualified; no daily-training/optimal-decay/live win claim.

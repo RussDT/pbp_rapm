@@ -391,6 +391,13 @@ sits on one line, `const DATA = {...};`. To refresh it, replace that line with t
 - **State.** Player, scope, floor, sort, view, column set and filter persist in the URL
   hash. The theme and the primer dismissal persist in `localStorage`.
 
+**Season in progress.** `build_rztov_explorer.py --frozen-payload <page>
+--frozen-seasons <csv> --last-season 2027 --box-ledger <ledger>` reuses the
+frozen payload and season rows unchanged and appends the current season as
+`box_estimated` rows, priced with the frozen 2022-26 break-evens and lane
+prices. Nothing is refit. The daily runner supplies these arguments; see
+[`SCORING_RZTOV_DAILY.md`](./SCORING_RZTOV_DAILY.md).
+
 ## Publishing constraints
 
 - The tracking vendor supplying the involvement volumes **must not be named** anywhere

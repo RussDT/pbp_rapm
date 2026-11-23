@@ -216,6 +216,14 @@ The rZTOV build must run before the scoring board, which reads its CSV. The mix
 and lineup boards must also run before the scoring board, which joins them.
 They read the previous scoring board only for display names.
 
+These commands rebuild the frozen 1997-2026 artifacts. The season in progress
+is built by one runner, `run_scoring_rztov_daily.py`, which reuses those
+artifacts unchanged, adds the current season as `box_estimated` rows priced
+with the frozen 2022-26 window, and promotes the build only when the audit and
+a frozen-rows check both pass. With estimated rows present the audit runs 42
+checks: these 34 plus 8 that tie the board's estimated rows to the explorer
+CSV. See [`SCORING_RZTOV_DAILY.md`](./SCORING_RZTOV_DAILY.md).
+
 ## Worked example: DeMar DeRozan, 2026
 
 | Step | Value |

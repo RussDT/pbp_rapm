@@ -171,6 +171,12 @@ cd nba_pipeline/scripts
 skip the CV. The builder reads the observed rZTOV CSV and the previous scoring
 board only for display names.
 
+**Season in progress.** `--first-season 2027 --last-season 2027 --seed-board
+<frozen board>` with the frozen alphas solves only the new season and carries
+the frozen rows through unchanged. Past the frozen fit, a game with no date
+whose id is above every dated game of its season is dated the day after the
+last dated game (`trailing_undated_games` in the manifest). See [`SCORING_RZTOV_DAILY.md`](./SCORING_RZTOV_DAILY.md).
+
 **Outputs:**
 
 - `lineup_tov_board_1997_2026.csv` (14,583 rows)

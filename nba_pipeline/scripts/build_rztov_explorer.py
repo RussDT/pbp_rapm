@@ -34,6 +34,8 @@ Two adjustments, not one:
 Writes the explorer JSON, `results/rztov_seasons_{first}_{last}.csv` (the stat),
 and `results/rztov_research_{window}.csv` (the aggregate research surface).
 """
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -44,12 +46,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from build_historical_scoring_security import fit_turnover_point_prices
+import scoring_season as seasons
+from build_historical_scoring_security import DEFAULT_MERGED, fit_turnover_point_prices
 
-RAPM = '/Users/russ/Documents/Codex/basketball/nba/research/rapm'
-TRACK = f'{RAPM}/geniussports'
-PANEL = '/Users/russ/Documents/Codex/basketball/nba/research/vpm/boxscore.csv'
+# Repo-relative by default; each input can be redirected without editing the file.
+RAPM = os.environ.get('RAPM_REPO_ROOT') or str(Path(__file__).resolve().parents[2])
+TRACK = os.environ.get('RZTOV_TRACKING_DIR') or f'{RAPM}/geniussports'
+PANEL = os.environ.get('RZTOV_BOX_PANEL') or str(Path(RAPM).parent / 'vpm' / 'boxscore.csv')
 RES = f'{RAPM}/nba_pipeline/results'
+RAW_DIR = f'{RAPM}/nba_pipeline/raw_data'
 PUTBACK_CACHE = f'{RES}/rztov_putbacks.csv'
 
 # Count-basis offensive TOV RAPM solves, season effects on, three per trailing
@@ -75,7 +80,10 @@ def bp_target(lo, hi):
 COMPONENT_DIR = f'{RES}/tov_price_targets'  # low-alpha price targets; see build_tov_price_targets.py
 PRICE_DRAWS, PRICE_SEED = 200, 37
 
-FIRST_YEAR, LAST_YEAR = 2014, 2026
+# LAST_YEAR is the last observed season and the last season in any fit.  A later
+# season is never refit here: it arrives as box-estimated rows (see
+# `extend_with_estimates`) priced with the frozen LAST_YEAR box window.
+FIRST_YEAR, LAST_YEAR = 2014, seasons.FROZEN_FIT_SEASON
 WINDOW = 5
 FIRST_END = FIRST_YEAR + WINDOW - 1   # first season with a full trailing window
 BOARD_FROM, BOARD_TO = LAST_YEAR - WINDOW + 1, LAST_YEAR
@@ -434,15 +442,168 @@ def inject_payload(html_path: Path, payload: str) -> None:
     html_path.write_text('\n'.join(lines), encoding='utf-8')
 
 
-def main():
+def load_payload(path: Path) -> dict:
+    """Explorer payload from a JSON file or from a page's `const DATA = ...;` line."""
+    text = Path(path).read_text(encoding='utf-8')
+    if str(path).endswith('.json'):
+        return json.loads(text)
+    hits = [line for line in text.split('\n') if line.startswith('const DATA = ')]
+    if len(hits) != 1:
+        raise ValueError(f'{path} must contain exactly one `const DATA = ` line, found {len(hits)}')
+    return json.loads(hits[0][len('const DATA = '):].rstrip().rstrip(';'))
+
+
+def box_price_path(ledger_path: Path, explicit: Path | None) -> Path:
+    if explicit is not None:
+        return explicit
+    hits = sorted(Path(ledger_path).parent.glob(f'historical_box_price_path_*_{LAST_YEAR}.csv'))
+    if len(hits) != 1:
+        raise SystemExit(f'expected one box price path ending {LAST_YEAR} beside {ledger_path}; '
+                         f'pass --box-price-path')
+    return hits[0]
+
+
+def extend_with_estimates(data, stat, last_season, ledger_path, price_path, names_path,
+                          states, draws=PRICE_DRAWS):
+    """Append box-estimated seasons after LAST_YEAR to the payload and the season file.
+
+    Tracking volumes do not exist for a season after the freeze.  Its rows come from
+    the box-estimated ledger: estimated self-created / assisted / potential-assist
+    volumes scored with the frozen LAST_YEAR box-estimate break-evens, centred on the
+    season's own possession-weighted lane means, and priced with the LAST_YEAR box
+    lane prices -- the same numbers the scoring board uses for those rows.  Nothing
+    is fit on the new season.  Observed seasons are passed through unchanged.
+    """
+    ledger = pd.read_csv(ledger_path)
+    est = ledger[ledger['year'].between(LAST_YEAR + 1, last_season)].copy()
+    if est.empty:
+        raise SystemExit(f'{ledger_path} has no rows after {LAST_YEAR}')
+    if est.duplicated(['nba_id', 'year']).any():
+        raise ValueError('box ledger has duplicate player-seasons after the freeze')
+    if set(est['be_source'].astype(int)) != {LAST_YEAR}:
+        raise ValueError(f'post-freeze box rows must inherit the {LAST_YEAR} window')
+
+    prices = fit_turnover_point_prices(
+        ledger[ledger['year'] <= LAST_YEAR], Path(COMPONENT_DIR),
+        first_end=LAST_YEAR, last_end=LAST_YEAR,
+        bootstrap_draws=draws, seed=PRICE_SEED).set_index('window_hi').loc[LAST_YEAR]
+    path = pd.read_csv(price_path).set_index('window_hi').loc[LAST_YEAR]
+
+    full = pd.read_csv(names_path, usecols=['nba_id', 'year', 'Name'], low_memory=False)
+    full = (full.dropna(subset=['Name']).sort_values('year')
+            .drop_duplicates('nba_id', keep='last').set_index('nba_id')['Name'])
+    names = dict(data['names'])
+    missing = 0
+    for nba_id in est['nba_id'].astype(int).unique():
+        if str(nba_id) not in names:
+            if nba_id in full.index:
+                names[str(nba_id)] = str(full.loc[nba_id])
+            else:
+                missing += 1   # the page then shows the id; a PBP surname is never published
+    if missing:
+        print(f'  {missing} estimated-season players have no full name on file')
+
+    be = dict(data['be'])
+    meta = {}
+    for year, g in est.groupby('year'):
+        year = int(year)
+        self_be, ast_be, pot_be = (float(g[f'be_{k}'].iloc[0]) for k in AREAS)
+        centre_sc = float((g['sc_allow'] - self_be * g['v_self'] - ast_be * g['v_ast']).median())
+        centre_bp = float((g['bp_allow'] - pot_be * g['v_potast']).median())
+        be[str(year)] = {
+            'self': round(self_be, 5), 'ast': round(ast_be, 5), 'potast': round(pot_be, 5),
+            'kappa': round(float(path['kappa']), 4), 'k_sc': round(float(path['k_sc']), 4),
+            'k_bp': round(float(path['k_bp']), 4),
+            'window': [LAST_YEAR - WINDOW + 1, LAST_YEAR], 'n': int(path['n']),
+            'inherited': 1, 'estimated': 1,
+            'centre_sc': round(centre_sc, 5), 'centre_bp': round(centre_bp, 5),
+            'price_sc': round(float(prices['scoring_point_price']), 4),
+            'price_sc_ci': [round(float(prices['scoring_point_price_p05']), 4),
+                            round(float(prices['scoring_point_price_p95']), 4)],
+            'price_bp': round(float(prices['badpass_point_price']), 4),
+            'price_bp_ci': [round(float(prices['badpass_point_price_p05']), 4),
+                            round(float(prices['badpass_point_price_p95']), 4)],
+            'price_r2': [round(float(prices['scoring_r2']), 3),
+                         round(float(prices['badpass_r2']), 3)],
+        }
+        state = states[year]
+        meta[str(year)] = {
+            'source': 'box_estimated', 'status': state['status'],
+            'games': int(state['games']), 'full_games': seasons.FULL_SEASON_GAMES,
+            'progress': round(float(state['progress']), 4),
+            'row_min_poss': round(float(state['row_min_poss']), 1),
+            'qual_min_poss': round(float(state['qual_min_poss']), 1),
+            'players': int(len(g)), 'qualified': int(g['qualified'].sum()),
+        }
+
+    # A tenth element marks an estimated row; observed rows keep their nine.
+    rows = [[int(t.nba_id), int(t.year), int(t.OffPoss),
+             round(float(t.v_self), 3), round(float(t.v_ast), 3), round(float(t.v_potast), 3),
+             round(float(t.sc_100), 4), round(float(t.bp_100), 4), int(t.qualified), 1]
+            for t in est.itertuples()]
+    out = dict(data)
+    out.update({
+        'built': pd.Timestamp.today().strftime('%Y-%m-%d'),
+        'season_range': [FIRST_YEAR, int(last_season)],
+        'fit_through': LAST_YEAR,
+        'season_meta': meta,
+        'be': be,
+        'names': names,
+        'seasons': [*data['seasons'], *rows],
+    })
+
+    add = est.rename(columns={'OffPoss': 'off_poss'})[
+        ['nba_id', 'year', 'off_poss', 'v_self', 'v_ast', 'v_potast', 'involve', 'plays',
+         'sc_100', 'bp_100', 'act', 'sc_allow', 'bp_allow', 'sc_excess', 'bp_excess',
+         'allowance', 'excess', 'rztov', 'tov_saved_100', 'tov_saved', 'qualified']].copy()
+    add.insert(1, 'name', add['nba_id'].astype(int).astype(str).map(names))
+    add['sc_point_price'] = float(prices['scoring_point_price'])
+    add['bp_point_price'] = float(prices['badpass_point_price'])
+    add['tov_points_saved_100'] = -(add['sc_excess'] * add['sc_point_price']
+                                    + add['bp_excess'] * add['bp_point_price'])
+    add['source'] = 'box_estimated'
+    add['season_status'] = add['year'].map(lambda y: states[int(y)]['status'])
+    kept = stat.copy()
+    kept['source'] = 'observed'
+    kept['season_status'] = seasons.STATUS_COMPLETE
+    merged = pd.concat([kept, add.round(4)], ignore_index=True)
+    for year, m in meta.items():
+        print(f'  {seasons.season_label(int(year))}: {m["players"]} estimated players, '
+              f'{m["qualified"]} qualified, {m["status"]} '
+              f'({m["games"]}/{m["full_games"]} games, floor {m["qual_min_poss"]:.0f} poss)')
+    return out, merged.sort_values(['year', 'rztov'])
+
+
+def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out-dir', required=True, help='directory for the explorer JSON')
     ap.add_argument('--rebuild-putbacks', action='store_true')
     ap.add_argument('--html', type=Path, default=None,
                     help='explorer page whose single `const DATA = ...;` line is replaced '
                          'with the new payload (e.g. docs/rztov-explorer.html)')
-    args = ap.parse_args()
+    ap.add_argument('--last-season', type=int, default=LAST_YEAR,
+                    help=f'last season on the page; seasons after {LAST_YEAR} are appended '
+                         f'as box-estimated rows and are never part of a fit')
+    ap.add_argument('--box-ledger', type=Path, default=None,
+                    help='box-estimated ledger that covers the seasons after the freeze '
+                         '(nba_box_estimated_rztov_<span>_diagnostic.csv)')
+    ap.add_argument('--box-price-path', type=Path, default=None,
+                    help='box break-even path; default is the one beside --box-ledger')
+    ap.add_argument('--names', type=Path, default=DEFAULT_MERGED,
+                    help='full display names for players new to an estimated season')
+    ap.add_argument('--frozen-payload', type=Path, default=None,
+                    help='reuse the observed seasons from this payload (.json, or a page with a '
+                         '`const DATA` line) instead of rebuilding them from tracking files')
+    ap.add_argument('--frozen-seasons', type=Path,
+                    default=Path(RES) / f'rztov_seasons_{FIRST_YEAR}_{LAST_YEAR}.csv',
+                    help='season file that belongs to --frozen-payload')
+    ap.add_argument('--csv-dir', type=Path, default=Path(RES),
+                    help='directory for the season and research CSVs')
+    return ap.parse_args()
 
+
+def build_observed(args):
+    """Observed seasons FIRST_YEAR..LAST_YEAR: payload, season rows, board roll-up."""
     df = build_panel(args.rebuild_putbacks)
 
     fits = {}
@@ -638,12 +799,6 @@ def main():
         'agg_otov': agg_otov,
         'otov_source': os.path.basename(OTOV_BOARD),
     }
-    out_json = os.path.join(args.out_dir, 'rztov_explorer_data.json')
-    with open(out_json, 'w') as f:
-        json.dump(data, f, separators=(',', ':'))
-    if args.html is not None:
-        inject_payload(args.html, json.dumps(data, separators=(',', ':')))
-
     # ---- the stat itself, one row per player-season
     stat = rows[['nba_id', 'Name', 'year', 'OffPoss', 'v_self', 'v_ast', 'v_potast',
                  'involve', 'plays', 'sc_100', 'bp_100', 'act',
@@ -658,20 +813,55 @@ def main():
     stat['bp_point_price'] = src.map(lane_prices['badpass_point_price'])
     stat['tov_points_saved_100'] = -(stat['sc_excess'] * stat['sc_point_price']
                                      + stat['bp_excess'] * stat['bp_point_price'])
-    stat_csv = f'{RES}/rztov_seasons_{FIRST_YEAR}_{LAST_YEAR}.csv'
-    stat.round(4).sort_values(['year', 'rztov']).to_csv(stat_csv, index=False)
-
     out = agg[['nba_id', 'poss', 'v_self', 'v_ast', 'v_potast', 'sc_100', 'bp_100',
                'involve', 'plays', 'act', 'sc_allow', 'bp_allow', 'sc_excess', 'bp_excess',
                'allowance', 'excess', 'rztov', 'tov_saved_100',
                'tov_saved', 'qualified', 'tov_rapm']].copy()
     out['name'] = out['nba_id'].map(names)
-    agg_csv = f'{RES}/rztov_research_{BOARD_FROM % 100}_{BOARD_TO % 100}.csv'
-    out.round(4).sort_values('rztov').to_csv(agg_csv, index=False)
+    return data, stat.round(4).sort_values(['year', 'rztov']), out.round(4).sort_values('rztov')
 
-    print(f'wrote {out_json} ({os.path.getsize(out_json) / 1024:.0f} KB), '
-          f'{stat_csv} ({len(stat):,} player-seasons), '
-          f'{agg_csv} ({len(out)} players)')
+
+def main():
+    args = parse_args()
+    if args.last_season < LAST_YEAR:
+        raise SystemExit(f'--last-season cannot precede the frozen fit season {LAST_YEAR}')
+    if args.frozen_payload is not None:
+        data = load_payload(args.frozen_payload)
+        if list(data['season_range']) != [FIRST_YEAR, LAST_YEAR]:
+            raise SystemExit(f'{args.frozen_payload} does not cover {FIRST_YEAR}-{LAST_YEAR}')
+        stat = pd.read_csv(args.frozen_seasons)
+        if len(stat) != len(data['seasons']):
+            raise SystemExit('frozen payload and frozen season file disagree on row count')
+        agg = None
+        print(f'observed seasons reused from {args.frozen_payload} ({len(stat):,} player-seasons)')
+    else:
+        data, stat, agg = build_observed(args)
+
+    if args.last_season > LAST_YEAR:
+        if args.box_ledger is None:
+            raise SystemExit('--last-season after the freeze needs --box-ledger')
+        states = seasons.season_states(RAW_DIR, LAST_YEAR + 1, args.last_season, LAST_YEAR)
+        data, stat = extend_with_estimates(
+            data, stat, args.last_season, args.box_ledger,
+            box_price_path(args.box_ledger, args.box_price_path), args.names, states)
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    os.makedirs(args.csv_dir, exist_ok=True)
+    out_json = os.path.join(args.out_dir, 'rztov_explorer_data.json')
+    payload = json.dumps(data, separators=(',', ':'))
+    with open(out_json, 'w') as f:
+        f.write(payload)
+    if args.html is not None:
+        inject_payload(args.html, payload)
+    stat_csv = args.csv_dir / f'rztov_seasons_{FIRST_YEAR}_{args.last_season}.csv'
+    stat.to_csv(stat_csv, index=False)
+    wrote = (f'wrote {out_json} ({os.path.getsize(out_json) / 1024:.0f} KB), '
+             f'{stat_csv} ({len(stat):,} player-seasons)')
+    if agg is not None:
+        agg_csv = args.csv_dir / f'rztov_research_{BOARD_FROM % 100}_{BOARD_TO % 100}.csv'
+        agg.to_csv(agg_csv, index=False)
+        wrote += f', {agg_csv} ({len(agg)} players)'
+    print(wrote)
 
 
 if __name__ == '__main__':

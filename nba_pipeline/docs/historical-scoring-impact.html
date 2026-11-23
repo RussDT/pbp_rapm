@@ -337,8 +337,8 @@
             <th class="sticky left"><button data-key="player_name"><span class="lbl">Player</span><span class="unit">rank · season · role source</span></button></th>
             <th class="opt"><button data-key="year"><span class="lbl">Season</span><span class="unit">&nbsp;</span></button></th>
             <th class="opt"><button data-key="OffPoss"><span class="lbl">Off. poss</span><span class="unit">count</span></button></th>
-            <th class="opt"><button data-key="tsa100" title="True-shooting attempts per 100 offensive possessions"><span class="lbl">TSA</span><span class="unit">per 100</span></button></th>
-            <th class="opt"><button data-key="rts" title="True shooting above league, in TS points"><span class="lbl">rTS</span><span class="unit">TS pts</span></button></th>
+            <th class="opt"><button data-key="tsa100" title="Shots (true-shooting attempts, FGA + 0.44 FTA) per 100 offensive possessions"><span class="lbl">Shots</span><span class="unit">per 100</span></button></th>
+            <th class="opt"><button data-key="rts" title="True shooting above league, in TS points"><span class="lbl">rTS</span><span class="unit">%</span></button></th>
             <th><button data-key="zts" title="rTS plus role difficulty"><span class="lbl">zTS</span><span class="unit">rTS + role</span></button></th>
             <th><button data-key="scoring_value100" title="Own-shot scoring value per 100 offensive possessions"><span class="lbl">Scoring value</span><span class="unit">pts / 100</span></button></th>
             <th class="opt"><button data-key="scoring_tov_value100" title="Value of scoring/handling turnovers versus the workload allowance"><span class="lbl">Scoring TOV</span><span class="unit">pts / 100</span></button></th>
@@ -358,7 +358,7 @@
       <div>
         <h2>Reading the numbers</h2>
         <p>Every value column is points per 100 offensive possessions, and positive is better. rTS, role and zTS are true-shooting percentage points. rZTOV in the row detail is turnovers per 100 plays above the workload allowance, so negative is better.</p>
-        <p>Scoring value is the production zTS chain: 2 × TSA/100 × (zTS + 4) / 100, then the fitted line −1.211295 + 0.800618 × that.</p>
+        <p>Scoring value is the production zTS chain: 2 × Shots/100 × (zTS + 4) / 100, then the fitted line −1.211295 + 0.800618 × that.</p>
       </div>
       <div>
         <h2>Sources</h2>
@@ -382,6 +382,11 @@
     const PASS = {"1997":{"scoring_total_slope":0.336,"scoring_raw_slope":0.7994,"badpass_total_slope":0.2635,"badpass_raw_slope":0.7183,"turnover_total_slope":0.329,"turnover_total_corr":0.666},"1998":{"scoring_total_slope":0.3824,"scoring_raw_slope":0.7989,"badpass_total_slope":0.2837,"badpass_raw_slope":0.5679,"turnover_total_slope":0.3959,"turnover_total_corr":0.7007},"1999":{"scoring_total_slope":0.2997,"scoring_raw_slope":0.7544,"badpass_total_slope":0.235,"badpass_raw_slope":0.5438,"turnover_total_slope":0.3053,"turnover_total_corr":0.6324},"2000":{"scoring_total_slope":0.3327,"scoring_raw_slope":0.7768,"badpass_total_slope":0.2618,"badpass_raw_slope":0.6214,"turnover_total_slope":0.3194,"turnover_total_corr":0.6417},"2001":{"scoring_total_slope":0.341,"scoring_raw_slope":0.7251,"badpass_total_slope":0.2239,"badpass_raw_slope":0.4635,"turnover_total_slope":0.3237,"turnover_total_corr":0.6587},"2002":{"scoring_total_slope":0.3359,"scoring_raw_slope":0.6842,"badpass_total_slope":0.2613,"badpass_raw_slope":0.6657,"turnover_total_slope":0.3491,"turnover_total_corr":0.6591},"2003":{"scoring_total_slope":0.3462,"scoring_raw_slope":0.7987,"badpass_total_slope":0.3685,"badpass_raw_slope":0.9697,"turnover_total_slope":0.4237,"turnover_total_corr":0.7205},"2004":{"scoring_total_slope":0.4128,"scoring_raw_slope":0.8977,"badpass_total_slope":0.3796,"badpass_raw_slope":0.7602,"turnover_total_slope":0.4715,"turnover_total_corr":0.7133},"2005":{"scoring_total_slope":0.3733,"scoring_raw_slope":0.7446,"badpass_total_slope":0.3214,"badpass_raw_slope":0.6087,"turnover_total_slope":0.4296,"turnover_total_corr":0.7305},"2006":{"scoring_total_slope":0.3759,"scoring_raw_slope":0.7349,"badpass_total_slope":0.3109,"badpass_raw_slope":0.7359,"turnover_total_slope":0.4368,"turnover_total_corr":0.7227},"2007":{"scoring_total_slope":0.3339,"scoring_raw_slope":0.6209,"badpass_total_slope":0.3166,"badpass_raw_slope":0.709,"turnover_total_slope":0.3822,"turnover_total_corr":0.6985},"2008":{"scoring_total_slope":0.3277,"scoring_raw_slope":0.6142,"badpass_total_slope":0.269,"badpass_raw_slope":0.6816,"turnover_total_slope":0.4001,"turnover_total_corr":0.6858},"2009":{"scoring_total_slope":0.3197,"scoring_raw_slope":0.6489,"badpass_total_slope":0.3886,"badpass_raw_slope":0.9889,"turnover_total_slope":0.4261,"turnover_total_corr":0.7212},"2010":{"scoring_total_slope":0.328,"scoring_raw_slope":0.5919,"badpass_total_slope":0.4473,"badpass_raw_slope":1.0034,"turnover_total_slope":0.4464,"turnover_total_corr":0.6744},"2011":{"scoring_total_slope":0.3353,"scoring_raw_slope":0.7615,"badpass_total_slope":0.336,"badpass_raw_slope":0.6805,"turnover_total_slope":0.4023,"turnover_total_corr":0.6162},"2012":{"scoring_total_slope":0.3612,"scoring_raw_slope":0.8525,"badpass_total_slope":0.2965,"badpass_raw_slope":0.6515,"turnover_total_slope":0.3912,"turnover_total_corr":0.641},"2013":{"scoring_total_slope":0.3809,"scoring_raw_slope":0.7335,"badpass_total_slope":0.3675,"badpass_raw_slope":0.7313,"turnover_total_slope":0.4566,"turnover_total_corr":0.7201},"2014":{"scoring_total_slope":0.3971,"scoring_raw_slope":0.7543,"badpass_total_slope":0.3453,"badpass_raw_slope":0.7445,"turnover_total_slope":0.4512,"turnover_total_corr":0.6289},"2015":{"scoring_total_slope":0.4268,"scoring_raw_slope":0.928,"badpass_total_slope":0.3398,"badpass_raw_slope":0.7767,"turnover_total_slope":0.5093,"turnover_total_corr":0.6721},"2016":{"scoring_total_slope":0.3788,"scoring_raw_slope":0.7824,"badpass_total_slope":0.4038,"badpass_raw_slope":1.0456,"turnover_total_slope":0.4913,"turnover_total_corr":0.6264},"2017":{"scoring_total_slope":0.3376,"scoring_raw_slope":0.7876,"badpass_total_slope":0.366,"badpass_raw_slope":0.8357,"turnover_total_slope":0.4662,"turnover_total_corr":0.6394},"2018":{"scoring_total_slope":0.3372,"scoring_raw_slope":0.6871,"badpass_total_slope":0.4674,"badpass_raw_slope":1.0968,"turnover_total_slope":0.4657,"turnover_total_corr":0.6345},"2019":{"scoring_total_slope":0.2919,"scoring_raw_slope":0.5383,"badpass_total_slope":0.4481,"badpass_raw_slope":1.1459,"turnover_total_slope":0.4563,"turnover_total_corr":0.5906},"2020":{"scoring_total_slope":0.3064,"scoring_raw_slope":0.5975,"badpass_total_slope":0.4075,"badpass_raw_slope":1.1224,"turnover_total_slope":0.4254,"turnover_total_corr":0.6136},"2021":{"scoring_total_slope":0.346,"scoring_raw_slope":0.791,"badpass_total_slope":0.3718,"badpass_raw_slope":0.9169,"turnover_total_slope":0.4649,"turnover_total_corr":0.6384},"2022":{"scoring_total_slope":0.3271,"scoring_raw_slope":0.6616,"badpass_total_slope":0.3907,"badpass_raw_slope":0.8075,"turnover_total_slope":0.4202,"turnover_total_corr":0.5444},"2023":{"scoring_total_slope":0.3554,"scoring_raw_slope":0.707,"badpass_total_slope":0.4575,"badpass_raw_slope":1.0064,"turnover_total_slope":0.5043,"turnover_total_corr":0.6561},"2024":{"scoring_total_slope":0.3696,"scoring_raw_slope":0.7223,"badpass_total_slope":0.495,"badpass_raw_slope":1.0681,"turnover_total_slope":0.5403,"turnover_total_corr":0.6673},"2025":{"scoring_total_slope":0.4579,"scoring_raw_slope":0.9896,"badpass_total_slope":0.4925,"badpass_raw_slope":1.173,"turnover_total_slope":0.6136,"turnover_total_corr":0.6793},"2026":{"scoring_total_slope":0.4487,"scoring_raw_slope":0.9237,"badpass_total_slope":0.4662,"badpass_raw_slope":1.0842,"turnover_total_slope":0.5849,"turnover_total_corr":0.6701}};
     const PAGE = 100;
     const QUALIFIED = 1000;
+    // Seasons still being played: {year: {label, games, full_games, progress, qual}}.
+    // Their possession floors are the full-season floors times schedule progress.
+    const LIVE = {};
+    const qualFloor = y => LIVE[y] ? LIVE[y].qual : QUALIFIED;
+    const minFor = y => state.min * qualFloor(y) / QUALIFIED;
     const DEFAULTS = { q: "", season: "all", min: 1000, role: "all", sort: "scoring_impact_no_badpass100", dir: -1 };
     const state = { ...DEFAULTS, open: null, limit: PAGE };
 
@@ -395,8 +400,8 @@
 
     const has = v => v !== null && v !== undefined && Number.isFinite(v);
     const minus = t => t.replace("-", "−");
-    const signed = (v, d = 2) => has(v) ? (v > 0 ? "+" : "") + minus(v.toFixed(d)) : "—";
-    const fixed = (v, d = 2) => has(v) ? minus(v.toFixed(d)) : "—";
+    const signed = (v, d = 1) => has(v) ? (v > 0 ? "+" : "") + minus(v.toFixed(d)) : "—";
+    const fixed = (v, d = 1) => has(v) ? minus(v.toFixed(d)) : "—";
     const int = v => Math.round(v).toLocaleString();
     const tone = v => !has(v) ? "nil" : v > 0.005 ? "pos" : v < -0.005 ? "neg" : "";
     const esc = t => String(t).replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
@@ -409,7 +414,7 @@
     const seasonRank = new Map();
     const seasonSize = new Map();
     for (const y of years) {
-      const pool = DATA.filter(d => d.year === y && d.OffPoss >= QUALIFIED);
+      const pool = DATA.filter(d => d.year === y && d.OffPoss >= qualFloor(y));
       seasonSize.set(y, pool.length);
       pool.sort((a, b) => b.scoring_impact_no_badpass100 - a.scoring_impact_no_badpass100)
         .forEach((d, i) => seasonRank.set(rowKey(d), i + 1));
@@ -467,7 +472,7 @@
       const q = state.q.trim().toLowerCase();
       return DATA.filter(d =>
         (state.season === "all" || d.year === Number(state.season)) &&
-        d.OffPoss >= state.min &&
+        d.OffPoss >= minFor(d.year) &&
         (state.role === "all" || (state.role === "observed") === observedRole(d)) &&
         (!q || d.player_name.toLowerCase().includes(q))
       );
@@ -494,7 +499,7 @@
           <tr class="sum"><td>Both lanes</td>${cell(boxBoth, "box")}${cell(both("own"))}${cell(both("teammate"))}${cell(both("team"))}<td class="tot">${signed(d.lineup_tov_value100)}</td>${cell(both("raw"), "raw")}</tr>
         </tbody></table></div>`;
       const notes = [];
-      notes.push(`Points per 100 offensive possessions, positive = fewer turnovers. The lineup columns come from a ridge fit on every ${d.year - 1 >= 1997 ? `${d.year - 1}-${d.year}` : d.year} lineup with a 550-day half-life, and each turnover avoided is priced at one kept possession, ${fixed(d.lineup_tov_point_price, 3)} points. Own, teammates and team add up to the lineup total.`);
+      notes.push(`Points per 100 offensive possessions, positive = fewer turnovers. The lineup columns come from a ridge fit on every ${d.year - 1 >= 1997 ? `${d.year - 1}-${d.year}` : d.year} lineup with a 550-day half-life, and each turnover avoided is priced at one kept possession, ${fixed(d.lineup_tov_point_price)} points. Own, teammates and team add up to the lineup total.`);
       notes.push("Own is measured against a flat one-fifth share of the lineup's turnovers, while the box ledger measures against a workload allowance, so heavy creators read lower on lineup own by construction. Teammates is how many fewer turnovers the other four commit with this player on the floor.");
       const pt = PASS[d.year];
       if (pt) notes.push(`Across qualified ${d.year} players, one point of box turnover value comes with ${fixed(pt.turnover_total_slope)} points of adjusted lineup value (correlation ${fixed(pt.turnover_total_corr)}). By lane: scoring ${fixed(pt.scoring_total_slope)} adjusted and ${fixed(pt.scoring_raw_slope)} raw; bad-pass ${fixed(pt.badpass_total_slope)} and ${fixed(pt.badpass_raw_slope)}. The adjusted view is ridge-shrunk toward zero; the raw view does not separate the player from teammates or opponents.`);
@@ -509,17 +514,17 @@
       const rank = seasonRank.get(rowKey(d));
       const ctx = rank
         ? `<span class="ctx"><strong>${ordinal(rank)}</strong> of ${seasonSize.get(d.year)} qualified ${d.year} player-seasons by scoring impact</span>`
-        : `<span class="ctx">Below the ${QUALIFIED.toLocaleString()}-possession qualifying line for ${d.year}</span>`;
+        : `<span class="ctx">Below the ${Math.round(qualFloor(d.year)).toLocaleString()}-possession qualifying line for ${d.year}${LIVE[d.year] ? " (season in progress)" : ""}</span>`;
       const own = [
-        eq("zTS", `rTS ${signed(d.rts)} + role ${signed(d.role_difficulty)}`, signed(d.zts)),
-        eq("zTS add−4", `2 × ${fixed(d.tsa100, 1)} TSA/100 × (${signed(d.zts)} + 4) / 100`, fixed(zAdd, 3)),
-        eq("Scoring value", `${fixed(SV_A, 6)} + ${fixed(SV_B, 6)} × ${fixed(zAdd, 3)}`, signed(d.scoring_value100)),
-        `<p class="note">${observedRole(d) ? "Observed role" : "Play-by-play-estimated role"} · ${fixed(d.tsa100, 1)} true-shooting attempts per 100 offensive possessions.</p>`,
+        eq("zTS", `rTS ${signed(d.rts)}% + role ${signed(d.role_difficulty)}%`, signed(d.zts) + "%"),
+        eq("zTS add−4", `2 × ${fixed(d.tsa100, 1)} Shots/100 × (${signed(d.zts)} + 4) / 100`, fixed(zAdd)),
+        eq("Scoring value", `${fixed(SV_A, 6)} + ${fixed(SV_B, 6)} × ${fixed(zAdd)}`, signed(d.scoring_value100)),
+        `<p class="note">${observedRole(d) ? "Observed role" : "Play-by-play-estimated role"} · ${fixed(d.tsa100, 1)} shots per 100 offensive possessions.</p>`,
       ];
       const sec = [
-        eq("Scoring TOV", `−(${signed(d.sc_excess, 3)} excess TOV/100) × ${fixed(d.scoring_tov_point_price, 3)} pts per TOV`, signed(d.scoring_tov_value100)),
+        eq("Scoring TOV", `−(${signed(d.sc_excess)} excess TOV/100) × ${fixed(d.scoring_tov_point_price)} pts per TOV`, signed(d.scoring_tov_value100)),
         eq("Scoring impact", `${signed(d.scoring_value100)} scoring value + ${signed(d.scoring_tov_value100)} scoring TOV`, signed(d.scoring_impact_no_badpass100), "hl"),
-        eq("Bad-pass TOV", `−(${signed(d.bp_excess, 3)} excess TOV/100) × ${fixed(d.badpass_tov_point_price, 3)} pts per TOV`, signed(d.badpass_tov_value100)),
+        eq("Bad-pass TOV", `−(${signed(d.bp_excess)} excess TOV/100) × ${fixed(d.badpass_tov_point_price)} pts per TOV`, signed(d.badpass_tov_value100)),
         eq("Scoring security", `${signed(d.scoring_impact_no_badpass100)} scoring impact + ${signed(d.badpass_tov_value100)} bad-pass TOV`, signed(d.scoring_security_value100), "gold"),
       ];
       if (has(d.rztov)) sec.push(`<p class="note">rZTOV ${signed(d.rztov)} per 100 plays (${tovLabel(d)}). Each lane's excess is priced at its own window's value per turnover.</p>`);
@@ -558,7 +563,9 @@
       });
       const visible = rows.slice(0, state.limit);
       const scale = Math.max(1e-9, ...visible.map(d => Math.abs(d.scoring_impact_no_badpass100)));
-      count.innerHTML = `<strong>${rows.length.toLocaleString()}</strong> player-season${rows.length === 1 ? "" : "s"}${rows.length > visible.length ? ` · showing ${visible.length.toLocaleString()}` : ""} · <button class="reset" id="reset" type="button">Reset</button>`;
+      const live = Object.keys(LIVE).map(Number).filter(y => state.season === "all" || Number(state.season) === y);
+      const liveNote = live.map(y => ` · ${LIVE[y].label} in progress (${LIVE[y].games.toLocaleString()} of ${LIVE[y].full_games.toLocaleString()} games)${state.min ? `, floor ${Math.round(minFor(y)).toLocaleString()} poss` : ""}`).join("");
+      count.innerHTML = `<strong>${rows.length.toLocaleString()}</strong> player-season${rows.length === 1 ? "" : "s"}${rows.length > visible.length ? ` · showing ${visible.length.toLocaleString()}` : ""}${liveNote} · <button class="reset" id="reset" type="button">Reset</button>`;
       $("reset").addEventListener("click", () => { Object.assign(state, DEFAULTS, { open: null, limit: PAGE }); syncControls(); update(); });
       headers.forEach(b => {
         if (b.dataset.key === k) b.setAttribute("aria-sort", dir === -1 ? "descending" : "ascending");
@@ -574,12 +581,12 @@
         const v = d.scoring_impact_no_badpass100;
         const w = Math.round(Math.min(1, Math.abs(v) / scale) * 100);
         return `<tr class="row${open ? " open" : ""}" data-key="${rowKey(d)}" tabindex="0" aria-expanded="${open}">
-          <td class="sticky"><div class="who"><span class="rank">${i + 1}</span><span class="name">${esc(d.player_name)}</span><span class="meta">${d.year} · <span class="${observedRole(d) ? "obs" : ""}">${observedRole(d) ? "observed" : "estimated"} role</span></span></div></td>
+          <td class="sticky"><div class="who"><span class="rank">${i + 1}</span><span class="name">${esc(d.player_name)}</span><span class="meta">${d.year}${LIVE[d.year] ? " · in progress" : ""} · <span class="${observedRole(d) ? "obs" : ""}">${observedRole(d) ? "observed" : "estimated"} role</span></span></div></td>
           <td class="opt num-dim">${d.year}</td>
           <td class="opt num-dim">${int(d.OffPoss)}</td>
           <td class="opt">${fixed(d.tsa100, 1)}</td>
-          <td class="opt ${tone(d.rts)}">${signed(d.rts)}</td>
-          <td class="shot">${signed(d.zts)}</td>
+          <td class="opt ${tone(d.rts)}">${has(d.rts) ? signed(d.rts) + "%" : signed(d.rts)}</td>
+          <td class="shot">${has(d.zts) ? signed(d.zts) + "%" : signed(d.zts)}</td>
           <td class="${tone(d.scoring_value100)}">${signed(d.scoring_value100)}</td>
           <td class="opt ${tone(d.scoring_tov_value100)}">${signed(d.scoring_tov_value100)}</td>
           <td class="head-col">${signed(v)}<span class="bar${v < 0 ? " neg-bar" : ""}" style="width:calc((100% - 16px) * ${w / 100})"></span></td>

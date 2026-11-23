@@ -202,6 +202,13 @@ the nine modern windows are 0.66, 0.52, and 0.49 percentage points respectively.
   --reuse-feature-cache
 ```
 
+`--last-season 2027 --seed-feature-cache <frozen parquet>` scores the season
+in progress with the estimator frozen through 2026: completed seasons come from
+the seeded feature cache, only the new season is built from raw play-by-play,
+and labels, CV windows and prices do not move. This is the workload source
+(self-created, assisted, potential assists) for the current season. It is run
+by the daily runner; see [`SCORING_RZTOV_DAILY.md`](./SCORING_RZTOV_DAILY.md).
+
 Generated artifacts live under `results/nba_rztov_box_backcast/` and remain
 gitignored:
 

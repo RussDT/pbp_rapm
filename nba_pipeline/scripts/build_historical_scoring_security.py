@@ -53,6 +53,11 @@ except ImportError:  # Direct script execution.
         estimate_category_prices,
     )
 
+try:
+    from . import scoring_season as seasons
+except ImportError:  # Direct script execution.
+    import scoring_season as seasons
+
 
 PIPELINE_DIR = Path(__file__).resolve().parents[1]
 NBA_ROOT = PIPELINE_DIR.parents[2]
@@ -112,8 +117,10 @@ MONOTONIC_ROLE_SIGNS = {
 }
 
 
-def refresh_databallr_observed(env_path: Path, output_path: Path) -> pd.DataFrame:
-    """Read the observed 2006-26 Synergy rows from Databallr Supabase.
+def refresh_databallr_observed(
+    env_path: Path, output_path: Path, last_season: int = LAST_SEASON
+) -> pd.DataFrame:
+    """Read the observed Synergy rows, 2006 through ``last_season``, from Databallr Supabase.
 
     This function is deliberately read-only.  Credentials are loaded without
     printing them, and the result is stored as a local generated snapshot.
@@ -134,7 +141,7 @@ def refresh_databallr_observed(env_path: Path, output_path: Path) -> pd.DataFram
             client.table("player_zts")
             .select("nba_id,year,playoffs,player_name,minutes,tsa100,rts,role,zts")
             .gte("year", ANCHOR_FIRST)
-            .lte("year", LAST_SEASON)
+            .lte("year", int(last_season))
             .eq("playoffs", 0)
             .range(start, start + 999)
             .execute()
@@ -145,7 +152,9 @@ def refresh_databallr_observed(env_path: Path, output_path: Path) -> pd.DataFram
             break
     anchor = pd.DataFrame(rows).sort_values(["year", "nba_id"])
     if anchor.empty:
-        raise RuntimeError("Databallr returned no 2006-2026 regular-season zTS rows")
+        raise RuntimeError(
+            f"Databallr returned no {ANCHOR_FIRST}-{int(last_season)} regular-season zTS rows"
+        )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     anchor.to_csv(output_path, index=False)
     print(
@@ -214,19 +223,46 @@ def load_pbp_shots(raw_path: Path, season: int) -> pd.DataFrame:
     ]
 
 
-def build_pbp_role_panel(raw_dir: Path, first_season: int, last_season: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+def build_pbp_role_panel(
+    raw_dir: Path,
+    first_season: int,
+    last_season: int,
+    seed_proxy: pd.DataFrame | None = None,
+    seed_prices: pd.DataFrame | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Price each season's shot mix with the immediately prior season.
 
     NBA96 is absent from the repo.  The first 1997 row therefore uses an
     explicitly flagged same-season retrospective price; every later season is
     lag priced.
+
+    ``seed_proxy`` / ``seed_prices`` hold completed seasons from an earlier
+    build.  They are reused unchanged and only the seasons after them are read
+    from raw PBP, each still priced on the season before it.
     """
 
-    first_shots = load_pbp_shots(raw_dir / "NBA97.parquet", first_season)
-    previous = first_shots
     feature_parts: list[pd.DataFrame] = []
     price_parts: list[pd.DataFrame] = []
-    for season in range(first_season, last_season + 1):
+    start = first_season
+    if seed_proxy is not None and seed_prices is not None and not seed_proxy.empty:
+        seeded = seed_proxy[seed_proxy["feature_season"].between(first_season, last_season)]
+        seeded_seasons = sorted(int(season) for season in seeded["feature_season"].unique())
+        if seeded_seasons != list(range(first_season, seeded_seasons[-1] + 1)):
+            raise ValueError("Seed role cache must cover a contiguous span from the first season")
+        feature_parts.append(seeded.drop(columns=["estimated_role"], errors="ignore"))
+        price_parts.append(
+            seed_prices[seed_prices["feature_season"].between(first_season, seeded_seasons[-1])]
+        )
+        start = seeded_seasons[-1] + 1
+        print(f"role proxy: reused {len(seeded_seasons)} completed seasons", flush=True)
+    if start > last_season:
+        return pd.concat(feature_parts, ignore_index=True), pd.concat(price_parts, ignore_index=True)
+    first_shots = load_pbp_shots(
+        raw_dir / f"NBA{(start - 1 if start > first_season else first_season) % 100:02d}.parquet",
+        start - 1 if start > first_season else first_season,
+    )
+    previous = first_shots
+    for season in range(start, last_season + 1):
         current = first_shots if season == first_season else load_pbp_shots(
             raw_dir / f"NBA{season % 100:02d}.parquet", season
         )
@@ -567,7 +603,16 @@ def apply_role_sources(
     scoring: pd.DataFrame,
     proxy: pd.DataFrame,
     anchor: pd.DataFrame,
+    snapshot_after: int | None = None,
 ) -> pd.DataFrame:
+    """Attach role and close zTS / SV.
+
+    ``snapshot_after`` names the last season whose scoring context is frozen.
+    A later season is still being played, so its local box file and the
+    Databallr ``player_zts`` snapshot can sit a game apart; those rows take
+    TSA100, rTS and role together from the snapshot whenever it is complete,
+    so the board never mixes two snapshots in one zTS.
+    """
     proxy_cols = [
         "player_id",
         "feature_season",
@@ -597,13 +642,20 @@ def apply_role_sources(
     output["observed_role"] = pd.to_numeric(output["observed_role"], errors="coerce")
     output["observed_rts"] = pd.to_numeric(output["observed_rts"], errors="coerce")
     output["observed_tsa100"] = pd.to_numeric(output["observed_tsa100"], errors="coerce")
-    stale_modern_context = (
-        output["year"].ge(MODERN_FIRST)
-        & output["playtype_diff"].isna()
-        & output["observed_role"].notna()
+    complete_snapshot = (
+        output["observed_role"].notna()
         & output["observed_rts"].notna()
         & output["observed_tsa100"].notna()
     )
+    stale_modern_context = (
+        output["year"].ge(MODERN_FIRST)
+        & output["playtype_diff"].isna()
+        & complete_snapshot
+    )
+    output["local_rts"] = output["rts"]
+    output["local_tsa100"] = output["tsa100"]
+    if snapshot_after is not None:
+        stale_modern_context |= output["year"].gt(int(snapshot_after)) & complete_snapshot
     output.loc[stale_modern_context, "rts"] = output.loc[
         stale_modern_context, "observed_rts"
     ]
@@ -628,6 +680,33 @@ def apply_role_sources(
     output["zts_add_m4"] = 2.0 * output["tsa100"] * (output["zts"] - VALUE_BASELINE) / 100.0
     output["scoring_value100"] = VALUE_FIT_INTERCEPT + VALUE_FIT_SLOPE * output["zts_add_m4"]
     return output
+
+
+def snapshot_skew_receipt(scoring: pd.DataFrame, fit_through: int) -> list[dict[str, object]]:
+    """Local box context versus the zTS snapshot for seasons still in progress.
+
+    The board uses the snapshot; this records how far the local file was from
+    it on the day of the build, so a large skew is visible instead of silent.
+    """
+    rows: list[dict[str, object]] = []
+    live = scoring[scoring["year"].gt(int(fit_through))]
+    for year, part in live.groupby("year"):
+        used = part["scoring_context_source"].eq("databallr_zts_observed")
+        rts_gap = (part.loc[used, "local_rts"] - part.loc[used, "rts"]).abs()
+        tsa_gap = (part.loc[used, "local_tsa100"] - part.loc[used, "tsa100"]).abs()
+        rows.append(
+            {
+                "season": int(year),
+                "rows": int(len(part)),
+                "rows_on_zts_snapshot": int(used.sum()),
+                "rows_on_local_context": int((~used).sum()),
+                "local_minus_snapshot_abs_rts_median": float(rts_gap.median()) if len(rts_gap) else None,
+                "local_minus_snapshot_abs_rts_max": float(rts_gap.max()) if len(rts_gap) else None,
+                "local_minus_snapshot_abs_tsa100_median": float(tsa_gap.median()) if len(tsa_gap) else None,
+                "local_minus_snapshot_abs_tsa100_max": float(tsa_gap.max()) if len(tsa_gap) else None,
+            }
+        )
+    return rows
 
 
 def validate_observed_role_coverage(scoring: pd.DataFrame) -> pd.DataFrame:
@@ -741,14 +820,21 @@ TURNOVER_COLUMNS = [
 ]
 
 
-def load_observed_rztov(path: Path) -> pd.DataFrame:
+def load_observed_rztov(path: Path, last_observed_season: int | None = None) -> pd.DataFrame:
     """Observed rZTOV rows on the box-ledger column contract.
 
     Break-evens come from the trailing five-season window ending in the row's
     season; 2014-2017 inherit the first complete observed window, 2014-2018.
+    A season file that also carries estimated rows marks them in ``source``;
+    only observed rows inside the freeze are kept, so a later season falls
+    through to the box ledger in ``combine_turnover_ledgers``.
     """
 
     observed = pd.read_csv(path).rename(columns={"off_poss": "OffPoss"})
+    if "source" in observed.columns:
+        observed = observed[observed["source"].astype(str).eq("observed")].copy()
+    if last_observed_season is not None:
+        observed = observed[observed["year"].le(last_observed_season)].copy()
     if observed.duplicated(["nba_id", "year"]).any():
         raise ValueError("Observed rZTOV ledger has duplicate player-season keys")
     observed["be_source"] = observed["year"].clip(lower=OBSERVED_TOV_FIRST_WINDOW_END).astype(int)
@@ -772,7 +858,18 @@ def combine_turnover_ledgers(box: pd.DataFrame, observed: pd.DataFrame) -> pd.Da
     return combined.sort_values(["year", "nba_id"]).reset_index(drop=True)
 
 
-def build_board(scoring: pd.DataFrame, ledger: pd.DataFrame, prices: pd.DataFrame) -> pd.DataFrame:
+def build_board(
+    scoring: pd.DataFrame,
+    ledger: pd.DataFrame,
+    prices: pd.DataFrame,
+    qual_floors: dict[int, float] | None = None,
+    statuses: dict[int, str] | None = None,
+) -> pd.DataFrame:
+    """Join scoring context to the turnover ledger and price both lanes.
+
+    ``qual_floors`` lowers the qualifying possession floor for a season still
+    being played; ``statuses`` labels it in ``season_status``.
+    """
     board = ledger[TURNOVER_COLUMNS].merge(scoring, on=["nba_id", "year"], how="left")
     price_map = prices.set_index(["ledger_source", "window_hi"])
     keys = pd.MultiIndex.from_arrays([board["turnover_source"], board["be_source"]])
@@ -787,8 +884,14 @@ def build_board(scoring: pd.DataFrame, ledger: pd.DataFrame, prices: pd.DataFram
     )
     board["turnover_value100"] = board["scoring_tov_value100"] + board["badpass_tov_value100"]
     board["scoring_security_value100"] = board["scoring_value100"] + board["turnover_value100"]
+    floor = (
+        board["year"].astype(int).map(qual_floors or {}).fillna(QUAL_MIN_POSS).astype(float)
+    )
+    board["season_status"] = (
+        board["year"].astype(int).map(statuses or {}).fillna(seasons.STATUS_COMPLETE)
+    )
     board["qualified_scoring_security"] = (
-        board["OffPoss"].ge(QUAL_MIN_POSS)
+        board["OffPoss"].ge(floor)
         & board["zts"].notna()
         & board["turnover_value100"].notna()
     ).astype(int)
@@ -956,8 +1059,17 @@ def observed_overlap(proxy: pd.DataFrame, observed: pd.DataFrame, label: str) ->
 
 def build(args: argparse.Namespace) -> dict[str, object]:
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    fit_through = seasons.fit_cap(args.last_season, args.fit_through)
+    span = seasons.span_tag(args.first_season, args.last_season)
+    states = seasons.season_states(
+        args.raw_dir, args.first_season, args.last_season, args.fit_through
+    )
+    qual_floors = seasons.floors_by_year(states, "qual_min_poss")
+    statuses = {season: str(state["status"]) for season, state in states.items()}
     if args.refresh_anchor_from_databallr:
-        observed_roles = refresh_databallr_observed(args.databallr_env, args.synergy_anchor)
+        observed_roles = refresh_databallr_observed(
+            args.databallr_env, args.synergy_anchor, args.last_season
+        )
     else:
         if not args.synergy_anchor.exists():
             raise FileNotFoundError(
@@ -978,13 +1090,23 @@ def build(args: argparse.Namespace) -> dict[str, object]:
         observed_roles["year"].between(ANCHOR_FIRST, ANCHOR_LAST)
     ].copy()
 
-    role_cache = args.output_dir / "pbp_role_proxy_1997_2026.parquet"
-    price_cache = args.output_dir / "pbp_role_category_prices_1997_2026.csv"
+    role_cache = args.output_dir / f"pbp_role_proxy_{span}.parquet"
+    price_cache = args.output_dir / f"pbp_role_category_prices_{span}.csv"
     if args.reuse_role_cache:
         proxy = pd.read_parquet(role_cache)
         category_prices = pd.read_csv(price_cache)
     else:
-        proxy, category_prices = build_pbp_role_panel(args.raw_dir, args.first_season, args.last_season)
+        seed_proxy = seed_prices = None
+        if args.seed_role_cache is not None:
+            if args.seed_role_prices is None:
+                raise ValueError("--seed-role-cache needs --seed-role-prices")
+            # Completed seasons are reused; only seasons after the freeze are re-read.
+            seed_proxy = pd.read_parquet(args.seed_role_cache)
+            seed_proxy = seed_proxy[seed_proxy["feature_season"].le(fit_through)]
+            seed_prices = pd.read_csv(args.seed_role_prices)
+        proxy, category_prices = build_pbp_role_panel(
+            args.raw_dir, args.first_season, args.last_season, seed_proxy, seed_prices
+        )
         proxy.to_parquet(role_cache, index=False)
         category_prices.to_csv(price_cache, index=False)
 
@@ -1006,26 +1128,36 @@ def build(args: argparse.Namespace) -> dict[str, object]:
     bridge_rows.round(8).to_csv(
         args.output_dir / "premerged_scoring_bridge_validation_2001.csv", index=False
     )
-    scoring = apply_role_sources(scoring_context, proxy, observed_roles)
+    scoring = apply_role_sources(
+        scoring_context, proxy, observed_roles, snapshot_after=fit_through
+    )
+    snapshot_skew = snapshot_skew_receipt(scoring, fit_through)
+    scoring = scoring.drop(columns=["local_rts", "local_tsa100"])
     observed_coverage = validate_observed_role_coverage(scoring)
 
     modern_observed = observed_roles[observed_roles["year"].ge(MODERN_FIRST)]
     overlap = pd.DataFrame(
         [
             observed_overlap(proxy, calibration_anchor, "anchor_2006_2013_in_sample_refit"),
-            observed_overlap(proxy, modern_observed, "modern_2014_2026_out_of_anchor"),
+            observed_overlap(
+                proxy,
+                modern_observed,
+                f"modern_{MODERN_FIRST}_{int(args.last_season)}_out_of_anchor",
+            ),
         ]
     )
     overlap.to_csv(args.output_dir / "role_overlap_summary.csv", index=False)
 
     box_ledger = pd.read_csv(args.rztov_ledger)
-    observed_ledger = load_observed_rztov(args.observed_rztov)
+    observed_ledger = load_observed_rztov(args.observed_rztov, fit_through)
     ledger = combine_turnover_ledgers(box_ledger, observed_ledger)
+    # Lane point prices stop at the frozen fit season.  A later season is priced
+    # with the last frozen window (its ``be_source``) and is never part of a fit.
     box_prices = fit_turnover_point_prices(
-        box_ledger,
+        box_ledger[box_ledger["year"].le(fit_through)],
         args.component_dir,
         first_end=args.first_season + WINDOW - 1,
-        last_end=args.last_season,
+        last_end=fit_through,
         bootstrap_draws=args.bootstrap_draws,
         seed=args.seed,
     )
@@ -1034,14 +1166,17 @@ def build(args: argparse.Namespace) -> dict[str, object]:
         observed_ledger,
         args.component_dir,
         first_end=OBSERVED_TOV_FIRST_WINDOW_END,
-        last_end=args.last_season,
+        last_end=fit_through,
         bootstrap_draws=args.bootstrap_draws,
         seed=args.seed,
     )
     observed_prices.insert(0, "ledger_source", "observed")
     prices = pd.concat([box_prices, observed_prices], ignore_index=True)
-    prices.to_csv(args.output_dir / "turnover_point_price_path_1997_2026.csv", index=False)
-    board = build_board(scoring, ledger, prices)
+    price_path = args.output_dir / (
+        f"turnover_point_price_path_{seasons.span_tag(args.first_season, fit_through)}.csv"
+    )
+    prices.to_csv(price_path, index=False)
+    board = build_board(scoring, ledger, prices, qual_floors, statuses)
     board = attach_playtype_mix(board, args.playtype_mix)
     board = attach_lineup_tov(board, args.lineup_tov)
     identities = validate_identities(board)
@@ -1051,7 +1186,8 @@ def build(args: argparse.Namespace) -> dict[str, object]:
     if max(lineup_gaps.values()) > 1e-5:
         raise AssertionError(f"Lineup turnover split failure: {lineup_gaps}")
     pass_through = lineup_pass_through(board)
-    pass_through.round(6).to_csv(args.output_dir / "lineup_tov_pass_through_1997_2026.csv", index=False)
+    pass_through_path = args.output_dir / f"lineup_tov_pass_through_{span}.csv"
+    pass_through.round(6).to_csv(pass_through_path, index=False)
 
     ordered = [
         "nba_id",
@@ -1084,7 +1220,10 @@ def build(args: argparse.Namespace) -> dict[str, object]:
         *MIX_COLUMNS,
         *LINEUP_TOV_COLUMNS,
     ]
-    board_path = args.output_dir / "historical_scoring_security_1997_2026.csv"
+    if args.last_season > fit_through:
+        # Post-fit spans add the season label; the frozen span keeps its 41 columns.
+        ordered.append("season_status")
+    board_path = args.output_dir / f"historical_scoring_security_{span}.csv"
     board[ordered].sort_values(["year", "scoring_security_value100"], ascending=[True, False]).round(6).to_csv(
         board_path, index=False
     )
@@ -1104,6 +1243,21 @@ def build(args: argparse.Namespace) -> dict[str, object]:
             "last_season": int(board["year"].max()),
             "rows": int(len(board)),
             "qualified_rows": int(board["qualified_scoring_security"].sum()),
+            "fit_through": int(fit_through),
+            "post_fit_seasons": {
+                str(season): state for season, state in states.items() if season > fit_through
+            },
+            "post_fit_scoring_context": {
+                "rule": (
+                    "seasons after fit_through take TSA100, rTS and role together from the "
+                    "Databallr player_zts snapshot when that row is complete"
+                ),
+                "limitation": (
+                    "possessions and the turnover ledger come from local play-by-play and can "
+                    "be a game ahead of or behind the zTS snapshot until one job builds both"
+                ),
+                "snapshot_skew": snapshot_skew,
+            },
         },
         "role_contract": {
             "backcast_seasons": [1997, 2005],
@@ -1201,7 +1355,7 @@ def build(args: argparse.Namespace) -> dict[str, object]:
             ),
             "rows_with_lineup": int(board["lineup_tov_value100"].notna().sum()),
             "split_gaps": lineup_gaps,
-            "pass_through": str(args.output_dir / "lineup_tov_pass_through_1997_2026.csv"),
+            "pass_through": str(pass_through_path),
         },
         "identities": identities,
         "outputs": {
@@ -1209,7 +1363,7 @@ def build(args: argparse.Namespace) -> dict[str, object]:
             "historical_board": str(historical_path),
             "role_validation": str(args.output_dir / "role_calibration_loso.csv"),
             "role_overlap": str(args.output_dir / "role_overlap_summary.csv"),
-            "turnover_price_path": str(args.output_dir / "turnover_point_price_path_1997_2026.csv"),
+            "turnover_price_path": str(price_path),
             "databallr_observed_snapshot": str(args.synergy_anchor),
             "historical_player_name_lookup": str(args.historical_names),
         },
@@ -1230,6 +1384,15 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--first-season", type=int, default=FIRST_SEASON)
     parser.add_argument("--last-season", type=int, default=LAST_SEASON)
+    parser.add_argument(
+        "--fit-through",
+        type=int,
+        default=seasons.FROZEN_FIT_SEASON,
+        help=(
+            "last season allowed into lane point-price fits and observed turnover rows; "
+            "later seasons use the box ledger and the last frozen price window"
+        ),
+    )
     parser.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
     parser.add_argument("--box-features", type=Path, default=DEFAULT_BOX_FEATURES)
     parser.add_argument("--rztov-ledger", type=Path, default=DEFAULT_RZTOV_LEDGER)
@@ -1244,6 +1407,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lineup-tov", type=Path, default=DEFAULT_LINEUP_TOV)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--reuse-role-cache", action="store_true")
+    parser.add_argument(
+        "--seed-role-cache",
+        type=Path,
+        help="role-proxy parquet of completed seasons to reuse; later seasons are rebuilt",
+    )
+    parser.add_argument(
+        "--seed-role-prices",
+        type=Path,
+        help="category-price CSV that belongs to --seed-role-cache",
+    )
     parser.add_argument("--bootstrap-draws", type=int, default=200)
     parser.add_argument("--seed", type=int, default=37)
     return parser.parse_args()

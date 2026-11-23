@@ -53,8 +53,10 @@ import pandas as pd
 
 try:
     from . import analyze_td_overall_playtype_mix_ots as mix
+    from . import scoring_season
 except ImportError:  # Direct script execution.
     import analyze_td_overall_playtype_mix_ots as mix
+    import scoring_season
 
 PIPELINE_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = PIPELINE_ROOT / "results" / "td_playtype_mix_board"
@@ -72,8 +74,18 @@ DIFFICULTY_POINTS_PER_PP = 1.0 / 50.0  # difficulty_pp = 50 * points/FGA
 LOGGER = logging.getLogger("td_playtype_mix_board")
 
 
-def build_panel_with_counts(args: argparse.Namespace) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Build the attempt panel and record complete-lineup coverage per season."""
+def build_panel_with_counts(
+    args: argparse.Namespace,
+    pricing_start_season: int | None = None,
+    seed_prior_shots: pd.DataFrame | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Build the attempt panel and record complete-lineup coverage per season.
+
+    With ``seed_prior_shots`` (the prior season's rows from a completed panel)
+    only the seasons from ``pricing_start_season`` on are loaded, and the first
+    of them is priced on the seed instead of on itself.
+    """
+    start = args.pricing_start_season if pricing_start_season is None else pricing_start_season
 
     counts: list[dict[str, int]] = []
     original = mix._lineup_payload
@@ -87,16 +99,19 @@ def build_panel_with_counts(args: argparse.Namespace) -> tuple[pd.DataFrame, pd.
     mix._lineup_payload = counting_payload
     try:
         attempts, prices = mix.build_attempt_panel(
-            pricing_start_season=args.pricing_start_season,
+            pricing_start_season=start,
             end_season=args.last_feature_season,
             raw_dir=args.raw_dir,
             transition_dir=args.transition_dir,
             game_dates_path=args.game_dates,
-            price_first_season_on_itself=True,
+            price_first_season_on_itself=seed_prior_shots is None,
+            seed_prior_shots=seed_prior_shots,
+            # Only a season past the seed can be ahead of the schedule file.
+            fill_trailing_undated=seed_prior_shots is not None,
         )
     finally:
         mix._lineup_payload = original
-    seasons = list(range(args.pricing_start_season, args.last_feature_season + 1))
+    seasons = list(range(start, args.last_feature_season + 1))
     if len(counts) != len(seasons):
         raise RuntimeError("Lineup coverage counter did not see one call per season")
     coverage = pd.DataFrame(counts)
@@ -106,8 +121,17 @@ def build_panel_with_counts(args: argparse.Namespace) -> tuple[pd.DataFrame, pd.
 
 
 def load_names_and_possessions(
-    observed_path: Path, scoring_path: Path, name_map_path: Path | None = None
+    observed_path: Path,
+    scoring_path: Path,
+    name_map_path: Path | None = None,
+    extra_possessions: Path | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Display names and player-season offensive possessions.
+
+    ``extra_possessions`` (``nba_id, year, OffPoss``) supplies seasons the
+    scoring board does not hold yet.  The scoring board attaches this board, so
+    a new season's possessions come from the box ledger that feeds both.
+    """
     observed = pd.read_csv(observed_path, usecols=["nba_id", "name", "year", "off_poss"])
     scoring = pd.read_csv(scoring_path, usecols=["nba_id", "player_name", "year", "OffPoss"])
     names = pd.concat(
@@ -130,6 +154,10 @@ def load_names_and_possessions(
             [names, fallback[~fallback["player_id"].isin(names["player_id"])]], ignore_index=True
         )
     poss = scoring.rename(columns={"OffPoss": "off_poss"})[["nba_id", "year", "off_poss"]]
+    if extra_possessions is not None:
+        extra = pd.read_csv(extra_possessions, usecols=["nba_id", "year", "OffPoss"])
+        extra = extra[extra["year"].gt(poss["year"].max())].rename(columns={"OffPoss": "off_poss"})
+        poss = pd.concat([poss, extra], ignore_index=True)
     return names, poss
 
 
@@ -247,6 +275,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--game-dates", type=Path, default=mix.DEFAULT_GAME_DATES)
     parser.add_argument("--observed-rztov", type=Path, default=DEFAULT_OBSERVED_RZTOV)
     parser.add_argument("--scoring-board", type=Path, default=DEFAULT_SCORING)
+    parser.add_argument(
+        "--possessions",
+        type=Path,
+        default=None,
+        help="nba_id/year/OffPoss rows for seasons after the scoring board (the box ledger)",
+    )
+    parser.add_argument(
+        "--seed-dir",
+        type=Path,
+        default=None,
+        help="completed build to extend: its seasons through --seed-through are reused unchanged "
+        "and only later seasons are built and solved",
+    )
+    parser.add_argument("--seed-through", type=int, default=scoring_season.FROZEN_FIT_SEASON)
     parser.add_argument("--name-map", type=Path, default=DEFAULT_NAME_MAP)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--rebuild-attempts", action="store_true")
@@ -261,7 +303,39 @@ def main() -> int:
     attempts_path = args.output_dir / f"attempt_panel_{span}.parquet"
     prices_path = args.output_dir / "lag_category_prices.csv"
     coverage_path = args.output_dir / "lineup_coverage.csv"
-    if attempts_path.exists() and coverage_path.exists() and not args.rebuild_attempts:
+    seeded = args.seed_dir is not None and args.last_feature_season > args.seed_through
+    seed_reader = None
+    first_solved = args.first_feature_season
+    if seeded:
+        seed_span = f"{args.first_feature_season}_{args.seed_through}"
+        first_solved = args.seed_through + 1
+        seed_reader = pd.read_csv(args.seed_dir / f"td_playtype_mix_board_{seed_span}.csv")
+        seed_attempts = pd.read_parquet(args.seed_dir / f"attempt_panel_{seed_span}.parquet")
+        seed_attempts = seed_attempts[seed_attempts["Season"].gt(first_solved - args.window_seasons)]
+        prior = seed_attempts[seed_attempts["Season"].eq(args.seed_through)]
+        if prior.empty:
+            raise RuntimeError(f"Seed panel has no {args.seed_through} attempts to price {first_solved} on")
+        new_attempts, new_prices, new_coverage = build_panel_with_counts(
+            args, pricing_start_season=first_solved, seed_prior_shots=prior
+        )
+        if list(new_attempts.columns) != list(seed_attempts.columns):
+            raise RuntimeError("Seeded attempt panel and new attempt rows have different columns")
+        new_attempts.to_parquet(
+            args.output_dir / f"attempt_panel_{first_solved}_{args.last_feature_season}.parquet", index=False
+        )
+        attempts = pd.concat([seed_attempts, new_attempts], ignore_index=True)
+        prices = pd.concat([pd.read_csv(args.seed_dir / "lag_category_prices.csv"), new_prices], ignore_index=True)
+        coverage = pd.concat(
+            [
+                pd.read_csv(args.seed_dir / "lineup_coverage.csv"),
+                new_coverage,
+            ],
+            ignore_index=True,
+        )
+        prices.to_csv(prices_path, index=False)
+        coverage.to_csv(coverage_path, index=False)
+        LOGGER.info("Reused seasons through %d from %s", args.seed_through, args.seed_dir)
+    elif attempts_path.exists() and coverage_path.exists() and not args.rebuild_attempts:
         attempts = pd.read_parquet(attempts_path)
         prices = pd.read_csv(prices_path)
         coverage = pd.read_csv(coverage_path)
@@ -271,11 +345,15 @@ def main() -> int:
         prices.to_csv(prices_path, index=False)
         coverage.to_csv(coverage_path, index=False)
 
-    names, poss = load_names_and_possessions(args.observed_rztov, args.scoring_board, args.name_map)
+    names, poss = load_names_and_possessions(
+        args.observed_rztov, args.scoring_board, args.name_map, args.possessions
+    )
     rates = league_fga_rate(coverage, poss)
+    if rates.loc[rates["season"].ge(first_solved), "league_fga_per100"].isna().any():
+        raise RuntimeError("A solved season has no possessions; pass --possessions for seasons after the scoring board")
     board, metadata = solve_board(
         attempts,
-        first=args.first_feature_season,
+        first=first_solved,
         last=args.last_feature_season,
         args=args,
         names=names,
@@ -287,6 +365,10 @@ def main() -> int:
     dropped_inactive = int(reader["season_on_court_fga"].eq(0).sum())
     reader = reader[reader["season_on_court_fga"].gt(0)].reset_index(drop=True)
     checks = validate(reader)
+    if seed_reader is not None:
+        if list(seed_reader.columns) != list(reader.columns):
+            raise RuntimeError("Seeded board and new rows have different columns")
+        reader = pd.concat([seed_reader, reader], ignore_index=True)
     reader = reader.sort_values(["year", "mix_rapm"], ascending=[True, False])
     reader.to_csv(args.output_dir / f"td_playtype_mix_board_{span}.csv", index=False)
     rates.to_csv(args.output_dir / "league_fga_rate.csv", index=False)
@@ -306,6 +388,14 @@ def main() -> int:
         "window_seasons": args.window_seasons,
         "pricing_start_season": args.pricing_start_season,
         "feature_seasons": [args.first_feature_season, args.last_feature_season],
+        "solved_this_run": [first_solved, args.last_feature_season],
+        "reused_from": str(args.seed_dir) if seeded else None,
+        "trailing_undated_games": {
+            str(season): games for season, games in sorted(mix.TRAILING_UNDATED.items())
+        },
+        "trailing_undated_rule": (
+            "a game newer than the schedule file is dated the day after the last dated game of its season"
+        ),
         "history_caveat": (
             f"each feature season fits itself plus the prior {args.window_seasons - 1} season(s) at a "
             f"{args.half_life:g}-day half-life; {args.pricing_start_season} has no prior raw season, "

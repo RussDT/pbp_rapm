@@ -25,7 +25,13 @@ Checks
    the scoring board's ``lineup_*`` columns vs the lineup CSV times its price,
    split closure on the board, and the pass-through file's season coverage.
 
-``--fetch-live`` refreshes the Databallr comparison snapshot read-only.
+8. a season after the frozen fit (the season in progress): the explorer carries
+   it as box-estimated rows, so the board's box-estimated rows for that season
+   are reconciled against them. A frozen build has no such rows and no check.
+
+Every input is an argument, so the daily runner points the same checks at its
+dated outputs. ``--fetch-live`` refreshes the Databallr comparison snapshot
+read-only.
 """
 
 from __future__ import annotations
@@ -143,6 +149,39 @@ def board_vs_rztov(board: pd.DataFrame, rztov: pd.DataFrame) -> list[dict[str, o
     ]
 
 
+def board_vs_rztov_estimated(board: pd.DataFrame, rztov: pd.DataFrame) -> list[dict[str, object]]:
+    """Seasons the explorer carries as box-estimated rows (past the frozen fit)."""
+    if "source" not in rztov.columns:
+        return []
+    estimated = rztov[rztov["source"].eq("box_estimated")]
+    if estimated.empty:
+        return []
+    seasons = sorted(int(year) for year in estimated["year"].unique())
+    board_rows = board[board["year"].isin(seasons)]
+    merged = board_rows.merge(estimated, on=["nba_id", "year"], suffixes=("", "_rz"))
+    rows = {"rows": len(merged), "seasons": seasons, "board_rows": int(len(board_rows)), "explorer_rows": int(len(estimated))}
+    labelled = bool(board_rows["turnover_source"].eq("box_estimated").all())
+    return [
+        check("estimated_rztov_board_vs_csv", gap(merged["rztov"], merged["rztov_rz"]), TOL["csv4"], **rows),
+        check("estimated_sc_excess_board_vs_csv", gap(merged["sc_excess"], merged["sc_excess_rz"]), TOL["csv4"], **rows),
+        check("estimated_bp_excess_board_vs_csv", gap(merged["bp_excess"], merged["bp_excess_rz"]), TOL["csv4"], **rows),
+        check("estimated_sc_price_board_vs_csv", gap(merged["scoring_tov_point_price"], merged["sc_point_price"]), TOL["csv4"], **rows),
+        check("estimated_bp_price_board_vs_csv", gap(merged["badpass_tov_point_price"], merged["bp_point_price"]), TOL["csv4"], **rows),
+        check(
+            "estimated_turnover_points_board_vs_csv",
+            gap(merged["turnover_value100"], merged["tov_points_saved_100"]),
+            TOL["csv4"],
+            **rows,
+        ),
+        check("estimated_board_rows_labelled_box_estimated", 0.0 if labelled else 1.0, 0.0),
+        check(
+            "estimated_rows_matched_both_ways",
+            float(abs(len(board_rows) - len(merged)) + abs(len(estimated) - len(merged))),
+            0.0,
+        ),
+    ]
+
+
 def _page_constant(html: str, name: str) -> object:
     match = re.search(rf"^\s*const {name} = (.*);\s*$", html, flags=re.MULTILINE)
     if not match:
@@ -155,7 +194,8 @@ def rztov_page(html_path: Path, rztov: pd.DataFrame) -> list[dict[str, object]]:
     data = _page_constant(html_path.read_text(encoding="utf-8"), "DATA")
     be = {int(year): block for year, block in data["be"].items()}
     out = []
-    for nba_id, year, poss, v_self, v_ast, v_potast, sc, bp, _qual in data["seasons"]:
+    # A row past the frozen fit carries a tenth element flagging it as estimated.
+    for nba_id, year, _poss, v_self, v_ast, v_potast, sc, bp in (row[:8] for row in data["seasons"]):
         b = be[int(year)]
         allow_sc = b["self"] * v_self + b["ast"] * v_ast + b["centre_sc"]
         allow_bp = b["potast"] * v_potast + b["centre_bp"]
@@ -336,6 +376,7 @@ def main() -> int:
     results: list[dict[str, object]] = []
     results += scoring_vs_databallr(board, live)
     results += board_vs_rztov(board, rztov)
+    results += board_vs_rztov_estimated(board, rztov)
     results += rztov_page(args.rztov_html, rztov)
     results += scoring_page(args.scoring_html, board)
     identities = identity_gaps(board)

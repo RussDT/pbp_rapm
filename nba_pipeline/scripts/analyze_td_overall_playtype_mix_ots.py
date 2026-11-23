@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 from pathlib import Path
 
 import numpy as np
@@ -83,8 +84,8 @@ DEFAULT_FORWARD_ROWS = (
 )
 DEFAULT_OUTPUT = PIPELINE_ROOT / "results" / "td_overall_playtype_mix"
 DEFAULT_GAME_DATES = Path(
-    "/Users/russ/Documents/Codex/basketball/nba/data-sources/"
-    "matchup-fga/game_dates.csv"
+    os.environ.get("NBA_GAME_DATES_CSV")
+    or PIPELINE_ROOT.parents[2] / "data-sources" / "matchup-fga" / "game_dates.csv"
 )
 
 MIX_CATEGORIES = [
@@ -180,6 +181,12 @@ def estimate_lag_prices(
 
 
 def load_game_dates(path: Path) -> pd.DataFrame:
+    if not Path(path).exists():
+        # Seasons from 2026 date their games from the processed parquet, so a
+        # current-season build does not need the schedule file.  A season that
+        # does need it still fails on its undated attempts in load_season_shots.
+        LOGGER.warning("Game-date file %s is missing; using processed game dates only", path)
+        return pd.DataFrame({"game_id": pd.Series(dtype=str), "game_date": pd.Series(dtype="datetime64[ns]")})
     dates = pd.read_csv(path, usecols=["GAME_ID", "date", "playoffs"])
     dates = dates[~dates["playoffs"].fillna(False).astype(bool)].copy()
     dates["game_id"] = normalize_game_id(dates["GAME_ID"])
@@ -263,12 +270,45 @@ def _lineup_payload(frame: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
     return kept, offense
 
 
+# Games dated by the trailing-undated rule, by season, for the caller's manifest.
+TRAILING_UNDATED: dict[int, list[str]] = {}
+
+
+def fill_trailing_undated_games(shots: pd.DataFrame, season: int) -> pd.DataFrame:
+    """Date the newest games of a season that the schedule file has not caught up to.
+
+    The schedule file lags the raw play-by-play by about a day.  A game with no
+    date whose id is above every dated game of the season is given the day
+    after the last dated game.  At a 550-day half-life a few days of error
+    moves a weight by well under one percent.  An undated game with an id below
+    a dated one is a real gap and still fails.
+    """
+    missing = shots["game_date"].isna()
+    if not missing.any():
+        return shots
+    dated_ids = shots.loc[~missing, "game_id"]
+    if dated_ids.empty:
+        return shots
+    trailing = missing & shots["game_id"].gt(dated_ids.max())
+    games = sorted(shots.loc[trailing, "game_id"].unique())
+    if games:
+        shots.loc[trailing, "game_date"] = shots.loc[~missing, "game_date"].max() + pd.Timedelta(days=1)
+        TRAILING_UNDATED[int(season)] = games
+        LOGGER.warning(
+            "Season %d: %d newest games have no schedule date yet; dated the day after the last dated game",
+            season,
+            len(games),
+        )
+    return shots
+
+
 def load_season_shots(
     season: int,
     *,
     raw_dir: Path,
     transition_dir: Path,
     game_dates: pd.DataFrame,
+    fill_trailing_undated: bool = False,
 ) -> pd.DataFrame:
     raw_path = raw_dir / f"NBA{str(season)[-2:]}.parquet"
     raw = _base_processing(raw_path)
@@ -319,6 +359,8 @@ def load_season_shots(
     shots = shots.merge(dates, on="game_id", how="left", validate="many_to_one")
     if raw_dates is not None:
         shots["game_date"] = shots["game_date"].fillna(pd.Series(raw_dates, index=shots.index))
+    if fill_trailing_undated:
+        shots = fill_trailing_undated_games(shots, season)
     if shots["game_date"].isna().any():
         raise ValueError(
             f"Season {season} has {int(shots['game_date'].isna().sum())} "
@@ -346,6 +388,8 @@ def build_attempt_panel(
     transition_dir: Path,
     game_dates_path: Path,
     price_first_season_on_itself: bool = False,
+    seed_prior_shots: pd.DataFrame | None = None,
+    fill_trailing_undated: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Lag-priced attempt rows for every season after ``pricing_start_season``.
 
@@ -353,11 +397,18 @@ def build_attempt_panel(
     priced on its own shots, for the earliest raw season that has no prior
     season to price from (1997).  Its price rows carry
     ``pricing_season == feature_season`` so the fallback stays auditable.
+
+    ``seed_prior_shots`` (``mix_category``, ``actual_points`` of the season
+    before ``pricing_start_season``, from a completed panel) makes every
+    season from ``pricing_start_season`` an emitted, lag-priced season without
+    reloading the earlier raw file.
     """
     dates = load_game_dates(game_dates_path)
     attempt_parts = []
     price_parts = []
     prior_shots = None
+    if seed_prior_shots is not None:
+        prior_shots = seed_prior_shots[["mix_category", "actual_points"]].copy()
     for season in range(pricing_start_season, end_season + 1):
         LOGGER.info("Building playtype attempt rows for %d", season)
         shots = load_season_shots(
@@ -365,6 +416,7 @@ def build_attempt_panel(
             raw_dir=raw_dir,
             transition_dir=transition_dir,
             game_dates=dates,
+            fill_trailing_undated=fill_trailing_undated,
         )
         if prior_shots is None and price_first_season_on_itself:
             prior_shots = shots[["mix_category", "actual_points"]].copy()
