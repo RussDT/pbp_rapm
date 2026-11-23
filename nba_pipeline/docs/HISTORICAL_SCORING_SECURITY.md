@@ -309,6 +309,13 @@ Subsequent local rebuild:
 .venv/bin/python nba_pipeline/scripts/build_historical_scoring_security.py
 ```
 
+Season in progress: `--last-season 2027` extends the board past the frozen
+fit without refitting anything (`fit_through` stays 2026). Rows carry
+`season_status`, a season still being played uses possession floors scaled by
+schedule progress, and past the fit TSA100, rTS and role come together from
+one Databallr `player_zts` snapshot. Use the daily runner rather than calling
+the builder by hand; see [`SCORING_RZTOV_DAILY.md`](./SCORING_RZTOV_DAILY.md).
+
 Standalone scoring-first leaderboard:
 
 ```bash

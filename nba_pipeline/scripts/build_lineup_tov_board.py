@@ -63,6 +63,8 @@ from sklearn.model_selection import GroupKFold
 
 try:
     from . import build_v2_six_shooting_split as base
+    from . import scoring_season
+    from .analyze_td_overall_playtype_mix_ots import fill_trailing_undated_games
     from .build_td_playtype_mix_board import (
         DEFAULT_NAME_MAP,
         DEFAULT_OBSERVED_RZTOV,
@@ -71,6 +73,8 @@ try:
     )
 except ImportError:  # Direct script execution.
     import build_v2_six_shooting_split as base
+    import scoring_season
+    from analyze_td_overall_playtype_mix_ots import fill_trailing_undated_games
     from build_td_playtype_mix_board import (
         DEFAULT_NAME_MAP,
         DEFAULT_OBSERVED_RZTOV,
@@ -108,6 +112,15 @@ def load_season(year: int) -> tuple[pd.DataFrame, dict[str, object]]:
     """One standard RS possession per row with the turnover actor classified."""
     cols = ["game_id", "event_num", *base.OFF, *base.DEF, "Is_Turnover", "Is_BadPass_TOV", "game_date"]
     d = base.unique(base.norm(pd.read_parquet(PROCESSED / f"TOV{season_key(year)}.parquet", columns=cols)))
+    d["game_date"] = pd.to_datetime(d["game_date"], errors="coerce")
+    undated_before = set(d.loc[d["game_date"].isna(), "game_id"].unique())
+    if year > scoring_season.FROZEN_FIT_SEASON:
+        # A season still being played can be a day ahead of the schedule file.
+        d = fill_trailing_undated_games(d, year)
+    if d["game_date"].isna().any():
+        raise ValueError(
+            f"TOV{season_key(year)}: {int(d['game_date'].isna().sum())} possessions have no game date"
+        )
     raw = pd.read_parquet(
         RAW / f"NBA{season_key(year)}.parquet", columns=["game_id", "event_num", "event_type", "player1_id"]
     )
@@ -138,6 +151,7 @@ def load_season(year: int) -> tuple[pd.DataFrame, dict[str, object]]:
         "team_actor_turnovers": int((team_actor & valid).sum()),
         "actor_lineup_mismatch_turnovers": int((unassigned & ~team_actor & valid).sum()),
         "badpass_share": float(bad[valid].sum() / max((tov & valid).sum(), 1)),
+        "trailing_undated_games": len(undated_before),
     }
     out = pd.DataFrame(
         {
@@ -400,6 +414,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--role-alpha-badpass", type=float, default=None, help="skip CV and freeze this alpha")
     parser.add_argument("--observed-rztov", type=Path, default=DEFAULT_OBSERVED_RZTOV)
     parser.add_argument("--scoring-board", type=Path, default=DEFAULT_SCORING)
+    parser.add_argument(
+        "--seed-board",
+        type=Path,
+        default=None,
+        help="completed board whose seasons before --first-season are carried over unchanged, so a "
+        "current-season run solves only the new season(s)",
+    )
     parser.add_argument("--name-map", type=Path, default=DEFAULT_NAME_MAP)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     return parser.parse_args()
@@ -442,10 +463,20 @@ def main() -> int:
     names, _ = load_names_and_possessions(args.observed_rztov, args.scoring_board, args.name_map)
     board = board.merge(names.rename(columns={"player_id": "nba_id"}), on="nba_id", how="left")
     lead = ["nba_id", "player_name", "year", "season_off_poss", "td_off_exposure", "history_seasons", "team_tov_coverage"]
-    board = board[lead + [c for c in board.columns if c not in lead]]
-    span = f"{args.first_season}_{args.last_season}"
+    board = board[lead + [c for c in board.columns if c not in lead]].round(6)
+    first_on_board = args.first_season
+    if args.seed_board is not None:
+        seed = pd.read_csv(args.seed_board)
+        seed = seed[seed["year"].lt(args.first_season)]
+        if list(seed.columns) != list(board.columns):
+            raise RuntimeError("Seed board and new rows have different columns")
+        if seed.empty or int(seed["year"].max()) != args.first_season - 1:
+            raise RuntimeError("Seed board must end the season before --first-season")
+        first_on_board = int(seed["year"].min())
+        board = pd.concat([seed, board], ignore_index=True)
+    span = f"{first_on_board}_{args.last_season}"
     board_path = args.output_dir / f"lineup_tov_board_{span}.csv"
-    board.sort_values(["year", "lineup_tov_value100"], ascending=[True, False]).round(6).to_csv(board_path, index=False)
+    board.sort_values(["year", "lineup_tov_value100"], ascending=[True, False]).to_csv(board_path, index=False)
     league_frame = pd.DataFrame(league)
     league_frame["history"] = league_frame["history"].map(lambda h: "-".join(map(str, h)))
     league_frame.to_csv(args.output_dir / "league_summary.csv", index=False)
@@ -490,6 +521,8 @@ def main() -> int:
             "actor-lineup mismatches there. team_tov_coverage = absent (<=2013), partial (2014), full (2015+)"
         ),
         "identity_checks": checks,
+        "solved_this_run": [args.first_season, args.last_season],
+        "reused_from": str(args.seed_board) if args.seed_board is not None else None,
         "rows": int(len(board)),
         "rows_missing_player_name": int(board["player_name"].isna().sum()),
         "outputs": {

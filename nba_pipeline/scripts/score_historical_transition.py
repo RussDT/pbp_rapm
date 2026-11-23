@@ -69,7 +69,8 @@ def parse_raw_filename(path: Path) -> tuple[int, str]:
     if not match:
         raise ValueError(f"Unrecognized raw NBA filename: {path.name}")
     suffix = int(match.group(1))
-    year = 2000 + suffix if suffix <= 26 else 1900 + suffix
+    # The archive starts at 1996-97, so two-digit suffixes 97-99 are the 1900s.
+    year = 1900 + suffix if suffix >= 97 else 2000 + suffix
     season_type = "ps" if match.group(2) else "rs"
     return year, season_type
 
@@ -85,7 +86,9 @@ def era_label(year: int) -> str:
         return "2017-2020"
     if year <= 2024:
         return "2021-2024"
-    return "2025-2026"
+    if year <= 2026:
+        return "2025-2026"
+    return "2027+"
 
 
 def discover_raw_paths(

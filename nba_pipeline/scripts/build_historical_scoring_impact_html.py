@@ -28,6 +28,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+try:
+    from . import scoring_season
+except ImportError:  # Direct script execution.
+    import scoring_season
+
 
 PIPELINE_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT = (
@@ -37,7 +42,8 @@ DEFAULT_INPUT = (
     / "historical_scoring_security_1997_2026.csv"
 )
 DEFAULT_OUTPUT = PIPELINE_DIR / "docs" / "historical-scoring-impact.html"
-PASS_THROUGH_NAME = "lineup_tov_pass_through_1997_2026.csv"
+PASS_THROUGH_NAME = "lineup_tov_pass_through_{span}.csv"
+OBSERVED_ROLE = "databallr_synergy_observed"
 PASS_THROUGH_FIELDS = [
     "scoring_total_slope",
     "scoring_raw_slope",
@@ -87,7 +93,7 @@ HTML_TEMPLATE = r'''<!doctype html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NBA Scoring Impact</title>
-  <meta name="description" content="Historical NBA scoring impact 1997-2026: zTS scoring value plus scoring-turnover value, with bad-pass cost, a research playtype-mix RAPM, and a time-decay lineup turnover view beside it.">
+  <meta name="description" content="Historical NBA scoring impact __SPAN_ASCII__: zTS scoring value plus scoring-turnover value, with bad-pass cost, a research playtype-mix RAPM, and a time-decay lineup turnover view beside it.">
   <style>
     :root {
       color-scheme: dark;
@@ -362,7 +368,7 @@ HTML_TEMPLATE = r'''<!doctype html>
   <main class="page">
     <header class="top">
       <div>
-        <p class="kicker"><span>NBA</span><span class="dot"></span><span>1997–2026 regular seasons</span><span class="dot"></span><span class="pill">Research reader</span></p>
+        <p class="kicker"><span>NBA</span><span class="dot"></span><span>__SPAN__ regular seasons</span>__LIVE_KICKER__<span class="dot"></span><span class="pill">Research reader</span></p>
         <h1>Scoring impact <span class="soft">without bad&#8209;pass cost</span></h1>
         <p class="lede"><strong>How many points per 100 possessions a player adds through their own shots and the turnovers they commit while trying to score.</strong> Passing mistakes are kept out of the ranking but shown beside it, and adding them back gives full scoring security. Select a row to see every number rebuilt.</p>
       </div>
@@ -420,8 +426,8 @@ HTML_TEMPLATE = r'''<!doctype html>
             <th class="sticky left"><button data-key="player_name"><span class="lbl">Player</span><span class="unit">rank · season · role source</span></button></th>
             <th class="opt"><button data-key="year"><span class="lbl">Season</span><span class="unit">&nbsp;</span></button></th>
             <th class="opt"><button data-key="OffPoss"><span class="lbl">Off. poss</span><span class="unit">count</span></button></th>
-            <th class="opt"><button data-key="tsa100" title="True-shooting attempts per 100 offensive possessions"><span class="lbl">TSA</span><span class="unit">per 100</span></button></th>
-            <th class="opt"><button data-key="rts" title="True shooting above league, in TS points"><span class="lbl">rTS</span><span class="unit">TS pts</span></button></th>
+            <th class="opt"><button data-key="tsa100" title="Shots (true-shooting attempts, FGA + 0.44 FTA) per 100 offensive possessions"><span class="lbl">Shots</span><span class="unit">per 100</span></button></th>
+            <th class="opt"><button data-key="rts" title="True shooting above league, in TS points"><span class="lbl">rTS</span><span class="unit">%</span></button></th>
             <th><button data-key="zts" title="rTS plus role difficulty"><span class="lbl">zTS</span><span class="unit">rTS + role</span></button></th>
             <th><button data-key="scoring_value100" title="Own-shot scoring value per 100 offensive possessions"><span class="lbl">Scoring value</span><span class="unit">pts / 100</span></button></th>
             <th class="opt"><button data-key="scoring_tov_value100" title="Value of scoring/handling turnovers versus the workload allowance"><span class="lbl">Scoring TOV</span><span class="unit">pts / 100</span></button></th>
@@ -441,11 +447,11 @@ HTML_TEMPLATE = r'''<!doctype html>
       <div>
         <h2>Reading the numbers</h2>
         <p>Every value column is points per 100 offensive possessions, and positive is better. rTS, role and zTS are true-shooting percentage points. rZTOV in the row detail is turnovers per 100 plays above the workload allowance, so negative is better.</p>
-        <p>Scoring value is the production zTS chain: 2 × TSA/100 × (zTS + 4) / 100, then the fitted line −1.211295 + 0.800618 × that.</p>
+        <p>Scoring value is the production zTS chain: 2 × Shots/100 × (zTS + 4) / 100, then the fitted line −1.211295 + 0.800618 × that.</p>
       </div>
       <div>
         <h2>Sources</h2>
-        <p>Role is observed from 2006 to 2026 and a calibrated play-by-play backcast from 1997 to 2005. Missing observed-era roles stay blank. Turnover lanes are observed from 2014, identical to the rZTOV explorer, and box-estimated before that. Each lane is priced by a rolling five-season fit of the net-continuation turnover RAPMs.</p>
+        <p>Role is observed from 2006 to __ROLE_LAST__ and a calibrated play-by-play backcast from 1997 to 2005. Missing observed-era roles stay blank. Turnover lanes are observed from 2014, identical to the rZTOV explorer, and box-estimated before that.__LIVE_SOURCES__ Each lane is priced by a rolling five-season fit of the net-continuation turnover RAPMs.</p>
       </div>
       <div>
         <h2><span class="v">Playtype mix RAPM</span> · research</h2>
@@ -465,6 +471,11 @@ HTML_TEMPLATE = r'''<!doctype html>
     const PASS = __PASS__;
     const PAGE = 100;
     const QUALIFIED = 1000;
+    // Seasons still being played: {year: {label, games, full_games, progress, qual}}.
+    // Their possession floors are the full-season floors times schedule progress.
+    const LIVE = __LIVE__;
+    const qualFloor = y => LIVE[y] ? LIVE[y].qual : QUALIFIED;
+    const minFor = y => state.min * qualFloor(y) / QUALIFIED;
     const DEFAULTS = { q: "", season: "all", min: 1000, role: "all", sort: "scoring_impact_no_badpass100", dir: -1 };
     const state = { ...DEFAULTS, open: null, limit: PAGE };
 
@@ -478,8 +489,8 @@ HTML_TEMPLATE = r'''<!doctype html>
 
     const has = v => v !== null && v !== undefined && Number.isFinite(v);
     const minus = t => t.replace("-", "−");
-    const signed = (v, d = 2) => has(v) ? (v > 0 ? "+" : "") + minus(v.toFixed(d)) : "—";
-    const fixed = (v, d = 2) => has(v) ? minus(v.toFixed(d)) : "—";
+    const signed = (v, d = 1) => has(v) ? (v > 0 ? "+" : "") + minus(v.toFixed(d)) : "—";
+    const fixed = (v, d = 1) => has(v) ? minus(v.toFixed(d)) : "—";
     const int = v => Math.round(v).toLocaleString();
     const tone = v => !has(v) ? "nil" : v > 0.005 ? "pos" : v < -0.005 ? "neg" : "";
     const esc = t => String(t).replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
@@ -492,7 +503,7 @@ HTML_TEMPLATE = r'''<!doctype html>
     const seasonRank = new Map();
     const seasonSize = new Map();
     for (const y of years) {
-      const pool = DATA.filter(d => d.year === y && d.OffPoss >= QUALIFIED);
+      const pool = DATA.filter(d => d.year === y && d.OffPoss >= qualFloor(y));
       seasonSize.set(y, pool.length);
       pool.sort((a, b) => b.scoring_impact_no_badpass100 - a.scoring_impact_no_badpass100)
         .forEach((d, i) => seasonRank.set(rowKey(d), i + 1));
@@ -550,7 +561,7 @@ HTML_TEMPLATE = r'''<!doctype html>
       const q = state.q.trim().toLowerCase();
       return DATA.filter(d =>
         (state.season === "all" || d.year === Number(state.season)) &&
-        d.OffPoss >= state.min &&
+        d.OffPoss >= minFor(d.year) &&
         (state.role === "all" || (state.role === "observed") === observedRole(d)) &&
         (!q || d.player_name.toLowerCase().includes(q))
       );
@@ -577,7 +588,7 @@ HTML_TEMPLATE = r'''<!doctype html>
           <tr class="sum"><td>Both lanes</td>${cell(boxBoth, "box")}${cell(both("own"))}${cell(both("teammate"))}${cell(both("team"))}<td class="tot">${signed(d.lineup_tov_value100)}</td>${cell(both("raw"), "raw")}</tr>
         </tbody></table></div>`;
       const notes = [];
-      notes.push(`Points per 100 offensive possessions, positive = fewer turnovers. The lineup columns come from a ridge fit on every ${d.year - 1 >= 1997 ? `${d.year - 1}-${d.year}` : d.year} lineup with a 550-day half-life, and each turnover avoided is priced at one kept possession, ${fixed(d.lineup_tov_point_price, 3)} points. Own, teammates and team add up to the lineup total.`);
+      notes.push(`Points per 100 offensive possessions, positive = fewer turnovers. The lineup columns come from a ridge fit on every ${d.year - 1 >= 1997 ? `${d.year - 1}-${d.year}` : d.year} lineup with a 550-day half-life, and each turnover avoided is priced at one kept possession, ${fixed(d.lineup_tov_point_price)} points. Own, teammates and team add up to the lineup total.`);
       notes.push("Own is measured against a flat one-fifth share of the lineup's turnovers, while the box ledger measures against a workload allowance, so heavy creators read lower on lineup own by construction. Teammates is how many fewer turnovers the other four commit with this player on the floor.");
       const pt = PASS[d.year];
       if (pt) notes.push(`Across qualified ${d.year} players, one point of box turnover value comes with ${fixed(pt.turnover_total_slope)} points of adjusted lineup value (correlation ${fixed(pt.turnover_total_corr)}). By lane: scoring ${fixed(pt.scoring_total_slope)} adjusted and ${fixed(pt.scoring_raw_slope)} raw; bad-pass ${fixed(pt.badpass_total_slope)} and ${fixed(pt.badpass_raw_slope)}. The adjusted view is ridge-shrunk toward zero; the raw view does not separate the player from teammates or opponents.`);
@@ -592,17 +603,17 @@ HTML_TEMPLATE = r'''<!doctype html>
       const rank = seasonRank.get(rowKey(d));
       const ctx = rank
         ? `<span class="ctx"><strong>${ordinal(rank)}</strong> of ${seasonSize.get(d.year)} qualified ${d.year} player-seasons by scoring impact</span>`
-        : `<span class="ctx">Below the ${QUALIFIED.toLocaleString()}-possession qualifying line for ${d.year}</span>`;
+        : `<span class="ctx">Below the ${Math.round(qualFloor(d.year)).toLocaleString()}-possession qualifying line for ${d.year}${LIVE[d.year] ? " (season in progress)" : ""}</span>`;
       const own = [
-        eq("zTS", `rTS ${signed(d.rts)} + role ${signed(d.role_difficulty)}`, signed(d.zts)),
-        eq("zTS add−4", `2 × ${fixed(d.tsa100, 1)} TSA/100 × (${signed(d.zts)} + 4) / 100`, fixed(zAdd, 3)),
-        eq("Scoring value", `${fixed(SV_A, 6)} + ${fixed(SV_B, 6)} × ${fixed(zAdd, 3)}`, signed(d.scoring_value100)),
-        `<p class="note">${observedRole(d) ? "Observed role" : "Play-by-play-estimated role"} · ${fixed(d.tsa100, 1)} true-shooting attempts per 100 offensive possessions.</p>`,
+        eq("zTS", `rTS ${signed(d.rts)}% + role ${signed(d.role_difficulty)}%`, signed(d.zts) + "%"),
+        eq("zTS add−4", `2 × ${fixed(d.tsa100, 1)} Shots/100 × (${signed(d.zts)} + 4) / 100`, fixed(zAdd)),
+        eq("Scoring value", `${fixed(SV_A, 6)} + ${fixed(SV_B, 6)} × ${fixed(zAdd)}`, signed(d.scoring_value100)),
+        `<p class="note">${observedRole(d) ? "Observed role" : "Play-by-play-estimated role"} · ${fixed(d.tsa100, 1)} shots per 100 offensive possessions.</p>`,
       ];
       const sec = [
-        eq("Scoring TOV", `−(${signed(d.sc_excess, 3)} excess TOV/100) × ${fixed(d.scoring_tov_point_price, 3)} pts per TOV`, signed(d.scoring_tov_value100)),
+        eq("Scoring TOV", `−(${signed(d.sc_excess)} excess TOV/100) × ${fixed(d.scoring_tov_point_price)} pts per TOV`, signed(d.scoring_tov_value100)),
         eq("Scoring impact", `${signed(d.scoring_value100)} scoring value + ${signed(d.scoring_tov_value100)} scoring TOV`, signed(d.scoring_impact_no_badpass100), "hl"),
-        eq("Bad-pass TOV", `−(${signed(d.bp_excess, 3)} excess TOV/100) × ${fixed(d.badpass_tov_point_price, 3)} pts per TOV`, signed(d.badpass_tov_value100)),
+        eq("Bad-pass TOV", `−(${signed(d.bp_excess)} excess TOV/100) × ${fixed(d.badpass_tov_point_price)} pts per TOV`, signed(d.badpass_tov_value100)),
         eq("Scoring security", `${signed(d.scoring_impact_no_badpass100)} scoring impact + ${signed(d.badpass_tov_value100)} bad-pass TOV`, signed(d.scoring_security_value100), "gold"),
       ];
       if (has(d.rztov)) sec.push(`<p class="note">rZTOV ${signed(d.rztov)} per 100 plays (${tovLabel(d)}). Each lane's excess is priced at its own window's value per turnover.</p>`);
@@ -641,7 +652,9 @@ HTML_TEMPLATE = r'''<!doctype html>
       });
       const visible = rows.slice(0, state.limit);
       const scale = Math.max(1e-9, ...visible.map(d => Math.abs(d.scoring_impact_no_badpass100)));
-      count.innerHTML = `<strong>${rows.length.toLocaleString()}</strong> player-season${rows.length === 1 ? "" : "s"}${rows.length > visible.length ? ` · showing ${visible.length.toLocaleString()}` : ""} · <button class="reset" id="reset" type="button">Reset</button>`;
+      const live = Object.keys(LIVE).map(Number).filter(y => state.season === "all" || Number(state.season) === y);
+      const liveNote = live.map(y => ` · ${LIVE[y].label} in progress (${LIVE[y].games.toLocaleString()} of ${LIVE[y].full_games.toLocaleString()} games)${state.min ? `, floor ${Math.round(minFor(y)).toLocaleString()} poss` : ""}`).join("");
+      count.innerHTML = `<strong>${rows.length.toLocaleString()}</strong> player-season${rows.length === 1 ? "" : "s"}${rows.length > visible.length ? ` · showing ${visible.length.toLocaleString()}` : ""}${liveNote} · <button class="reset" id="reset" type="button">Reset</button>`;
       $("reset").addEventListener("click", () => { Object.assign(state, DEFAULTS, { open: null, limit: PAGE }); syncControls(); update(); });
       headers.forEach(b => {
         if (b.dataset.key === k) b.setAttribute("aria-sort", dir === -1 ? "descending" : "ascending");
@@ -657,12 +670,12 @@ HTML_TEMPLATE = r'''<!doctype html>
         const v = d.scoring_impact_no_badpass100;
         const w = Math.round(Math.min(1, Math.abs(v) / scale) * 100);
         return `<tr class="row${open ? " open" : ""}" data-key="${rowKey(d)}" tabindex="0" aria-expanded="${open}">
-          <td class="sticky"><div class="who"><span class="rank">${i + 1}</span><span class="name">${esc(d.player_name)}</span><span class="meta">${d.year} · <span class="${observedRole(d) ? "obs" : ""}">${observedRole(d) ? "observed" : "estimated"} role</span></span></div></td>
+          <td class="sticky"><div class="who"><span class="rank">${i + 1}</span><span class="name">${esc(d.player_name)}</span><span class="meta">${d.year}${LIVE[d.year] ? " · in progress" : ""} · <span class="${observedRole(d) ? "obs" : ""}">${observedRole(d) ? "observed" : "estimated"} role</span></span></div></td>
           <td class="opt num-dim">${d.year}</td>
           <td class="opt num-dim">${int(d.OffPoss)}</td>
           <td class="opt">${fixed(d.tsa100, 1)}</td>
-          <td class="opt ${tone(d.rts)}">${signed(d.rts)}</td>
-          <td class="shot">${signed(d.zts)}</td>
+          <td class="opt ${tone(d.rts)}">${has(d.rts) ? signed(d.rts) + "%" : signed(d.rts)}</td>
+          <td class="shot">${has(d.zts) ? signed(d.zts) + "%" : signed(d.zts)}</td>
           <td class="${tone(d.scoring_value100)}">${signed(d.scoring_value100)}</td>
           <td class="opt ${tone(d.scoring_tov_value100)}">${signed(d.scoring_tov_value100)}</td>
           <td class="head-col">${signed(v)}<span class="bar${v < 0 ? " neg-bar" : ""}" style="width:calc((100% - 16px) * ${w / 100})"></span></td>
@@ -771,10 +784,72 @@ def load_pass_through(path: Path) -> dict[str, dict[str, float]]:
     }
 
 
-def build_html(input_path: Path, output_path: Path, pass_through_path: Path | None = None) -> dict[str, object]:
+def load_live_seasons(manifest_path: Path, years: set[int]) -> dict[str, dict[str, object]]:
+    """Seasons still being played, from the board manifest written beside it.
+
+    The board builder records every season after the frozen fit with its game
+    count and scaled possession floors. A manifest without that block (every
+    frozen build) means no season is in progress.
+    """
+    if not manifest_path.exists():
+        return {}
+    coverage = json.loads(manifest_path.read_text()).get("coverage", {})
+    live = {}
+    for year, state in coverage.get("post_fit_seasons", {}).items():
+        if state.get("status") != scoring_season.STATUS_IN_PROGRESS or int(year) not in years:
+            continue
+        live[str(int(year))] = {
+            "label": scoring_season.season_label(int(year)),
+            "games": int(state["games"]),
+            "full_games": scoring_season.FULL_SEASON_GAMES,
+            "progress": round(float(state["progress"]), 4),
+            "qual": round(float(state["qual_min_poss"]), 1),
+        }
+    return live
+
+
+def season_text(frame: pd.DataFrame, live: dict[str, dict[str, object]]) -> dict[str, str]:
+    first, last = int(frame["year"].min()), int(frame["year"].max())
+    role_last = int(frame.loc[frame["role_source"].eq(OBSERVED_ROLE), "year"].max())
+    kicker = "".join(
+        f'<span class="dot"></span><span class="pill">{meta["label"]} in progress · '
+        f'{meta["games"]:,} of {meta["full_games"]:,} games</span>'
+        for meta in live.values()
+    )
+    sources = ""
+    if live:
+        labels = " and ".join(str(meta["label"]) for meta in live.values())
+        frozen = scoring_season.FROZEN_FIT_SEASON
+        sources = (
+            f" The {labels} season in progress uses box-estimated turnover lanes priced with the last"
+            f" completed window ({frozen - 4}–{frozen}); nothing is refit on it, and its possession floors"
+            " scale with the share of the schedule played."
+        )
+    return {
+        "__SPAN_ASCII__": f"{first}-{last}",
+        "__SPAN__": f"{first}–{last}",
+        "__ROLE_LAST__": str(role_last),
+        "__LIVE_KICKER__": kicker,
+        "__LIVE_SOURCES__": sources,
+    }
+
+
+def build_html(
+    input_path: Path,
+    output_path: Path,
+    pass_through_path: Path | None = None,
+    manifest_path: Path | None = None,
+) -> dict[str, object]:
     frame = pd.read_csv(input_path)
     payload = build_payload(frame)
-    pass_through = load_pass_through(pass_through_path or input_path.parent / PASS_THROUGH_NAME)
+    span = scoring_season.span_tag(frame["year"].min(), frame["year"].max())
+    pass_through = load_pass_through(
+        pass_through_path or input_path.parent / PASS_THROUGH_NAME.format(span=span)
+    )
+    live = load_live_seasons(
+        manifest_path or input_path.parent / "manifest.json", {int(record["year"]) for record in payload}
+    )
+    text = season_text(frame, live)
     fields = REQUIRED + OPTIONAL
     packed = {"fields": fields, "rows": [[record[field] for field in fields] for record in payload]}
     data_json = json.dumps(packed, ensure_ascii=True, separators=(",", ":"), allow_nan=False)
@@ -783,7 +858,10 @@ def build_html(input_path: Path, output_path: Path, pass_through_path: Path | No
         .replace("__SV_A__", repr(SV_INTERCEPT))
         .replace("__SV_B__", repr(SV_SLOPE))
         .replace("__PASS__", json.dumps(pass_through, separators=(",", ":"), allow_nan=False))
+        .replace("__LIVE__", json.dumps(live, separators=(",", ":"), allow_nan=False))
     )
+    for token, value in text.items():
+        html = html.replace(token, value)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(html, encoding="utf-8")
     return {
@@ -793,6 +871,8 @@ def build_html(input_path: Path, output_path: Path, pass_through_path: Path | No
         "rows_with_mix": sum(record["playtype_mix_rapm"] is not None for record in payload),
         "rows_with_lineup_tov": sum(record["lineup_tov_value100"] is not None for record in payload),
         "pass_through_seasons": len(pass_through),
+        "seasons": span,
+        "in_progress": live,
         "bytes": output_path.stat().st_size,
     }
 
@@ -802,12 +882,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--pass-through", type=Path, default=None)
+    parser.add_argument(
+        "--manifest",
+        type=Path,
+        default=None,
+        help="board manifest naming seasons in progress (default: manifest.json beside --input)",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    print(json.dumps(build_html(args.input, args.output, args.pass_through), indent=2))
+    print(json.dumps(build_html(args.input, args.output, args.pass_through, args.manifest), indent=2))
 
 
 if __name__ == "__main__":

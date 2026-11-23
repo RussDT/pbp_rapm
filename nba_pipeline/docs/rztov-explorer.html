@@ -890,6 +890,13 @@ const AGG = Object.keys(byPlayer).map(Number).map(id => {
 const aggById = Object.fromEntries(AGG.map(r => [r.id, r]));
 
 const [Y0, Y1] = DATA.season_range;
+/* A season after the last fit has no tracking volumes: its rows are box estimates scored
+   with the frozen window, and it may still be in progress.  Absent on a frozen payload. */
+const YF = DATA.fit_through ?? Y1;
+const SEASON_META = DATA.season_meta || {};
+const isEst = y => !!SEASON_META[y];
+const isLive = y => isEst(y) && SEASON_META[y].status === 'in_progress';
+const estTag = y => isEst(y) ? ' (est.)' : '';
 const YEARS = []; for (let y = Y1; y >= Y0; y--) if (byYear[y]) YEARS.push(y);
 
 /* ---------- state ---------- */
@@ -1044,7 +1051,7 @@ const aggBtn = $('scAgg');
 aggBtn.textContent = `${AGG_SHORT} aggregate`;
 aggBtn.title = `Possession-weighted roll-up of ${DATA.board_window}, each season priced by its own window`;
 scopeSel.innerHTML = `<option value="" disabled>Season${String.fromCharCode(8230)}</option>` +
-  YEARS.map(y => `<option value="${y}">${seasonLabel(y)}</option>`).join('');
+  YEARS.map(y => `<option value="${y}">${seasonLabel(y)}${estTag(y)}</option>`).join('');
 aggBtn.onclick = () => setScope('agg');
 scopeSel.onchange = e => setScope(e.target.value);
 
@@ -1056,8 +1063,12 @@ function syncScopeControls() {
 }
 
 function minOptions() {
-  const opts = isAgg() ? [2000, 5000, 10000, 15000] : [1000, 2000, 3000, 4000];
-  const keep = opts.includes(minPoss) ? minPoss : opts[isAgg() ? 0 : 1];
+  const base = isAgg() ? [2000, 5000, 10000, 15000] : [1000, 2000, 3000, 4000];
+  // a season in progress gets the same ladder scaled by the share of the schedule played
+  const opts = !isAgg() && isLive(scope)
+    ? [...new Set(base.map(o => Math.max(50, Math.round(o * SEASON_META[scope].progress / 50) * 50)))]
+    : base;
+  const keep = opts.includes(minPoss) ? minPoss : opts[Math.min(opts.length - 1, isAgg() ? 0 : 1)];
   minPoss = keep;
   $('minposs').innerHTML = opts.map(o =>
     `<option value="${o}" ${o === keep ? 'selected' : ''}>${o.toLocaleString()}</option>`).join('');
@@ -1569,12 +1580,14 @@ function seasTable(hist) {
     (agg ? `<tr class="agg${isAgg() ? ' on' : ''}" data-scope="agg" tabindex="0"><td>${AGG_SHORT} aggregate</td>${cells(agg)}</tr>` : '') +
     hist.slice().reverse().map(s =>
       `<tr data-scope="${s.year}" tabindex="0" class="${s.year === scope ? 'on ' : ''}${s.qual ? '' : 'thin'}"` +
-      `${s.qual ? '' : ' title="below the qualification floor"'}><td>${seasonLabel(s.year)}</td>${cells(s)}</tr>`).join('') +
+      `${s.qual ? '' : ' title="below the qualification floor"'}><td>${seasonLabel(s.year)}${estTag(s.year)}</td>${cells(s)}</tr>`).join('') +
     `</tbody>`;
   $('seasfoot').innerHTML = `Per 100 offensive possessions except possessions and totals. ` +
     `Select a row or bar to rescope the whole page` +
     (hist.some(s => !s.qual) ? `; <span style="color:var(--faint)">*</span> below the ` +
-      `${DATA.min_poss.qual.toLocaleString()}-possession qualification floor.` : '.');
+      `${DATA.min_poss.qual.toLocaleString()}-possession qualification floor.` : '.') +
+    (hist.some(s => isEst(s.year)) ? ` est. marks a season whose volumes are box estimates, ` +
+      `scored on the frozen ${winLabel(BE[YF].window)} window.` : '');
 }
 $('seas').addEventListener('click', e => {
   const tr = e.target.closest('tr[data-scope]'); if (tr) setScope(tr.dataset.scope, { keepPlace:true });
@@ -1707,8 +1720,15 @@ function renderPlayer() {
     (!r.year
       ? `Break-evens here are effective rates: every season was priced by its own window and then rolled ` +
         `up by possessions.`
-      : `Break-evens come from the ${winLabel(BE[r.year].window)} joint solve` +
-        (BE[r.year].inherited ? `, the earliest full window on file` : '') + `.`) +
+      : isEst(r.year)
+        ? `This season has no tracked volumes yet: self-created, assisted and potential-assist ` +
+          `volumes are box estimates, scored with the ${winLabel(BE[r.year].window)} box-estimate ` +
+          `break-evens. Nothing is refit on it` +
+          (isLive(r.year) ? `, and it is in progress (${SEASON_META[r.year].games.toLocaleString()} of ` +
+            `${SEASON_META[r.year].full_games.toLocaleString()} games), so the possession floor is ` +
+            `scaled down to match` : '') + `.`
+        : `Break-evens come from the ${winLabel(BE[r.year].window)} joint solve` +
+          (BE[r.year].inherited ? `, the earliest full window on file` : '') + `.`) +
     (!r.year && r.tov_rapm != null
       ? ` Measured turnover RAPM is ` + tint(highGood(r.tov_rapm), sgn(r.tov_rapm, 2)) +
         ` turnovers prevented per 100` +
@@ -1802,7 +1822,7 @@ $('backTop').onclick = () => scrollTo({ top:0, behavior:behavior() });
 $('brand').onclick = e => { e.preventDefault(); scrollTo({ top:0, behavior:behavior() }); };
 
 /* ---------- evidence: how the break-evens drift ---------- */
-const DRIFT = Object.keys(BE).map(Number).sort((a, b) => a - b)
+const DRIFT = Object.keys(BE).map(Number).filter(y => !BE[y].estimated).sort((a, b) => a - b)
   .map(y => ({ y, ...BE[y] }));
 {
   const first = DRIFT[0], last = DRIFT.at(-1);
@@ -1914,15 +1934,15 @@ $('methodprose').innerHTML = `
   lane prices a self-created attempt at ${fmt(F.lane_self * 100, 1)}% and an assisted one at
   ${fmt(F.lane_ast * 100, 1)}%, and the passing lane prices a potential assist at
   ${fmt(F.lane_potast * 100, 1)}%; the total equation adds what a single lane cannot see, and
-  it lands almost entirely on the self-created price (${ARROW} ${fmt(BE[Y1].self * 100, 1)}%),
+  it lands almost entirely on the self-created price (${ARROW} ${fmt(BE[YF].self * 100, 1)}%),
   which is the team-level passing exposure a possession-ending attempt relieves. Fitting all
   three volumes against the total solve alone was abandoned: self-created and potential-assist
   volume correlate about +0.7 across players, and bootstrap draws showed those two prices
   trading weight draw to draw while the lane-anchored prices held.</p>
   <p>Break-evens are ratios of fitted coefficients, so uniform ridge shrinkage of a target
   cancels out of them; each ${KAPPA} keeps it, which is why the total equation reads
-  ${fmt(Math.abs(BE[Y1].kappa), 2)} (lanes ${fmt(Math.abs(BE[Y1].k_sc), 2)} and
-  ${fmt(Math.abs(BE[Y1].k_bp), 2)}) rather than the physical 1.00. Each season then gets the
+  ${fmt(Math.abs(BE[YF].kappa), 2)} (lanes ${fmt(Math.abs(BE[YF].k_sc), 2)} and
+  ${fmt(Math.abs(BE[YF].k_bp), 2)}) rather than the physical 1.00. Each season then gets the
   window ending that year, and each lane is re-centred on the season's own possession-weighted
   mean, so league turnovers saved sums to zero inside both lanes every year.</p>
   ${DATA.agg_otov ? `<p><b>The Reference columns are outside references</b>, shown on the
@@ -1939,7 +1959,9 @@ $('methodprose').innerHTML = `
   counts as the stat.</p>`;
 
 $('foot').innerHTML =
-  `Built ${DATA.built}. Seasons ${seasonLabel(Y0)} through ${seasonLabel(Y1)}; a season is ` +
+  `Built ${DATA.built}. Seasons ${seasonLabel(Y0)} through ${seasonLabel(Y1)}` +
+  (Y1 > YF ? ` (${seasonLabel(YF + 1)}${Y1 > YF + 1 ? ' on' : ''} from box estimates, ` +
+    `priced on the frozen ${winLabel(BE[YF].window)} window)` : '') + `; a season is ` +
   `ranked once it clears ${DATA.min_poss.qual.toLocaleString()} offensive possessions and ` +
   `${DATA.min_poss.involve} attempts and passes per 100. Negative rZTOV and positive ` +
   `turnovers saved are good.`;

@@ -33,6 +33,11 @@ from sklearn.linear_model import Ridge
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+try:
+    from . import scoring_season as seasons
+except ImportError:  # Direct script execution.
+    import scoring_season as seasons
+
 
 PIPELINE_DIR = Path(__file__).resolve().parents[1]
 RAW_DIR = PIPELINE_DIR / "raw_data"
@@ -51,6 +56,7 @@ FIT_MIN_POSS = 2000.0
 QUAL_MIN_POSS = 1000.0
 QUAL_MIN_INVOLVE = 10.0
 PRICE_ALPHA = 1500
+POST_LABEL_STATUS = "post_label_estimate_no_observed_labels"
 
 REDUCED_SHARE_FEATURES = [
     "tsa100",
@@ -404,10 +410,32 @@ def build_season_features(season: int) -> tuple[pd.DataFrame, dict[str, Any]]:
     return build_season_features_from_frames(raw, possessions, season)
 
 
-def build_feature_panel(first_season: int, last_season: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+def build_feature_panel(
+    first_season: int,
+    last_season: int,
+    seed_features: pd.DataFrame | None = None,
+    seed_audit: pd.DataFrame | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Build box features per season; seasons already in ``seed_features`` are reused.
+
+    The seed holds completed seasons only (the caller drops anything after the
+    frozen fit), so a daily run rebuilds just the season being played.
+    """
     features: list[pd.DataFrame] = []
     audits: list[dict[str, Any]] = []
+    seeded: set[int] = set()
+    if seed_features is not None and not seed_features.empty:
+        keep = seed_features[seed_features["season"].between(first_season, last_season)]
+        seeded = {int(season) for season in keep["season"].unique()}
+        features.append(keep)
+        if seed_audit is not None and not seed_audit.empty and "season" in seed_audit:
+            audits.extend(
+                seed_audit[seed_audit["season"].isin(seeded)].to_dict("records")
+            )
+        print(f"feature cache: reused {len(seeded)} completed seasons", flush=True)
     for season in range(first_season, last_season + 1):
+        if season in seeded:
+            continue
         frame, audit = build_season_features(season)
         features.append(frame)
         audits.append(audit)
@@ -419,12 +447,28 @@ def build_feature_panel(first_season: int, last_season: int) -> tuple[pd.DataFra
     return pd.concat(features, ignore_index=True), pd.DataFrame(audits)
 
 
-def load_observed_labels(path: Path) -> pd.DataFrame:
+def observed_rows_only(frame: pd.DataFrame, last_label_season: int | None = None) -> pd.DataFrame:
+    """Keep tracking-observed rows inside the label freeze.
+
+    A season file that also carries estimated rows marks them in ``source``.
+    Those rows are this estimator's own output and must never come back in as
+    labels, references, or the observed side of an overlap comparison.
+    """
+    out = frame
+    if "source" in out.columns:
+        out = out[out["source"].astype(str).eq("observed")]
+    if last_label_season is not None:
+        out = out[pd.to_numeric(out["year"], errors="coerce").le(last_label_season)]
+    return out.copy()
+
+
+def load_observed_labels(path: Path, last_label_season: int | None = None) -> pd.DataFrame:
     observed = pd.read_csv(path)
     required = {"nba_id", "year", "off_poss", "v_self", "v_ast", "v_potast"}
     missing = required - set(observed)
     if missing:
         raise ValueError(f"Observed-role file is missing {sorted(missing)}")
+    observed = observed_rows_only(observed, last_label_season)
     observed = observed.rename(
         columns={
             "nba_id": "player_id",
@@ -443,8 +487,10 @@ def load_observed_labels(path: Path) -> pd.DataFrame:
     return observed
 
 
-def build_training_panel(features: pd.DataFrame, observed_path: Path) -> pd.DataFrame:
-    observed = load_observed_labels(observed_path)
+def build_training_panel(
+    features: pd.DataFrame, observed_path: Path, last_label_season: int | None = None
+) -> pd.DataFrame:
+    observed = load_observed_labels(observed_path, last_label_season)
     panel = observed.merge(
         features,
         on=["season", "player_id"],
@@ -609,6 +655,8 @@ def score_role_panel(
     potast_model: Pipeline,
     potast_features: list[str],
     observed_path: Path,
+    last_label_season: int | None = None,
+    row_floors: dict[int, float] | None = None,
 ) -> pd.DataFrame:
     scored = features.copy()
     # Keep the fitted role predictors frozen; change only the shot-volume basis.
@@ -627,7 +675,7 @@ def score_role_panel(
         + scored["estimated_assisted_tsa100"]
         - scored["tsa100"]
     )
-    observed = load_observed_labels(observed_path)[
+    observed = load_observed_labels(observed_path, last_label_season)[
         [
             "season",
             "player_id",
@@ -644,21 +692,35 @@ def score_role_panel(
     )
     scored = scored.merge(observed, on=["season", "player_id"], how="left", validate="one_to_one")
     first_observed = int(observed["season"].min())
+    last_observed = int(observed["season"].max())
     scored["estimate_status"] = np.select(
         [
             scored["season"].lt(first_observed),
+            scored["season"].gt(last_observed),
             scored["actual_assist_opp_share"].notna(),
         ],
         [
             "pre_label_backcast_research_only",
+            POST_LABEL_STATUS,
             "estimated_with_observed_label_available",
         ],
         default="modern_estimate_below_observed_surface",
     )
-    scored["qualified_role_estimate"] = scored["off_poss"].ge(MIN_TRAIN_POSS).astype(int)
+    scored["qualified_role_estimate"] = (
+        scored["off_poss"].ge(_year_floor(scored["season"], row_floors, MIN_TRAIN_POSS)).astype(int)
+    )
     if float(scored["shot_volume_identity_gap"].abs().max()) > 1e-10:
         raise AssertionError("Estimated self-created plus assisted TSA does not close to TSA")
     return scored
+
+
+def _year_floor(
+    years: pd.Series, floors: dict[int, float] | None, default: float
+) -> pd.Series:
+    """Per-row possession floor: the season's own floor, else the full-season default."""
+    if not floors:
+        return pd.Series(default, index=years.index, dtype=float)
+    return years.astype(int).map(floors).fillna(default).astype(float)
 
 
 def target_path(metric: str, lo: int, hi: int) -> Path:
@@ -697,10 +759,12 @@ def estimated_role_panel(scored: pd.DataFrame) -> pd.DataFrame:
     return out[keep].replace([np.inf, -np.inf], np.nan).dropna().copy()
 
 
-def observed_role_panel(path: Path) -> pd.DataFrame:
+def observed_role_panel(path: Path, last_label_season: int | None = None) -> pd.DataFrame:
     """Load the modern observed-role ledger without changing the source artifact."""
 
-    observed = pd.read_csv(path).rename(columns={"off_poss": "OffPoss"})
+    observed = observed_rows_only(pd.read_csv(path), last_label_season).rename(
+        columns={"off_poss": "OffPoss"}
+    )
     required = {
         "nba_id", "year", "OffPoss", "v_self", "v_ast", "v_potast",
         "sc_100", "bp_100",
@@ -917,16 +981,32 @@ def fit_price_path(
 
 
 def score_ledger(
-    df: pd.DataFrame, fits: dict[int, dict[str, Any]], series: str
+    df: pd.DataFrame,
+    fits: dict[int, dict[str, Any]],
+    series: str,
+    row_floors: dict[int, float] | None = None,
+    qual_floors: dict[int, float] | None = None,
+    statuses: dict[int, str] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Apply rolling prices, season-center both lanes, and enforce all identities."""
+    """Apply rolling prices, season-center both lanes, and enforce all identities.
+
+    A season after the last fit window inherits that window's break-evens
+    (``be_source`` is clipped to the fit range) and is re-centred on its own
+    possession-weighted lane means, so nothing is refit on it.  A season still
+    being played passes lower possession floors through ``row_floors`` /
+    ``qual_floors`` and is marked in ``season_status``.
+    """
 
     if not fits:
         raise ValueError("No price fits supplied")
-    rows = df[df["OffPoss"].ge(MIN_TRAIN_POSS)].copy()
+    rows = df[df["OffPoss"].ge(_year_floor(df["year"], row_floors, MIN_TRAIN_POSS))].copy()
     earliest, latest = min(fits), max(fits)
     rows["be_source"] = rows["year"].clip(lower=earliest, upper=latest).astype(int)
     rows["early_window_inherited"] = rows["year"].lt(earliest).astype(int)
+    rows["late_window_inherited"] = rows["year"].gt(latest).astype(int)
+    rows["season_status"] = (
+        rows["year"].astype(int).map(statuses or {}).fillna(seasons.STATUS_COMPLETE)
+    )
     for price in ("self", "ast", "potast"):
         rows[f"be_{price}"] = rows["be_source"].map(
             lambda end, price=price: float(fits[int(end)][price])
@@ -955,7 +1035,8 @@ def score_ledger(
     rows["tov_saved_100"] = -rows["excess"]
     rows["tov_saved"] = -rows["excess"] * rows["OffPoss"] / 100.0
     rows["qualified"] = (
-        rows["OffPoss"].ge(QUAL_MIN_POSS) & rows["involve"].ge(QUAL_MIN_INVOLVE)
+        rows["OffPoss"].ge(_year_floor(rows["year"], qual_floors, QUAL_MIN_POSS))
+        & rows["involve"].ge(QUAL_MIN_INVOLVE)
     ).astype(int)
     rows["series"] = series
     rows["shot_volume_identity_gap"] = rows["v_self"] + rows["v_ast"] - rows["tsa100"]
@@ -1075,6 +1156,11 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         args.output_dir / f"all_era_box_features_{args.first_season}_{args.last_season}.parquet"
     )
     audit_path = args.output_dir / "feature_source_audit.csv"
+    fit_through = seasons.fit_cap(args.last_season, args.fit_through)
+    states = seasons.season_states(RAW_DIR, args.first_season, args.last_season, args.fit_through)
+    row_floors = seasons.floors_by_year(states, "row_min_poss")
+    qual_floors = seasons.floors_by_year(states, "qual_min_poss")
+    statuses = {season: str(state["status"]) for season, state in states.items()}
     if args.reuse_feature_cache:
         if not feature_cache.exists():
             raise FileNotFoundError(
@@ -1086,12 +1172,24 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         else:
             source_audit = pd.DataFrame()
     else:
-        features, source_audit = build_feature_panel(args.first_season, args.last_season)
+        seed_features = seed_audit = None
+        if args.seed_feature_cache is not None:
+            # Completed seasons never change; only seasons after the frozen fit are rebuilt.
+            seed_features = pd.read_parquet(args.seed_feature_cache)
+            seed_features = seed_features[seed_features["season"].le(fit_through)]
+            seed_audit_path = args.seed_feature_cache.parent / "feature_source_audit.csv"
+            if seed_audit_path.exists():
+                seed_audit = pd.read_csv(seed_audit_path)
+        features, source_audit = build_feature_panel(
+            args.first_season, args.last_season, seed_features, seed_audit
+        )
         features.to_parquet(feature_cache, index=False)
         source_audit.to_csv(audit_path, index=False)
 
     features = attach_canonical_tsa(features)
-    panel = build_training_panel(features, args.observed_roles)
+    # Role models learn from observed labels inside the freeze only; a later
+    # season is scored by them and never becomes a label.
+    panel = build_training_panel(features, args.observed_roles, fit_through)
     share_model, share_family, share_alpha, share_summary, share_predictions = (
         select_model_family(
             panel,
@@ -1122,6 +1220,8 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         potast_model,
         FEATURE_FAMILIES["potential_assists100"][potast_family],
         args.observed_roles,
+        fit_through,
+        row_floors,
     )
     output_columns = [
         "season",
@@ -1157,18 +1257,27 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     # price path: each complete trailing-five-season window gets its own joint fit.
     estimated_panel = estimated_role_panel(scored)
     first_fit_end = args.first_season + WINDOW - 1
+    # The price path stops at the frozen fit season.  Later seasons inherit the
+    # last window through ``be_source`` and are never part of a fit.
     historical_fits, historical_price_path = fit_price_path(
-        estimated_panel,
+        estimated_panel[estimated_panel["year"].le(fit_through)],
         first_fit_end,
-        args.last_season,
+        fit_through,
         bootstrap_draws=args.bootstrap_draws,
     )
     historical_price_path["role_source"] = "box_estimated"
-    historical_price_path_path = args.output_dir / "historical_box_price_path_1997_2026.csv"
+    historical_price_path_path = args.output_dir / (
+        f"historical_box_price_path_{seasons.span_tag(args.first_season, fit_through)}.csv"
+    )
     historical_price_path.round(8).to_csv(historical_price_path_path, index=False)
 
     all_ledger, historical_centres = score_ledger(
-        estimated_panel, historical_fits, "box_estimated_rztov"
+        estimated_panel,
+        historical_fits,
+        "box_estimated_rztov",
+        row_floors=row_floors,
+        qual_floors=qual_floors,
+        statuses=statuses,
     )
     ledger_columns = [
         "nba_id", "name", "year", "OffPoss", "series", "be_source",
@@ -1177,12 +1286,21 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         "sc_allow", "bp_allow", "sc_excess", "bp_excess", "allowance", "excess",
         "rztov", "tov_saved_100", "tov_saved", "qualified", "shot_volume_identity_gap",
     ]
-    all_ledger_path = args.output_dir / "nba_box_estimated_rztov_1997_2026_diagnostic.csv"
+    if args.last_season > fit_through:
+        # Post-fit spans add two labels; the frozen span keeps its original columns.
+        ledger_columns += ["late_window_inherited", "season_status"]
+    first_label = int(panel["season"].min())
+    all_ledger_path = args.output_dir / (
+        f"nba_box_estimated_rztov_{seasons.span_tag(args.first_season, args.last_season)}"
+        "_diagnostic.csv"
+    )
     all_ledger[ledger_columns].sort_values(["year", "rztov"]).to_csv(
         all_ledger_path, index=False
     )
-    historical_ledger = all_ledger[all_ledger["year"].lt(2014)].copy()
-    historical_ledger_path = args.output_dir / "nba_box_estimated_rztov_1997_2013.csv"
+    historical_ledger = all_ledger[all_ledger["year"].lt(first_label)].copy()
+    historical_ledger_path = args.output_dir / (
+        f"nba_box_estimated_rztov_{seasons.span_tag(args.first_season, first_label - 1)}.csv"
+    )
     historical_ledger[ledger_columns].sort_values(["year", "rztov"]).to_csv(
         historical_ledger_path, index=False
     )
@@ -1190,10 +1308,10 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
 
     # The modern overlap changes only role volumes. Target solves, players, seasons,
     # possessions, and actual turnover counts are held identical between surfaces.
-    observed_panel = observed_role_panel(args.observed_roles)
+    observed_panel = observed_role_panel(args.observed_roles, fit_through)
     modern_estimated, modern_observed = common_modern_panels(estimated_panel, observed_panel)
     overlap_first_end = max(2018, int(modern_observed["year"].min()) + WINDOW - 1)
-    overlap_last_end = min(args.last_season, int(modern_observed["year"].max()))
+    overlap_last_end = min(fit_through, int(modern_observed["year"].max()))
     estimated_overlap_fits, estimated_overlap_prices = fit_price_path(
         modern_estimated, overlap_first_end, overlap_last_end, bootstrap_draws=0
     )
@@ -1258,9 +1376,14 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     overlap_summary_path = args.output_dir / "modern_overlap_summary.csv"
     overlap_summary.round(8).to_csv(overlap_summary_path, index=False)
 
-    observed_reference = pd.read_csv(args.observed_roles).copy()
+    observed_reference = observed_rows_only(pd.read_csv(args.observed_roles), fit_through)
     observed_reference["series"] = "observed_modern_rztov_reference"
-    observed_reference_path = args.output_dir / "nba_observed_rztov_2014_2026_reference.csv"
+    reference_span = seasons.span_tag(
+        int(observed_reference["year"].min()), int(observed_reference["year"].max())
+    )
+    observed_reference_path = args.output_dir / (
+        f"nba_observed_rztov_{reference_span}_reference.csv"
+    )
     observed_reference.to_csv(observed_reference_path, index=False)
 
     share_metrics = weighted_metrics(
@@ -1273,8 +1396,10 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         potast_predictions["prediction"],
         potast_predictions["weight"],
     )
-    first_label = int(panel["season"].min())
     last_label = int(panel["season"].max())
+    post_fit_states = {
+        str(season): state for season, state in states.items() if season > fit_through
+    }
     manifest = {
         "status": "research_only_box_estimated_rztov_backcast_not_production_rztov",
         "coverage": {
@@ -1285,6 +1410,8 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             "pre_label_backcast_seasons": [int(args.first_season), first_label - 1],
             "players_seasons": int(len(scored)),
             "training_rows": int(len(panel)),
+            "fit_through": int(fit_through),
+            "post_fit_seasons": post_fit_states,
         },
         "feature_contract": {
             "source": "repo raw NBA PBP plus resolved RAPM possessions",
@@ -1333,8 +1460,13 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
                 "against TOV, SCORING_TOV, and BADPASS_TOV RS+SE a1500/1500 targets"
             ),
             "first_fit_window": [args.first_season, first_fit_end],
-            "last_fit_window": [args.last_season - WINDOW + 1, args.last_season],
+            "last_fit_window": [fit_through - WINDOW + 1, fit_through],
             "early_seasons_inherit_earliest_fit": [args.first_season, first_fit_end - 1],
+            "post_fit_seasons_inherit_last_fit": (
+                [fit_through + 1, int(args.last_season)]
+                if args.last_season > fit_through
+                else []
+            ),
             "bootstrap_draws_per_window": int(args.bootstrap_draws),
             "price_path": str(historical_price_path_path),
         },
@@ -1375,10 +1507,27 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--first-season", type=int, default=FIRST_SEASON)
     parser.add_argument("--last-season", type=int, default=LAST_SEASON)
+    parser.add_argument(
+        "--fit-through",
+        type=int,
+        default=seasons.FROZEN_FIT_SEASON,
+        help=(
+            "last season allowed into role labels and break-even fits; later seasons "
+            "are scored with the last frozen window and never refit"
+        ),
+    )
     parser.add_argument("--observed-roles", type=Path, default=DEFAULT_OBSERVED)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--feature-cache", type=Path)
     parser.add_argument("--reuse-feature-cache", action="store_true")
+    parser.add_argument(
+        "--seed-feature-cache",
+        type=Path,
+        help=(
+            "feature parquet holding completed seasons; they are reused and only "
+            "seasons after --fit-through are rebuilt from raw PBP"
+        ),
+    )
     parser.add_argument(
         "--bootstrap-draws",
         type=int,

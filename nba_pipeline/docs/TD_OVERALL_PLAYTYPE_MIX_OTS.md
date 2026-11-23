@@ -170,6 +170,13 @@ owner (2026-09-26) and differs from the TD700 research run above:
 The scoring board carries only the full parent as `playtype_mix_rapm`
 (`= mix_value100`). The own/teammate split stays here for audit.
 
+**Season in progress.** `--seed-dir <frozen board dir> --last-feature-season
+2027` builds only the new season's attempt panel and solve and keeps every
+frozen row unchanged. The new season is priced at the 2026 league values like
+any other feature season. Undated newest games get the trailing-date rule
+(`trailing_undated_games`, `trailing_undated_rule` in the manifest). See
+[`SCORING_RZTOV_DAILY.md`](./SCORING_RZTOV_DAILY.md).
+
 ```bash
 cd nba_pipeline/scripts
 ../../.venv/bin/python build_td_playtype_mix_board.py        # ~20 s from the cached panel; --rebuild-attempts after raw PBP changes (~7 min)
