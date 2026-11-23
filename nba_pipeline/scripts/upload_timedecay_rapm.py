@@ -153,9 +153,9 @@ def main():
     supabase = None
     if not args.dry_run:
         url = os.environ.get("SUPABASE_URL")
-        key = os.environ.get("SUPABASE_KEY")
+        key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY")
         if not url or not key:
-            logging.error("SUPABASE_URL or SUPABASE_KEY missing in .env")
+            logging.error("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY/SUPABASE_KEY missing in .env")
             sys.exit(1)
         supabase = create_client(url, key)
 

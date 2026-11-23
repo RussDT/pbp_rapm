@@ -1,0 +1,186 @@
+"""Append dated cloud tracking observations and reuse the frozen VPM estimators."""
+from pathlib import Path
+from types import SimpleNamespace
+import argparse
+import hashlib
+import importlib.util
+import inspect
+import json
+import shutil
+import sys
+
+import numpy as np
+import pandas as pd
+
+PIPE = Path('/Users/russ/Documents/Codex/basketball/nba/research/rapm/nba_pipeline')
+E = PIPE/'results/estimated_skills'
+CUT = pd.Timestamp('@@CUT@@').as_unit('s')
+
+
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+
+
+def main(root, base):
+    root=Path(root).resolve();base=Path(base).resolve()
+    snapshot=json.loads((root/'report_snapshot.json').read_bytes())
+    frames=[]
+    for record in snapshot['objects']:
+        p=Path(record['path'])
+        if sha(p)!=record['sha256']:raise ValueError('Downloaded report changed')
+        obj=json.loads(p.read_bytes());f=pd.DataFrame(obj['columns'])
+        if len(f)!=obj['rows']:raise ValueError('Report row count differs')
+        f['player_id']=int(obj['person_id']);frames.append(f)
+    reports=pd.concat(frames,ignore_index=True)
+    reports['game_id']=reports.game_id.astype('int64').astype(str).str.zfill(10)
+    if reports.duplicated(['player_id','game_id']).any():raise ValueError('Duplicate report identity')
+    reports.to_parquet(root/'reports.parquet',index=False)
+    lines=pd.read_parquet(base/'current_source_native_scale/player_game_lines.parquet')
+    fresh=lines.loc[lines.season.eq(2027)].copy()
+    if len(fresh)!=int(json.loads((base/'refresh.json').read_bytes())['summaries']['player_core']['rows']) or fresh.game_date.ge(CUT).any():raise ValueError('Original current prefix differs')
+    # Report keys must identify the same game and team; field absence stays missing.
+    cloud=pd.read_parquet(base/'player_core.parquet')
+    cloud['game_id']=cloud.game_id.astype('int64').astype(str).str.zfill(10)
+    team=cloud[['person_id','game_id','team_id']].rename(columns={'person_id':'player_id','team_id':'core_team_id'})
+    d=fresh.merge(team,on=['player_id','game_id'],validate='one_to_one').merge(
+        reports,on=['player_id','game_id'],how='left',validate='one_to_one',suffixes=('','_report'))
+    match=(d.report_game_id.eq(pd.to_numeric(d.game_id)) & d.report_team_id.eq(d.core_team_id)
+           & d.team_id.eq(d.core_team_id) & d.ours_match.eq(True) & d.report_label_wrong.eq(False)
+           & d['min'].sub(d.minutes).abs().le(.5) & d.ast_report.eq(d.ast) & d.fga_report.eq(d.fga))
+    # Explicit current report family. A conflicting populated alias is rejected.
+    def count(column):
+        value=pd.to_numeric(d[column],errors='raise')
+        if column.endswith('_v2'):
+            older=column[:-3]+'_v1'
+            if older in d:
+                old=pd.to_numeric(d[older],errors='raise')
+                if (old.notna() & value.notna() & old.ne(value)).any():raise ValueError('Conflicting report aliases: '+column)
+        return value
+    def valid(x):return np.isfinite(x)&x.ge(0)&x.eq(np.floor(x))
+    eligible=match & np.isfinite(d.def_poss) & d.def_poss.gt(0)
+    import build_vpm_defense_bank as bank
+    import selected_state_history as selected
+    import build_monthly_defensive_skills as defense
+    import build_fouls_drawn_game_lines as fouls
+    parts=[]
+    def add(feature, value, extra=True):
+        z=d.copy();z['current_count']=value
+        parts.append(bank.measured_rows(z,feature,'current_count',eligible & valid(value) & extra))
+    cs=count('hustle_contested_shots');cs2=count('hustle_contested_shots_2pt');cs3=count('hustle_contested_shots_3pt')
+    split_ok=valid(cs)&valid(cs2)&valid(cs3)&cs.eq(cs2+cs3)
+    add('contested_shots100',cs,split_ok)
+    add('deflections100',count('hustle_deflections'))
+    rebounds=count('dreb_contest_v2')
+    add('contested_dreb100',rebounds,rebounds.le(d.dreb))
+    add('nonoff_pf100',d.pf_committed-d.off_fouls_committed)
+
+    # Reuse the existing foul reconciliation with the same actual CDN identities.
+    ledger=[]
+    for path in sorted((base/'native_source/games').glob('*.json')):
+        obj=json.loads(path.read_bytes());gid=str(int(path.stem)).zfill(10)
+        for play in obj['plays']:
+            a=play['raw']
+            if a.get('actionType')!='foul':continue
+            text=str(a.get('description','')).lower()
+            offensive=bool(a.get('_flag_desc_off_foul'))
+            subtype='technical' if 'technical' in text or 'defensive three' in text else ('offensive' if offensive else 'personal')
+            descriptor=('charge' if 'charge' in text else 'double' if 'double' in text else
+                        'shooting' if a.get('_flag_desc_shooting_foul') else 'looseball' if 'loose ball' in text else None)
+            ledger.append(dict(game_id=gid,fouler_id=a.get('person_id'),drawn_id=a.get('foulDrawnPersonId'),
+                               sub_type=subtype,descriptor=descriptor,action_number=a.get('event_order')))
+    ledger=pd.DataFrame(ledger)
+    ledger.to_parquet(root/'current_foul_ledger.parquet',index=False)
+    _,committed,_=fouls.aggregate(ledger)
+    foul_lines=fresh.copy();idx=pd.MultiIndex.from_frame(foul_lines[['game_id','player_id']])
+    foul_lines['charges_committed']=committed.set_index(['game_id','player_id']).charges_committed_cdn.reindex(idx,fill_value=0).to_numpy()
+    def archive_lookup(gid, season):
+        g=reports.loc[reports.game_id.eq(gid)]
+        if g.empty:return None
+        g=g.loc[g.pf.notna()&g.pfd.notna()].set_index('player_id')
+        return pd.DataFrame(dict(PF=g.pf,PFD=g.pfd)) if len(g) else None
+    drawn,checks=fouls.build_lines(ledger,pd.DataFrame(dict(game_id=fresh.game_id.unique(),status='ok')),
+                                  foul_lines,archive_lookup=archive_lookup)
+    checks.to_csv(root/'current_foul_reconciliation.csv',index=False)
+    z=drawn.merge(fresh[['player_id','game_id','def_poss']],on=['player_id','game_id'],validate='one_to_one')
+    for name in ['charges_drawn','off_fouls_drawn']:
+        parts.append(bank.measured_rows(z,name+'100',name,z.fouls_drawn_is_measured))
+    shooting=ledger.loc[ledger.descriptor.eq('shooting') & ledger.sub_type.ne('technical')]
+    counts=shooting.groupby(['game_id','fouler_id']).size()
+    d['shooting_pf']=counts.reindex(pd.MultiIndex.from_frame(d[['game_id','player_id']]),fill_value=0).to_numpy()
+    if shooting.empty:raise ValueError('Degenerate current shooting-foul source')
+    add('shooting_pf100',d.shooting_pf,d.shooting_pf.le(d.pf_committed))
+    new=pd.concat(parts,ignore_index=True)
+    if new.duplicated(['player_id','game_id','feature']).any():raise ValueError('Duplicate tracking observations')
+    old=pd.read_parquet(E/'defense_bank_v51_shooting_pf_repaired/measurements.parquet')
+    measurements=pd.concat([old,new],ignore_index=True)
+    if measurements.duplicated(['player_id','game_id','feature']).any():raise ValueError('Overlapping historical/current tracking')
+    measurements.to_parquet(root/'measurements.parquet',index=False)
+
+    # Same selected denominators and physical Overall / Less Than6Ft definitions.
+    folder=root/'defense';folder.mkdir()
+    raw_dfga=count('overall_def_d_fga');raw_dfgm=count('overall_def_d_fgm_v2')
+    v=eligible & valid(raw_dfga) & valid(raw_dfgm) & raw_dfgm.le(raw_dfga)
+    dfga=d.loc[v,['player_id','player_name','game_id','game_date','season','season_type','off_poss','def_poss']].copy()
+    dfga['dfga_value']=raw_dfga.loc[v];dfga['dfga_valid']=True;dfga['dfga_reason']='observed'
+    dfga['source_minutes']=d.loc[v,'min'];dfga['TEAM_ID']=d.loc[v,'core_team_id'];dfga['exposure_match']=True
+    old_dfga=pd.read_parquet(E/'monthly_defense_v1/dfga_counts.parquet')
+    pd.concat([old_dfga,dfga],ignore_index=True).sort_values(['player_id','game_date','game_id']).to_parquet(folder/'dfga_counts.parquet',index=False)
+    n=count('less_6ft_def_fga_lt_06_v2');m=count('less_6ft_def_fgm_lt_06_v2')
+    for name,value in [('lt6ft_totals_fga_lt_06_v2',n),('lt6ft_totals_fgm_lt_06_v2',m)]:
+        other=count(name)
+        if (other.notna()&value.notna()&other.ne(value)).any():raise ValueError('Conflicting six-foot totals')
+    v=eligible & valid(n) & valid(m) & m.le(n)
+    rim=d.loc[v,['player_id','game_id','game_date','season','season_type','def_poss']].copy()
+    rim['rim_dfga']=n.loc[v];rim['rim_dfgm']=m.loc[v];rim['field_family']='less_6ft_def_current_report_v2'
+    old_rim=pd.read_parquet(E/'monthly_defense_v1/rim_counts.parquet')
+    pd.concat([old_rim,rim],ignore_index=True).sort_values(['player_id','game_date','game_id']).to_parquet(folder/'rim_counts.parquet',index=False)
+
+    # Core feature states and observations are unchanged; replay only the fixed defense filters.
+    code=root/'current_code_native_scale';code.mkdir()
+    for p in (base/'current_code_native_scale').glob('*.py'):
+        if p.name not in ['current_split_query.py']:shutil.copy2(p,code/p.name)
+    sys.path.insert(0,str(code))
+    import current_monthly_own as own
+    foreign=pd.read_csv(E/'pregame_source_validated_v1/foreign_legacy_player_games.csv',dtype={'game_id':str})
+    context=SimpleNamespace(D=defense,C=own,defense=folder,source_mode='identity_cleaned',foreign=foreign,
+                            cache=root/'defensive_state_cache',_end=lambda year:CUT)
+    context.cache.mkdir()
+    (context.cache/'kernel').symlink_to(base/'state_cache_native_scale/kernel',target_is_directory=True)
+    model=json.loads((E/'monthly_defense_v1/models/2025.json').read_bytes())
+    states=selected.SelectedStateHistory._defensive_states(context,2025,model)
+    states.to_parquet(root/'defensive_poststates.parquet',index=False)
+    reference=pd.read_parquet(base/'current_reference_core_native_scale.parquet')
+    ids=reference.player_id.to_numpy()
+    updated=[]
+    for feature,g in states.groupby('feature',sort=False):
+        h=selected.held_snapshot(g,ids,CUT)
+        reference[feature]=h.value.to_numpy();reference[feature+'_missing']=h.is_missing.astype(int).to_numpy()
+        if feature=='own_rim_suppression':
+            reference['own_rim_suppression__prior_exposure']=h.quality_prior_exposure.where(~h.is_missing).to_numpy()
+            reference['rim_last_observation_date']=h.last_observation_date.to_numpy()
+        h['feature']=feature;h['estimator']='original_annual_neutral_postgame_held_730';updated.append(h)
+    clean=measurements.loc[~selected._keys(measurements).isin(selected._keys(foreign))]
+    tracking,history=selected.tracking_snapshot(clean,ids,CUT)
+    for c in tracking:
+        if c!='player_id':reference[c]=tracking[c].to_numpy()
+    history['estimator']='fixed_TD550_K1000';updated.append(history)
+    reference.to_parquet(root/'current_reference_core_native_scale.parquet',index=False)
+    pd.concat(updated,ignore_index=True).to_parquet(root/'tracking_provenance.parquet',index=False)
+    modern=d.loc[eligible&split_ok,['player_id','game_id','game_date','def_poss']].rename(columns={'def_poss':'denominator'}).copy()
+    for col,value in [('def_contested_shots100',cs),('def_contested_shots_2pt100',cs2),('def_contested_shots_3pt100',cs3)]:modern[col]=value.loc[eligible&split_ok]
+    modern['day']=(modern.game_date-pd.Timestamp('1970-01-01')).dt.days
+    modern.to_parquet(root/'current_contested_split_measurements.parquet',index=False)
+    for name in ['refresh.json','player_core.parquet','native_source','objects']:
+        (root/name).symlink_to(base/name,target_is_directory=(base/name).is_dir())
+    coverage=dict(report_rows=len(reports),core_rows=len(fresh),identity_box_minutes_matches=int(match.sum()),
+        current_feature_observations={k:int(v)for k,v in new.groupby('feature').size().items()},
+        current_dfga_observations=len(dfga),current_rim_observations=len(rim),
+        foul_games={k:int(v)for k,v in checks.reason.value_counts().items()},
+        latest_observation=str(new.game_date.max().date()),cut=str(CUT.date()),new_fits=0,
+        original_core_features_reused=True,source_snapshot_sha256=sha(root/'report_snapshot.json'))
+    (root/'tracking_refresh.json').write_text(json.dumps(coverage,indent=2,sort_keys=True)+'\n')
+    print(json.dumps(coverage),flush=True)
+
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('root',type=Path);p.add_argument('--base',type=Path,required=True)
+    a=p.parse_args();main(a.root,a.base)

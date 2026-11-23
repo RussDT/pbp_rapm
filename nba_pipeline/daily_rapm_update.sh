@@ -14,11 +14,14 @@
 #   NBA_RAPM_SEASON_YEAR            season end year (default 2027)
 #   NBA_RAPM_PIPELINE_DIR           nba_pipeline dir (default: this script's dir)
 #   NBA_RAPM_CSVS_DIR               csvs repo checkout (default <repo>/../csvs)
+#   NBA_RAPM_CSVS_PUBLISH_SCRIPT    shared csvs publisher (default core scripts/publish_csvs.sh)
 #   NBA_RAPM_CSVS_BRANCH            expected csvs branch (default test-branch)
 #   NBA_RAPM_RAPMS_DIR              rapms repo checkout (default <repo>/../rapms)
 #   NBA_RAPM_CURRENT_METRICS_DIR    nba_rapm dir of the downstream NBA pipeline
 #   NBA_RAPM_CURRENT_METRICS_SCRIPT default collect_source_<SEASON_YEAR>.py
 #   NBA_RAPM_PUSH                   0 to skip the csvs/rapms commits and pushes
+#   NBA_RAPM_PYTHON                 python interpreter (default: pyenv `python`)
+#   NBA_RAPM_UPLOAD                 0 to skip every Supabase upload
 
 set -e
 
@@ -134,11 +137,13 @@ PROJECT_DIR="$(dirname "$PIPELINE_DIR")"
 LOG_FILE="$PIPELINE_DIR/logs/daily_update_$(date +%Y%m%d).log"
 
 CSVS_DIR="${NBA_RAPM_CSVS_DIR:-$PROJECT_DIR/../csvs}"
+CSVS_PUBLISH_SCRIPT="${NBA_RAPM_CSVS_PUBLISH_SCRIPT:-$PROJECT_DIR/../../pipelines/core/scripts/publish_csvs.sh}"
 CSVS_BRANCH="${NBA_RAPM_CSVS_BRANCH:-test-branch}"
 RAPMS_DIR="${NBA_RAPM_RAPMS_DIR:-$PROJECT_DIR/../rapms}"
 CURRENT_METRICS_DIR="${NBA_RAPM_CURRENT_METRICS_DIR:-}"
 CURRENT_METRICS_SCRIPT="${NBA_RAPM_CURRENT_METRICS_SCRIPT:-collect_source_${SEASON_YEAR}.py}"
 PUSH_DOWNSTREAM="${NBA_RAPM_PUSH:-1}"
+UPLOAD_SUPABASE="${NBA_RAPM_UPLOAD:-1}"
 
 # Downstream producers read these.
 export NBA_RAPM_CSVS_DIR="$CSVS_DIR"
@@ -146,9 +151,11 @@ export NBA_RAPM_CSVS_DIR="$CSVS_DIR"
 # Initialize pyenv (needed for launchd which doesn't source .zshrc)
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+if command -v pyenv >/dev/null 2>&1; then
+    eval "$(pyenv init -)"
+fi
 
-PYTHON_PATH="python -u"  # -u disables output buffering
+PYTHON_PATH="${NBA_RAPM_PYTHON:-python} -u"  # -u disables output buffering
 
 # Create logs directory if needed
 mkdir -p "$PIPELINE_DIR/logs"
@@ -161,6 +168,15 @@ log() {
 # Run command with output to both terminal and log
 run() {
     "$@" 2>&1 | tee -a "$LOG_FILE"
+}
+
+# Supabase writes (production databallr) honor NBA_RAPM_UPLOAD=0.
+upload() {
+    if [ "$UPLOAD_SUPABASE" = "1" ]; then
+        run "$@"
+    else
+        log "  NBA_RAPM_UPLOAD=$UPLOAD_SUPABASE; skipped: $*"
+    fi
 }
 
 log "========================================"
@@ -197,11 +213,32 @@ log ""
 log "[$(date +%H:%M:%S)] Fetching latest playoff PBP data..."
 run $PYTHON_PATH "$SCRIPTS_DIR/01_fetch_pbp_data.py" "$SEASON_YY" PS
 
+# 1b. Audit/repair modern lineups before anything reads the raw file.
+#     Promotion is refused unless the repaired season has zero remaining
+#     lineup/substitution/actor issues (docs/MODERN_LINEUP_REPAIR.md).
+log ""
+log "[$(date +%H:%M:%S)] Repairing regular-season lineups..."
+run $PYTHON_PATH "$SCRIPTS_DIR/repair_modern_raw_lineups.py" \
+    --start-year "$SEASON_YEAR" --end-year "$SEASON_YEAR" --season-types rs --promote
+
 # 2. Enrich with ShotQuality data (adds initial_ev, transition, etc.)
 # The enrichment script processes both NBA<yy>.parquet and NBA<yy>_PS.parquet.
 log ""
 log "[$(date +%H:%M:%S)] Enriching PBP with ShotQuality data..."
 run $PYTHON_PATH "$SCRIPTS_DIR/01b_enrich_pbp_shotquality.py" "$SEASON_YY"
+
+# ShotQuality-dependent steps (transition, initial_ev, TS decomposition,
+# v3 SQ upload) run only when the season's raw file carries SQ values. Never
+# synthesize missing enrichment.
+HAS_SQ="$($PYTHON_PATH -c "
+import sys, pandas as pd
+try:
+    df = pd.read_parquet(sys.argv[1], columns=['initial_ev'])
+    print(1 if df['initial_ev'].notna().any() else 0)
+except Exception:
+    print(0)
+" "$RAW_DATA_DIR/NBA${SEASON_YY}.parquet" 2>/dev/null || echo 0)"
+log "  ShotQuality enrichment present: $HAS_SQ"
 
 # 3. Process RAPM for current season
 log ""
@@ -252,7 +289,7 @@ run $PYTHON_PATH "$SCRIPTS_DIR/03_run_rapm_analysis.py" "$S6" "$SEASON_YY" ALL -
 
 log ""
 log "[$(date +%H:%M:%S)] Uploading timedecay RAPM to Supabase..."
-run $PYTHON_PATH "$SCRIPTS_DIR/upload_timedecay_rapm.py"
+upload $PYTHON_PATH "$SCRIPTS_DIR/upload_timedecay_rapm.py"
 
 log ""
 log "[$(date +%H:%M:%S)] Running RAPM analysis (13 years, rubberband)..."
@@ -271,17 +308,33 @@ run $PYTHON_PATH "$SCRIPTS_DIR/run_decomp_rolling.py" \
     --rapm-workers 4 \
     --cores-per-rapm 2
 
+# Net DECOMP (net-continuation pricing) reads the isolated
+# processed_netcont_lane; refresh the current season's two source families
+# there, then rebuild the 1Y-5Y weighted_factors_decomp_net_* release.
+NET_SEASON_TYPES=rs
+[ -f "$RAW_DATA_DIR/NBA${SEASON_YY}_PS.parquet" ] && NET_SEASON_TYPES=all
+log ""
+log "[$(date +%H:%M:%S)] Rebuilding net DECOMP ($NET_SEASON_TYPES)..."
+for m in FIRST_CHANCE SECOND_CHANCE_CLEAN; do
+    run $PYTHON_PATH "$SCRIPTS_DIR/reprocess_metric.py" "$m" "$SEASON_YEAR" "$SEASON_YEAR" \
+        --season-types "$NET_SEASON_TYPES" --workers 1 \
+        --processed-dir "$PIPELINE_DIR/processed_netcont_lane"
+done
+run $PYTHON_PATH "$SCRIPTS_DIR/run_net_decomp_rolling.py" \
+    --current-release --release-end-year "$SEASON_YEAR" \
+    --workers 2 --cores-per-rapm 2
+
 log ""
 log "[$(date +%H:%M:%S)] Rebuilding legacy Alt3 EFG-value team audit bundle..."
 run $PYTHON_PATH "$SCRIPTS_DIR/build_team_alt3_efg_value_weighted_factors.py" "$S3" "$SEASON_YY" ALL --alpha 25
 
 log ""
 log "[$(date +%H:%M:%S)] Uploading six-factor RAPM to Supabase..."
-run $PYTHON_PATH "$SCRIPTS_DIR/upload_six_factor.py"
+upload $PYTHON_PATH "$SCRIPTS_DIR/upload_six_factor.py"
 
 log ""
 log "[$(date +%H:%M:%S)] Uploading WOWY team-player presence to Supabase..."
-run $PYTHON_PATH "$SCRIPTS_DIR/upload_wowy_team_player_presence.py" \
+upload $PYTHON_PATH "$SCRIPTS_DIR/upload_wowy_team_player_presence.py" \
     --start-year "$(( SEASON_YEAR - 4 ))" \
     --end-year "$SEASON_YEAR" \
     --season-types ALL \
@@ -295,10 +348,14 @@ run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" RIM_FG_PCT "$S6" "$SEASON_YY" ALL --time
 run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" MIDRANGE_FREQ "$S6" "$SEASON_YY" ALL --timedecay --half-life 700
 
 log ""
-log "[$(date +%H:%M:%S)] Running standalone metrics (3-year TD 700, ShotQuality-dependent)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" TRANSITION_FREQ "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
-run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" TRANSITION_RIM "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
-run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" INITIAL_EV "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
+if [ "$HAS_SQ" = "1" ]; then
+    log "[$(date +%H:%M:%S)] Running standalone metrics (3-year TD 700, ShotQuality-dependent)..."
+    run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" TRANSITION_FREQ "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
+    run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" TRANSITION_RIM "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
+    run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" INITIAL_EV "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
+else
+    log "[$(date +%H:%M:%S)] No $SEASON_YEAR ShotQuality enrichment; skipping transition/initial_ev runs."
+fi
 
 # 6. Copy standalone TD results to master_results
 log ""
@@ -307,17 +364,20 @@ MASTER_DIR="$PIPELINE_DIR/master_results"
 TD_DIR="$PIPELINE_DIR/results/td"
 mkdir -p "$MASTER_DIR"
 
-for f in \
+copy_publish_artifact \
+    "$TD_DIR/rim_freq_${W6}_all_td700_results.csv" \
     "rimfreq_${W6}_all_td700_results.csv" \
+    "$TD_DIR/rimfreq_${W6}_all_td700_results.csv"
+
+copy_publish_artifact \
+    "$TD_DIR/rim_fg_pct_${W6}_all_td700_results.csv" \
     "rimfgpct_${W6}_all_td700_results.csv" \
-    "midrangefreq_${W6}_all_td700_results.csv"; do
-    if [ -f "$TD_DIR/$f" ]; then
-        cp "$TD_DIR/$f" "$MASTER_DIR/$f"
-        log "  Copied $f to master_results/"
-    else
-        log "  WARNING: $f not found in $TD_DIR"
-    fi
-done
+    "$TD_DIR/rimfgpct_${W6}_all_td700_results.csv"
+
+copy_publish_artifact \
+    "$TD_DIR/midrange_freq_${W6}_all_td700_results.csv" \
+    "midrangefreq_${W6}_all_td700_results.csv" \
+    "$TD_DIR/midrangefreq_${W6}_all_td700_results.csv"
 
 copy_publish_artifact \
     "$TD_DIR/transition_freq_${W3}_all_td700_results.csv" \
@@ -343,18 +403,23 @@ else
 fi
 
 # 7. TS Decomposition components (3-year TD 700, ShotQuality-dependent)
-log ""
-log "[$(date +%H:%M:%S)] Running TS decomposition components ($W3 TD 700)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" TS "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
-run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" SQ_POSS "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
-run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" FT_PREMIUM "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
-run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" CONTEST "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
+if [ "$HAS_SQ" = "1" ]; then
+    log ""
+    log "[$(date +%H:%M:%S)] Running TS decomposition components ($W3 TD 700)..."
+    run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" TS "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
+    run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" SQ_POSS "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
+    run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" FT_PREMIUM "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
+    run $PYTHON_PATH "$SCRIPTS_DIR/rapm.py" CONTEST "$S3" "$SEASON_YY" ALL --timedecay --half-life 700
 
-# 8. Run WLS regression decomposition and upload
-log ""
-log "[$(date +%H:%M:%S)] Running TS decomposition regression (td700)..."
-run $PYTHON_PATH "$SCRIPTS_DIR/ts_decomp_regression.py" "$S3" "$SEASON_YY" ALL --timedecay
-run $PYTHON_PATH "$SCRIPTS_DIR/upload_v3_sq_rapm.py"
+    # 8. Run WLS regression decomposition and upload
+    log ""
+    log "[$(date +%H:%M:%S)] Running TS decomposition regression (td700)..."
+    run $PYTHON_PATH "$SCRIPTS_DIR/ts_decomp_regression.py" "$S3" "$SEASON_YY" ALL --timedecay
+    upload $PYTHON_PATH "$SCRIPTS_DIR/upload_v3_sq_rapm.py"
+else
+    log ""
+    log "[$(date +%H:%M:%S)] No $SEASON_YEAR ShotQuality enrichment; skipping TS decomposition and v3 SQ upload."
+fi
 
 # 8b. Copy TS decomposition factors to master_results
 TS_DECOMP_DIR="$PIPELINE_DIR/results/ts_decomp_${W3}_all_td700"
@@ -369,18 +434,52 @@ fi
 # 9. Update downstream CSV exports and current metric boards
 #    These producers resolve paths from their own location, but still expect to
 #    be run from the pbp_rapm root.
+#    They write into the csvs checkout, so NBA_RAPM_PUSH=0 skips them too.
 log ""
-log "[$(date +%H:%M:%S)] Updating downstream CSV exports..."
 cd "$PROJECT_DIR"
-run $PYTHON_PATH "$PROJECT_DIR/update_2026_josh_rapm.py" --year "$SEASON_YEAR"
-run $PYTHON_PATH "$PROJECT_DIR/update_2026_purerapm.py" --year "$SEASON_YEAR"
-run $PYTHON_PATH "$PROJECT_DIR/update_2026_purerapm_peaks.py"
-run $PYTHON_PATH "$PROJECT_DIR/update_2026_scaledoutput.py" --year "$SEASON_YEAR"
+if [ "$PUSH_DOWNSTREAM" = "1" ]; then
+    log "[$(date +%H:%M:%S)] Updating downstream CSV exports..."
+    run $PYTHON_PATH "$PROJECT_DIR/update_2026_josh_rapm.py" --year "$SEASON_YEAR"
+    run $PYTHON_PATH "$PROJECT_DIR/update_2026_purerapm.py" --year "$SEASON_YEAR"
+    run $PYTHON_PATH "$PROJECT_DIR/update_2026_purerapm_peaks.py"
+    run $PYTHON_PATH "$PROJECT_DIR/update_2026_scaledoutput.py" --year "$SEASON_YEAR"
+else
+    log "[$(date +%H:%M:%S)] NBA_RAPM_PUSH=$PUSH_DOWNSTREAM; skipping downstream csvs exports"
+fi
+
+# 9c. Legacy Timedecay board: in-season TD550 net-continuation checkpoint.
+#     The quarterly grid (oct01/jan01/may01/aug30) has no checkpoint meaning
+#     "now", so a season in progress never got a current board: the lane sat at
+#     the previous August for months while every other board updated nightly.
+#     `--as-of today` adds one checkpoint at today's date.
+#
+#     The as-of checkpoint is a rolling "current", not history -- the grid keeps
+#     the history -- so yesterday's is removed first. Without that the publisher,
+#     which uploads every checkpoint it finds on disk, would re-send a payload
+#     that grows by ~1,600 rows a day. The four grid labels are never pruned.
+#
+#     The publisher upserts on (player_id, snapshot_date), so re-running on the
+#     same day replaces that day's rows instead of duplicating them. One write
+#     feeds all three legacy surfaces: the TD RAPM board, the per-player factor
+#     panel, and Current Impact's *_timedecay columns.
+log ""
+log "[$(date +%H:%M:%S)] Building in-season TD550 as-of checkpoint..."
+ASOF_ROOT="$PIPELINE_DIR/results/vpm_netcont_asof_td550"
+if [ -d "$ASOF_ROOT" ]; then
+    find "$ASOF_ROOT" -mindepth 2 -maxdepth 2 -type d \
+        ! -name 'oct01_*' ! -name 'jan01_*' ! -name 'may01_*' ! -name 'aug30_*' \
+        -exec rm -rf {} + 2>/dev/null || true
+fi
+run $PYTHON_PATH "$SCRIPTS_DIR/run_vpm_netcont_asof.py" --as-of today
+upload $PYTHON_PATH "$SCRIPTS_DIR/publish_no_prior_vpm_snapshots.py" --publish
 
 # 10. Sync master_results to rapms repo and push
 log ""
 log "[$(date +%H:%M:%S)] Syncing master_results to rapms repo..."
 RAPMS_MASTER="$RAPMS_DIR/master_results"
+if [ "$PUSH_DOWNSTREAM" = "1" ] && [ -d "$RAPMS_DIR/.git" ]; then
+    git -C "$RAPMS_DIR" pull --ff-only origin main 2>&1 | tee -a "$LOG_FILE" || true
+fi
 
 if [ -d "$RAPMS_MASTER" ]; then
     for f in \
@@ -460,27 +559,36 @@ fi
 
 if [ "$PUSH_DOWNSTREAM" != "1" ]; then
     log "[$(date +%H:%M:%S)] NBA_RAPM_PUSH=$PUSH_DOWNSTREAM; skipping csvs/rapms commits and pushes"
-elif [ ! -d "$CSVS_DIR/.git" ]; then
-    log "  WARNING: csvs repo not found at $CSVS_DIR; push skipped"
-    log "           set NBA_RAPM_CSVS_DIR to the csvs checkout to enable it"
 else
-    log "[$(date +%H:%M:%S)] Pushing csvs repo..."
-    cd "$CSVS_DIR"
-    CURRENT_CSVS_BRANCH="$(git branch --show-current)"
-    if [ "$CURRENT_CSVS_BRANCH" != "$CSVS_BRANCH" ]; then
-        log "  ERROR: csvs repo is on $CURRENT_CSVS_BRANCH, expected $CSVS_BRANCH"
-        exit 1
+    # csvs goes through the shared publisher: it pins the branch, fetches the
+    # current tip, applies the regression guard and never touches the checkout,
+    # which sits on main with uncommitted pipeline output.
+    if [ ! -x "$CSVS_PUBLISH_SCRIPT" ]; then
+        log "  WARNING: csvs publisher not found at $CSVS_PUBLISH_SCRIPT; push skipped"
+    elif ! git -C "$CSVS_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+        log "  WARNING: csvs repo not found at $CSVS_DIR; push skipped"
+        log "           set NBA_RAPM_CSVS_DIR to the csvs checkout to enable it"
+    else
+        log "[$(date +%H:%M:%S)] Publishing csvs repo to $CSVS_BRANCH..."
+        CSVS_DIR="$CSVS_DIR" CSVS_BRANCH="$CSVS_BRANCH" "$CSVS_PUBLISH_SCRIPT" \
+            --message "Daily RAPM csvs update $(date +%Y-%m-%d)" 2>&1 | tee -a "$LOG_FILE" \
+            || true
+        if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+            log "  WARNING: csvs publish failed; continuing to rapms"
+        fi
     fi
-    git add PureRAPM.csv PureRAPMPeaks.csv SCALEDOUTPUT_SMALLER.csv current_comp.csv structuredtest.csv DARKO.csv lebron.csv players_by_player.csv autocomplete_map.csv josh_rapm scposs
-    git diff --cached --quiet || git commit -m "Daily RAPM csvs update $(date +%Y-%m-%d)"
-    git push origin "$CSVS_BRANCH"
 
     if [ -d "$RAPMS_DIR/.git" ]; then
         log "[$(date +%H:%M:%S)] Pushing rapms repo..."
-        cd "$RAPMS_DIR"
-        git add -A
-        git diff --cached --quiet || git commit -m "Daily RAPM update $(date +%Y-%m-%d)"
-        git push origin main
+        (
+            cd "$RAPMS_DIR" &&
+            git add -A &&
+            { git diff --cached --quiet || git commit -m "Daily RAPM update $(date +%Y-%m-%d)"; } &&
+            git push origin main
+        ) 2>&1 | tee -a "$LOG_FILE"
+        if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+            log "  WARNING: rapms push failed"
+        fi
     else
         log "  WARNING: rapms repo not found at $RAPMS_DIR; push skipped"
     fi

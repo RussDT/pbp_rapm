@@ -1,0 +1,49 @@
+"""Execute the existing current-board refresh for the @@CUT_WORDS@@ snapshot only."""
+from pathlib import Path
+import hashlib,importlib.util,json,subprocess,sys,time
+import pandas as pd
+ROOT=Path(__file__).resolve().parents[1]
+CODE=ROOT/'pipeline_code'
+TRACK=ROOT.parent/'current_refresh_@@TAG@@_tracking_v1'
+
+def load(name,path):
+    spec=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(spec);sys.modules[name]=m;spec.loader.exec_module(m);return m
+
+def run(name,*args):
+    print(json.dumps(dict(stage=name,status='started')),flush=True)
+    with (ROOT/(name+'.log')).open('x')as log:
+        subprocess.run([sys.executable,str(CODE/(name+'.py')),*map(str,args)],stdout=log,stderr=subprocess.STDOUT,check=True)
+    print(json.dumps(dict(stage=name,status='complete')),flush=True)
+
+start=time.monotonic()
+source=json.loads((ROOT/'refresh.json').read_bytes())
+if source['cut']!='@@CUT@@' or source['manifest_games']!=@@GAMES@@:raise ValueError('Exact current snapshot required')
+run('refresh_vpm_native_source',ROOT)
+raw=ROOT/'native_source/NBA27_current.parquet'
+from process_rapm_blocks.process_rapm import process_rapm_py
+print('Native actual-FT possession build started',flush=True)
+result=process_rapm_py(str(raw),27,'2026-27',o_luck=0.,d_luck=0.,ft_value_mode='actual')
+if result is None:raise ValueError('No native target result')
+canonical=result[0];canonical.to_parquet(ROOT/'native_source/RAPM27_current.parquet',index=False)
+if canonical.game_id.nunique()!=source['manifest_games'] or pd.to_datetime(canonical.game_date).isna().any():raise ValueError('Incomplete canonical game/date population')
+atoms=load('current_nov2_native_atoms',CODE/'native_atom_adapter.py')
+atoms.build(2027,'RS',ROOT/'native_source/targets')
+a=pd.read_parquet(ROOT/'native_source/targets/atoms_2027_RS.parquet')
+t=pd.read_parquet(ROOT/'team_core.parquet')
+cloud=t.groupby('game_id').own_points.sum();cloud.index=cloud.index.astype('int64')
+actual=a.assign(game_id=pd.to_numeric(a.game_id)).groupby('game_id').actual_points.sum()
+scores=pd.DataFrame(dict(cloud_team_points=cloud,native_actual_points=actual));scores['difference']=scores.native_actual_points-scores.cloud_team_points
+scores.index.name='game_id';scores.reset_index().to_csv(ROOT/'native_source/score_comparison.csv',index=False)
+if len(scores)!=source['manifest_games'] or scores.isna().any().any() or scores.difference.ne(0).any():raise ValueError('Current native/cloud score mismatch')
+print(f'All{len(scores)} native game scores match the cloud team points exactly',flush=True)
+from build_nba_player_game_lines import extract_season,load_common
+physical=extract_season(raw,2027,'rs',load_common())
+physical['lines'].to_parquet(ROOT/'legacy_current_counts.parquet',index=False)
+(ROOT/'physical_source_summary.json').write_text(json.dumps(physical['recon'],indent=2)+'\n')
+run('prepare_current_vpm_features',ROOT,'--native-scale')
+TRACK.mkdir(exist_ok=False)
+records=[dict(path=r['local_file'],key=r['key'],sha256=r['sha256'])for r in source['object_reads']if r['kind']=='player'and r['key'].endswith('.report.json')]
+if not records:raise ValueError('Current tracking reports absent')
+(TRACK/'report_snapshot.json').write_text(json.dumps(dict(cut=source['cut'],season=2027,retrieved_utc=source['retrieved_utc'],objects=records),indent=2,sort_keys=True)+'\n')
+run('prepare_current_vpm_tracking',TRACK,'--base',ROOT)
+print('Native, core and tracking inputs complete; SQ emission follows separately',flush=True)
