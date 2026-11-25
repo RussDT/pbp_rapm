@@ -23,6 +23,38 @@ The November 15 recovery was also manually published, through November 14.
 The corrected bash launch passes an actual unattended file-access and Python
 dependency check. Launch-level failures are in `logs/vpm_daily/launchd_stderr.log`.
 
+### November 20-25 failures: node refused under `~/Documents`
+
+Every scheduled run from November 20 through 25 failed in the first second,
+when `R2Reader` called `wrangler auth token --json`. The same command worked
+from an interactive shell and under `env -i`. The reader threw wrangler's
+stderr away, so the cause was invisible. Once stderr was captured, a launchd run
+showed node itself was refused:
+`Error: EPERM: operation not permitted, open '<databallr>/node_modules/.pnpm/wrangler@4.151.0_.../wrangler/bin/wrangler.js'`.
+Under launchd, bash and Python can read the checkout, but node cannot open any
+file below `~/Documents`. This is most likely macOS privacy protection on
+protected folders (the same class of problem as the zsh launch above), but
+that is an inference.
+
+Fix (no privacy-setting change, sign-in or new token):
+`databallr_r2_read.py` now copies wrangler's pnpm dependency closure (38 store
+entries, about 330 MB) into `~/Library/Caches/rapm-databallr-wrangler/<wrangler
+store entry>/`. Python does the copy, and pnpm's relative symlinks are kept.
+Node then runs `wrangler.js` from that copy, and it uses the same wrangler OAuth
+login in `~/Library/Preferences/.wrangler`. The copy is rebuilt automatically
+when databallr's wrangler version changes. If wrangler fails, the
+nightly log now shows its exit code and its stderr/stdout, with token-like
+values, bearer strings and 32-hex ids redacted.
+
+The same launchd run found a second, unrelated stall. This network has no
+working IPv6 egress to `api.cloudflare.com`, and that host resolves IPv6 first.
+Python 3.9's `urllib` gave each address the full 120 s timeout before trying
+IPv4, so a single R2 GET took about 12 minutes. Every Cloudflare API call in the
+reader (object GETs, listings and the catalog lookup) now gives each address
+10 s to connect, alternate IPv6 and IPv4, and remember the family that worked.
+Reads still have the 120 s timeout. Supabase and ESPN resolve IPv4-first and
+were not affected. Tests: `tests/test_databallr_r2_read.py`.
+
 ## What one run does
 
 1. The cut is today in America/Los_Angeles; games through yesterday are used.
@@ -125,6 +157,9 @@ The daily builder uses this reporting baseline automatically for future dates.
 - Runs on the Mac, so a powered-off Mac means no update.
 - R2 auth uses the wrangler OAuth login (databallr@gmail.com) unless
   `CLOUDFLARE_API_TOKEN` is set. A read-only R2 token would be sturdier.
+  Under launchd, wrangler runs from the `~/Library/Caches` mirror described
+  above. If the OAuth login lapses, the nightly log shows wrangler's redacted
+  error. Re-signing in (`wrangler login`) is an owner step.
 - A date with no games the night before has not been exercised end to end.
 - SEASON is fixed at 2027; the runner refuses other seasons.
 - The frozen Oct-1 mapper, SQ models and `current_model.json` are not refreshed.
